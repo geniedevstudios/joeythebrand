@@ -1,0 +1,23 @@
+# Root .gitignore for JOEY THE BRAND Monorepo
+
+# Sub-directory specific ignores (Next.js defaults)
+node_modules/
+.next/
+out/
+build/
+
+# Local env files
+.env*.local
+.env
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc
+.vercel
+.turbo

@@ -1,0 +1,465 @@
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background: #1a1a1a;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+}
+
+.logo {
+  padding: 24px 20px;
+  border-bottom: 1px solid #333;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.logo a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.nav {
+  flex: 1;
+  padding: 16px 12px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #aaa;
+  text-decoration: none;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.navItem:hover {
+  background: #252525;
+  color: #fff;
+}
+
+.navItemActive {
+  background: #333;
+  color: #fff;
+}
+
+.navIcon {
+  font-size: 18px;
+}
+
+.navLabel {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sidebarFooter {
+  padding: 16px 20px;
+  border-top: 1px solid #333;
+}
+
+.backLink {
+  color: #888;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+.backLink:hover {
+  color: #fff;
+}
+
+.main {
+  flex: 1;
+  margin-left: 260px;
+  padding: 32px;
+  background: #f8f8f8;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.addBtn {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addBtn:hover {
+  background: #333;
+}
+
+.searchBar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.productsGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.productCard {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 20px;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.productImage {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #f0f0f0;
+}
+
+.productInfo h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.productMeta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.metaTag {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #666;
+}
+
+.metaTagActive {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.outOfStock {
+  background: #fee;
+  color: #c00;
+}
+
+.price {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  background: #f5f5f5;
+}
+
+.actionBtnPrimary {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}
+
+.actionBtnPrimary:hover {
+  background: #333;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.formInput, .formSelect, .formTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.formTextarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.formInput:focus, .formSelect:focus, .formTextarea:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.checkboxLabel input {
+  width: 16px;
+  height: 16px;
+}
+
+.sizesSection {
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.sizesTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.sizeRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.sizeName {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 60px;
+}
+
+.toggleSwitch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+}
+
+.toggleSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ccc;
+  border-radius: 22px;
+  transition: 0.3s;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.toggleSwitch input:checked + .toggleSlider {
+  background: #1a1a1a;
+}
+
+.toggleSwitch input:checked + .toggleSlider:before {
+  transform: translateX(18px);
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnPrimary {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+}
+
+.btnPrimary:hover {
+  background: #333;
+}
+
+.btnSecondary {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btnSecondary:hover {
+  background: #f5f5f5;
+}
+
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+.imagesSection {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.imagesGrid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.imagePreview {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid #eee;
+}

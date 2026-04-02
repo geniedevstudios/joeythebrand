@@ -1,0 +1,138 @@
+.featured {
+  background: var(--color-bg);
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--space-2xl);
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.heading {
+  color: var(--blue-athracite);
+  margin-top: var(--space-sm);
+}
+
+.viewAll {
+  flex-shrink: 0;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-lg);
+}
+
+/* Card */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.imageWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  aspect-ratio: 3/4;
+  background: var(--skintone);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.card:hover .image {
+  transform: scale(1.05);
+}
+
+/* Tag */
+.tag {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  background: var(--blue-athracite);
+  color: #fff;
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+}
+
+/* Hover overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(39, 43, 54, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: var(--space-xl);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.card:hover .overlay {
+  opacity: 1;
+}
+
+.quickView {
+  transform: translateY(10px);
+  transition: transform var(--transition-base), opacity var(--transition-base);
+}
+
+.card:hover .quickView {
+  transform: translateY(0);
+}
+
+/* Info */
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.category {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--blue-athracite);
+}
+
+.price {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--alaska-gray);
+  font-weight: 400;
+}
+
+@media (max-width: 1024px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+  .header { flex-direction: column; align-items: flex-start; }
+  .viewAll { width: 100%; text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+}
