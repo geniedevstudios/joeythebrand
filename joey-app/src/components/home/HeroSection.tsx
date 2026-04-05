@@ -1,12 +1,35 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "./HeroSection.module.css";
+import type { SiteContent } from "@/lib/types";
+import { useHomeHeroMediaWithSSRSeed } from "@/hooks/usePageHero";
+import { resolveHeroLayout } from "@/lib/pageHeroes";
 
 const words = ["Power.", "Precision.", "Presence."];
 
-export default function HeroSection() {
+export default function HeroSection({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const heroVideoRevealOnce = useRef(false);
+  const media = useHomeHeroMediaWithSSRSeed(initialSiteContent);
+  const { fit, position } = resolveHeroLayout(media);
+  const [heroVideoLoading, setHeroVideoLoading] = useState(media.kind === "video");
+
+  const revealHeroVideo = useCallback(() => {
+    if (heroVideoRevealOnce.current) return;
+    heroVideoRevealOnce.current = true;
+    setHeroVideoLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (media.kind === "video") {
+      heroVideoRevealOnce.current = false;
+      setHeroVideoLoading(true);
+    } else {
+      heroVideoRevealOnce.current = false;
+      setHeroVideoLoading(false);
+    }
+  }, [media.kind, media.src]);
 
   useEffect(() => {
     wordRefs.current.forEach((el, i) => {
@@ -19,11 +42,60 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className={styles.hero} id="hero">
-      {/* Background image */}
+    <section
+      className={styles.hero}
+      id="hero"
+      aria-busy={media.kind === "video" && heroVideoLoading ? true : undefined}
+    >
       <div className={styles.bg} aria-hidden="true">
-        <img src="/hero.png" alt="JOEY THE BRAND editorial" className={styles.bgImg} />
+        {media.kind === "video" ? (
+          <video
+            key={media.src}
+            className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
+            style={{
+              objectFit: fit === "contain" ? "contain" : "cover",
+              objectPosition: position,
+            }}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onPlaying={revealHeroVideo}
+            onCanPlay={(e) => {
+              const v = e.currentTarget;
+              if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealHeroVideo();
+            }}
+            onTimeUpdate={(e) => {
+              if (e.currentTarget.currentTime > 0.02) revealHeroVideo();
+            }}
+            onError={revealHeroVideo}
+          >
+            <source src={media.src} />
+          </video>
+        ) : (
+          <img
+            src={media.src}
+            alt="JOEY THE BRAND editorial"
+            className={styles.bgImg}
+            style={{
+              objectFit: fit === "contain" ? "contain" : "cover",
+              objectPosition: position,
+            }}
+          />
+        )}
         <div className={styles.overlay} />
+        {media.kind === "video" && (
+          <div
+            className={`${styles.videoLoader} ${heroVideoLoading ? "" : styles.videoLoaderDone}`}
+            aria-hidden={!heroVideoLoading}
+          >
+            <div className={styles.videoLoaderSpinner} />
+            <span className={styles.videoLoaderSrOnly}>
+              {heroVideoLoading ? "Loading hero video" : ""}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content */}

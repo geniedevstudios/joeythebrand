@@ -1,0 +1,122 @@
+.footer {
+  padding: var(--space-2xl) 0 var(--space-lg);
+  background: var(--blue-athracite);
+  color: rgba(245, 241, 236, 0.72);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-md);
+}
+
+.wordmark {
+  font-family: var(--font-logo), Georgia, serif;
+  font-size: clamp(1rem, 2.8vw, 1.65rem);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  color: var(--color-text-light);
+  text-decoration: none;
+  margin: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.wordmark:hover {
+  opacity: 0.82;
+}
+
+.wordmark:focus-visible {
+  outline: 2px solid var(--wood);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.socialRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin: var(--space-xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.socialItem {
+  display: flex;
+}
+
+.socialLink,
+.socialDisabled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  color: rgba(245, 241, 236, 0.78);
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.socialLink:hover {
+  color: var(--color-text-light);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.socialLink:focus-visible {
+  outline: 2px solid var(--wood);
+  outline-offset: 2px;
+}
+
+.socialDisabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.socialSvg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.bottomBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md) var(--space-lg);
+  width: 100%;
+  padding-top: var(--space-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.copy {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 300;
+  letter-spacing: 0.03em;
+  color: rgba(245, 241, 236, 0.38);
+  margin: 0 auto;
+  line-height: 1.45;
+  text-align: center;
+  max-width: min(22rem, 100%);
+}
+
+@media (max-width: 480px) {
+  .copy {
+    font-size: 0.68rem;
+  }
+}

@@ -17,13 +17,75 @@
 .bgImg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center top;
+  /* object-fit / object-position set inline from admin (cover vs contain, anchor) */
+}
+
+/* No poster flash: keep video transparent until we confirm frames are moving, then fade in with loader out */
+.heroBgVideo {
+  opacity: 0;
+  transition: opacity 0.55s ease;
+}
+
+.heroBgVideoVisible {
+  opacity: 1;
+}
+
+/* iOS-style loader over hero video until first playback (avoids poster → video pop) */
+.videoLoader {
+  position: absolute;
+  inset: 0;
+  z-index: 3; /* above .overlay (2) so spinner is visible */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Mostly solid so poster / first frame never flashes through during load or fade */
+  background: rgba(32, 35, 44, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.55s ease, visibility 0s linear 0s;
+}
+
+.videoLoaderDone {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.55s ease, visibility 0s linear 0.55s;
+}
+
+/* Thin ring spinner (similar to UIActivityIndicator) */
+.videoLoaderSpinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  animation: heroVideoLoaderSpin 0.85s linear infinite;
+}
+
+@keyframes heroVideoLoaderSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.videoLoaderSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: linear-gradient(
     135deg,
     rgba(39, 43, 54, 0.72) 0%,

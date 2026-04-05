@@ -1,18 +1,43 @@
 .page {
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--nav-height) var(--space-md) var(--space-4xl);
+  flex-direction: column;
   background: var(--color-bg);
+}
+
+.topHero {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  flex-shrink: 0;
+  background: var(--blue-athracite);
+  background-size: cover;
+  background-position: center top;
+}
+
+.topHero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(39, 43, 54, 0.78) 0%,
+    rgba(39, 43, 54, 0.5) 50%,
+    rgba(145, 126, 113, 0.35) 100%
+  );
+  z-index: 0;
 }
 
 .container {
   width: 100%;
   max-width: 440px;
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--space-md) var(--space-4xl);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  flex: 1;
   gap: var(--space-2xl);
   animation: fadeUp 0.6s ease;
 }

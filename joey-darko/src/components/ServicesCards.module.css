@@ -1,0 +1,224 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
+}
+
+.card {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-xl) var(--space-lg);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    border-color var(--transition-fast);
+  outline: none;
+}
+
+.card:hover,
+.card:focus-visible {
+  border-color: rgba(39, 43, 54, 0.18);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--wood);
+  outline-offset: 3px;
+}
+
+.cardTitle {
+  font-family: var(--font-label), system-ui, sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue-athracite);
+  margin: 0 0 var(--space-sm);
+  line-height: 1.35;
+}
+
+.cardSummary {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--alaska-gray);
+  margin: 0;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity var(--transition-base),
+    max-height var(--transition-slow),
+    transform var(--transition-base);
+}
+
+.cardHint {
+  display: block;
+  margin-top: var(--space-md);
+  font-family: var(--font-label), system-ui, sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--wood);
+  opacity: 0.85;
+}
+
+/* Hover-capable pointers: lift + reveal summary */
+@media (hover: hover) and (pointer: fine) {
+  .card:hover,
+  .card:focus-visible {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 40px rgba(39, 43, 54, 0.1);
+  }
+
+  .card:hover .cardSummary,
+  .card:focus-visible .cardSummary {
+    opacity: 1;
+    max-height: 8rem;
+    transform: translateY(0);
+  }
+}
+
+/* Touch / no hover: keep summary visible; lighter lift on focus */
+@media (hover: none), (pointer: coarse) {
+  .cardSummary {
+    opacity: 1;
+    max-height: none;
+    transform: none;
+    margin-bottom: var(--space-xs);
+  }
+
+  .card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(39, 43, 54, 0.08);
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(39, 43, 54, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  animation: servicesFadeIn 0.25s ease;
+}
+
+@keyframes servicesFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dialog {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: min(88vh, 640px);
+  overflow-y: auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg, 16px);
+  padding: var(--space-2xl) var(--space-xl);
+  box-shadow: 0 24px 60px rgba(39, 43, 54, 0.2);
+  border: 1px solid var(--color-border);
+  animation: servicesPop 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+@keyframes servicesPop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.closeBtn {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(39, 43, 54, 0.06);
+  border-radius: var(--radius-md, 8px);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--blue-athracite);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.closeBtn:hover {
+  background: rgba(39, 43, 54, 0.1);
+}
+
+.dialogTitle {
+  font-family: var(--font-label), system-ui, sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue-athracite);
+  margin: 0 0 var(--space-md);
+  padding-right: 2.5rem;
+}
+
+.dialogLead {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--alaska-gray);
+  margin: 0 0 var(--space-lg);
+}
+
+.dialogBody {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.98rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--blue-athracite);
+  margin: 0 0 var(--space-xl);
+}
+
+.dialogCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: var(--font-label), system-ui, sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue-athracite);
+  background: var(--color-text-light);
+  padding: 14px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 1px solid var(--color-border);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.dialogCta:hover {
+  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(39, 43, 54, 0.1);
+}

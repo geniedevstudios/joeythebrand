@@ -6,7 +6,6 @@
 .hero {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center 30%;
   padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-2xl);

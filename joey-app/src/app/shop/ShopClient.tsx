@@ -1,31 +1,41 @@
 "use client";
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import styles from "./ShopClient.module.css";
 import { wishlistStore } from "@/store/wishlistStore";
-import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore, DEFAULT_SIZES, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 
-type Category = "all" | "always-lit" | "limited-edition" | "sample-sale";
-
-const tabs: { id: Category; label: string; sub: string }[] = [
-  { id: "all", label: "All Pieces", sub: "The full wardrobe" },
-  { id: "always-lit", label: "Always Lit", sub: "Available every season" },
-  { id: "limited-edition", label: "Limited Edition", sub: "Rare. One-time only." },
-  { id: "sample-sale", label: "Sample Sale", sub: "Heavily discounted" },
-];
+type WearFilter = "all" | "mens" | "womens";
 
 const EMPTY_ARRAY: any[] = [];
 
+const wearFilters: { id: WearFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "mens", label: "Men's wear" },
+  { id: "womens", label: "Women's wear" },
+];
+
 export default function ShopClient() {
-  const [active, setActive] = useState<Category>("all");
+  const [selectedCollectionSlug, setSelectedCollectionSlug] = useState<string | null>(null);
+  const [wearFilter, setWearFilter] = useState<WearFilter>("all");
   const [quickViewPiece, setQuickViewPiece] = useState<any>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
+  const collections = useSyncExternalStore(
+    dataStore.subscribe,
+    dataStore.getCollections,
+    () => SHOP_COLLECTIONS_FALLBACK,
+  );
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+
+  const scrollToPieces = useCallback(() => {
+    document.getElementById("shop-pieces")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   useEffect(() => {
     if (quickViewPiece) {
@@ -46,6 +56,7 @@ export default function ShopClient() {
       name: product.name,
       price: product.price,
       image: product.image,
+      hoverImage: product.hoverImage,
       category: product.categoryName,
     });
     toast.success(wasInWishlist ? `${product.name} removed from wishlist` : `${product.name} added to wishlist`);
@@ -59,9 +70,9 @@ export default function ShopClient() {
       toast.error("Please pick a size before adding to cart.");
       return;
     }
-    
+
     setAddStatus("adding");
-    
+
     setTimeout(() => {
       import("@/store/cartStore").then(({ cartStore }) => {
         cartStore.addItem({
@@ -72,7 +83,7 @@ export default function ShopClient() {
           image: quickViewPiece.image,
           quantity: qty
         });
-        
+
         setAddStatus("added");
         setTimeout(() => setAddStatus("idle"), 2000);
       });
@@ -86,13 +97,25 @@ export default function ShopClient() {
     return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
   };
 
-  const filtered = active === "all" ? products : products.filter((p: any) => p.category === active);
+  const filtered = useMemo(() => {
+    let list = products;
+    if (selectedCollectionSlug) {
+      list = list.filter((p: any) => p.category === selectedCollectionSlug);
+    }
+    if (wearFilter === "mens") {
+      list = list.filter((p: any) => p.wearTag === "mens" || p.wearTag === "unisex");
+    } else if (wearFilter === "womens") {
+      list = list.filter((p: any) => p.wearTag === "womens" || p.wearTag === "unisex");
+    }
+    return list;
+  }, [products, selectedCollectionSlug, wearFilter]);
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
+  const shopHeroStyle = usePageHeroBackgroundStyle("shop");
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
+      <div className={styles.pageHeader} style={shopHeroStyle}>
         <div className="container">
           <span className="section-label">The Shop</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Shop</h1>
@@ -102,41 +125,96 @@ export default function ShopClient() {
         </div>
       </div>
 
-      <div className={styles.tabsBar}>
-        <div className={`container ${styles.tabsInner}`}>
-          {tabs.map((t) => (
+      <section className={styles.collectionsSection} aria-labelledby="shop-collections-heading">
+        <div className="container">
+          <h2 id="shop-collections-heading" className={styles.collectionsHeading}>
+            The collections
+          </h2>
+          <p className={styles.collectionsIntro}>
+            Browse by story, then filter below by how you shop.
+          </p>
+          <div
+            className={styles.collectionsGrid}
+            role="group"
+            aria-label="Shop collections — swipe on mobile"
+          >
             <button
-              key={t.id}
-              className={`${styles.tab} ${active === t.id ? styles.tabActive : ""}`}
-              onClick={() => setActive(t.id)}
-              id={`tab-${t.id}`}
-              aria-pressed={active === t.id}
+              type="button"
+              className={`${styles.collectionCard} ${styles.collectionCardEntire} ${selectedCollectionSlug === null ? styles.collectionCardActive : ""}`}
+              onClick={() => {
+                setSelectedCollectionSlug(null);
+                scrollToPieces();
+              }}
             >
-              <span className={styles.tabLabel}>{t.label}</span>
-              <span className={styles.tabSub}>{t.sub}</span>
+              <span className={styles.collectionName}>Entire shop</span>
+              <span className={styles.collectionDesc}>All collections, one grid.</span>
+              <span className={styles.collectionCta}>View pieces</span>
             </button>
-          ))}
+            {collections.map((col) => (
+              <button
+                key={col.id}
+                type="button"
+                className={`${styles.collectionCard} ${selectedCollectionSlug === col.slug ? styles.collectionCardActive : ""}`}
+                onClick={() => {
+                  setSelectedCollectionSlug(col.slug);
+                  scrollToPieces();
+                }}
+              >
+                <span className={styles.collectionName}>{col.name}</span>
+                {col.description ? (
+                  <span className={styles.collectionDesc}>{col.description}</span>
+                ) : null}
+                <span className={styles.collectionCta}>View pieces</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className={styles.wearFilterBar}>
+        <div className={`container ${styles.wearFilterInner}`}>
+          <span className={styles.wearFilterLabel} id="wear-filter-label">Shop by</span>
+          <div className={styles.wearPills} role="group" aria-labelledby="wear-filter-label">
+            {wearFilters.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                className={`${styles.wearPill} ${wearFilter === f.id ? styles.wearPillActive : ""}`}
+                onClick={() => setWearFilter(f.id)}
+                aria-pressed={wearFilter === f.id}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className={`section ${styles.productsSection}`}>
+      <div id="shop-pieces" className={`section ${styles.productsSection}`}>
         <div className="container">
           {filtered.length === 0 ? (
             <div className={styles.empty}>
-              <p>No pieces in this category yet. Check back soon.</p>
+              <p>No pieces match these filters yet. Try another collection or wear filter.</p>
             </div>
           ) : (
             <div className={styles.grid}>
               {filtered.map((p: any) => (
                 <article key={p.id} className={styles.card}>
                   <div className={styles.imageWrap}>
-                    <img src={p.image} alt={p.name} className={styles.image} loading="lazy" />
-                    
+                    {p.hoverImage ? (
+                      <>
+                        <img src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
+                        <img src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
+                      </>
+                    ) : (
+                      <img src={p.image} alt={p.name} className={styles.image} loading="lazy" />
+                    )}
+
                     <div className={styles.overlay}>
                       <div className={styles.actionButtons}>
-                        <button 
-                          className={styles.iconBtn} 
-                          aria-label="Add to Wishlist" 
+                        <button
+                          className={styles.iconBtn}
+                          aria-label="Add to Wishlist"
                           title="Add to Wishlist"
                           onClick={() => toggleWishlist(p)}
                         >
@@ -144,9 +222,9 @@ export default function ShopClient() {
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                           </svg>
                         </button>
-                        <button 
-                          className={styles.iconBtn} 
-                          aria-label="Quick View" 
+                        <button
+                          className={styles.iconBtn}
+                          aria-label="Quick View"
                           title="Quick View"
                           onClick={() => setQuickViewPiece(p)}
                         >
@@ -179,7 +257,7 @@ export default function ShopClient() {
                   </div>
                   <div className={styles.info}>
                     <span className={styles.category}>
-                      {tabs.find((t) => t.id === p.category)?.label}
+                      {p.categoryName}
                     </span>
                     <h2 className={styles.name}>{p.name}</h2>
                     <div className={styles.priceRow}>
@@ -213,8 +291,8 @@ export default function ShopClient() {
                 {quickViewPiece.images && quickViewPiece.images.length > 1 && (
                   <div className={styles.modalThumbnails}>
                     {quickViewPiece.images.map((img: string, idx: number) => (
-                      <button 
-                        key={idx} 
+                      <button
+                        key={idx}
                         className={`${styles.thumbBtn} ${(activeImage || quickViewPiece.image) === img ? styles.thumbActive : ""}`}
                         onClick={() => setActiveImage(img)}
                         aria-label={`View image ${idx + 1}`}
@@ -232,18 +310,18 @@ export default function ShopClient() {
                   <span className={styles.modalPrice}>{formatPrice(quickViewPiece.price)}</span>
                   {quickViewPiece.originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice(quickViewPiece.originalPrice)}</span>}
                 </div>
-                
+
                 <p className={styles.modalDesc}>{quickViewPiece.description}</p>
                 <p className={styles.modalDescNote}>
                   Authentic Hand Woven. Available on backorder.
                 </p>
-                
+
                 <div className={styles.modalSizeRow}>
                   <span className={styles.qtyLabel}>Size:</span>
                   <div className={styles.sizeGrid}>
                     {getAvailableSizes(quickViewPiece).map((sz: string) => (
-                      <button 
-                        key={sz} 
+                      <button
+                        key={sz}
                         className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
                         onClick={() => setSelectedSize(prev => prev === sz ? "" : sz)}
                       >
@@ -275,15 +353,15 @@ export default function ShopClient() {
                 </div>
 
                 <div className={styles.modalActions}>
-                  <button 
-                    className={`btn btn-primary ${styles.modalAddBtn}`} 
+                  <button
+                    className={`btn btn-primary ${styles.modalAddBtn}`}
                     onClick={handleAddToCart}
                     disabled={addStatus !== "idle" || quickViewPiece.isOutOfStock}
                     style={{ transition: "all 0.3s ease" }}
                   >
                     {quickViewPiece.isOutOfStock ? "Out of Stock" : addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added 👍"}
                   </button>
-                  <button 
+                  <button
                     className={styles.modalWishlistBtn}
                     onClick={() => toggleWishlist(quickViewPiece)}
                   >
@@ -296,7 +374,7 @@ export default function ShopClient() {
 
                 <div className={styles.modalMeta}>
                   <p><span>SKU:</span> {quickViewPiece.id}</p>
-                  <p><span>Categories:</span> {tabs.find((t) => t.id === quickViewPiece.category)?.label}</p>
+                  <p><span>Collection:</span> {quickViewPiece.categoryName}</p>
                 </div>
                 <Link href={`/shop/${quickViewPiece.id}`} className={styles.modalFullDetail}>
                   View Full Details →

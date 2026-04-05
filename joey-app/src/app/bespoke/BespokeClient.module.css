@@ -4,7 +4,6 @@
 .header {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center top;
   color: #fff;
@@ -131,6 +130,27 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+}
+
+.signedInNote {
+  font-size: 0.9rem;
+  color: var(--alaska-gray);
+  margin: 0 0 calc(-1 * var(--space-sm));
+  line-height: 1.5;
+}
+
+.calendarHint {
+  font-size: 0.8rem;
+  color: var(--cinereous);
+  margin: 0 0 var(--space-sm);
+  line-height: 1.45;
+}
+
+.calendarWarn {
+  font-size: 0.8rem;
+  color: var(--wood);
+  margin: 0 0 var(--space-sm);
+  line-height: 1.45;
 }
 
 .formRow {

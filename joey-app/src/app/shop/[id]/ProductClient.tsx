@@ -4,6 +4,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
+import { usePageHeroImageSrc, usePageHeroMedia } from "@/hooks/usePageHero";
+import { resolveHeroLayout } from "@/lib/pageHeroes";
 import styles from "./ProductClient.module.css";
 
 const EMPTY_ARRAY: any[] = [];
@@ -48,6 +50,7 @@ export default function ProductClient({ id }: { id: string }) {
       name: item.name,
       price: item.price,
       image: item.image,
+      hoverImage: item.hoverImage,
       category: item.categoryName,
     });
     toast.success(wasInWishlist ? `${item.name} removed from wishlist` : `${item.name} added to wishlist`);
@@ -81,6 +84,9 @@ export default function ProductClient({ id }: { id: string }) {
   };
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
+  const productHeroSrc = usePageHeroImageSrc("product");
+  const productHeroMedia = usePageHeroMedia("product");
+  const productHeroLayout = resolveHeroLayout(productHeroMedia);
 
   if (!product) {
     return (
@@ -129,7 +135,15 @@ export default function ProductClient({ id }: { id: string }) {
     <div className={styles.page}>
       <div className={styles.heroBanner}>
         <div className={styles.heroBannerBg}>
-          <img src="/hero.png" alt="" className={styles.heroBannerImg} />
+          <img
+            src={productHeroSrc}
+            alt=""
+            className={styles.heroBannerImg}
+            style={{
+              objectFit: productHeroLayout.fit === "contain" ? "contain" : "cover",
+              objectPosition: productHeroLayout.position,
+            }}
+          />
           <div className={styles.heroBannerOverlay} />
         </div>
       </div>
@@ -295,7 +309,14 @@ export default function ProductClient({ id }: { id: string }) {
               {suggestedProducts.map((item: any) => (
                 <article key={item.id} className={styles.suggestCard}>
                   <div className={styles.suggestImgWrap}>
-                    <img src={item.image} alt={item.name} className={styles.suggestImg} />
+                    {item.hoverImage ? (
+                      <>
+                        <img src={item.image} alt={item.name} className={styles.suggestImgPrimary} loading="lazy" />
+                        <img src={item.hoverImage} alt="" className={styles.suggestImgHover} loading="lazy" aria-hidden />
+                      </>
+                    ) : (
+                      <img src={item.image} alt={item.name} className={styles.suggestImg} loading="lazy" />
+                    )}
                     {item.category === "limited-edition" && (
                       <span className={styles.suggestBadge}>Limited</span>
                     )}

@@ -7,7 +7,6 @@
 .pageHeader {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center top;
   margin-top: calc(-1 * var(--nav-height));
@@ -75,6 +74,72 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.destinationFieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-md);
+}
+
+.destinationLegend {
+  margin-bottom: var(--space-sm);
+  padding: 0;
+}
+
+.destinationOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.destinationOption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: var(--space-md) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--blue-athracite);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.destinationOption:hover {
+  border-color: var(--alaska-gray);
+}
+
+.destinationOption input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.destinationOptionActive {
+  border-color: var(--blue-athracite);
+  background: var(--color-surface);
+  font-weight: 500;
+}
+
+.fieldHint {
+  margin: calc(-1 * var(--space-xs)) 0 var(--space-sm);
+  font-size: 0.8rem;
+  color: var(--cinereous);
+  line-height: 1.4;
+}
+
+.countryShippingHint {
+  margin-top: var(--space-sm);
+  margin-bottom: 0;
+  font-size: 0.8rem;
+  color: var(--cinereous);
+  line-height: 1.4;
 }
 
 .formRow {
@@ -214,6 +279,10 @@
 }
 
 @media (max-width: 480px) {
+  .destinationOptions {
+    grid-template-columns: 1fr;
+  }
+
   .formRow {
     grid-template-columns: 1fr;
   }

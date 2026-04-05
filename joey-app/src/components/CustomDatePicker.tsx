@@ -7,9 +7,22 @@ type CustomDatePickerProps = {
   value: string;
   onChange: (e: { target: { name: string; value: string } }) => void;
   min?: string;
+  /** YYYY-MM-DD dates that cannot be selected (full calendar or user already booked). */
+  disabledDates?: readonly string[];
+  /** When true, Saturday & Sunday are crossed out and not selectable. Default true. */
+  disableWeekends?: boolean;
 };
 
-export default function CustomDatePicker({ id, name, value, onChange, min }: CustomDatePickerProps) {
+export default function CustomDatePicker({
+  id,
+  name,
+  value,
+  onChange,
+  min,
+  disabledDates,
+  disableWeekends = true,
+}: CustomDatePickerProps) {
+  const blocked = new Set(disabledDates ?? []);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -41,7 +54,12 @@ export default function CustomDatePicker({ id, name, value, onChange, min }: Cus
     const dd = String(d.getDate()).padStart(2, '0');
     const dateString = `${yyyy}-${mm}-${dd}`;
     
-    if (min && dateString < min) return; 
+    if (min && dateString < min) return;
+    if (blocked.has(dateString)) return;
+    if (disableWeekends) {
+      const dow = d.getDay();
+      if (dow === 0 || dow === 6) return;
+    }
 
     onChange({ target: { name, value: dateString } });
     setIsOpen(false);
@@ -122,33 +140,45 @@ export default function CustomDatePicker({ id, name, value, onChange, min }: Cus
               const dateString = `${yyyy}-${mm}-${dd}`;
               
               const isPast = min ? dateString < min : false;
+              const isBlocked = blocked.has(dateString);
+              const dayOfWeek = d.getDay();
+              const isWeekend = disableWeekends && (dayOfWeek === 0 || dayOfWeek === 6);
+              const isDisabled = isPast || isBlocked || isWeekend;
               const isSelected = value === dateString;
+              const crossOut = isBlocked || isWeekend;
+              const titleHint = isWeekend ? "Weekend — unavailable" : isBlocked ? "Unavailable" : undefined;
 
               return (
                 <button
                   key={day}
                   type="button"
-                  onClick={() => !isPast && handleSelectDate(day)}
+                  title={titleHint}
+                  onClick={() => !isDisabled && handleSelectDate(day)}
                   style={{
                     padding: "10px 0",
                     fontSize: "0.9rem",
                     fontFamily: "var(--font-body)",
-                    cursor: isPast ? "not-allowed" : "pointer",
-                    color: isPast ? "var(--cloudy-sky)" : isSelected ? "#fff" : "var(--blue-athracite)",
+                    cursor: isDisabled ? "not-allowed" : "pointer",
+                    color: isDisabled
+                      ? "var(--cloudy-sky)"
+                      : isSelected
+                        ? "#fff"
+                        : "var(--blue-athracite)",
                     background: isSelected ? "var(--blue-athracite)" : "transparent",
                     borderRadius: "6px",
                     border: "none",
-                    opacity: isPast ? 0.6 : 1,
+                    opacity: isDisabled ? 0.45 : 1,
                     fontWeight: isSelected ? 500 : 300,
-                    transition: "all 0.2s"
+                    transition: "all 0.2s",
+                    textDecoration: crossOut ? "line-through" : "none",
                   }}
                   onMouseOver={(e) => {
-                    if (!isPast && !isSelected) {
+                    if (!isDisabled && !isSelected) {
                       e.currentTarget.style.background = "rgba(39, 43, 54, 0.08)";
                     }
                   }}
                   onMouseOut={(e) => {
-                    if (!isPast && !isSelected) {
+                    if (!isDisabled && !isSelected) {
                       e.currentTarget.style.background = "transparent";
                     }
                   }}

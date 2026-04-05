@@ -14,7 +14,6 @@
 .pageHeader {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center top;
   margin-top: calc(-1 * var(--nav-height));

@@ -1,0 +1,18 @@
+/** Brands and institutions — display order */
+export const AFFILIATE_NAMES = [
+  "DUABA SERWA",
+  "CB ACADEMY",
+  "LAXIRI",
+  "RIVERMINDSTYLE",
+  "OMETSEY",
+  "ACCRA MALL FASHION FUND",
+  "DMN-MOVENPICK",
+  "FUNKY AFRICAN",
+  "ANANSE AFRICA",
+  "THE LAB",
+  "DHUHA SHAARANI",
+  "TASUNTI",
+  "JOEY THE BRAND",
+  "BLUECREST UNIVERSITY",
+  "CAPSULE.ABJ",
+] as const;

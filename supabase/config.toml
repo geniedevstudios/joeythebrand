@@ -1,0 +1,15 @@
+# Supabase CLI — https://supabase.com/docs/guides/cli/config
+# Run `supabase init` or `supabase link` to align project_id with your hosted project.
+
+project_id = "joey-the-brand"
+
+# Local `supabase start` only. For hosted projects, OTP length is controlled in the cloud:
+# PATCH https://api.supabase.com/v1/projects/<PROJECT_REF>/config/auth
+# Body: { "mailer_otp_length": 6 }  (allowed range 6–10; use a personal access token).
+# Or check Dashboard → Authentication → (Email / Advanced) for “OTP length” if your UI shows it.
+[auth.email]
+otp_length = 6
+
+[functions.send-email]
+# Call only from your server or webhooks with SEND_EMAIL_SECRET (not from the browser).
+verify_jwt = false

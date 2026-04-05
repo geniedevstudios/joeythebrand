@@ -4,7 +4,6 @@
 .header {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center top;
   padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-2xl);
@@ -176,6 +175,19 @@ a.infoValue:hover { color: var(--wood); }
   font-size: 0.875rem;
   color: #b00;
   font-style: italic;
+}
+
+/* Honeypot: off-screen, not display:none (some bots skip hidden fields) */
+.honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Success */

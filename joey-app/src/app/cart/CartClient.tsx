@@ -3,6 +3,7 @@ import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import styles from "./CartClient.module.css";
+import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 import { cartStore } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 
@@ -22,6 +23,7 @@ export default function CartClient() {
   const total = subtotalRaw - discount;
   const formattedSubtotal = `GHC ${subtotalRaw.toLocaleString()}`;
   const formattedTotal = `GHC ${total.toLocaleString()}`;
+  const cartHeroStyle = usePageHeroBackgroundStyle("cart");
 
   const handleUpdateQuantity = (id: string, delta: number) => {
     cartStore.updateQuantity(id, delta);
@@ -31,33 +33,27 @@ export default function CartClient() {
     cartStore.removeItem(id);
   };
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoError("");
     setPromoSuccess("");
-    
+
     if (!promoInput.trim()) return;
-    
-    const promo = dataStore.getPromotion(promoInput);
-    if (!promo) {
-      setPromoError("Invalid promo code");
-      return;
+
+    try {
+      const promo = await dataStore.validatePromoCode(promoInput.trim());
+      if (!promo) {
+        setPromoError("Invalid or inactive promo code");
+        return;
+      }
+
+      cartStore.applyPromotion(promo.code, promo.percentage);
+      setPromoSuccess(`Code applied! ${promo.percentage}% off`);
+      setPromoInput("");
+      setPromoOpen(false);
+    } catch {
+      setPromoError("Failed to validate code. Please try again.");
     }
-    
-    if (!promo.active) {
-      setPromoError("This promo code is no longer active");
-      return;
-    }
-    
-    if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
-      setPromoError("This promo code has expired");
-      return;
-    }
-    
-    cartStore.applyPromotion(promo.code, promo.percentage);
-    setPromoSuccess(`Code applied! ${promo.percentage}% off`);
-    setPromoInput("");
-    setPromoOpen(false);
   };
 
   const handleRemovePromo = () => {
@@ -68,7 +64,7 @@ export default function CartClient() {
   if (items.length === 0) {
     return (
       <div className={styles.cartPage}>
-        <div className={styles.pageHeader}>
+        <div className={styles.pageHeader} style={cartHeroStyle}>
           <div className="container">
             <span className="section-label">Your Bag</span>
             <h1 className={`t-display ${styles.pageTitle}`}>Cart</h1>
@@ -94,7 +90,7 @@ export default function CartClient() {
 
   return (
     <div className={styles.cartPage}>
-      <div className={styles.pageHeader}>
+      <div className={styles.pageHeader} style={cartHeroStyle}>
         <div className="container">
           <span className="section-label">Your Bag</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Cart</h1>

@@ -1,0 +1,259 @@
+/* Bleed under fixed nav: main’s top padding would otherwise show body bg behind white nav text */
+.hero {
+  position: relative;
+  overflow: hidden;
+  margin-top: calc(-1 * var(--nav-height));
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--blue-athracite);
+  color: var(--color-text-light);
+  padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-xl) var(--space-2xl);
+}
+
+.heroBg {
+  object-fit: cover;
+  object-position: center top;
+  z-index: 0;
+}
+
+.mobileOnly {
+  display: none;
+}
+
+.desktopOnly {
+  display: block;
+}
+
+/* Same wash over photo + JOEY so the mark reads as part of the scene */
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(135deg,
+      rgba(39, 43, 54, 0.78) 0%,
+      rgba(39, 43, 54, 0.5) 50%,
+      rgba(145, 126, 113, 0.35) 100%);
+  pointer-events: none;
+}
+
+/* JOEY wordmark — under the overlay, bottom-right, large; graded with the hero */
+.heroJoeyWrap {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: min(78vw, 400px);
+  height: min(48vh, 280px);
+  padding-right: max(var(--space-sm), env(safe-area-inset-right));
+  padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+.heroJoeyImg {
+  object-fit: contain;
+  object-position: right bottom;
+  filter: brightness(0.94) contrast(1.02);
+}
+
+.heroInner {
+  position: relative;
+  z-index: 3;
+  max-width: 640px;
+  text-align: center;
+  margin-top: -1.25rem;
+}
+
+@media (max-width: 768px) {
+  .heroInner {
+    padding-bottom: clamp(6rem, 28vw, 9rem);
+  }
+
+  .desktopOnly {
+    display: none;
+  }
+
+  .mobileOnly {
+    display: block;
+  }
+
+  .heroJoeyWrap {
+    width: min(92vw, 360px);
+    height: min(42vh, 240px);
+  }
+}
+
+.heroTitle {
+  font-family: var(--font-logo);
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  /* Visual nudge up without shifting the subtitle / CTA in the layout */
+  transform: translateY(-2.25rem);
+  margin-bottom: calc(var(--space-sm) + 0.65rem);
+}
+
+.heroLead {
+  font-size: 1.05rem;
+  color: rgba(245, 241, 236, 0.85);
+  margin-bottom: var(--space-md);
+  line-height: 1.6;
+}
+
+.heroCta {
+  display: inline-block;
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue-athracite);
+  background: var(--color-text-light);
+  padding: 14px 28px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.heroCta:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.page {
+  padding-top: 0;
+}
+
+.introSection {
+  background-color: var(--skintone);
+  padding: clamp(2.5rem, 6vw, 4rem) 0;
+}
+
+.introHeader {
+  margin-bottom: var(--space-2xl);
+}
+
+.aboutTitle {
+  font-weight: 300;
+  margin-top: 0;
+}
+
+.introInner {
+  display: grid;
+  grid-template-columns: minmax(260px, 48%) minmax(0, 1fr);
+  gap: 0;
+  align-items: center;
+}
+
+/* Photo: full frame visible (no crop), wash over column like hero */
+.introMediaCol {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: var(--space-sm) 0;
+  overflow: hidden;
+  background-color: var(--skintone);
+}
+
+.introPhoto {
+  position: relative;
+  z-index: 0;
+  width: auto;
+  max-width: 100%;
+  max-height: min(58vh, 560px);
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+  filter: brightness(0.94) contrast(1.02);
+}
+
+.introMediaWash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to right,
+      rgba(220, 209, 199, 0.06) 0%,
+      rgba(220, 209, 199, 0.35) 28%,
+      rgba(220, 209, 199, 0.72) 58%,
+      var(--skintone) 88%,
+      var(--skintone) 100%);
+  pointer-events: none;
+}
+
+.introCopy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: clamp(1rem, 2.5vw, 1.75rem) 0 clamp(1rem, 2.5vw, 1.75rem) clamp(1.5rem, 3.5vw, 2.5rem);
+  background-color: var(--skintone);
+}
+
+.surfaceSection {
+  background: var(--color-surface);
+  padding: var(--space-4xl) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sectionBlockTitle {
+  font-weight: 300;
+  margin: 0 0 var(--space-md);
+}
+
+.sectionLead {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--alaska-gray);
+  max-width: 40rem;
+  margin: 0 0 var(--space-xl);
+}
+
+.contactSection {
+  background: var(--color-bg);
+  padding: var(--space-3xl) 0 var(--space-4xl);
+}
+
+.contactLead {
+  margin-bottom: var(--space-md);
+  max-width: 34rem;
+}
+
+@media (max-width: 900px) {
+  .introInner {
+    grid-template-columns: 1fr;
+    min-height: unset;
+  }
+
+  .introMediaCol {
+    justify-content: center;
+  }
+
+  .introPhoto {
+    object-position: center center;
+    max-height: min(54vh, 480px);
+    width: auto;
+    max-width: min(100%, 420px);
+    margin-inline: auto;
+  }
+
+  .introMediaWash {
+    background: linear-gradient(to bottom,
+        rgba(220, 209, 199, 0.08) 0%,
+        rgba(220, 209, 199, 0.5) 45%,
+        var(--skintone) 88%,
+        var(--skintone) 100%);
+  }
+
+  .introCopy {
+    padding: var(--space-xl) 0 0;
+  }
+}

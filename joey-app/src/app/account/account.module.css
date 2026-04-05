@@ -7,7 +7,6 @@
 .pageHeader {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center top;
   margin-top: calc(-1 * var(--nav-height));
@@ -260,11 +259,371 @@
   font-size: 0.95rem;
 }
 
+/* Orders (account dashboard) */
+.ordersList {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.orderCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.orderCardTop {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(39, 43, 54, 0.025);
+}
+
+.orderRef {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue-athracite);
+  font-weight: 600;
+}
+
+.orderPlacedDate {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--cinereous);
+}
+
+.orderDate {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cinereous);
+}
+
+.orderTotal {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--blue-athracite);
+  margin: 6px 0 0;
+}
+
+.orderMeta {
+  font-size: 0.8rem;
+  color: var(--alaska-gray);
+  margin: 4px 0 0;
+}
+
+.orderStatus {
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--color-border);
+  color: var(--blue-athracite);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.consultationsList {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.consultationBody {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--alaska-gray);
+  line-height: 1.55;
+}
+
+.consultationBody p {
+  margin: 0 0 var(--space-sm);
+}
+
+.consultationBody p:last-child {
+  margin-bottom: 0;
+}
+
+.bookingCodeBlock {
+  margin-top: var(--space-md);
+}
+
+.bookingCodeLabel {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cinereous);
+}
+
+.bookingCodeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.bookingCode {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--blue-athracite);
+  color: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.printConsultBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+}
+
+.bookingCodeHint {
+  margin: var(--space-sm) 0 0 !important;
+  font-size: 0.8rem !important;
+  color: var(--cinereous) !important;
+  line-height: 1.45 !important;
+}
+
+.orderLines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.orderLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid rgba(39, 43, 54, 0.06);
+}
+
+.orderLine:last-child {
+  border-bottom: none;
+}
+
+.orderLineLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.orderLineLink:hover .orderLineName {
+  color: var(--wood);
+}
+
+.orderLineImg {
+  width: 48px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+  background: var(--skintone);
+}
+
+.orderLineBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.orderLineName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--blue-athracite);
+  line-height: 1.35;
+  display: block;
+  transition: color var(--transition-fast);
+}
+
+.orderLineMeta {
+  font-size: 0.78rem;
+  color: var(--alaska-gray);
+  margin-top: 4px;
+  display: block;
+  line-height: 1.4;
+}
+
+.orderLineMeta strong {
+  color: var(--blue-athracite);
+  font-weight: 600;
+}
+
+.orderLinePrice {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--blue-athracite);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.orderNotes {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--alaska-gray);
+  border-top: 1px solid var(--color-border);
+  margin: 0;
+  background: rgba(39, 43, 54, 0.02);
+}
+
+.orderNotesLabel {
+  font-family: var(--font-label);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cinereous);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.orderLinesEmpty {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 0.85rem;
+  color: var(--alaska-gray);
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: 1fr;
     gap: var(--space-xl);
   }
+
+  .orderLine {
+    flex-wrap: wrap;
+  }
+
+  .orderLinePrice {
+    width: 100%;
+    padding-left: calc(48px + var(--space-md));
+    margin-top: -4px;
+  }
 }
 
+/* Sign-up OTP (Supabase Auth — Confirm signup template with {{ .Token }}) */
+.otpWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
+}
+
+.otpLead {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--alaska-gray);
+  margin: 0;
+}
+
+.otpEmail {
+  color: var(--blue-athracite);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.otpForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.otpDigits {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.otpDigit {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "Courier New", monospace;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--blue-athracite);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.otpDigit:focus {
+  outline: none;
+  border-color: var(--wood);
+  box-shadow: 0 0 0 2px rgba(145, 126, 113, 0.25);
+}
+
+.otpResend {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--cinereous);
+  margin: 0;
+}
+
+.otpResendBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--wood);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.otpResendBtn:disabled {
+  color: var(--alaska-gray);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.otpBack {
+  align-self: center;
+  background: none;
+  border: none;
+  padding: var(--space-sm);
+  color: var(--cinereous);
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.otpBack:hover {
+  color: var(--blue-athracite);
+}
 

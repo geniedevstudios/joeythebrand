@@ -5,6 +5,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
+import DataStoreInit from "@/components/DataStoreInit";
 import { Toaster } from "sonner";
 
 const jost = Jost({
@@ -43,6 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${jost.variable} ${playfair.variable} ${bodoni.variable} antialiased`}>
+        <DataStoreInit />
         <Nav />
         <main>{children}</main>
         <Footer />

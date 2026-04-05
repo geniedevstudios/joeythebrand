@@ -1,17 +1,95 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
+import Link from "next/link";
 import styles from "./BespokeClient.module.css";
+import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 import CustomSelect from "@/components/CustomSelect";
 import CustomDatePicker from "@/components/CustomDatePicker";
+import { authStore } from "@/store/authStore";
+import { dataStore } from "@/lib/dataStore";
+import { supabase } from "@/lib/supabase";
 
 const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Dressing"];
-const serviceOptions = services.map(s => ({ value: s, label: s }));
+const serviceOptions = services.map((s) => ({ value: s, label: s }));
 
 export default function BespokeClient() {
+  const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const [form, setForm] = useState({
-    name: "", email: "", phone: "", service: "", date: "", notes: "",
+    name: "",
+    email: "",
+    phone: "",
+    service: "",
+    date: "",
+    notes: "",
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [submitError, setSubmitError] = useState("");
+  const [disabledDates, setDisabledDates] = useState<string[]>([]);
+  const [calendarLoadError, setCalendarLoadError] = useState("");
+  const bespokeHeroStyle = usePageHeroBackgroundStyle("bespoke");
+
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name.trim() ? prev.name : user.name || "",
+      email: prev.email.trim() ? prev.email : user.email || "",
+    }));
+  }, [user?.id, user?.email, user?.name]);
+
+  const loadCalendar = useCallback(async () => {
+    if (!user?.id) {
+      setDisabledDates([]);
+      setCalendarLoadError("");
+      return;
+    }
+    try {
+      const { disabledDateSet } = await dataStore.getConsultationAvailability(user.id);
+      setDisabledDates([...disabledDateSet]);
+      setCalendarLoadError("");
+    } catch {
+      setDisabledDates([]);
+      setCalendarLoadError(
+        "Live calendar could not be loaded. You can still pick a date; if it’s unavailable, you’ll see an error when you submit.",
+      );
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    void loadCalendar();
+  }, [loadCalendar]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const id = window.setInterval(() => void loadCalendar(), 60000);
+    return () => window.clearInterval(id);
+  }, [user?.id, loadCalendar]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const channel = supabase
+      .channel(`bespoke-calendar-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "consultation_bookings" }, () => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => {
+          t = undefined;
+          void loadCalendar();
+        }, 150);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "consultation_settings" }, () => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => {
+          t = undefined;
+          void loadCalendar();
+        }, 150);
+      })
+      .subscribe();
+    return () => {
+      if (t) clearTimeout(t);
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadCalendar]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -19,27 +97,33 @@ export default function BespokeClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    setSubmitError("");
+    if (!form.date?.trim()) {
+      setSubmitError("Please choose a preferred date.");
+      return;
+    }
     setStatus("sending");
     try {
-      const res = await fetch("https://formsubmit.co/ajax/joeythebrandonline@gmail.com", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          ...form,
-          _subject: `[JOEY THE BRAND] Bespoke Booking — ${form.service}`,
-        }),
+      await dataStore.createConsultationBooking({
+        userId: user.id,
+        customerName: form.name,
+        customerEmail: form.email,
+        customerPhone: form.phone,
+        service: form.service,
+        preferredDate: form.date.trim(),
+        notes: form.notes || undefined,
       });
-      if (res.ok) setStatus("sent");
-      else setStatus("error");
-    } catch {
+      setStatus("sent");
+    } catch (err) {
       setStatus("error");
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong.");
     }
   };
 
   return (
     <div className={styles.page}>
-      {/* Hero header */}
-      <div className={styles.header}>
+      <div className={styles.header} style={bespokeHeroStyle}>
         <div className="container">
           <div className={styles.headerInner}>
             <div className={styles.headerText}>
@@ -55,7 +139,6 @@ export default function BespokeClient() {
               <p className={styles.note}>By appointment only. Payment signals attached.</p>
             </div>
 
-            {/* Process steps */}
             <div className={styles.steps}>
               {[
                 { num: "01", label: "Book", desc: "Submit your slot request below" },
@@ -76,58 +159,105 @@ export default function BespokeClient() {
         </div>
       </div>
 
-      {/* Booking form */}
       <div className={`section ${styles.formSection}`}>
         <div className="container">
           <div className={styles.formWrap}>
-            {status === "sent" ? (
+            {!user ? (
+              <div className={styles.success}>
+                <div className={styles.successIcon}>✦</div>
+                <h2 className={styles.successTitle}>Sign in to request a slot</h2>
+                <p className={styles.successBody}>
+                  Bespoke appointments are tied to your account so you can track status, see when we confirm,
+                  and receive your booking code after approval.
+                </p>
+                <Link href="/account" className="btn btn-primary">
+                  Sign in or create an account
+                </Link>
+              </div>
+            ) : status === "sent" ? (
               <div className={styles.success}>
                 <div className={styles.successIcon}>✦</div>
                 <h2 className={styles.successTitle}>Your slot request is in.</h2>
                 <p className={styles.successBody}>
-                  We&apos;ll reach out within 24–48 hours to confirm your appointment.
-                  For urgent matters, WhatsApp us directly.
+                  We&apos;ll review your details and update the status on your account within 24–48 hours.
+                  You can follow progress under <strong>Bespoke appointments</strong> on your account page.
                 </p>
-                <a
-                  href="https://wa.me/233504148009"
-                  className="btn btn-primary"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  WhatsApp Joey
-                </a>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
+                  <Link href="/account" className="btn btn-primary">
+                    View my account
+                  </Link>
+                  <a
+                    href="https://wa.me/233504148009"
+                    className="btn btn-outline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    WhatsApp Joey
+                  </a>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className={styles.form} noValidate>
+                <p className={styles.signedInNote}>
+                  Signed in as <strong>{user.email}</strong>. This request will appear on your account.
+                </p>
                 <h2 className={styles.formTitle}>Your Details</h2>
 
                 <div className={styles.formRow}>
                   <div className="form-group">
                     <label htmlFor="name" className="form-label">Full Name *</label>
-                    <input id="name" name="name" type="text" className="form-input"
-                      placeholder="Your full name" value={form.name} onChange={handleChange} required />
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      className="form-input"
+                      placeholder="Your full name"
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
                   <div className="form-group">
                     <label htmlFor="email" className="form-label">Email *</label>
-                    <input id="email" name="email" type="email" className="form-input"
-                      placeholder="your@email.com" value={form.email} onChange={handleChange} required />
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      className="form-input"
+                      placeholder="your@email.com"
+                      value={form.email}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
                 </div>
 
                 <div className={styles.formRow}>
                   <div className="form-group">
                     <label htmlFor="phone" className="form-label">Phone / WhatsApp *</label>
-                    <input id="phone" name="phone" type="tel" className="form-input"
-                      placeholder="+233 xxx xxx xxx" value={form.phone} onChange={handleChange} required />
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      className="form-input"
+                      placeholder="+233 xxx xxx xxx"
+                      value={form.phone}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="date" className="form-label">Preferred Date</label>
+                    <label htmlFor="date" className="form-label">Preferred Date *</label>
+                    {calendarLoadError ? (
+                      <p className={styles.calendarWarn}>{calendarLoadError}</p>
+                    ) : null}
                     <CustomDatePicker
                       id="date"
                       name="date"
                       value={form.date}
-                      onChange={handleChange as any}
+                      onChange={handleChange as (e: { target: { name: string; value: string } }) => void}
                       min={new Date().toISOString().split("T")[0]}
+                      disabledDates={disabledDates}
                     />
                   </div>
                 </div>
@@ -147,24 +277,42 @@ export default function BespokeClient() {
 
                 <div className="form-group">
                   <label htmlFor="notes" className="form-label">Tell Us About Your Vision</label>
-                  <textarea id="notes" name="notes" className="form-textarea"
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    className="form-textarea"
                     placeholder="Describe the occasion, your style preferences, or anything else we should know…"
-                    value={form.notes} onChange={handleChange} />
+                    value={form.notes}
+                    onChange={handleChange}
+                  />
                 </div>
 
-                {status === "error" && (
+                {(status === "error" || submitError) && (
                   <p className={styles.errorMsg}>
-                    Something went wrong. Please WhatsApp us directly at +233 504 148 009.
+                    {submitError
+                      ? submitError
+                      : status === "error"
+                        ? "Could not save your request. Confirm the consultations SQL (including calendar) is applied in Supabase, or WhatsApp us at +233 504 148 009."
+                        : null}
                   </p>
                 )}
 
                 <div className={styles.submitRow}>
-                  <button type="submit" className="btn btn-primary btn-lg" id="bespoke-submit"
-                    disabled={status === "sending"}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-lg"
+                    id="bespoke-submit"
+                    disabled={status === "sending"}
+                  >
                     {status === "sending" ? "Submitting…" : "Request My Slot"}
                   </button>
-                  <a href="https://wa.me/233504148009" target="_blank" rel="noopener noreferrer"
-                    className="btn btn-outline btn-lg" id="bespoke-wa">
+                  <a
+                    href="https://wa.me/233504148009"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline btn-lg"
+                    id="bespoke-wa"
+                  >
                     Or WhatsApp Us
                   </a>
                 </div>

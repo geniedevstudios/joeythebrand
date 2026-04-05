@@ -1,48 +1,95 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { dataStore } from "@/lib/dataStore";
 import type { PromotionCode } from "@/lib/types";
 import { Plus, Trash2, Tag } from "lucide-react";
 
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<PromotionCode[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    setPromotions(dataStore.getPromotions());
-    const unsubscribe = dataStore.subscribe(() => {
-      setPromotions(dataStore.getPromotions());
-    });
-    return unsubscribe;
+  const load = useCallback(async () => {
+    try {
+      const data = await dataStore.getPromotions();
+      setPromotions(data);
+    } catch (err) {
+      console.error("Failed to load promotions:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const handleCreatePromo = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    load();
+    const unsubscribe = dataStore.subscribe(load);
+    return unsubscribe;
+  }, [load]);
+
+  const handleCreatePromo = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    setIsSaving(true);
+    setError("");
+
+    const formData = new FormData(form);
     const code = formData.get("code") as string;
     const percentage = Number(formData.get("percentage"));
     const active = formData.get("active") === "on";
 
-    if (!code || isNaN(percentage)) return;
+    if (!code || isNaN(percentage)) {
+      setError("Please fill in all fields.");
+      setIsSaving(false);
+      return;
+    }
 
-    dataStore.addPromotion({
-      code: code.toUpperCase(),
-      percentage,
-      active
-    });
+    const normalizedCode = code.trim().toUpperCase();
+    if (promotions.some((p) => p.code.trim().toUpperCase() === normalizedCode)) {
+      setError("That discount code already exists. Use a different code.");
+      setIsSaving(false);
+      return;
+    }
 
-    e.currentTarget.reset();
-  };
-
-  const handleToggleActive = (promo: PromotionCode) => {
-    dataStore.updatePromotion(promo.id, { active: !promo.active });
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this promotion code?")) {
-      dataStore.deletePromotion(id);
+    try {
+      await dataStore.addPromotion({ code: normalizedCode, percentage, active });
+      form.reset();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create promotion.");
+      console.error(err);
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  const handleToggleActive = async (promo: PromotionCode) => {
+    try {
+      await dataStore.updatePromotion(promo.id, { active: !promo.active });
+      await load();
+    } catch (err) {
+      console.error("Failed to toggle promo:", err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this promotion code?")) return;
+    try {
+      await dataStore.deletePromotion(id);
+      await load();
+    } catch (err) {
+      console.error("Failed to delete promo:", err);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-sm text-zinc-500">Loading promotions...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -57,24 +104,32 @@ export default function PromotionsPage() {
               <Tag className="w-5 h-5 mr-2" />
               New Discount Code
             </h3>
-            
+
             <div>
               <label className="block text-sm font-medium text-zinc-700">Code</label>
-              <input type="text" name="code" placeholder="e.g. SUMMER24" required className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm p-2 border uppercase" />
+              <input type="text" name="code" placeholder="e.g. SUMMER24" required
+                className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm sm:text-sm p-2 border uppercase" />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-zinc-700">Discount Percentage (%)</label>
-              <input type="number" name="percentage" min="1" max="100" placeholder="20" required className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-zinc-500 focus:ring-zinc-500 sm:text-sm p-2 border" />
+              <input type="number" name="percentage" min="1" max="100" placeholder="20" required
+                className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm sm:text-sm p-2 border" />
             </div>
 
             <div className="flex items-center">
-              <input type="checkbox" name="active" id="active" defaultChecked className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
+              <input type="checkbox" name="active" id="active" defaultChecked className="h-4 w-4 rounded border-zinc-300 text-zinc-900" />
               <label htmlFor="active" className="ml-2 block text-sm text-zinc-900">Active Immediately</label>
             </div>
 
-            <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-zinc-950 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900">
-              <Plus className="w-4 h-4 mr-2" /> Create Promo
+            {error && (
+              <p className="text-red-600 text-xs bg-red-50 border border-red-200 rounded p-2">{error}</p>
+            )}
+
+            <button type="submit" disabled={isSaving}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60">
+              <Plus className="w-4 h-4 mr-2" />
+              {isSaving ? "Creating..." : "Create Promo"}
             </button>
           </form>
         </div>
@@ -107,12 +162,12 @@ export default function PromotionsPage() {
                         {promo.percentage}% off
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
-                         <button 
-                           onClick={() => handleToggleActive(promo)}
-                           className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${promo.active ? 'bg-green-100 text-green-800' : 'bg-zinc-100 text-zinc-800'}`}
-                         >
-                           {promo.active ? 'Active' : 'Inactive'}
-                         </button>
+                        <button
+                          onClick={() => handleToggleActive(promo)}
+                          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${promo.active ? "bg-green-100 text-green-800" : "bg-zinc-100 text-zinc-800"}`}
+                        >
+                          {promo.active ? "Active" : "Inactive"}
+                        </button>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <button onClick={() => handleDelete(promo.id)} className="text-red-500 hover:text-red-700">

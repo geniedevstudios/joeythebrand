@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import styles from "./CollectionClient.module.css";
+import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 
 const collectionPieces = [
   { id: "structured-blazer", name: "The Structured Blazer", category: "ALWAYS LIT", price: "GHC 850", image: "/lookbook.png", images: ["/lookbook.png", "/hero.png", "/founder.png", "/lookbook.png"], desc: "Precision cut, elevated structure.", sizes: ["XS", "S", "M", "L", "Custom"] },
@@ -19,6 +20,7 @@ export default function CollectionClient() {
   const [selectedSize, setSelectedSize] = useState("");
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+  const collectionHeroStyle = usePageHeroBackgroundStyle("collection");
 
   useEffect(() => {
     if (quickViewPiece) {
@@ -66,7 +68,7 @@ export default function CollectionClient() {
   return (
     <div className={styles.page}>
       {/* Page header */}
-      <div className={styles.pageHeader}>
+      <div className={styles.pageHeader} style={collectionHeroStyle}>
         <div className="container">
           <span className="section-label">The Collection</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Collection</h1>
@@ -83,7 +85,14 @@ export default function CollectionClient() {
             {collectionPieces.map((p) => (
               <article key={p.id} className={styles.card}>
                 <div className={styles.imageWrap}>
-                  <img src={p.image} alt={p.name} className={styles.image} loading="lazy" />
+                  {p.images?.[1] ? (
+                    <>
+                      <img src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
+                      <img src={p.images[1]} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
+                    </>
+                  ) : (
+                    <img src={p.image} alt={p.name} className={styles.image} loading="lazy" />
+                  )}
 
                   {/* Hover actions overlay */}
                   <div className={styles.overlay}>
