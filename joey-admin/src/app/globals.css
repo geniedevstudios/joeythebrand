@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  /* Joey The Brand Colors mapped to the UI palette */
+  --color-zinc-950: #272B36; /* blue-athracite */
+  --color-zinc-900: #272B36; 
+  --color-zinc-800: #685C54; /* dark-wood (hover states) */
+  --color-zinc-700: #595D66; /* alaska-gray */
+  --color-zinc-500: #FFFFFF; /* changed to white per request */
+  --color-zinc-400: #B7B8BB; /* cloudy-sky */
+  --color-zinc-300: #D7D7D6; /* concerto (borders) */
+  --color-zinc-200: #DCD1C7; /* skintone */
+  --color-zinc-100: #EDEDEB; /* lighter accent */
+  --color-zinc-50: #FFFFFF;
+  --color-stone-50: #FFFFFF; /* changed main warm background to explicitly white */
+}
+
+body {
+  background-color: #FFFFFF;
+  color: var(--color-zinc-950);
+}

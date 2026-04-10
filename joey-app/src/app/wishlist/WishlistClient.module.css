@@ -1,0 +1,270 @@
+.page {
+  padding-top: 0;
+  padding-bottom: var(--space-4xl);
+  background: var(--color-bg);
+}
+
+/* Header */
+.pageHeader {
+  position: relative;
+  background: var(--blue-athracite);
+  background-image: url("/hero.png");
+  background-size: cover;
+  background-position: center top;
+  margin-top: calc(-1 * var(--nav-height));
+  padding-top: var(--nav-height);
+  color: var(--color-text-light);
+  padding-bottom: var(--space-lg);
+}
+
+.pageHeader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(39, 43, 54, 0.78) 0%,
+    rgba(39, 43, 54, 0.5) 50%,
+    rgba(145, 126, 113, 0.35) 100%
+  );
+  z-index: 0;
+}
+
+.pageHeader > * {
+  position: relative;
+  z-index: 1;
+  padding-top: var(--space-3xl);
+}
+
+.pageHeader .section-label {
+  color: var(--cinereous);
+  font-size: 0.7rem;
+  margin-bottom: 2px;
+}
+
+.pageTitle {
+  color: #fff;
+  margin-top: 0;
+  font-weight: 300;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.empty {
+  text-align: center;
+  padding: var(--space-4xl) 0;
+  color: var(--alaska-gray);
+  font-style: italic;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xl);
+}
+
+/* Card - matching shop card style */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.imageWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  aspect-ratio: 3/4;
+  background: var(--skintone);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.card:hover .image { transform: scale(1.04); }
+
+/* Hover overlay with actions */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(39, 43, 54, 0.0) 0%,
+    rgba(39, 43, 54, 0.0) 50%,
+    rgba(39, 43, 54, 0.35) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-md);
+  pointer-events: none;
+}
+
+.card:hover .overlay {
+  opacity: 1;
+}
+
+.actionButtons {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.iconBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue-athracite);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.iconBtn:hover {
+  background: var(--blue-athracite);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* Pick Me CTA button - matches shop exactly */
+.pickMeWrap {
+  position: absolute;
+  bottom: var(--space-md);
+  left: var(--space-md);
+  right: var(--space-md);
+  pointer-events: auto;
+  transform: translateY(6px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover .pickMeWrap {
+  transform: translateY(0);
+}
+
+.pickMeBtn {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--blue-athracite);
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.pickMeBtn:hover {
+  background: var(--blue-athracite);
+  color: #fff;
+}
+
+/* Info section */
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+}
+
+.category {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--blue-athracite);
+  margin: 0;
+}
+
+.desc {
+  font-size: 0.875rem;
+  color: var(--alaska-gray);
+  font-style: italic;
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 2px;
+}
+
+.price {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--blue-athracite);
+}
+
+.originalPrice {
+  font-size: 0.85rem;
+  color: var(--cinereous);
+  text-decoration: line-through;
+}
+
+/* Card actions */
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.removeBtn {
+  background: none;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--alaska-gray);
+  text-transform: uppercase;
+  padding: var(--space-xs) var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.removeBtn:hover {
+  border-color: var(--blue-athracite);
+  color: var(--blue-athracite);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

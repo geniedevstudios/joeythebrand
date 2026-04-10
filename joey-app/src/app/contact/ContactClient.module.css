@@ -1,0 +1,220 @@
+.page { padding-top: 0; }
+
+/* Header */
+.header {
+  position: relative;
+  background: var(--blue-athracite);
+  background-image: url("/hero.png");
+  background-size: cover;
+  background-position: center top;
+  padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-2xl);
+  color: #fff;
+}
+
+.header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(39, 43, 54, 0.78) 0%,
+    rgba(39, 43, 54, 0.5) 50%,
+    rgba(145, 126, 113, 0.35) 100%
+  );
+  z-index: 0;
+}
+
+.header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.title {
+  color: #fff;
+  font-weight: 300;
+  margin-top: var(--space-sm);
+}
+
+.subtitle {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--cinereous);
+  font-size: 1.05rem;
+  margin-top: var(--space-md);
+  max-width: 500px;
+}
+
+/* Body */
+.body { background: var(--color-bg); }
+
+.grid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: var(--space-4xl);
+  align-items: start;
+}
+
+/* Info */
+.infoCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.infoGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.infoHeading {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--blue-athracite);
+  font-weight: 400;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoLabel {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+}
+
+.infoValue {
+  font-size: 0.95rem;
+  color: var(--blue-athracite);
+  font-weight: 300;
+  line-height: 1.5;
+  transition: color var(--transition-fast);
+}
+
+a.infoValue:hover { color: var(--wood); }
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* WhatsApp card */
+.whatsappCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  color: #25D366;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.whatsappCard:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.waTitle {
+  font-family: var(--font-label);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: var(--blue-athracite);
+  text-transform: uppercase;
+}
+
+.waSub {
+  font-size: 0.8rem;
+  color: var(--alaska-gray);
+  margin-top: 2px;
+}
+
+/* Quote */
+.quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--cinereous);
+  border-left: 2px solid var(--wood);
+  padding-left: var(--space-lg);
+  margin: 0;
+}
+
+/* Form */
+.formCol {
+  min-height: 400px;
+}
+
+.formHeading {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--blue-athracite);
+  font-weight: 400;
+  margin-bottom: var(--space-xl);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.errorMsg {
+  font-size: 0.875rem;
+  color: #b00;
+  font-style: italic;
+}
+
+/* Success */
+.successState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-lg);
+  padding: var(--space-4xl) var(--space-xl);
+  background: var(--skintone);
+  border-radius: var(--radius-lg);
+}
+
+.successIcon {
+  font-size: 3rem;
+  color: var(--wood);
+  animation: spinIn 0.5s ease;
+}
+
+@keyframes spinIn {
+  from { transform: rotate(-180deg) scale(0); opacity: 0; }
+  to { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+.successTitle {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--blue-athracite);
+}
+
+.successBody {
+  color: var(--alaska-gray);
+  font-size: 1rem;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; gap: var(--space-2xl); }
+  .formRow { grid-template-columns: 1fr; }
+}

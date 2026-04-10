@@ -1,0 +1,116 @@
+.bespoke {
+  background: var(--skintone);
+  padding: var(--space-4xl) 0;
+}
+
+.inner {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: var(--space-4xl);
+  align-items: center;
+}
+
+.textCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.heading {
+  color: var(--blue-athracite);
+  font-weight: 300;
+}
+
+.heading em {
+  font-style: italic;
+  color: var(--wood);
+}
+
+.body {
+  font-size: 1.05rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--alaska-gray);
+  max-width: 520px;
+}
+
+.note {
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+}
+
+.ctas {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding-top: var(--space-sm);
+}
+
+.waBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Decor */
+.decorCol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.decorBlock {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--blue-athracite);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.decorLines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 80%;
+}
+
+.decorLine {
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 1px;
+  animation: lineExpand 2s ease-in-out infinite alternate;
+  transform-origin: left;
+}
+
+@keyframes lineExpand {
+  from { transform: scaleX(0.3); opacity: 0.3; }
+  to { transform: scaleX(1); opacity: 0.6; }
+}
+
+.decorText {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--cinereous);
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 768px) {
+  .inner {
+    grid-template-columns: 1fr;
+    gap: var(--space-2xl);
+  }
+
+  .decorCol { display: none; }
+  .ctas { flex-direction: column; }
+}

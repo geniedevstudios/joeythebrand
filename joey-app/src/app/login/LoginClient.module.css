@@ -1,0 +1,129 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--nav-height) var(--space-md) var(--space-4xl);
+  background: var(--color-bg);
+}
+
+.container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xl);
+  animation: fadeUp 0.6s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.brandMark h2 {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 300;
+  color: var(--blue-athracite);
+  line-height: 1;
+}
+
+.dot {
+  color: var(--wood);
+}
+
+/* Card */
+.card {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3xl) var(--space-2xl);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  text-align: center;
+}
+
+.title {
+  color: var(--blue-athracite);
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--alaska-gray);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.otpInput {
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 0.2em;
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--blue-athracite);
+}
+
+.otpInput::placeholder {
+  color: var(--color-border);
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: var(--space-sm);
+}
+
+.backBtn:hover {
+  color: var(--blue-athracite);
+}
+
+/* Footer */
+.footer {
+  margin-top: var(--space-2xl);
+  font-size: 0.85rem;
+  color: var(--alaska-gray);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-xl);
+}
+
+.link {
+  color: var(--blue-athracite);
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+.link:hover {
+  color: var(--wood);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

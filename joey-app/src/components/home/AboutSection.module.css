@@ -1,0 +1,159 @@
+.about {
+  background: var(--color-bg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr;
+  gap: var(--space-4xl);
+  align-items: center;
+}
+
+/* Text */
+.textCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.heading {
+  color: var(--blue-athracite);
+  font-weight: 300;
+}
+
+.heading em {
+  font-style: italic;
+  color: var(--wood);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.body p {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--alaska-gray);
+}
+
+/* Pull quote */
+.quote {
+  position: relative;
+  padding: var(--space-lg) var(--space-xl);
+  border-left: 2px solid var(--wood);
+  margin: 0;
+}
+
+.quoteMark {
+  position: absolute;
+  top: -10px;
+  left: var(--space-lg);
+  font-family: var(--font-display);
+  font-size: 5rem;
+  color: var(--skintone);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.quoteText {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  font-style: italic;
+  color: var(--blue-athracite);
+  line-height: 1.4;
+  position: relative;
+  z-index: 1;
+}
+
+.signoff {
+  font-family: var(--font-label);
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+}
+
+/* Visual col */
+.visualCol {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accentBlock {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: var(--blue-athracite);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.accentBlock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--dark-wood) 0%, var(--blue-athracite) 100%);
+  opacity: 0.7;
+}
+
+.accentInner {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.accentStat {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--cinereous);
+  letter-spacing: 0.1em;
+}
+
+.accentYear {
+  font-family: var(--font-label);
+  font-size: 3.5rem;
+  letter-spacing: 0.1em;
+  color: #fff;
+  line-height: 1;
+}
+
+.accentLabel {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--cinereous);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.accentDot {
+  position: absolute;
+  bottom: -16px;
+  right: -16px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--skintone);
+  z-index: -1;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2xl);
+  }
+
+  .visualCol {
+    display: none;
+  }
+}

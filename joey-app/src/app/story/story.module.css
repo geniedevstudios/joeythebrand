@@ -1,0 +1,267 @@
+.page {
+  padding-top: 0;
+}
+
+/* Hero */
+.hero {
+  position: relative;
+  background: var(--blue-athracite);
+  background-image: url("/hero.png");
+  background-size: cover;
+  background-position: center 30%;
+  padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-2xl);
+  color: var(--color-text-light);
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(39, 43, 54, 0.78) 0%,
+    rgba(39, 43, 54, 0.5) 50%,
+    rgba(145, 126, 113, 0.35) 100%
+  );
+  z-index: 0;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.heroTitle {
+  color: #fff;
+  margin-top: var(--space-sm);
+  font-weight: 300;
+  max-width: 800px;
+}
+
+.heroTitle em {
+  font-style: italic;
+}
+
+.heroSubtext {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--cinereous);
+  margin-top: var(--space-md);
+  max-width: 600px;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+/* Manifesto */
+.manifesto {
+  background: var(--color-bg);
+}
+
+.manifestoGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: var(--space-4xl);
+  align-items: center;
+}
+
+.manifestoText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.manifestoHeading {
+  color: var(--blue-athracite);
+  margin-top: var(--space-sm);
+}
+
+.manifestoBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.manifestoBody p {
+  font-size: 1.05rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--alaska-gray);
+}
+
+/* Big quote */
+.manifestoQuote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.bigQuote {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  font-weight: 300;
+  line-height: 1.2;
+  color: var(--blue-athracite);
+  border-left: 3px solid var(--wood);
+  padding-left: var(--space-xl);
+  margin: 0;
+}
+
+.bigQuote em {
+  font-style: italic;
+  color: var(--wood);
+}
+
+.quoteAttrib {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: var(--cinereous);
+  padding-left: var(--space-xl);
+  text-transform: uppercase;
+}
+
+/* Values Section */
+.valuesSection {
+  background: var(--blue-athracite);
+}
+
+.valuesHeading {
+  color: #fff;
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-2xl);
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xl);
+}
+
+.valueItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-xl) 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.valueNum {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--dark-wood);
+  line-height: 1;
+}
+
+.valueTitle {
+  font-family: var(--font-label);
+  font-size: 0.9rem;
+  letter-spacing: 0.16em;
+  color: #fff;
+}
+
+.valueBody {
+  font-size: 0.9rem;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--alaska-gray);
+}
+
+/* Founder Section */
+.founderSection {
+  background: var(--skintone);
+}
+
+.founderGrid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: var(--space-4xl);
+  align-items: center;
+}
+
+.founderImageWrap {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 3/4;
+  background: var(--dark-wood);
+}
+
+.founderImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.founderText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.founderHeading {
+  color: var(--blue-athracite);
+  margin-top: var(--space-sm);
+}
+
+.founderHeading em {
+  font-style: italic;
+  color: var(--wood);
+}
+
+.founderBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.founderBody p {
+  font-size: 1rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--alaska-gray);
+}
+
+/* CTA Banner */
+.ctaBanner {
+  background: var(--blue-athracite);
+  padding: var(--space-3xl) 0;
+}
+
+.ctaInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+}
+
+.ctaHeading {
+  color: #fff;
+  font-weight: 300;
+}
+
+.ctaBtns {
+  display: flex;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .valuesGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .manifestoGrid { grid-template-columns: 1fr; }
+  .founderGrid { grid-template-columns: 1fr; }
+  .founderImageWrap { aspect-ratio: 4/3; }
+  .ctaInner { flex-direction: column; text-align: center; }
+  .ctaBtns { flex-direction: column; width: 100%; }
+  .valuesGrid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .valuesGrid { grid-template-columns: 1fr; }
+}
