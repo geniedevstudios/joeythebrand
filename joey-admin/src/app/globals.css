@@ -142,3 +142,13 @@ nextjs-portal,
   outline: none;
   border-radius: 2px;
 }
+
+/* 
+   Stop mobile browsers (iOS Safari) from auto-zooming on focus.
+   Font size must be at least 16px for input elements.
+*/
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
