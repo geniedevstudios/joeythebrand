@@ -65,32 +65,26 @@ export default function CartDrawer() {
     cartStore.removeItem(id);
   };
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoError("");
     setPromoSuccess("");
     
     if (!promoInput.trim()) return;
     
-    const promo = dataStore.getPromotion(promoInput);
-    if (!promo) {
-      setPromoError("Invalid promo code");
-      return;
+    try {
+      const promo = await dataStore.validatePromoCode(promoInput.trim());
+      if (!promo) {
+        setPromoError("Invalid or inactive promo code");
+        return;
+      }
+      
+      cartStore.applyPromotion(promo.code, promo.percentage);
+      setPromoSuccess(`Code applied! ${promo.percentage}% off`);
+      setPromoInput("");
+    } catch {
+      setPromoError("Failed to validate code. Please try again.");
     }
-    
-    if (!promo.active) {
-      setPromoError("This promo code is no longer active");
-      return;
-    }
-    
-    if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
-      setPromoError("This promo code has expired");
-      return;
-    }
-    
-    cartStore.applyPromotion(promo.code, promo.percentage);
-    setPromoSuccess(`Code applied! ${promo.percentage}% off`);
-    setPromoInput("");
   };
 
   const handleRemovePromo = () => {

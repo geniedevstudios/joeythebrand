@@ -1,0 +1,282 @@
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--nav-height);
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background var(--transition-slow),
+    box-shadow var(--transition-base);
+}
+
+.nav .logo,
+.nav .navLink,
+.nav .hamburger {
+  color: #fff;
+  transition: color var(--transition-slow);
+}
+
+.nav .navLink::after {
+  background: #fff;
+}
+
+.nav.scrolled .logo,
+.nav.scrolled .navLink,
+.nav.scrolled .hamburger {
+  color: var(--blue-athracite);
+}
+
+.nav.scrolled .navLink::after {
+  background: var(--wood);
+}
+
+.nav.scrolled {
+  background: rgba(245, 241, 236, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 0 var(--color-border);
+}
+
+.inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+/* Logo — same family / weight treatment as joey-app Nav */
+.logo {
+  font-family: var(--font-logo);
+  font-size: clamp(0.88rem, 2.1vw, 1.52rem);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  /* Inset from the padded edge — ~four spacing steps */
+  margin-left: calc(4 * var(--space-sm));
+}
+
+.logo:hover {
+  opacity: 0.65;
+}
+
+.desktopLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+/* joey-app nav link style: Jost / label, uppercase, tracking, underline grow */
+.navLink {
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  color: inherit;
+  text-transform: uppercase;
+  position: relative;
+  transition: opacity var(--transition-fast);
+  text-decoration: none;
+}
+
+.navLink::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--wood);
+  transition: width var(--transition-base);
+}
+
+.navLink:hover {
+  opacity: 0.7;
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  z-index: 110;
+  color: inherit;
+}
+
+.hamburger span {
+  display: block;
+  width: 24px;
+  height: 1.5px;
+  background: currentColor;
+  transition: all var(--transition-base);
+  transform-origin: center;
+}
+
+.mobileMenu {
+  position: fixed;
+  inset: 0;
+  background: var(--blue-athracite);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-slow);
+}
+
+.mobileMenuOpen {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.mobileMenuHeader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-xl);
+  z-index: 201;
+}
+
+.mobileMenuLogo {
+  font-family: var(--font-logo);
+  font-size: clamp(0.85rem, 3.4vw, 1.45rem);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text-light);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.mobileMenuLogo:hover {
+  opacity: 0.65;
+}
+
+.mobileMenuInner {
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.mobileMenuLabel {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--cinereous);
+  margin-bottom: var(--space-2xl);
+}
+
+.mobileNav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.mobileNavLink {
+  font-family: var(--font-label);
+  font-size: clamp(1rem, 4vw, 1.25rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+  line-height: 1.2;
+  transition:
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+  opacity: 0;
+  animation: none;
+  display: inline-block;
+  padding: 12px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  text-decoration: none;
+  text-align: center;
+}
+
+.mobileMenuOpen .mobileNavLink {
+  animation: fadeSlideIn 0.5s ease forwards;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobileNavLink:hover {
+  color: var(--cinereous);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.closeBtn {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--cinereous);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-top: var(--space-2xl);
+  padding: 0;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: none;
+}
+
+.mobileMenuOpen .closeBtn {
+  animation: fadeSlideIn 0.5s ease forwards;
+}
+
+.closeBtn:hover {
+  color: var(--color-text-light);
+}
+
+@media (max-width: 768px) {
+  .desktopLinks {
+    display: none;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .hamburgerOpen {
+    display: none;
+  }
+
+  .inner {
+    padding: 0 var(--space-xl);
+  }
+
+  .logo {
+    font-size: clamp(0.78rem, 2.7vw, 1.05rem);
+    margin-left: calc(3 * var(--space-sm));
+    max-width: calc(100vw - 120px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

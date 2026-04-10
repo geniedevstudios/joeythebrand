@@ -1,4 +1,17 @@
-export type Category = "all" | "always-lit" | "limited-edition" | "sample-sale";
+/** Shop category slug; must match a row in `collections` (see admin Products → Collections). */
+export type Category = string;
+
+/** Storefront wear filter; unisex appears under both men’s and women’s. */
+export type WearTag = "mens" | "womens" | "unisex";
+
+export interface Collection {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  sortOrder: number;
+  createdAt: string;
+}
 
 export interface ProductSize {
   name: string;
@@ -13,6 +26,8 @@ export interface Product {
   price: number;
   originalPrice?: number;
   image: string;
+  /** Optional; used as hover image on storefront product cards. */
+  hoverImage?: string;
   images: string[];
   description: string;
   details: string[];
@@ -21,6 +36,7 @@ export interface Product {
   isLimited: boolean;
   isBestSeller: boolean;
   featured: boolean;
+  wearTag: WearTag;
 }
 
 export interface PromotionCode {
@@ -33,6 +49,8 @@ export interface PromotionCode {
 
 export interface Order {
   id: string;
+  /** Human-readable ref (e.g. JY-000421); empty until DB migration applied. */
+  orderNumber?: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -42,6 +60,8 @@ export interface Order {
   discount: number;
   promotionCode?: string;
   status: OrderStatus;
+  userId?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +77,56 @@ export interface OrderItem {
 
 export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
+/** Bespoke / consultation request lifecycle (admin confirms or declines). */
+export type ConsultationStatus = "pending" | "confirmed" | "declined";
+
+export type ConsultationSource = "shop" | "portfolio";
+
+export interface ConsultationBooking {
+  id: string;
+  /** Shop bookings are tied to auth.users; portfolio (UR site) submissions have no user. */
+  userId: string | null;
+  source: ConsultationSource;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  service: string;
+  preferredDate?: string;
+  notes?: string;
+  status: ConsultationStatus;
+  bookingCode?: string;
+  scheduledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConsultationSettings {
+  maxSlotsPerDay: number;
+}
+
+export type PageHeroKey =
+  | "home"
+  | "shop"
+  | "story"
+  | "bespoke"
+  | "contact"
+  | "wishlist"
+  | "cart"
+  | "collection"
+  | "checkout"
+  | "account"
+  | "shipping"
+  | "login"
+  | "product";
+
+export type PageHeroFit = "cover" | "contain";
+
+export type PageHeroAnchor = "top" | "center" | "bottom";
+
+export type PageHeroMedia =
+  | { kind: "image"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor }
+  | { kind: "video"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor };
+
 export interface SiteContent {
   heroImage: string;
   heroTitle: string;
@@ -64,4 +134,5 @@ export interface SiteContent {
   aboutImage: string;
   aboutText: string;
   featuredProductIds: string[];
+  pageHeroes: Record<PageHeroKey, PageHeroMedia>;
 }

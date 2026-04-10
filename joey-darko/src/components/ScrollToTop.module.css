@@ -1,0 +1,82 @@
+.scrollBtn {
+  position: fixed;
+  bottom: var(--space-xl);
+  left: var(--space-xl);
+  width: 60px;
+  height: 60px;
+  /* Organic blob shape */
+  border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+  background: #595d66; /* User requested grey */
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 90;
+  padding: 0;
+  overflow: visible;
+}
+
+.scrollBtn:hover {
+  background: #4a4e56;
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.progressWrapper {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progressCircle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  transform: rotate(-90deg);
+}
+
+.fgCircle {
+  transition: stroke-dashoffset 0.1s linear;
+  stroke: #fff;
+}
+
+.bgCircle {
+  stroke: #fff;
+}
+
+.arrowIcon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -2px; /* Small adjustment for visual centering */
+}
+
+@media (max-width: 768px) {
+  .scrollBtn {
+    bottom: var(--space-lg);
+    left: var(--space-lg);
+    width: 44px;
+    height: 44px;
+  }
+  
+  .progressWrapper {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .progressCircle {
+    width: 26px;
+    height: 26px;
+  }
+}

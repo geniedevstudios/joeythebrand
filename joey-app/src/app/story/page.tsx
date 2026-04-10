@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import styles from "./story.module.css";
+import StoryHero from "./StoryHero";
 
 export const metadata: Metadata = {
   title: "Our Story — JOEY THE BRAND",
@@ -18,8 +18,7 @@ const values = [
 export default function StoryPage() {
   return (
     <div className={styles.page}>
-      {/* Hero */}
-      <div className={styles.hero}>
+      <StoryHero>
         <div className="container">
           <span className="section-label">About The Brand</span>
           <h1 className={`t-heading ${styles.heroTitle}`}>
@@ -29,7 +28,7 @@ export default function StoryPage() {
             JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity.
           </p>
         </div>
-      </div>
+      </StoryHero>
 
       {/* Brand Manifesto */}
       <section className={`section ${styles.manifesto}`}>

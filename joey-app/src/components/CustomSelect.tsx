@@ -1,9 +1,16 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 
-type SelectOption = {
+export type CustomSelectOption = {
   value: string;
   label: string;
+  /** Shown before the label (e.g. flag emoji); aria-hidden on the decorative span */
+  prefix?: string;
+  /**
+   * When set, shows a PNG flag (reliable on Windows; emoji flags often don’t render).
+   * ISO 3166-1 alpha-2, e.g. "US" — served from flagcdn.com.
+   */
+  flagIso2?: string;
 };
 
 type CustomSelectProps = {
@@ -11,12 +18,57 @@ type CustomSelectProps = {
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  options: SelectOption[];
+  options: CustomSelectOption[];
   placeholder?: string;
   required?: boolean;
+  /** Max height of the dropdown panel in pixels (default 240) */
+  listMaxHeight?: number;
 };
 
-export default function CustomSelect({ id, name, value, onChange, options, placeholder = "Select an option", required = false }: CustomSelectProps) {
+function optionDisplayText(opt: CustomSelectOption): string {
+  return opt.prefix ? `${opt.prefix} ${opt.label}` : opt.label;
+}
+
+function OptionLeadingVisual({ opt }: { opt: CustomSelectOption }) {
+  if (opt.flagIso2) {
+    const code = opt.flagIso2.toLowerCase();
+    return (
+      <img
+        src={`https://flagcdn.com/w40/${code}.png`}
+        alt=""
+        width={28}
+        height={21}
+        loading="lazy"
+        decoding="async"
+        style={{
+          objectFit: "cover",
+          borderRadius: 3,
+          flexShrink: 0,
+          boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.08)",
+        }}
+      />
+    );
+  }
+  if (opt.prefix) {
+    return (
+      <span aria-hidden style={{ fontSize: "1.35rem", lineHeight: 1, flexShrink: 0 }}>
+        {opt.prefix}
+      </span>
+    );
+  }
+  return null;
+}
+
+export default function CustomSelect({
+  id,
+  name,
+  value,
+  onChange,
+  options,
+  placeholder = "Select an option",
+  required = false,
+  listMaxHeight = 240,
+}: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,10 +145,24 @@ export default function CustomSelect({ id, name, value, onChange, options, place
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: "0.5rem",
           transition: "border-color var(--transition-fast), background var(--transition-fast)",
         }}
       >
-        <span>{selectedOption ? selectedOption.label : placeholder}</span>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            minWidth: 0,
+            flex: 1,
+          }}
+        >
+          {selectedOption ? <OptionLeadingVisual opt={selectedOption} /> : null}
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+        </span>
         <svg 
           width="16" 
           height="16" 
@@ -131,7 +197,7 @@ export default function CustomSelect({ id, name, value, onChange, options, place
             borderRadius: "var(--radius-md)",
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
             zIndex: 100,
-            maxHeight: "240px",
+            maxHeight: `${listMaxHeight}px`,
             overflowY: "auto",
             padding: "4px 0",
           }}
@@ -151,9 +217,17 @@ export default function CustomSelect({ id, name, value, onChange, options, place
                 fontSize: "0.95rem",
                 fontFamily: "var(--font-body)",
                 transition: "background 0.15s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
               }}
             >
-              {option.label}
+              {(option.flagIso2 || option.prefix) ? (
+                <span style={{ flexShrink: 0, width: "2rem", display: "flex", justifyContent: "center" }}>
+                  <OptionLeadingVisual opt={option} />
+                </span>
+              ) : null}
+              <span style={{ flex: 1, minWidth: 0 }}>{option.label}</span>
             </div>
           ))}
         </div>
@@ -174,8 +248,10 @@ export default function CustomSelect({ id, name, value, onChange, options, place
         }}
       >
         <option value="">{placeholder}</option>
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {optionDisplayText(opt)}
+          </option>
         ))}
       </select>
     </div>

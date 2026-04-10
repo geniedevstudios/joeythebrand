@@ -1,0 +1,126 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.32);
+  color: rgba(245, 241, 236, 0.96);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trigger:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.trigger:focus {
+  outline: none;
+}
+
+.trigger:focus-visible {
+  box-shadow: 0 0 0 2px rgba(145, 126, 113, 0.45), 0 0 0 4px rgba(39, 43, 54, 0.95);
+  border-color: rgba(145, 126, 113, 0.85);
+}
+
+.triggerOpen {
+  border-color: rgba(145, 126, 113, 0.65);
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.triggerPlaceholder {
+  color: rgba(245, 241, 236, 0.42);
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgba(245, 241, 236, 0.45);
+  border-bottom: 2px solid rgba(245, 241, 236, 0.45);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.25s ease;
+}
+
+.chevronUp {
+  transform: rotate(-135deg) translateY(2px);
+}
+
+/* Portal list (position + box set inline for fixed placement) */
+.listPortal {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: min(280px, 45dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(36, 40, 50, 0.98) 0%, rgba(28, 31, 38, 0.99) 100%);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.listPortal:focus {
+  outline: none;
+}
+
+.listPortal:focus-visible {
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(145, 126, 113, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.option {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.72rem 0.85rem 0.72rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(245, 241, 236, 0.9);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.option:hover,
+.optionHighlight {
+  background: rgba(145, 126, 113, 0.18);
+  color: rgba(245, 241, 236, 0.98);
+}
+
+.optionSelected {
+  background: rgba(145, 126, 113, 0.22);
+  color: #f5f1ec;
+  font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--wood);
+}
+
+.optionSelected.optionHighlight {
+  background: rgba(145, 126, 113, 0.3);
+}

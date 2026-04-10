@@ -6,7 +6,6 @@
 .pageHeader {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center top;
   color: var(--color-text-light);
@@ -45,57 +44,140 @@
   margin-top: var(--space-md);
 }
 
-/* Tabs */
-.tabsBar {
+/* Collections showcase */
+.collectionsSection {
+  background: var(--color-surface);
+  padding: var(--space-2xl) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.collectionsHeading {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 400;
+  color: var(--blue-athracite);
+  margin: 0 0 var(--space-sm);
+}
+
+.collectionsIntro {
+  font-size: 0.95rem;
+  color: var(--alaska-gray);
+  margin: 0 0 var(--space-xl);
+  max-width: 36rem;
+}
+
+.collectionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.collectionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.collectionCard:hover {
+  border-color: var(--blue-athracite);
+  box-shadow: 0 8px 24px rgba(39, 43, 54, 0.08);
+}
+
+.collectionCardActive {
+  border-color: var(--blue-athracite);
+  background: rgba(39, 43, 54, 0.04);
+}
+
+.collectionCardEntire {
+  background: linear-gradient(135deg, var(--color-bg) 0%, rgba(145, 126, 113, 0.12) 100%);
+}
+
+.collectionName {
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue-athracite);
+}
+
+.collectionDesc {
+  font-size: 0.85rem;
+  color: var(--alaska-gray);
+  line-height: 1.45;
+  flex: 1;
+}
+
+.collectionCta {
+  margin-top: var(--space-sm);
+  font-family: var(--font-label);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wood);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Wear filter (sticky) */
+.wearFilterBar {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: var(--nav-height);
   z-index: 10;
+  padding: var(--space-md) 0;
 }
 
-.tabsInner {
+.wearFilterInner {
   display: flex;
-  gap: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
 }
 
-.tabsInner::-webkit-scrollbar { display: none; }
+.wearFilterLabel {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cinereous);
+}
 
-.tab {
+.wearPills {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: var(--space-md) var(--space-xl);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.wearPill {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--alaska-gray);
   cursor: pointer;
   transition: all var(--transition-fast);
-  white-space: nowrap;
 }
 
-.tab:hover { background: var(--color-bg); }
-
-.tabActive {
-  border-bottom-color: var(--blue-athracite);
-  background: var(--color-bg);
-}
-
-.tabLabel {
-  font-family: var(--font-label);
-  font-size: 0.82rem;
-  letter-spacing: 0.12em;
+.wearPill:hover {
+  border-color: var(--blue-athracite);
   color: var(--blue-athracite);
-  text-transform: uppercase;
 }
 
-.tabSub {
-  font-size: 0.72rem;
-  color: var(--cinereous);
-  font-style: italic;
+.wearPillActive {
+  background: var(--blue-athracite);
+  border-color: var(--blue-athracite);
+  color: #fff;
 }
 
 /* Products */
@@ -132,6 +214,31 @@
 }
 
 .card:hover .image { transform: scale(1.04); }
+
+/* Primary + hover swap (when hover image is set) */
+.imagePrimary,
+.imageHover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.45s ease;
+}
+
+.imagePrimary {
+  z-index: 0;
+}
+
+.imageHover {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.card:hover .imageHover {
+  opacity: 1;
+}
 
 .overlay {
   position: absolute;
@@ -671,10 +778,36 @@
   .pageTitle {
     font-size: clamp(3rem, 15vw, 6rem);
   }
-  .tabsInner {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+
+  /* Collections: horizontal slider (container uses --space-md padding ≤768px) */
+  .collectionsGrid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--space-md);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--space-md);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    padding-bottom: var(--space-xs);
+    margin-left: calc(-1 * var(--space-md));
+    margin-right: calc(-1 * var(--space-md));
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+    width: calc(100% + 2 * var(--space-md));
+    max-width: none;
+    box-sizing: border-box;
   }
+
+  .collectionCard {
+    flex: 0 0 min(78vw, 300px);
+    max-width: min(78vw, 300px);
+    scroll-snap-align: start;
+    min-height: 9.5rem;
+  }
+
   .grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -700,10 +833,14 @@
     height: 66px;
   }
   .grid { gap: var(--space-md); }
-  .tab { padding: var(--space-md) var(--space-lg); }
 }
 
 @media (max-width: 480px) {
+  .collectionCard {
+    flex-basis: min(84vw, 300px);
+    max-width: min(84vw, 300px);
+  }
+
   .grid { grid-template-columns: 1fr; }
   .addBtn { width: 100%; justify-content: center; }
 }

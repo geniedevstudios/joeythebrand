@@ -78,16 +78,24 @@
   padding: 0;
 }
 
-/* Hide all scrollbars visually across the entire application */
-::-webkit-scrollbar {
+/* Hide all scrollbars visually; scrolling still works (wheel, touch, keys) */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
 }
 
-* {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 
@@ -483,4 +491,13 @@ input, textarea, select {
 @media (max-width: 480px) {
   .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .btn { width: 100%; justify-content: center; }
+}
+
+/* Next.js dev: strip all built-in DevTools UI (badge, full error overlay, panels). The framework mounts this under <nextjs-portal> (shadow root). Errors still log to the browser console. Inert in production — these nodes are not rendered. */
+nextjs-portal,
+[data-nextjs-dev-overlay],
+[data-next-badge-root],
+#next-logo[data-next-mark] {
+  display: none !important;
+  pointer-events: none !important;
 }

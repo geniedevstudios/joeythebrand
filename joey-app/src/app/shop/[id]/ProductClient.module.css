@@ -23,8 +23,7 @@
 .heroBannerImg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center top;
+  /* object-fit / object-position from admin hero layout */
 }
 
 .heroBannerOverlay {
@@ -508,6 +507,29 @@
 
 .suggestCard:hover .suggestImg {
   transform: scale(1.04);
+}
+
+.suggestImgPrimary,
+.suggestImgHover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.45s ease;
+}
+
+.suggestImgPrimary { z-index: 0; }
+
+.suggestImgHover {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.suggestCard:hover .suggestImgHover {
+  opacity: 1;
 }
 
 /* Suggest hover overlay */

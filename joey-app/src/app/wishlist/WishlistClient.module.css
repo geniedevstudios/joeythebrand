@@ -8,7 +8,6 @@
 .pageHeader {
   position: relative;
   background: var(--blue-athracite);
-  background-image: url("/hero.png");
   background-size: cover;
   background-position: center top;
   margin-top: calc(-1 * var(--nav-height));
@@ -85,6 +84,28 @@
 }
 
 .card:hover .image { transform: scale(1.04); }
+
+.imagePrimary,
+.imageHover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.45s ease;
+}
+
+.imagePrimary { z-index: 0; }
+
+.imageHover {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.card:hover .imageHover {
+  opacity: 1;
+}
 
 /* Hover overlay with actions */
 .overlay {

@@ -19,3 +19,126 @@ body {
   background-color: #FFFFFF;
   color: var(--color-zinc-950);
 }
+
+/* Hide all scrollbars visually; scrolling still works */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Next.js dev: strip all built-in DevTools UI (badge, full error overlay, panels). The framework mounts this under <nextjs-portal> (shadow root). Errors still log to the browser console. Inert in production — these nodes are not rendered. */
+nextjs-portal,
+[data-nextjs-dev-overlay],
+[data-next-badge-root],
+#next-logo[data-next-mark] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* ── Consultations: Confirm appointment — native date/time inputs ───────────
+   The OS/browser still draws the calendar & time popovers; we style the field
+   chrome and hint light UI via color-scheme / accent-color where supported. */
+
+.consultations-confirm-dialog {
+  --consult-picker-accent: #272b36;
+  --consult-picker-border: #d4d4d8;
+  --consult-picker-muted: #71717a;
+  color-scheme: light;
+}
+
+.consultations-confirm-dialog input[type="date"],
+.consultations-confirm-dialog input[type="time"] {
+  box-sizing: border-box;
+  width: 100%;
+  accent-color: var(--consult-picker-accent);
+  background-color: #fafafa;
+  border: 1px solid var(--consult-picker-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 2.75rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  color: #18181b;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.consultations-confirm-dialog input[type="date"]:hover,
+.consultations-confirm-dialog input[type="time"]:hover {
+  border-color: #a1a1aa;
+  background-color: #fff;
+}
+
+.consultations-confirm-dialog input[type="date"]:focus,
+.consultations-confirm-dialog input[type="time"]:focus {
+  outline: none;
+  border-color: var(--consult-picker-accent);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.04),
+    0 0 0 2px rgba(39, 43, 54, 0.18);
+  background-color: #fff;
+}
+
+.consultations-confirm-dialog input[type="date"]::-webkit-calendar-picker-indicator,
+.consultations-confirm-dialog input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.88;
+  padding: 0.3rem;
+  margin-left: 0.125rem;
+  border-radius: 0.25rem;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.consultations-confirm-dialog input[type="date"]:hover::-webkit-calendar-picker-indicator,
+.consultations-confirm-dialog input[type="time"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  background-color: rgba(39, 43, 54, 0.09);
+}
+
+.consultations-confirm-dialog input[type="date"]::-webkit-datetime-edit,
+.consultations-confirm-dialog input[type="time"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+.consultations-confirm-dialog input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.consultations-confirm-dialog input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+.consultations-confirm-dialog input[type="date"]::-webkit-datetime-edit-text,
+.consultations-confirm-dialog input[type="time"]::-webkit-datetime-edit-text {
+  color: var(--consult-picker-muted);
+  padding: 0 0.12em;
+}
+
+.consultations-confirm-dialog input[type="date"]::-webkit-datetime-edit-day-field:focus,
+.consultations-confirm-dialog input[type="date"]::-webkit-datetime-edit-month-field:focus,
+.consultations-confirm-dialog input[type="date"]::-webkit-datetime-edit-year-field:focus,
+.consultations-confirm-dialog input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+.consultations-confirm-dialog input[type="time"]::-webkit-datetime-edit-minute-field:focus,
+.consultations-confirm-dialog input[type="time"]::-webkit-datetime-edit-ampm-field:focus {
+  background-color: rgba(39, 43, 54, 0.12);
+  color: #18181b;
+  outline: none;
+  border-radius: 2px;
+}

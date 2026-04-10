@@ -3,6 +3,8 @@ export type WishlistItem = {
   name: string;
   price: string;
   image: string;
+  /** Optional; matches product hover image for card swap */
+  hoverImage?: string;
   category: string;
 };
 

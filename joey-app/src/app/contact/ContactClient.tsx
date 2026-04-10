@@ -1,11 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import styles from "./ContactClient.module.css";
+import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 import CustomSelect from "@/components/CustomSelect";
+import { authStore } from "@/store/authStore";
 
 export default function ContactClient() {
-  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "", website: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const contactHeroStyle = usePageHeroBackgroundStyle("contact");
 
   const subjectOptions = [
     { value: "Custom Order", label: "Custom Order" },
@@ -15,6 +19,15 @@ export default function ContactClient() {
     { value: "General Inquiry", label: "General Inquiry" },
   ];
 
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      email: prev.email.trim() ? prev.email : user.email,
+      name: prev.name.trim() ? prev.name : user.name,
+    }));
+  }, [user?.id, user?.email, user?.name]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -22,12 +35,11 @@ export default function ContactClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("sending");
-    // FormSubmit.co handles form submission via email
     try {
-      const res = await fetch("https://formsubmit.co/ajax/joeythebrandonline@gmail.com", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ ...form, _subject: `[JOEY THE BRAND] ${form.subject}` }),
+        body: JSON.stringify(form),
       });
       if (res.ok) setStatus("sent");
       else setStatus("error");
@@ -38,8 +50,7 @@ export default function ContactClient() {
 
   return (
     <div className={styles.page}>
-      {/* Header */}
-      <div className={styles.header}>
+      <div className={styles.header} style={contactHeroStyle}>
         <div className="container">
           <span className="section-label" style={{ color: "var(--cinereous)" }}>Contact</span>
           <h1 className={`t-display ${styles.title}`}>
@@ -54,7 +65,6 @@ export default function ContactClient() {
       <div className={`section ${styles.body}`}>
         <div className="container">
           <div className={styles.grid}>
-            {/* Info column */}
             <div className={styles.infoCol}>
               <div className={styles.infoGroup}>
                 <h2 className={styles.infoHeading}>Get In Touch</h2>
@@ -86,7 +96,6 @@ export default function ContactClient() {
 
               <div className={styles.divider} />
 
-              {/* WhatsApp CTA */}
               <a
                 href="https://wa.me/233504148009"
                 target="_blank"
@@ -108,7 +117,6 @@ export default function ContactClient() {
               </blockquote>
             </div>
 
-            {/* Form column */}
             <div className={styles.formCol}>
               {status === "sent" ? (
                 <div className={styles.successState}>
@@ -121,6 +129,20 @@ export default function ContactClient() {
               ) : (
                 <form onSubmit={handleSubmit} className={styles.form} noValidate>
                   <h2 className={styles.formHeading}>Send a Message</h2>
+
+                  {/* Honeypot: leave empty; bots often autofill */}
+                  <div className={styles.honeypot} aria-hidden="true">
+                    <label htmlFor="contact-website">Website</label>
+                    <input
+                      type="text"
+                      id="contact-website"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={form.website}
+                      onChange={handleChange}
+                    />
+                  </div>
 
                   <div className={styles.formRow}>
                     <div className="form-group">
@@ -152,6 +174,20 @@ export default function ContactClient() {
                   </div>
 
                   <div className="form-group">
+                    <label htmlFor="phone" className="form-label">Phone</label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      className="form-input"
+                      placeholder="+233 … or local number"
+                      value={form.phone}
+                      onChange={handleChange}
+                      autoComplete="tel"
+                    />
+                  </div>
+
+                  <div className="form-group">
                     <label className="form-label" id="subject-label">Subject</label>
                     <CustomSelect
                       id="subject"
@@ -178,7 +214,7 @@ export default function ContactClient() {
                   </div>
 
                   {status === "error" && (
-                    <p className={styles.errorMsg}>Something went wrong. Please try emailing us directly.</p>
+                    <p className={styles.errorMsg}>Something went wrong. Please try again or email us directly.</p>
                   )}
 
                   <button

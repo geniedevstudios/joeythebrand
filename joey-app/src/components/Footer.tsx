@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FooterNewsletter from "./FooterNewsletter";
 import styles from "./Footer.module.css";
 
 const footerLinks = [
@@ -13,14 +14,14 @@ export default function Footer() {
   return (
     <footer className={styles.footer}>
       <div className={`container ${styles.inner}`}>
-
-        {/* Top — brand + tagline */}
+        {/* Top — brand + tagline + compact newsletter */}
         <div className={styles.top}>
           <div className={styles.brand}>
             <p className={styles.logo}>
               JOEY
             </p>
             <p className={styles.tagline}>Power. Precision. Presence.</p>
+            <FooterNewsletter />
           </div>
 
           <nav className={styles.links} aria-label="Footer navigation">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import styles from "./shipping.module.css";
+import ShippingHero from "./ShippingHero";
 
 export const metadata: Metadata = {
   title: "Shipping & Returns Policy — JOEY THE BRAND",
@@ -10,12 +11,12 @@ export const metadata: Metadata = {
 export default function ShippingPage() {
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
+      <ShippingHero>
         <div className="container">
           <span className="section-label" style={{ color: "var(--cinereous)" }}>Policies</span>
           <h1 className={`t-display ${styles.title}`}>Shipping & Returns</h1>
         </div>
-      </div>
+      </ShippingHero>
 
       <div className="container">
         <div className={styles.content}>
