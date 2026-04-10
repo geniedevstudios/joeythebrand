@@ -7,6 +7,7 @@ import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
 import DataStoreInit from "@/components/DataStoreInit";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -51,6 +52,7 @@ export default function RootLayout({
         <CartDrawer />
         <ScrollToTop />
         <Toaster position="top-center" richColors />
+        <Analytics />
       </body>
     </html>
   );

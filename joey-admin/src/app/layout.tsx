@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopNav } from "@/components/TopNav";
 import AdminAuthGate from "@/components/AdminAuthGate";
 import AdminRealtimeSync from "@/components/AdminRealtimeSync";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
             <main className="flex-1 overflow-y-auto p-6">{children}</main>
           </div>
         </AdminAuthGate>
+        <Analytics />
       </body>
     </html>
   );

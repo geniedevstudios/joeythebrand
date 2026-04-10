@@ -7,6 +7,7 @@ import HashScroll from "@/components/HashScroll";
 import SiteFooter from "@/components/SiteFooter";
 import ConsultationQueryOpener from "@/components/ConsultationQueryOpener";
 import { PortfolioBookingProvider } from "@/components/booking/PortfolioBookingProvider";
+import { Analytics } from "@vercel/analytics/next";
 import RealtimeSync from "@/components/RealtimeSync";
 import ScrollToTop from "@/components/ScrollToTop";
 
@@ -54,6 +55,7 @@ export default function RootLayout({
           <main>{children}</main>
           <SiteFooter />
           <ScrollToTop />
+          <Analytics />
         </PortfolioBookingProvider>
       </body>
     </html>
