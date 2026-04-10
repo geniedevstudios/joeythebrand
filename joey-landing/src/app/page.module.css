@@ -452,7 +452,6 @@
   justify-content: space-between;
   padding: 1.4rem 3rem;
   border-top: 1px solid rgba(255,255,255,0.08);
-  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
@@ -462,7 +461,7 @@
   color: rgba(255,255,255,0.40);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1024px) {
   .nav { padding: 1.5rem 1.5rem; }
   .logo { font-size: 1.1rem; }
   .hero {
@@ -470,6 +469,20 @@
     height: min(340px, 90vw);
   }
   .subscribeDrawer { bottom: -70px; }
-  .footer { padding: 1.2rem 1.5rem; flex-direction: column; align-items: flex-start; }
+  
+  /* Prevent iOS zoom by ensuring input is exactly 16px */
+  .fieldInput { font-size: 16px; }
+  
+  /* Stack footer items centrally */
+  .footer { 
+    width: 100%;
+    padding: 2rem 1.5rem; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    text-align: center; 
+    gap: 1.25rem; 
+  }
+  .footerCopy { text-align: center; }
   .checkRow { flex-direction: column; align-items: flex-start; }
 }
