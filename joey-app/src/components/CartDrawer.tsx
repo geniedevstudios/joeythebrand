@@ -141,7 +141,14 @@ export default function CartDrawer() {
                     <div className={styles.qtyBox}>
                       <button className={styles.qtyBoxBtn} onClick={() => handleUpdateQuantity(item.id, -1)}>-</button>
                       <span className={styles.qtyBoxVal}>{item.quantity}</span>
-                      <button className={styles.qtyBoxBtn} onClick={() => handleUpdateQuantity(item.id, 1)}>+</button>
+                      <button 
+                        className={styles.qtyBoxBtn} 
+                        onClick={() => handleUpdateQuantity(item.id, 1)}
+                        disabled={item.quantity >= (item.maxStock ?? 999)}
+                        title={item.quantity >= (item.maxStock ?? 999) ? "Max stock reached" : ""}
+                      >
+                        +
+                      </button>
                     </div>
                     <button className={styles.removeBtn} onClick={() => handleRemove(item.id)}>Remove</button>
                     <div className={styles.itemTotal}>

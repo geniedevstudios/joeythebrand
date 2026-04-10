@@ -239,70 +239,74 @@ function AccountDashboard({ userId }: { userId: string }) {
               <h2 className={styles.panelTitle}>Recent Orders</h2>
               <Link href="/shop" className={styles.panelLink}>New Order</Link>
             </div>
-            {ordersLoading ? (
-              <div className={styles.emptyState}>
-                <p>Loading orders…</p>
-              </div>
-            ) : ordersError ? (
-              <div className={styles.emptyState}>
-                <p>{ordersError}</p>
-              </div>
-            ) : orders.length === 0 ? (
-              <div className={styles.emptyState}>
-                <p>You haven&apos;t placed any orders while signed in yet.</p>
-                <p style={{ fontSize: "0.85rem", color: "var(--cinereous)", marginTop: 8 }}>
-                  Sign in before checkout to link orders to this account.
-                </p>
-                <Link href="/shop" className="btn btn-outline" style={{ marginTop: "16px" }}>
-                  Explore Shop
-                </Link>
-              </div>
-            ) : (
-              <ul className={styles.ordersList}>
-                {orders.map((o) => (
-                  <li key={o.id} className={styles.orderCard}>
-                    <div className={styles.orderCardTop}>
-                      <div>
-                        <span className={styles.orderRef}>Order {formatOrderNumber(o)}</span>
-                        <span className={styles.orderPlacedDate}>
-                          {new Date(o.createdAt).toLocaleDateString(undefined, {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                        <p className={styles.orderTotal}>GHC {o.total.toLocaleString()}</p>
-                        <p className={styles.orderMeta}>
-                          {o.items.length} line{o.items.length !== 1 ? "s" : ""}
-                          {o.discount > 0 && o.promotionCode
-                            ? ` · −GHC ${o.discount.toLocaleString()} (${o.promotionCode})`
-                            : ""}
-                        </p>
-                      </div>
-                      <span className={styles.orderStatus}>{statusLabel(o.status)}</span>
-                    </div>
-                    {o.items && o.items.length > 0 ? (
-                      <ul className={styles.orderLines}>
-                        {o.items.map((line, idx) => (
-                          <OrderLineRow
-                            key={`${o.id}-${idx}-${line.productId}-${line.size ?? ""}`}
-                            line={line}
-                          />
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className={styles.orderLinesEmpty}>No products listed for this order.</p>
-                    )}
-                    {o.notes?.trim() ? (
-                      <p className={styles.orderNotes}>
-                        <span className={styles.orderNotesLabel}>Your note</span>
-                        {o.notes.trim()}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className={styles.panelBody}>
+              {ordersLoading ? (
+                <div className={styles.emptyState}>
+                  <p>Loading orders…</p>
+                </div>
+              ) : ordersError ? (
+                <div className={styles.emptyState}>
+                  <p>{ordersError}</p>
+                </div>
+              ) : orders.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p>You haven&apos;t placed any orders while signed in yet.</p>
+                  <p style={{ fontSize: "0.85rem", color: "var(--cinereous)", marginTop: 8 }}>
+                    Sign in before checkout to link orders to this account.
+                  </p>
+                  <Link href="/shop" className="btn btn-outline" style={{ marginTop: "16px" }}>
+                    Explore Shop
+                  </Link>
+                </div>
+              ) : (
+                <div className={styles.panelScroll}>
+                  <ul className={styles.ordersList}>
+                    {orders.map((o) => (
+                      <li key={o.id} className={styles.orderCard}>
+                        <div className={styles.orderCardTop}>
+                          <div>
+                            <span className={styles.orderRef}>Order {formatOrderNumber(o)}</span>
+                            <span className={styles.orderPlacedDate}>
+                              {new Date(o.createdAt).toLocaleDateString(undefined, {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                            <p className={styles.orderTotal}>GHC {o.total.toLocaleString()}</p>
+                            <p className={styles.orderMeta}>
+                              {o.items.length} line{o.items.length !== 1 ? "s" : ""}
+                              {o.discount > 0 && o.promotionCode
+                                ? ` · −GHC ${o.discount.toLocaleString()} (${o.promotionCode})`
+                                : ""}
+                            </p>
+                          </div>
+                          <span className={styles.orderStatus}>{statusLabel(o.status)}</span>
+                        </div>
+                        {o.items && o.items.length > 0 ? (
+                          <ul className={styles.orderLines}>
+                            {o.items.map((line, idx) => (
+                              <OrderLineRow
+                                key={`${o.id}-${idx}-${line.productId}-${line.size ?? ""}`}
+                                line={line}
+                              />
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className={styles.orderLinesEmpty}>No products listed for this order.</p>
+                        )}
+                        {o.notes?.trim() ? (
+                          <p className={styles.orderNotes}>
+                            <span className={styles.orderNotesLabel}>Your note</span>
+                            {o.notes.trim()}
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className={styles.panel}>
@@ -310,116 +314,120 @@ function AccountDashboard({ userId }: { userId: string }) {
               <h2 className={styles.panelTitle}>Bespoke Appointments</h2>
               <Link href="/bespoke" className={styles.panelLink}>Book Slot</Link>
             </div>
-            {consultationsLoading ? (
-              <div className={styles.emptyState}>
-                <p>Loading appointments…</p>
-              </div>
-            ) : consultationsError ? (
-              <div className={styles.emptyState}>
-                <p>{consultationsError}</p>
-              </div>
-            ) : consultations.length === 0 ? (
-              <div className={styles.emptyState}>
-                <p>No bespoke requests yet.</p>
-                <p style={{ fontSize: "0.85rem", color: "var(--cinereous)", marginTop: 8 }}>
-                  Book a slot while signed in — we&apos;ll show status and your booking code here after approval.
-                </p>
-                <Link href="/bespoke" className="btn btn-primary" style={{ marginTop: "16px" }}>
-                  Book Consultation
-                </Link>
-              </div>
-            ) : (
-              <ul className={styles.consultationsList}>
-                {consultations.map((c) => {
-                  const pref = formatPreferredDate(c.preferredDate);
-                  return (
-                    <li key={c.id} className={styles.orderCard}>
-                      <div className={styles.orderCardTop}>
-                        <div>
-                          <span className={styles.orderRef}>{c.service}</span>
-                          <span className={styles.orderPlacedDate}>
-                            Requested{" "}
-                            {new Date(c.createdAt).toLocaleDateString(undefined, {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        <span className={styles.orderStatus}>{consultationStatusLabel(c.status)}</span>
-                      </div>
-                      <div className={styles.consultationBody}>
-                        <p>
-                          <strong>{c.customerName}</strong>
-                          <span aria-hidden> · </span>
-                          {c.customerEmail}
-                          <span aria-hidden> · </span>
-                          {c.customerPhone}
-                        </p>
-                        {pref ? <p>Preferred date: {pref}</p> : null}
-                        {c.notes?.trim() ? (
-                          <p>
-                            <span style={{ color: "var(--cinereous)" }}>Your note: </span>
-                            {c.notes.trim()}
-                          </p>
-                        ) : null}
-                        {c.status === "confirmed" && c.bookingCode ? (
-                          <div className={styles.bookingCodeBlock}>
-                            <span className={styles.bookingCodeLabel}>Your booking code</span>
-                            <div className={styles.bookingCodeRow}>
-                              <span className={styles.bookingCode}>{c.bookingCode}</span>
-                              <button
-                                type="button"
-                                className={`btn btn-outline ${styles.printConsultBtn}`}
-                                onClick={() => openConsultationPrintWindow(c)}
-                              >
-                                <svg
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden
-                                >
-                                  <polyline points="6 9 6 2 18 2 18 9" />
-                                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                                  <rect x="6" y="14" width="12" height="8" />
-                                </svg>
-                                Print / PDF
-                              </button>
+            <div className={styles.panelBody}>
+              {consultationsLoading ? (
+                <div className={styles.emptyState}>
+                  <p>Loading appointments…</p>
+                </div>
+              ) : consultationsError ? (
+                <div className={styles.emptyState}>
+                  <p>{consultationsError}</p>
+                </div>
+              ) : consultations.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p>No bespoke requests yet.</p>
+                  <p style={{ fontSize: "0.85rem", color: "var(--cinereous)", marginTop: 8 }}>
+                    Book a slot while signed in — we&apos;ll show status and your booking code here after approval.
+                  </p>
+                  <Link href="/bespoke" className="btn btn-primary" style={{ marginTop: "16px" }}>
+                    Book Consultation
+                  </Link>
+                </div>
+              ) : (
+                <div className={styles.panelScroll}>
+                  <ul className={styles.consultationsList}>
+                    {consultations.map((c) => {
+                      const pref = formatPreferredDate(c.preferredDate);
+                      return (
+                        <li key={c.id} className={styles.orderCard}>
+                          <div className={styles.orderCardTop}>
+                            <div>
+                              <span className={styles.orderRef}>{c.service}</span>
+                              <span className={styles.orderPlacedDate}>
+                                Requested{" "}
+                                {new Date(c.createdAt).toLocaleDateString(undefined, {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
                             </div>
-                            <p className={styles.bookingCodeHint}>
-                              Save or print this slip to bring to your appointment for quick confirmation.
-                            </p>
+                            <span className={styles.orderStatus}>{consultationStatusLabel(c.status)}</span>
                           </div>
-                        ) : null}
-                        {c.status === "confirmed" && c.scheduledAt ? (
-                          <p style={{ marginTop: "var(--space-sm)" }}>
-                            <span style={{ color: "var(--cinereous)" }}>Appointment time: </span>
-                            {formatConsultationAppointmentLocal(c.scheduledAt)}
-                          </p>
-                        ) : null}
-                        {c.status === "pending" ? (
-                          <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>
-                            We&apos;ll confirm or decline within 24–48 hours. You can check back here anytime.
-                          </p>
-                        ) : null}
-                        {c.status === "declined" ? (
-                          <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>
-                            This slot could not be confirmed. Please pick another date on{" "}
-                            <Link href="/bespoke" className={styles.panelLink}>Book a slot</Link>
-                            {" "}or reach us on WhatsApp.
-                          </p>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                          <div className={styles.consultationBody}>
+                            <p>
+                              <strong>{c.customerName}</strong>
+                              <span aria-hidden> · </span>
+                              {c.customerEmail}
+                              <span aria-hidden> · </span>
+                              {c.customerPhone}
+                            </p>
+                            {pref ? <p>Preferred date: {pref}</p> : null}
+                            {c.notes?.trim() ? (
+                              <p>
+                                <span style={{ color: "var(--cinereous)" }}>Your note: </span>
+                                {c.notes.trim()}
+                              </p>
+                            ) : null}
+                            {c.status === "confirmed" && c.bookingCode ? (
+                              <div className={styles.bookingCodeBlock}>
+                                <span className={styles.bookingCodeLabel}>Your booking code</span>
+                                <div className={styles.bookingCodeRow}>
+                                  <span className={styles.bookingCode}>{c.bookingCode}</span>
+                                  <button
+                                    type="button"
+                                    className={`btn btn-outline ${styles.printConsultBtn}`}
+                                    onClick={() => openConsultationPrintWindow(c)}
+                                  >
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      aria-hidden
+                                    >
+                                      <polyline points="6 9 6 2 18 2 18 9" />
+                                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                      <rect x="6" y="14" width="12" height="8" />
+                                    </svg>
+                                    Print / PDF
+                                  </button>
+                                </div>
+                                <p className={styles.bookingCodeHint}>
+                                  Save or print this slip to bring to your appointment for quick confirmation.
+                                </p>
+                              </div>
+                            ) : null}
+                            {c.status === "confirmed" && c.scheduledAt ? (
+                              <p style={{ marginTop: "var(--space-sm)" }}>
+                                <span style={{ color: "var(--cinereous)" }}>Appointment time: </span>
+                                {formatConsultationAppointmentLocal(c.scheduledAt)}
+                              </p>
+                            ) : null}
+                            {c.status === "pending" ? (
+                              <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>
+                                We&apos;ll confirm or decline within 24–48 hours. You can check back here anytime.
+                              </p>
+                            ) : null}
+                            {c.status === "declined" ? (
+                              <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>
+                                This slot could not be confirmed. Please pick another date on{" "}
+                                <Link href="/bespoke" className={styles.panelLink}>Book a slot</Link>
+                                {" "}or reach us on WhatsApp.
+                              </p>
+                            ) : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

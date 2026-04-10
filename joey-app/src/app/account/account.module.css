@@ -19,16 +19,14 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(39, 43, 54, 0.78) 0%,
-    rgba(39, 43, 54, 0.5) 50%,
-    rgba(145, 126, 113, 0.35) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(39, 43, 54, 0.78) 0%,
+      rgba(39, 43, 54, 0.5) 50%,
+      rgba(145, 126, 113, 0.35) 100%);
   z-index: 0;
 }
 
-.pageHeader > * {
+.pageHeader>* {
   position: relative;
   z-index: 1;
 }
@@ -149,6 +147,7 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -219,6 +218,22 @@
   flex-direction: column;
 }
 
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panelScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-lg);
+  max-height: clamp(280px, 60vh, 560px);
+}
+
 .panelHeader {
   display: flex;
   align-items: center;
@@ -263,7 +278,7 @@
 .ordersList {
   list-style: none;
   margin: 0;
-  padding: var(--space-lg);
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -339,7 +354,7 @@
 .consultationsList {
   list-style: none;
   margin: 0;
-  padding: var(--space-lg);
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -626,4 +641,3 @@
 .otpBack:hover {
   color: var(--blue-athracite);
 }
-

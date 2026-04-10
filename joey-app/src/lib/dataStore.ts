@@ -43,13 +43,19 @@ function normalizeWearTag(v: unknown): WearTag {
   return "unisex";
 }
 
-const mapPublicCollection = (row: Record<string, unknown>): PublicCollection => ({
-  id: row.id as string,
-  slug: row.slug as string,
-  name: row.name as string,
-  description: (row.description as string) || "",
-  sortOrder: Number(row.sort_order ?? 0),
-});
+export function mapPublicCollectionFromSupabaseRow(row: Record<string, unknown>): PublicCollection {
+  return {
+    id: row.id as string,
+    slug: row.slug as string,
+    name: row.name as string,
+    description: (row.description as string) || "",
+    image: (row.image as string) || undefined,
+    hoverImage: (row.hover_image as string) || undefined,
+    sortOrder: Number(row.sort_order ?? 0),
+  };
+}
+
+const mapPublicCollection = mapPublicCollectionFromSupabaseRow;
 
 export const DEFAULT_SIZES: ProductSize[] = [
   { name: "XS", available: true },
@@ -93,6 +99,7 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   isBestSeller: Boolean(row.is_best_seller),
   featured: Boolean(row.featured),
   wearTag: normalizeWearTag(row.wear_tag),
+  quantity: Number(row.quantity ?? 0),
 });
 
 const mapPromo = (row: Record<string, unknown>): PromotionCode => ({
@@ -148,6 +155,8 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   total: Number(row.total),
   discount: Number(row.discount),
   promotionCode: row.promotion_code as string | undefined,
+  paymentStatus: (row.payment_status as "unpaid" | "paid") || "unpaid",
+  paymentRef: (row.payment_ref as string) || undefined,
   status: row.status as OrderStatus,
   userId: row.user_id as string | undefined,
   notes: row.notes as string | undefined,
@@ -289,7 +298,7 @@ export const dataStore = {
 
   // ── Async: place order ─────────────────────────────────────────────────────
   placeOrder: async (
-    order: Omit<Order, "id" | "createdAt" | "updatedAt" | "orderNumber">,
+    order: Omit<Order, "id" | "createdAt" | "updatedAt" | "orderNumber" | "paymentStatus" | "paymentRef">,
   ): Promise<Order> => {
     const { data, error } = await supabase
       .from("orders")
@@ -303,6 +312,7 @@ export const dataStore = {
         discount: order.discount,
         promotion_code: order.promotionCode ?? null,
         status: order.status,
+        payment_status: "unpaid",
         user_id: order.userId ?? null,
         notes: order.notes?.trim() ? order.notes.trim() : null,
       })

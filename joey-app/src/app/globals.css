@@ -334,7 +334,8 @@ input, textarea, select {
   letter-spacing: 0.18em;
   color: var(--cinereous);
   text-transform: uppercase;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
+  transform: translateY(-2px);
 }
 
 .section-label::before {

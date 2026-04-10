@@ -6,6 +6,7 @@ export type CartItem = {
   price: number;
   image: string;
   quantity: number;
+  maxStock: number;
 };
 
 export type AppliedPromotion = {
@@ -84,9 +85,12 @@ export const cartStore = {
     const existingIndex = cart.findIndex((i) => i.id === id);
     if (existingIndex > -1) {
       const updatedCart = [...cart];
+      const existing = updatedCart[existingIndex];
+      const max = existing.maxStock ?? 999;
+      
       updatedCart[existingIndex] = {
-        ...updatedCart[existingIndex],
-        quantity: updatedCart[existingIndex].quantity + item.quantity,
+        ...existing,
+        quantity: Math.min(max, existing.quantity + item.quantity),
       };
       cart = updatedCart;
     } else {
@@ -101,7 +105,10 @@ export const cartStore = {
     const existingIndex = cart.findIndex((i) => i.id === id);
     if (existingIndex > -1) {
       const updatedItem = { ...cart[existingIndex] };
-      updatedItem.quantity += delta;
+      const max = updatedItem.maxStock ?? 999;
+      
+      updatedItem.quantity = Math.max(0, Math.min(max, updatedItem.quantity + delta));
+      
       if (updatedItem.quantity <= 0) {
         cart = cart.filter((i) => i.id !== id);
       } else {

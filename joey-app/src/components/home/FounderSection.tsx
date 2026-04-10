@@ -1,6 +1,26 @@
+ "use client";
+import { useSyncExternalStore } from "react";
+import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import type { PublicCollection } from "@/lib/types";
 import styles from "./FounderSection.module.css";
 
-export default function FounderSection() {
+export default function FounderSection({ initialCollections }: { initialCollections?: PublicCollection[] }) {
+  const isFallback = (cols?: PublicCollection[] | null) =>
+    !!cols?.length && cols.every((c) => typeof c.id === "string" && c.id.startsWith("fallback-"));
+
+  const collections = useSyncExternalStore(
+    dataStore.subscribe,
+    dataStore.getCollections,
+    () => (initialCollections && initialCollections.length > 0 ? initialCollections : SHOP_COLLECTIONS_FALLBACK),
+  );
+
+  const collectionCount =
+    collections?.length && !isFallback(collections)
+      ? collections.length
+      : initialCollections && initialCollections.length > 0
+        ? initialCollections.length
+        : SHOP_COLLECTIONS_FALLBACK.length;
+
   return (
     <section className={`section section-dark ${styles.founder}`} id="founder">
       <div className="container">
@@ -43,7 +63,7 @@ export default function FounderSection() {
 
             <div className={styles.stats}>
               <div className={styles.stat}>
-                <span className={styles.statNum}>3</span>
+                <span className={styles.statNum}>{collectionCount}</span>
                 <span className={styles.statLabel}>Collections</span>
               </div>
               <div className={styles.statDivider} />

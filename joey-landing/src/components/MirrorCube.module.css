@@ -1,0 +1,167 @@
+/* =============================================
+   MIRROR CUBE — Dark prism, vivid neon rainbow
+   ============================================= */
+
+.scene {
+  --size: 160px;
+  --depth: calc(var(--size) / 2);
+
+  position: absolute;
+  /* Anchor at the break between "Launching" and "soon" */
+  top: 38%;
+  left: 34%;
+  transform: translate(-50%, -50%);
+
+  width: var(--size);
+  height: var(--size);
+  perspective: 800px;
+  perspective-origin: 50% 46%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.cube {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: spin 7s linear infinite;
+  will-change: transform;
+}
+
+/* ── All 6 faces — dark mirror glass ── */
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  overflow: hidden;
+
+  /* Near-black with subtle metallic sheen at corner */
+  background:
+    radial-gradient(ellipse 45% 35% at 20% 18%,
+      rgba(100, 130, 210, 0.12),
+      rgba(0, 0, 0, 0) 50%),
+    linear-gradient(
+      148deg,
+      rgba(50, 65, 120, 0.09) 0%,
+      rgba(4,  4,  12, 0.96) 35%,
+      rgba(2,  2,  6,  0.99) 100%
+    );
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.7),
+    0 20px 60px rgba(0, 0, 0, 0.95);
+
+  /* Enough transparency so text bleeds through, tinted */
+  backdrop-filter: blur(2px) saturate(1.1);
+  -webkit-backdrop-filter: blur(2px) saturate(1.1);
+  opacity: 0.97;
+}
+
+/* ── Vivid neon rainbow prism sweep ── */
+.face::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from var(--sweep-angle, 180deg) at 50% 50%,
+    rgba(255,  18, 120, 0.95),
+    rgba( 18,  80, 255, 0.95),
+    rgba(  0, 220, 170, 0.88),
+    rgba(255, 200,  18, 0.88),
+    rgba(210,  10, 255, 0.88),
+    rgba(255,  18, 120, 0.95)
+  );
+  filter: blur(16px) saturate(1.8);
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  animation: prism var(--prism-dur, 5s) ease-in-out infinite;
+}
+
+/* ── Thin bright top-edge specular ── */
+.face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      158deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.04) 22%,
+      rgba(255, 255, 255, 0.00) 42%
+    );
+  mix-blend-mode: screen;
+  border-radius: inherit;
+}
+
+/* ── Face transforms ── */
+.front  { transform: rotateY(  0deg) translateZ(var(--depth)); }
+.back   { transform: rotateY(180deg) translateZ(var(--depth)); }
+.right  { transform: rotateY( 90deg) translateZ(var(--depth)); }
+.left   { transform: rotateY(-90deg) translateZ(var(--depth)); }
+.top    { transform: rotateX( 90deg) translateZ(var(--depth)); }
+.bottom { transform: rotateX(-90deg) translateZ(var(--depth)); }
+
+/* Each face: different rainbow start angle + animation timing */
+.front  { --sweep-angle: 200deg; --prism-dur: 4.8s; }
+.back   { --sweep-angle:  50deg; --prism-dur: 6.1s; }
+.right  { --sweep-angle: 290deg; --prism-dur: 5.3s; }
+.left   { --sweep-angle: 130deg; --prism-dur: 4.2s; }
+.top    { --sweep-angle:  70deg; --prism-dur: 7.0s; }
+.bottom { --sweep-angle: 340deg; --prism-dur: 5.7s; }
+
+/* ── Floor shadow ── */
+.shadow {
+  position: absolute;
+  bottom: -18%;
+  left: 50%;
+  width: 80%;
+  height: 20px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(80, 60, 200, 0.30), rgba(0, 0, 0, 0));
+  filter: blur(10px);
+  opacity: 0.50;
+  z-index: 0;
+}
+
+/* ── Ambient neon glow around cube ── */
+.halo {
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 70% 70% at 50% 50%,
+    rgba(80,  40, 200, 0.12),
+    rgba(255, 18, 120, 0.06) 50%,
+    rgba(0,   0,   0,  0.00) 75%
+  );
+  filter: blur(20px);
+  animation: haloPulse 3.8s ease-in-out infinite;
+  z-index: 0;
+}
+
+/* ── Keyframes ── */
+@keyframes spin {
+  0%   { transform: rotateX(-28deg) rotateY(  0deg) rotateZ(2deg); }
+  100% { transform: rotateX(-28deg) rotateY(360deg) rotateZ(2deg); }
+}
+
+@keyframes prism {
+  0%,  100% { transform: rotate(  0deg) scale(1.00); opacity: 0.60; }
+  40%        { transform: rotate( 22deg) scale(1.10); opacity: 0.75; }
+  70%        { transform: rotate(-14deg) scale(0.94); opacity: 0.45; }
+}
+
+@keyframes haloPulse {
+  0%,  100% { opacity: 0.55; }
+  50%        { opacity: 0.90; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .scene { --size: 130px; }
+}
+
+@media (max-width: 600px) {
+  .scene { --size: 100px; }
+}

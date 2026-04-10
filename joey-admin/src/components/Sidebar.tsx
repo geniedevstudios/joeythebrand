@@ -2,17 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { dataStore } from "@/lib/dataStore";
 import {
   LayoutDashboard,
   ShoppingBag,
-  Image as ImageIcon,
+  ImageIcon,
   Tag,
   ShoppingCart,
   CalendarDays,
   Mail,
 } from "lucide-react";
 
-type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }> };
+type NavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: number;
+};
 
 const mainNav: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -36,24 +43,64 @@ function linkActive(pathname: string, href: string) {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [processingOrdersCount, setProcessingOrdersCount] = useState(0);
+  const [pendingConsultationsCount, setPendingConsultationsCount] = useState(0);
+
+  const fetchCounts = async () => {
+    try {
+      const [orders, consultations] = await Promise.all([
+        dataStore.getOrders(),
+        dataStore.getConsultationBookings(),
+      ]);
+      
+      const ordersCount = orders.filter((o) => o.status === "processing").length;
+      const consultationsCount = consultations.filter((c) => c.status === "pending").length;
+      
+      setProcessingOrdersCount(ordersCount);
+      setPendingConsultationsCount(consultationsCount);
+    } catch (err) {
+      console.error("Sidebar counts fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCounts();
+    const unsubscribe = dataStore.subscribe(fetchCounts);
+    return unsubscribe;
+  }, []);
 
   const renderLink = (item: NavItem) => {
     const isActive = linkActive(pathname, item.href);
+    let badgeCount = item.badge;
+    
+    if (item.href === "/orders") {
+      badgeCount = processingOrdersCount;
+    } else if (item.href === "/content/consultations") {
+      badgeCount = pendingConsultationsCount;
+    }
+
     return (
       <Link
         key={item.name}
         href={item.href}
-        className={`group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+        className={`group flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors ${
           isActive ? "bg-white/15 text-white" : "text-zinc-200 hover:bg-white/10 hover:text-white"
         }`}
       >
-        <item.icon
-          className={`mr-3 h-5 w-5 flex-shrink-0 ${
-            isActive ? "text-white" : "text-zinc-300 group-hover:text-white"
-          }`}
-          aria-hidden="true"
-        />
-        {item.name}
+        <div className="flex items-center">
+          <item.icon
+            className={`mr-3 h-5 w-5 flex-shrink-0 ${
+              isActive ? "text-white" : "text-zinc-300 group-hover:text-white"
+            }`}
+            aria-hidden="true"
+          />
+          {item.name}
+        </div>
+        {badgeCount !== undefined && badgeCount > 0 && (
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-sm ring-1 ring-white/20">
+            {badgeCount}
+          </span>
+        )}
       </Link>
     );
   };

@@ -66,11 +66,14 @@ export default function ProductsPage() {
 
   const [mainImageUrl, setMainImageUrl] = useState("/lookbook.png");
   const [hoverImageUrl, setHoverImageUrl] = useState("");
-  const [extraImageUrls, setExtraImageUrls] = useState<string[]>(["", "", "", ""]);
+  const [extraImageUrls, setExtraImageUrls] = useState<string[]>(["", "", ""]);
   const [newProductUploadKey, setNewProductUploadKey] = useState("");
 
   const [productPendingDelete, setProductPendingDelete] = useState<Product | null>(null);
   const [collectionPendingDelete, setCollectionPendingDelete] = useState<Collection | null>(null);
+
+  const [colMainImageUrl, setColMainImageUrl] = useState("/lookbook.png");
+  const [colHoverImageUrl, setColHoverImageUrl] = useState("");
 
   const productUploadFolder = editingProduct?.id
     ? `products/${editingProduct.id}`
@@ -88,13 +91,13 @@ export default function ProductsPage() {
       setMainImageUrl(main);
       const extras = (editingProduct.images || [])
         .filter((u) => u?.trim() && u.trim() !== main)
-        .slice(0, 4);
-      setExtraImageUrls([0, 1, 2, 3].map((i) => extras[i] ?? ""));
+        .slice(0, 3);
+      setExtraImageUrls([0, 1, 2].map((i) => extras[i] ?? ""));
       setHoverImageUrl(editingProduct.hoverImage?.trim() || "");
     } else {
       setMainImageUrl("/lookbook.png");
       setHoverImageUrl("");
-      setExtraImageUrls(["", "", "", ""]);
+      setExtraImageUrls(["", "", ""]);
     }
   }, [isModalOpen, editingProduct]);
 
@@ -146,9 +149,16 @@ export default function ProductsPage() {
 
   const collectionOptions = useMemo(() => {
     const base = collections.length > 0 ? collections : FALLBACK_COLLECTIONS;
-    if (editingProduct && !base.some((c) => c.slug === editingProduct.category)) {
+    
+    // Add "None" option
+    const optionsWithNone = [
+      { id: "none", slug: "none", name: "None (Standalone Product)", description: "", sortOrder: -1, createdAt: "" },
+      ...base
+    ];
+
+    if (editingProduct && editingProduct.category && !optionsWithNone.some((c) => c.slug === editingProduct.category)) {
       return [
-        ...base,
+        ...optionsWithNone,
         {
           id: "orphan",
           slug: editingProduct.category,
@@ -159,7 +169,7 @@ export default function ProductsPage() {
         },
       ];
     }
-    return base;
+    return optionsWithNone;
   }, [collections, editingProduct]);
 
   const handleEdit = (product: Product) => {
@@ -201,6 +211,7 @@ export default function ProductsPage() {
     const wearRaw = (formData.get("wearTag") as string) || "unisex";
     const wearTag: WearTag =
       wearRaw === "mens" || wearRaw === "womens" || wearRaw === "unisex" ? wearRaw : "unisex";
+    const quantity = Number(formData.get("quantity")) || 0;
 
     const col = collectionOptions.find((c) => c.slug === category);
     if (!categoryName && col) categoryName = col.name;
@@ -228,6 +239,7 @@ export default function ProductsPage() {
           featured,
           sizes: newSizes,
           wearTag,
+          quantity,
         });
       } else {
         await dataStore.addProduct({
@@ -246,6 +258,7 @@ export default function ProductsPage() {
           isBestSeller,
           featured,
           wearTag,
+          quantity,
         });
       }
       setIsModalOpen(false);
@@ -260,12 +273,16 @@ export default function ProductsPage() {
   const openAddCollection = () => {
     setEditingCollection(null);
     setCollectionFormError("");
+    setColMainImageUrl("/lookbook.png");
+    setColHoverImageUrl("");
     setCollectionModalOpen(true);
   };
 
   const openEditCollection = (c: Collection) => {
     setEditingCollection(c);
     setCollectionFormError("");
+    setColMainImageUrl(c.image || "/lookbook.png");
+    setColHoverImageUrl(c.hoverImage || "");
     setCollectionModalOpen(true);
   };
 
@@ -280,15 +297,28 @@ export default function ProductsPage() {
 
     try {
       if (editingCollection) {
-        await dataStore.updateCollection(editingCollection.id, { name, description, sortOrder });
+        await dataStore.updateCollection(editingCollection.id, {
+          name,
+          description,
+          sortOrder,
+          image: colMainImageUrl,
+          hoverImage: colHoverImageUrl,
+        });
       } else {
         const slug = (form.querySelector('[name="col-slug"]') as HTMLInputElement).value.trim().toLowerCase();
         if (!SLUG_PATTERN.test(slug)) {
-          setCollectionFormError("Slug: lowercase letters, numbers, and hyphens only (e.g. spring-2026).");
+          setCollectionFormError("Slug: lowercase letters, numbers, and hyphens only (e.g. spring- drop).");
           setCollectionSaving(false);
           return;
         }
-        await dataStore.addCollection({ slug, name, description, sortOrder });
+        await dataStore.addCollection({
+          slug,
+          name,
+          description,
+          sortOrder,
+          image: colMainImageUrl,
+          hoverImage: colHoverImageUrl,
+        });
       }
       setCollectionModalOpen(false);
       await loadCollectionsOnly();
@@ -369,19 +399,19 @@ export default function ProductsPage() {
               <table className="min-w-full divide-y divide-zinc-200">
                 <thead className="bg-white">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Slug
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Sort
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Description
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Actions
                     </th>
                   </tr>
@@ -456,19 +486,22 @@ export default function ProductsPage() {
               <table className="min-w-full divide-y divide-zinc-200">
                 <thead className="bg-white">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Product
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Category
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
+                      Stock
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Price
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Actions
                     </th>
                   </tr>
@@ -491,7 +524,7 @@ export default function ProductsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500">{product.categoryName}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">{product.categoryName}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         {product.isOutOfStock ? (
                           <span className="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">
@@ -513,7 +546,10 @@ export default function ProductsPage() {
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">
+                        {product.quantity}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-zinc-900">
                         GHC {product.price.toLocaleString()}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
@@ -599,6 +635,19 @@ export default function ProductsPage() {
                     defaultValue={editingProduct?.price}
                     required
                     min={0}
+                    step="0.01"
+                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                  />
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-zinc-700">Quantity in Stock</label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    defaultValue={editingProduct?.quantity ?? 0}
+                    required
+                    min={0}
                     className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
                   />
                 </div>
@@ -653,10 +702,10 @@ export default function ProductsPage() {
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-zinc-700">Gallery images</p>
                   <p className="mt-0.5 text-xs text-zinc-500">
-                    Up to four extra photos for the product detail page (thumbnails / gallery).
+                    Up to three extra photos for the product detail page (thumbnails / gallery).
                   </p>
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                    {[0, 1, 2, 3].map((i) => (
+                    {[0, 1, 2].map((i) => (
                       <AssetUrlField
                         key={i}
                         id={`product-gallery-${i}`}
@@ -828,6 +877,30 @@ export default function ProductsPage() {
                   type="number"
                   defaultValue={editingCollection?.sortOrder ?? 0}
                   className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                />
+              </div>
+
+              <div className="pt-2">
+                <AssetUrlField
+                  id="col-image"
+                  label="Main Image"
+                  value={colMainImageUrl}
+                  onChange={setColMainImageUrl}
+                  uploadFolder="collections"
+                  accept="image/*"
+                  placeholder="Main collection showcase image"
+                />
+              </div>
+
+              <div>
+                <AssetUrlField
+                  id="col-hover-image"
+                  label="Hover Image"
+                  value={colHoverImageUrl}
+                  onChange={setColHoverImageUrl}
+                  uploadFolder="collections"
+                  accept="image/*"
+                  placeholder="Optional hover effect image"
                 />
               </div>
               {collectionFormError && (

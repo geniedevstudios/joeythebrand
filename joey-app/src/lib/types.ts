@@ -1,4 +1,4 @@
-export type Category = "all" | "always-lit" | "limited-edition" | "sample-sale";
+export type Category = string;
 
 /** Shop filter: men's / women's; unisex shows in both. */
 export type WearTag = "mens" | "womens" | "unisex";
@@ -27,6 +27,7 @@ export interface Product {
   isBestSeller: boolean;
   featured: boolean;
   wearTag: WearTag;
+  quantity: number;
 }
 
 /** Collection row for shop showcase (from Supabase). */
@@ -35,6 +36,8 @@ export interface PublicCollection {
   slug: string;
   name: string;
   description: string;
+  image?: string;
+  hoverImage?: string;
   sortOrder: number;
 }
 
@@ -58,6 +61,8 @@ export interface Order {
   total: number;
   discount: number;
   promotionCode?: string;
+  paymentStatus: "unpaid" | "paid";
+  paymentRef?: string;
   status: OrderStatus;
   /** Set when the customer was signed in at checkout (Supabase auth.users id). */
   userId?: string;

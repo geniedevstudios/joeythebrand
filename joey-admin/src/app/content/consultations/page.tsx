@@ -119,6 +119,18 @@ export default function ConsultationsPage() {
     }
   };
 
+  const onMarkPaid = async (id: string) => {
+    setUpdatingId(id);
+    try {
+      await dataStore.updateConsultationPaymentStatus(id, "paid");
+      await load();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const openConfirm = (b: ConsultationBooking) => {
     setConfirmTarget(b);
   };
@@ -303,29 +315,32 @@ export default function ConsultationsPage() {
             return (
             <table className="min-w-[1180px] w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-zinc-200 bg-gradient-to-b from-zinc-50 to-zinc-100/90">
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                <tr className="border-b border-zinc-200 bg-zinc-100">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Requested
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Customer
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Service
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Preferred
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Scheduled
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Code
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Status
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
+                    Payment
+                  </th>
+                  <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900">
                     Actions
                   </th>
                 </tr>
@@ -350,6 +365,11 @@ export default function ConsultationsPage() {
                     </td>
                     <td className="px-5 py-4 text-sm text-zinc-800 whitespace-nowrap">
                       {formatScheduled(b.scheduledAt)}
+                      {b.durationHours ? (
+                        <div className="text-[11px] text-neutral-500 mt-1 uppercase tracking-wider">
+                          {b.durationHours}h Session
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-5 py-4 text-sm">
                       {b.bookingCode ? (
@@ -378,6 +398,26 @@ export default function ConsultationsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-sm">
+                      <div className="flex flex-col gap-1">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            b.paymentStatus === "paid"
+                              ? "bg-emerald-100 text-emerald-900"
+                              : "bg-red-100 text-red-900"
+                          }`}
+                        >
+                          {b.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                        </span>
+                        {b.paymentRef ? (
+                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Ref: {b.paymentRef}</div>
+                        ) : null}
+                        {b.priceGhs ? (
+                          <div className="text-xs text-neutral-500 text-center font-medium">₵{b.priceGhs.toLocaleString()}</div>
+                        ) : null}
+
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sm">
                       <div className="flex flex-col gap-2 min-w-[120px]">
                         {b.status === "pending" ? (
                           <>
@@ -397,6 +437,16 @@ export default function ConsultationsPage() {
                             >
                               Decline
                             </button>
+                            {b.paymentStatus !== "paid" ? (
+                              <button
+                                type="button"
+                                className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+                                disabled={updatingId === b.id}
+                                onClick={() => void onMarkPaid(b.id)}
+                              >
+                                Mark as Paid
+                              </button>
+                            ) : null}
                           </>
                         ) : b.status === "confirmed" ? (
                           <>
@@ -407,14 +457,6 @@ export default function ConsultationsPage() {
                               onClick={() => openConsultationPrintWindow(b)}
                             >
                               Print slip
-                            </button>
-                            <button
-                              type="button"
-                              className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-                              disabled={updatingId === b.id}
-                              onClick={() => void onDecline(b)}
-                            >
-                              Revoke
                             </button>
                           </>
                         ) : (

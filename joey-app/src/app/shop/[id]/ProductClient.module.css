@@ -293,6 +293,24 @@
   margin-bottom: var(--space-xl);
 }
 
+.qtyHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.qtyHeader .qtyLabel {
+  display: inline;
+  margin-bottom: 0;
+}
+
+.qtyHeader .lowStockWarning {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .qtyLabel {
   display: block;
   font-family: var(--font-label);
@@ -874,9 +892,32 @@
 
 .modalQtyRow {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: nowrap;
   gap: var(--space-sm);
   margin-bottom: var(--space-lg);
+}
+
+.qtyLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modalQtyRow .qtyLabel {
+  display: inline;
+  margin-bottom: 0;
+  padding-top: 2px;
+}
+
+.lowStockWarning {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: var(--wood);
+  white-space: nowrap;
 }
 
 .modalQtyRow .qtyBtn {
@@ -1084,6 +1125,12 @@
   .modalActions {
     flex-direction: column;
     gap: var(--space-sm);
+    align-items: stretch;
+  }
+
+  .modalAddBtn, .modalWishlistBtn {
+    width: 100%;
+    justify-content: center;
   }
 
   .sizeBtn {

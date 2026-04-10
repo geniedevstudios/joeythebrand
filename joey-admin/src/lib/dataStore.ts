@@ -39,6 +39,7 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   isBestSeller: Boolean(row.is_best_seller),
   featured: Boolean(row.featured),
   wearTag: normalizeWearTag(row.wear_tag),
+  quantity: Number(row.quantity ?? 0),
 });
 
 const mapPromo = (row: Record<string, unknown>): PromotionCode => ({
@@ -64,6 +65,10 @@ const mapConsultationBooking = (row: Record<string, unknown>): ConsultationBooki
     ? String(row.booking_code).trim() || undefined
     : undefined,
   scheduledAt: (row.scheduled_at as string) || undefined,
+  durationHours: row.duration_hours != null ? Number(row.duration_hours) : undefined,
+  priceGhs: row.price_ghs != null ? Number(row.price_ghs) : undefined,
+  paymentStatus: (row.payment_status as string) || "unpaid",
+  paymentRef: (row.payment_ref as string) || undefined,
   createdAt: row.created_at as string,
   updatedAt: row.updated_at as string,
 });
@@ -91,6 +96,8 @@ const mapCollection = (row: Record<string, unknown>): Collection => ({
   slug: row.slug as string,
   name: row.name as string,
   description: (row.description as string) || "",
+  image: (row.image as string) || undefined,
+  hoverImage: (row.hover_image as string) || undefined,
   sortOrder: Number(row.sort_order ?? 0),
   createdAt: row.created_at as string,
 });
@@ -135,6 +142,8 @@ export const dataStore = {
       slug: c.slug.trim().toLowerCase(),
       name: c.name.trim(),
       description: c.description.trim(),
+      image: c.image || null,
+      hover_image: c.hoverImage || null,
       sort_order: c.sortOrder,
     });
     if (error) throw new Error(error.message);
@@ -143,12 +152,15 @@ export const dataStore = {
 
   updateCollection: async (
     id: string,
-    updates: Partial<Pick<Collection, "name" | "description" | "sortOrder">>,
+    updates: Partial<Pick<Collection, "name" | "description" | "sortOrder" | "image" | "hoverImage">>,
   ): Promise<void> => {
     const payload: Record<string, unknown> = {};
     if (updates.name !== undefined) payload.name = updates.name.trim();
     if (updates.description !== undefined) payload.description = updates.description.trim();
     if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
+    if (updates.image !== undefined) payload.image = updates.image || null;
+    if (updates.hoverImage !== undefined) payload.hover_image = updates.hoverImage || null;
+
     const { error } = await supabase.from("collections").update(payload).eq("id", id);
     if (error) throw new Error(error.message);
     dataStore.notify();
@@ -204,6 +216,7 @@ export const dataStore = {
     if (updates.isBestSeller !== undefined) payload.is_best_seller = updates.isBestSeller;
     if (updates.featured !== undefined) payload.featured = updates.featured;
     if (updates.wearTag !== undefined) payload.wear_tag = updates.wearTag;
+    if (updates.quantity !== undefined) payload.quantity = updates.quantity;
 
     const { error } = await supabase.from("products").update(payload).eq("id", id);
     if (error) throw new Error(error.message);
@@ -230,6 +243,7 @@ export const dataStore = {
       is_best_seller: product.isBestSeller,
       featured: product.featured,
       wear_tag: product.wearTag ?? "unisex",
+      quantity: product.quantity ?? 0,
     });
     if (error) throw new Error(error.message);
     dataStore.notify();
@@ -374,6 +388,18 @@ export const dataStore = {
       .from("consultation_bookings")
       .update({
         status: "declined" satisfies ConsultationStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    dataStore.notify();
+  },
+
+  updateConsultationPaymentStatus: async (id: string, paymentStatus: string): Promise<void> => {
+    const { error } = await supabase
+      .from("consultation_bookings")
+      .update({
+        payment_status: paymentStatus,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);

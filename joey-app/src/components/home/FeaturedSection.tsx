@@ -1,60 +1,256 @@
+"use client";
 import Link from "next/link";
+import { useEffect, useMemo, useSyncExternalStore, useState } from "react";
+import { createPortal } from "react-dom";
+import { dataStore } from "@/lib/dataStore";
+import { wishlistStore } from "@/store/wishlistStore";
+import { DEFAULT_SIZES } from "@/lib/dataStore";
 import styles from "./FeaturedSection.module.css";
 
-const featured = [
-  {
-    id: "structured-blazer",
-    name: "The Structured Blazer",
-    category: "ALWAYS LIT",
-    price: "GHC 850",
-    image: "/lookbook.png",
-    tag: "Bestseller",
-  },
-  {
-    id: "identity-coat",
-    name: "The Identity Coat",
-    category: "LIMITED-EDITION",
-    price: "GHC 1,200",
-    image: "/lookbook.png",
-    tag: "Limited",
-  },
-  {
-    id: "presence-set",
-    name: "The Presence Set",
-    category: "ALWAYS LIT",
-    price: "GHC 980",
-    image: "/lookbook.png",
-    tag: null,
-  },
-  {
-    id: "heritage-knit",
-    name: "The Heritage Knit",
-    category: "SEASONAL",
-    price: "GHC 750",
-    image: "/lookbook.png",
-    tag: "New",
-  },
-  {
-    id: "form-trousers",
-    name: "The Form Trousers",
-    category: "ALWAYS LIT",
-    price: "GHC 620",
-    image: "/lookbook.png",
-    tag: null,
-  },
-];
+const EMPTY_ARRAY: any[] = [];
 
 export default function FeaturedSection() {
+  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
+  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
+  const [quickViewPiece, setQuickViewPiece] = useState<any>(null);
+  const [activeImage, setActiveImage] = useState<string>("");
+  const [qty, setQty] = useState(1);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+
+  const featuredLabel = useMemo(() => {
+    const phrases = [
+      "Made with love",
+      "Made with you in mind",
+      "Crafted with intention",
+      "Woven with purpose",
+      "Designed to be remembered",
+      "Tailored for presence",
+      "Built for the moment",
+    ];
+    return phrases[Math.floor(Math.random() * phrases.length)];
+  }, []);
+  
+  // Filter for featured products (max 5 for the home grid)
+  const featured = products.filter(p => p.featured).slice(0, 5);
+
+  const isInWishlist = (id: string) => wishlistItems.some((item: any) => item.id === id);
+  const toggleWishlist = (product: any) => {
+    wishlistStore.toggleItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      hoverImage: product.hoverImage,
+      category: product.categoryName,
+    });
+  };
+
+  useEffect(() => {
+    if (quickViewPiece) {
+      document.body.style.overflow = "hidden";
+      setActiveImage("");
+      setQty(1);
+      setSelectedSize("");
+      setAddStatus("idle");
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [quickViewPiece]);
+
+  const getAvailableSizes = (prod: any) => {
+    if (!prod?.sizes || prod.sizes.length < 6) {
+      return DEFAULT_SIZES.map((s) => s.name);
+    }
+    return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
+  };
+
+  const handleAddToCart = () => {
+    if (!quickViewPiece) return;
+    if (!selectedSize) return;
+
+    setAddStatus("adding");
+    setTimeout(() => {
+      import("@/store/cartStore").then(({ cartStore }) => {
+        cartStore.addItem({
+          productId: quickViewPiece.id,
+          name: quickViewPiece.name,
+          size: selectedSize || "Standard",
+          price: quickViewPiece.price,
+          image: quickViewPiece.image,
+          quantity: qty,
+          maxStock: quickViewPiece.quantity,
+        });
+        setAddStatus("added");
+        setTimeout(() => setAddStatus("idle"), 2000);
+      });
+    }, 400);
+  };
+
+  if (featured.length === 0) return null;
+
+  const modal =
+    quickViewPiece && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className={styles.modalBackdrop}
+            onClick={() => setQuickViewPiece(null)}
+            aria-hidden="true"
+          >
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="featured-quickview-title"
+            >
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setQuickViewPiece(null)}
+                aria-label="Close modal"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+
+              <div className={styles.modalGrid}>
+                <div className={styles.modalGallery}>
+                  <div className={styles.modalImageWrap}>
+                    <img
+                      src={activeImage || quickViewPiece.image}
+                      alt={quickViewPiece.name}
+                      className={styles.modalImage}
+                    />
+                  </div>
+
+                  {quickViewPiece.images && quickViewPiece.images.length > 1 && (
+                    <div className={styles.modalThumbnails}>
+                      {quickViewPiece.images.map((img: string, idx: number) => (
+                        <button
+                          key={idx}
+                          className={`${styles.thumbBtn} ${(activeImage || quickViewPiece.image) === img ? styles.thumbActive : ""}`}
+                          onClick={() => setActiveImage(img)}
+                          aria-label={`View image ${idx + 1}`}
+                          type="button"
+                        >
+                          <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.modalInfo}>
+                  <p className={styles.modalCategory}>{quickViewPiece.categoryName}</p>
+                  <h3 id="featured-quickview-title" className={styles.modalTitle}>{quickViewPiece.name}</h3>
+                  <p className={styles.modalPrice}>GHC {Number(quickViewPiece.price).toLocaleString()}</p>
+
+                  {quickViewPiece.description ? (
+                    <p className={styles.modalDesc}>{quickViewPiece.description}</p>
+                  ) : null}
+
+                  <div className={styles.modalSizeRow}>
+                    <span className={styles.qtyLabel}>Size:</span>
+                    <div className={styles.sizeGrid}>
+                      {getAvailableSizes(quickViewPiece).map((sz: string) => (
+                        <button
+                          key={sz}
+                          type="button"
+                          className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
+                          onClick={() => setSelectedSize((prev) => (prev === sz ? "" : sz))}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {!selectedSize ? (
+                    <p className={styles.modalHint}>Pick a size to add to cart.</p>
+                  ) : null}
+
+                  <div className={styles.modalQtyRow}>
+                    <div className={styles.qtyLeft}>
+                      <span className={styles.qtyLabel}>Quantity:</span>
+                    <div className={styles.qtyControl}>
+                      <button
+                        type="button"
+                        className={styles.qtyBtn}
+                        onClick={() => setQty(Math.max(1, qty - 1))}
+                      >
+                        -
+                      </button>
+                      <span className={styles.qtyVal}>{qty}</span>
+                      <button
+                        type="button"
+                        className={styles.qtyBtn}
+                        onClick={() => {
+                          if (qty < quickViewPiece.quantity) {
+                            setQty(qty + 1);
+                          }
+                        }}
+                        disabled={qty >= quickViewPiece.quantity}
+                      >
+                        +
+                      </button>
+                    </div>
+                    </div>
+
+                    {quickViewPiece.quantity > 0 && quickViewPiece.quantity < 6 && (
+                      <span className={styles.lowStockWarning}>Only {quickViewPiece.quantity} left</span>
+                    )}
+                  </div>
+
+                  <div className={styles.modalActions}>
+                    <button
+                      type="button"
+                      className={`btn btn-primary ${styles.modalAddBtn}`}
+                      onClick={handleAddToCart}
+                      disabled={addStatus !== "idle" || !selectedSize || quickViewPiece.isOutOfStock}
+                    >
+                      {quickViewPiece.isOutOfStock
+                        ? "Out of Stock"
+                        : addStatus === "idle"
+                          ? "Add To Cart"
+                          : addStatus === "adding"
+                            ? "Adding..."
+                            : "Added"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.modalWishlistBtn}
+                      onClick={() => toggleWishlist(quickViewPiece)}
+                    >
+                      {isInWishlist(quickViewPiece.id) ? "Saved to wishlist" : "Add to wishlist"}
+                    </button>
+
+                    <Link href={`/shop/${quickViewPiece.id}`} className={styles.modalFullDetail}>
+                      View Full Details →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <section className={`section ${styles.featured}`} id="featured">
       <div className="container">
         <div className={styles.header}>
           <div>
-            <span className="section-label">The Collection</span>
+            <span className="section-label">{featuredLabel}</span>
             <h2 className={`t-heading ${styles.heading}`}>Pieces that speak first.</h2>
           </div>
-          <Link href="/collection" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
-            View Full Collection
+          <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
+            Shop for more
           </Link>
         </div>
 
@@ -62,33 +258,102 @@ export default function FeaturedSection() {
           {featured.map((item) => (
             <article key={item.id} className={styles.card}>
               <div className={styles.imageWrap}>
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className={styles.image}
-                  loading="lazy"
-                />
-                {item.tag && (
-                  <span className={styles.tag}>{item.tag}</span>
+                {item.hoverImage ? (
+                  <>
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className={styles.imagePrimary}
+                      loading="lazy"
+                    />
+                    <img
+                      src={item.hoverImage}
+                      alt=""
+                      className={styles.imageHover}
+                      loading="lazy"
+                      aria-hidden
+                    />
+                  </>
+                ) : (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className={styles.image}
+                    loading="lazy"
+                  />
                 )}
+                
+                {item.isOutOfStock ? (
+                  <span className={styles.tag} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                ) : (
+                  <>
+                    {item.isBestSeller && <span className={styles.tag} style={{ background: "#f59e0b" }}>Bestseller</span>}
+                    {item.isLimited && <span className={styles.tag} style={{ background: "#8b5cf6" }}>Limited</span>}
+                  </>
+                )}
+
                 <div className={styles.overlay}>
-                  <Link
-                    href="/collection"
-                    className={`btn btn-ghost btn-sm ${styles.quickView}`}
-                    id={`featured-${item.id}`}
-                  >
-                    View Piece
-                  </Link>
+                  <div className={styles.actionButtons}>
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
+                      aria-label={isInWishlist(item.id) ? "Remove from wishlist" : "Add to wishlist"}
+                      title={isInWishlist(item.id) ? "Saved" : "Add to wishlist"}
+                      onClick={() => toggleWishlist(item)}
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill={isInWishlist(item.id) ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        suppressHydrationWarning
+                      >
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
+                      aria-label="Quick view"
+                      title="Quick view"
+                      onClick={() => setQuickViewPiece(item)}
+                      disabled={item.isOutOfStock}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className={styles.ctaRow}>
+                    <Link
+                      href={`/shop/${item.id}`}
+                      className={`btn btn-ghost btn-sm ${styles.quickView}`}
+                      id={`featured-${item.id}`}
+                    >
+                      View Piece
+                    </Link>
+                  </div>
                 </div>
               </div>
               <div className={styles.info}>
-                <span className={styles.category}>{item.category}</span>
-                <h3 className={styles.name}>{item.name}</h3>
+                <span className={styles.category}>{item.categoryName}</span>
+                <div className="flex justify-between items-baseline">
+                  <h3 className={styles.name}>{item.name}</h3>
+                  <span className="text-sm font-medium text-zinc-900">GHC {item.price.toLocaleString()}</span>
+                </div>
               </div>
             </article>
           ))}
         </div>
       </div>
+
+      {modal}
     </section>
   );
 }

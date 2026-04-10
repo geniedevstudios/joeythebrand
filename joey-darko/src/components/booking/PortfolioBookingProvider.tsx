@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 import BookingDrawer from "./BookingDrawer";
 
 type Ctx = {
-  openBooking: () => void;
+  openBooking: (service?: any) => void;
   closeBooking: () => void;
   isOpen: boolean;
 };
@@ -21,8 +21,20 @@ export function usePortfolioBooking(): Ctx {
 
 export function PortfolioBookingProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const closeBooking = useCallback(() => setOpen(false), []);
-  const openBooking = useCallback(() => setOpen(true), []);
+  const [initialService, setInitialService] = useState<string | undefined>(undefined);
+
+  const closeBooking = useCallback(() => {
+    setOpen(false);
+    setInitialService(undefined);
+  }, []);
+
+  const openBooking = useCallback((service?: unknown) => {
+    // If called directly by onClick, the first arg is an event object.
+    // We only want to set initialService if it's explicitly a string title.
+    const serviceName = typeof service === "string" ? service : undefined;
+    setInitialService(serviceName);
+    setOpen(true);
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -36,7 +48,7 @@ export function PortfolioBookingProvider({ children }: { children: React.ReactNo
   return (
     <PortfolioBookingContext.Provider value={value}>
       {children}
-      <BookingDrawer open={open} onClose={closeBooking} />
+      <BookingDrawer open={open} onClose={closeBooking} initialService={initialService} />
     </PortfolioBookingContext.Provider>
   );
 }

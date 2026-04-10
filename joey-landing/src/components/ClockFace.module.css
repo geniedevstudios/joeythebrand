@@ -1,0 +1,54 @@
+/* =============================================
+   CLOCK FACE — Two hands + ticks
+   ============================================= */
+
+.clock {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.clockSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Minute hand: static at 7 o'clock (210 degrees) ── */
+.minuteHand {
+  transform-origin: 200px 200px; /* SVG viewBox center */
+  transform: rotate(210deg);
+}
+
+/* ── Second hand: ticks every second with a mechanical bounce (12 total marks = 12s) ── */
+.secondHand {
+  transform-origin: 200px 200px;
+  animation: secondSpinBounce 12s linear infinite;
+}
+
+@keyframes secondSpinBounce {
+  0%,      7.5%    { transform: rotate(0deg);   }
+  8.0%             { transform: rotate(31.5deg);  }
+  8.333%,  15.833% { transform: rotate(30deg);  }
+  16.333%          { transform: rotate(61.5deg);  }
+  16.666%, 24.166% { transform: rotate(60deg);  }
+  24.666%          { transform: rotate(91.5deg);  }
+  25.0%,   32.5%   { transform: rotate(90deg);  }
+  33.0%            { transform: rotate(121.5deg); }
+  33.333%, 40.833% { transform: rotate(120deg); }
+  41.333%          { transform: rotate(151.5deg); }
+  41.666%, 49.166% { transform: rotate(150deg); }
+  49.666%          { transform: rotate(181.5deg); }
+  50.0%,   57.5%   { transform: rotate(180deg); }
+  58.0%            { transform: rotate(211.5deg); }
+  58.333%, 65.833% { transform: rotate(210deg); }
+  66.333%          { transform: rotate(241.5deg); }
+  66.666%, 74.166% { transform: rotate(240deg); }
+  74.666%          { transform: rotate(271.5deg); }
+  75.0%,   82.5%   { transform: rotate(270deg); }
+  83.0%            { transform: rotate(301.5deg); }
+  83.333%, 90.833% { transform: rotate(300deg); }
+  91.333%          { transform: rotate(331.5deg); }
+  91.666%, 99.166% { transform: rotate(330deg); }
+  99.666%          { transform: rotate(361.5deg); }
+  100%             { transform: rotate(360deg); }
+}

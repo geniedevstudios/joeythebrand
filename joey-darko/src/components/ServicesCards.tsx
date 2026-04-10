@@ -84,7 +84,7 @@ export default function ServicesCards() {
               className={styles.dialogCta}
               onClick={() => {
                 close();
-                openBooking();
+                openBooking(open.title);
               }}
             >
               Book a consultation

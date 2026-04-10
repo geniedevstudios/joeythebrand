@@ -1,0 +1,475 @@
+/* =============================================
+   JOEY LANDING — Page Layout
+   Full-bleed hero, centered clock + text
+   ============================================= */
+
+/* ── Full-page wrapper ── */
+.page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Hero background — fixed so navbar & hero share it ── */
+.heroBgWrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.heroVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Grayscale (black and white), blurred, and darkened */
+  filter: grayscale(100%) blur(5px) brightness(0.45);
+  transform: scale(1.05); /* hides the blurred edges */
+  pointer-events: none;
+}
+
+/* Vignette overlay */
+.heroVignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 90% 80% at 50% 50%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.75) 100%);
+  pointer-events: none;
+}
+
+/* ── Navbar ── */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50; /* above all sections */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem 3rem;
+  pointer-events: none; /* allows clicking through the empty space */
+}
+
+.logo {
+  font-family: var(--font-logo);
+  font-size: 1.25rem;
+  letter-spacing: 0.10em;
+  color: rgba(255, 255, 255, 0.95);
+  user-select: none;
+  pointer-events: auto; /* re-enable clicks on the logo itself */
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Subscribe button */
+.subscribeBtn {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.80);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition);
+  padding: 0;
+}
+.subscribeBtn:hover { color: #fff; }
+
+/* Social icon links */
+.socialLinks {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.socialLink {
+  color: rgba(255, 255, 255, 0.70);
+  transition: color var(--transition);
+  display: flex;
+  align-items: center;
+}
+.socialLink:hover { color: #fff; }
+
+.socialLink svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* ── Main hero ── */
+.main {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 90px);
+}
+
+/* ── Clock + text container ── */
+.hero {
+  position: relative;
+  width: min(520px, 88vw);
+  height: min(520px, 88vw);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Clock SVG is absolute behind the text */
+/* (ClockFace renders as position:absolute inset:0) */
+
+/* ── Text inside the clock ── */
+.textBlock {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-size: clamp(3.4rem, 8vw, 5.8rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.sub {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 0.2rem;
+}
+
+/* ── Subscribe drawer (inline, below clock) ── */
+.subscribeDrawer {
+  position: absolute;
+  bottom: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, 90vw);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subscribeRow {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.subscribeInput {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.85);
+  outline: none;
+}
+.subscribeInput::placeholder { color: rgba(255,255,255,0.35); }
+.subscribeInput:focus { background: rgba(0, 0, 0, 0.70); }
+
+.subscribeSubmit {
+  background: rgba(255, 255, 255, 0.90);
+  color: #000;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.subscribeSubmit:hover { background: #fff; }
+.subscribeSubmit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.subscribeMsg {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+}
+.subscribeMsgSuccess { color: rgba(180, 230, 180, 0.85); }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .nav { padding: 1.5rem 1.5rem; }
+  .logo { font-size: 1.1rem; }
+  .hero {
+    width: min(340px, 90vw);
+    height: min(340px, 90vw);
+  }
+  .subscribeDrawer { bottom: -70px; }
+}
+
+/* ============================================
+   SECOND SECTION — Pure black, centered
+   ============================================ */
+
+.section2 {
+  position: relative;
+  z-index: 10;        /* sits above the fixed bg image */
+  background: #000;  /* solid black covers the bg */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 1.5rem;
+  gap: 0;
+}
+
+.section2Inner {
+  width: min(680px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+}
+
+/* ============================================
+   REVEAL ANIMATIONS
+   ============================================ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(20px) scale(0.96);
+  filter: blur(8px);
+}
+
+.revealActive {
+  animation: blurPopUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes blurPopUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.delay1 { animation-delay: 0.1s; }
+.delay2 { animation-delay: 0.25s; }
+.delay3 { animation-delay: 0.4s; }
+
+/* Intro paragraph */
+.introParagraph {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.85;
+  color: rgba(255, 255, 255, 0.70);
+  text-align: center;
+  max-width: 52ch;
+}
+
+/* Subscribe heading */
+.subscribeHeading {
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  text-align: center;
+  line-height: 1.4;
+  max-width: 24ch;
+}
+
+/* Subscribe form block */
+.subscribeBlock {
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Email field with underline-only style */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.fieldLabel {
+  font-family: var(--font-body);
+  font-size: 0.80rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.60);
+}
+
+.fieldInput {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  padding: 0.55rem 0;
+  font-size: 0.95rem;
+  color: #fff;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+.fieldInput::placeholder { color: rgba(255,255,255,0.25); }
+.fieldInput:focus { border-color: rgba(255, 255, 255, 0.85); }
+
+/* Checkbox row + submit */
+.checkRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255,255,255,0.55);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s ease, border-color 0.18s ease;
+  position: relative;
+}
+.checkbox:checked {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.85);
+}
+.checkbox:checked::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: #fff;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+.checkText {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.4;
+}
+
+.submitBtn {
+  background: #fff;
+  color: #000;
+  border: none;
+  padding: 0.80rem 2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.submitBtn:hover { background: rgba(255,255,255,0.88); }
+.submitBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Status message */
+.statusMsg {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: rgba(255,255,255,0.50);
+  text-align: center;
+}
+.statusMsgSuccess { color: rgba(160, 220, 160, 0.85); }
+
+/* Follow Us addition */
+.followUsBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+.followUsText {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ── Footer ── */
+.footer {
+  position: relative;
+  z-index: 10;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.4rem 3rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.footerCopy {
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.40);
+}
+
+@media (max-width: 600px) {
+  .nav { padding: 1.5rem 1.5rem; }
+  .logo { font-size: 1.1rem; }
+  .hero {
+    width: min(340px, 90vw);
+    height: min(340px, 90vw);
+  }
+  .subscribeDrawer { bottom: -70px; }
+  .footer { padding: 1.2rem 1.5rem; flex-direction: column; align-items: flex-start; }
+  .checkRow { flex-direction: column; align-items: flex-start; }
+}

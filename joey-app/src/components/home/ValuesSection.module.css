@@ -1,5 +1,6 @@
 .values {
   background: var(--skintone);
+  padding: var(--space-2xl) 0;
 }
 
 .header {

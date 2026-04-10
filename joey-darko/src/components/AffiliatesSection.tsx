@@ -20,7 +20,7 @@ export default function AffiliatesSection() {
 
         <div className={styles.ctaBelow}>
           <p className={styles.ctaText}>
-            Want your brand on this wall? Reach out — we&apos;d love to place you in the grid.
+            Want your brand on this wall? Reach out — I&apos;d love to place you in the grid.
           </p>
           <a href="#contact" className={styles.pointerLink} aria-label="Go to contact section">
             <span className={styles.pointerIcon} aria-hidden>

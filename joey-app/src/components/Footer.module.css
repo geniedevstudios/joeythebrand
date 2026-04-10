@@ -204,6 +204,40 @@ a.contactItem:hover { color: #fff; }
 
 .whatsapp:hover { opacity: 0.75; }
 
+.socials {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+
+.socialLabel {
+  font-family: var(--font-label);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+}
+
+.socialIcons {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.socialIconLink {
+  color: var(--cloudy-sky);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.socialIconLink:hover {
+  color: #fff;
+  transform: translateY(-2px);
+}
+
 /* Divider */
 .divider {
   width: 100%;

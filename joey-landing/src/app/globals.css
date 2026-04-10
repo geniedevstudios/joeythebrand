@@ -1,0 +1,66 @@
+/* =============================================
+   JOEY LANDING — Global Design System
+   ============================================= */
+
+:root {
+  --color-bg:      #000;
+  --color-text:    rgba(255, 255, 255, 0.95);
+  --color-muted:   rgba(255, 255, 255, 0.55);
+  --color-faint:   rgba(255, 255, 255, 0.35);
+  --color-accent:  #e63946;   /* red hand */
+  --color-border:  rgba(255, 255, 255, 0.16);
+
+  --font-body:     var(--font-jost, sans-serif);
+  --font-display:  var(--font-playfair, serif);
+  --font-logo:     var(--font-bodoni, serif);
+
+  --max-width: 1200px;
+  --transition: 0.22s ease;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; height: auto; display: block; }
+button, input { font: inherit; }
+
+/* Hide Next.js dev UI */
+nextjs-portal,
+[data-nextjs-dev-overlay],
+[data-next-badge-root],
+#next-logo[data-next-mark] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* =============================================
+   HIDE ALL SCROLLBARS GLOBALLY
+   ============================================= */
+
+/* Chrome, Safari, Edge, Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox, IE, Edge */
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+

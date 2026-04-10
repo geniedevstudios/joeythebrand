@@ -3,19 +3,27 @@
 import { useEffect, useId, useRef, useState } from "react";
 import BookingDatePicker from "@/components/BookingDatePicker";
 import { getPublicConsultationAvailability } from "@/lib/consultationBooking";
+import { SERVICES } from "@/lib/servicesData";
 import FocusServiceSelect from "./FocusServiceSelect";
 import BookingStatusCard from "./BookingStatusCard";
 import { getBookingTokens, saveBookingToken } from "@/lib/bookingHistory";
 import styles from "./bookingDrawer.module.css";
 
-const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Dressing"];
+const services = SERVICES.map(s => s.title);
+
+const PLANS = [
+  { id: "1h", title: "Intro Session", duration: "1 Hour", price: 1000 },
+  { id: "3h", title: "Deep Dive", duration: "3 Hours", price: 2500 },
+  { id: "8h", title: "Full Immersion", duration: "Full Day", price: 5000 },
+];
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  initialService?: string;
 };
 
-export default function BookingDrawer({ open, onClose }: Props) {
+export default function BookingDrawer({ open, onClose, initialService }: Props) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   
@@ -32,12 +40,25 @@ export default function BookingDrawer({ open, onClose }: Props) {
     notes: "",
   });
   const [lastToken, setLastToken] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[number] | null>(null);
+  const [status, setStatus] = useState<"idle" | "payment" | "sending" | "sent" | "error">("idle");
   const [submitError, setSubmitError] = useState("");
   const [disabledDates, setDisabledDates] = useState<string[]>([]);
   const [calendarLoadError, setCalendarLoadError] = useState("");
   const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const scriptId = "paystack-js";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, [open]);
 
   // Sync history when drawer opens or history updates
   const loadHistory = () => setHistoryTokens(getBookingTokens());
@@ -55,14 +76,22 @@ export default function BookingDrawer({ open, onClose }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    setForm({ name: "", email: "", phone: "", service: "", date: "", notes: "" });
+    setForm({ 
+      name: "", 
+      email: "", 
+      phone: "", 
+      service: initialService || "", 
+      date: "", 
+      notes: "" 
+    });
+    setSelectedPlan(null);
     setStatus("idle");
     setSubmitError("");
     setServiceMenuOpen(false);
     setImportTokenStr("");
-    setTab(getBookingTokens().length > 0 ? "bookings" : "request");
+    setTab("request");
     closeRef.current?.focus();
-  }, [open]);
+  }, [open, initialService]);
 
   useEffect(() => {
     if (!open) return;
@@ -154,8 +183,29 @@ export default function BookingDrawer({ open, onClose }: Props) {
       setSubmitError("Choose a preferred date.");
       return;
     }
+    if (!selectedPlan) {
+      setSubmitError("Please select a consultation duration.");
+      return;
+    }
+    
+    // Move to simulated payment step
+    setStatus("payment");
+  };
+
+  const handleCompletePayment = async () => {
+    if (!selectedPlan) return;
+    
+    // @ts-ignore
+    if (!window.PaystackPop) {
+      setSubmitError("Payment gateway is still loading. Please wait a moment.");
+      return;
+    }
+
+    setSubmitError("");
     setStatus("sending");
+
     try {
+      // 1) Save the booking first as 'unpaid'
       const res = await fetch("/api/booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,19 +216,64 @@ export default function BookingDrawer({ open, onClose }: Props) {
           service: form.service,
           preferredDate: form.date.trim(),
           notes: form.notes || undefined,
+          durationHours: selectedPlan.id === "1h" ? 1 : selectedPlan.id === "3h" ? 3 : 8,
+          priceGhs: selectedPlan.price,
         }),
       });
-      const data = (await res.json()) as { ok?: boolean; error?: string; slipToken?: string };
+
+      const data = (await res.json()) as { ok?: boolean; error?: string; slipToken?: string; id?: string };
       if (!res.ok) {
         throw new Error(data.error || "Something went wrong.");
       }
-      
-      if (data.slipToken) {
-        saveBookingToken(data.slipToken);
-        setLastToken(data.slipToken);
-      }
-      
-      setStatus("sent");
+
+      // 2) Trigger Paystack
+      // @ts-ignore
+      const handler = window.PaystackPop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
+        email: form.email,
+        amount: selectedPlan.price * 100,
+        currency: "GHS",
+        ref: "JOEY-" + new Date().getTime(),
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Booking ID",
+              variable_name: "booking_id",
+              value: data.id || "",
+            },
+          ],
+        },
+        callback: function(paystackRes: any) {
+          // 3) Verify on backend
+          setStatus("sending");
+          fetch("/api/paystack/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              reference: paystackRes.reference,
+              bookingId: data.id,
+            }),
+          })
+          .then(vRes => vRes.json())
+          .then(verifyData => {
+             if (verifyData.error) throw new Error(verifyData.error);
+             if (data.slipToken) {
+               saveBookingToken(data.slipToken);
+               setLastToken(data.slipToken);
+             }
+             setStatus("sent");
+          })
+          .catch(err => {
+            setStatus("error");
+            setSubmitError(err instanceof Error ? err.message : "Payment verification failed.");
+          });
+        },
+        onClose: function() {
+          setStatus("payment");
+        },
+      });
+
+      handler.openIframe();
     } catch (err) {
       setStatus("error");
       setSubmitError(err instanceof Error ? err.message : "Something went wrong.");
@@ -321,10 +416,6 @@ export default function BookingDrawer({ open, onClose }: Props) {
             </div>
           ) : (
             <>
-              <p className={styles.lead}>
-                No account needed. Tell us how to reach you and your preferred day — we&apos;ll follow up after
-                review.
-              </p>
               <form id="portfolio-booking-form" onSubmit={handleSubmit} className={styles.form} noValidate>
                 <div className={styles.field}>
                   <label htmlFor="pb-name" className={styles.label}>
@@ -410,21 +501,66 @@ export default function BookingDrawer({ open, onClose }: Props) {
                     placeholder="Timeline, goals, links…"
                   />
                 </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Consultation Duration</label>
+                  <div className={styles.planGrid}>
+                    {PLANS.map((plan) => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        className={`${styles.planCard} ${selectedPlan?.id === plan.id ? styles.planCardActive : ""}`}
+                        onClick={() => setSelectedPlan(plan)}
+                      >
+                        <p className={styles.planTitle}>{plan.title}</p>
+                        <p className={styles.planDuration}>{plan.duration}</p>
+                        <p className={styles.planPrice}>₵{plan.price.toLocaleString()}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {(status === "error" || submitError) && <p className={styles.error}>{submitError}</p>}
               </form>
             </>
           )}
         </div>
 
-        {tab === "request" && status !== "sent" ? (
+        {tab === "request" && (status === "payment" || status === "sending") && selectedPlan && (
+          <div className={`${styles.footer} ${styles.paymentFooter}`}>
+             <div style={{ marginBottom: 'var(--space-md)', textAlign: 'center' }}>
+               <p className={styles.label}>Secure Checkout</p>
+               <p style={{ fontSize: '1.2rem', margin: '4px 0' }}>₵{selectedPlan.price.toLocaleString()}</p>
+               <p className={styles.lead} style={{ fontSize: '0.75rem', marginBottom: 0 }}>Pay with card or mobile money via Paystack.</p>
+             </div>
+             <button
+              type="button"
+              className={styles.submit}
+              onClick={handleCompletePayment}
+              disabled={status === "sending"}
+            >
+              {status === "sending" ? "Processing…" : `Pay ₵${selectedPlan.price.toLocaleString()} & Book`}
+            </button>
+            <button 
+              type="button" 
+              className={styles.tabBtn} 
+              style={{ alignSelf: 'center', marginTop: '4px' }}
+              onClick={() => setStatus("idle")}
+              disabled={status === "sending"}
+            >
+              Go Back
+            </button>
+          </div>
+        )}
+
+        {tab === "request" && status !== "sent" && status !== "payment" && status !== "sending" ? (
           <div className={styles.footer}>
             <button
               type="submit"
               form="portfolio-booking-form"
               className={styles.submit}
-              disabled={status === "sending"}
             >
-              {status === "sending" ? "Sending…" : "Send request"}
+              Book Request
             </button>
             <p className={styles.wa}>
               Prefer chat?{" "}

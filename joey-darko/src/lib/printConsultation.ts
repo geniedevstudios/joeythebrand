@@ -10,6 +10,9 @@ export type SlipPayload = {
   notes?: string;
   bookingCode?: string;
   scheduledAt?: string;
+  durationHours?: number;
+  priceGhs?: number;
+  paymentStatus?: string;
 };
 
 function escapeHtml(s: string): string {
@@ -44,6 +47,9 @@ export function openConsultationPrintWindow(b: SlipPayload): void {
     { label: "Phone / WhatsApp", value: b.customerPhone },
     { label: "Service", value: b.service },
     { label: "Preferred date", value: formatDate(b.preferredDate) },
+    { label: "Duration", value: b.durationHours ? `${b.durationHours} Hours` : "—" },
+    { label: "Price", value: b.priceGhs ? `₵${b.priceGhs.toLocaleString()}` : "—" },
+    { label: "Payment Status", value: b.paymentStatus === "paid" ? "Paid" : "Unpaid" },
     { label: "Scheduled appointment", value: formatScheduled(b.scheduledAt) },
     { label: "Booking code", value: b.bookingCode || "—", mono: true },
     { label: "Status", value: statusLabel },

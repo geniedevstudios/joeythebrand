@@ -28,133 +28,110 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-[#272B36]/65 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       role="presentation"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
+      {/* Explicit Full-Viewport Backdrop */}
+      <div 
+        className="fixed inset-0 bg-[#000]/60 backdrop-blur-2xl" 
+        onClick={onClose}
+      />
+
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="order-item-modal-title"
-        className="flex max-h-[min(92vh,720px)] w-full max-w-[420px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_64px_-12px_rgba(39,43,54,0.35)] ring-1 ring-black/[0.06]"
+        className="relative flex max-h-[92vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[2.5rem] bg-white p-2 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Brand header — avoids theme zinc-500=white on body */}
-        <header className="relative shrink-0 bg-[#272B36] px-5 pb-5 pt-5 text-white">
-          <div className="flex items-start justify-between gap-3">
+        {/* Inner container for scroll and padding */}
+        <div className="flex flex-col overflow-y-auto px-6 pb-10 pt-6 custom-scrollbar">
+          {/* Header */}
+          <div className="mb-8 flex items-start justify-between px-3">
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">
-                <Package className="h-3.5 w-3.5 shrink-0 text-white/45" aria-hidden />
-                <span>Line item</span>
-                <span className="text-white/25" aria-hidden>
-                  ·
-                </span>
-                <span className="font-mono font-normal tracking-normal text-white/70">{orderLabel}</span>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+                {orderLabel}
               </div>
-              <h2
-                id="order-item-modal-title"
-                className="mt-3 text-balance text-[1.35rem] font-semibold leading-snug tracking-tight text-white"
-              >
+              <h2 className="mt-2 text-4xl font-semibold tracking-tight text-zinc-900 leading-tight">
                 {item.name}
               </h2>
-              <div
-                className="mt-4 flex flex-wrap gap-2"
-                aria-label={`Size ${item.size}, quantity ${item.quantity}`}
-              >
-                <div className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/[0.08] px-3 py-2 backdrop-blur-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Size</span>
-                  <span className="text-base font-semibold tabular-nums tracking-tight text-white">{item.size}</span>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/[0.08] px-3 py-2 backdrop-blur-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Qty</span>
-                  <span className="text-base font-semibold tabular-nums tracking-tight text-white">
-                    {item.quantity}
-                  </span>
-                </div>
-              </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 rounded-xl border border-white/20 bg-white/10 p-2 text-white/80 transition hover:border-white/30 hover:bg-white/15 hover:text-white"
+              className="ml-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 shadow-sm"
               aria-label="Close"
             >
-              <X className="h-5 w-5" strokeWidth={2} />
+              <X className="h-7 w-7" strokeWidth={2.5} />
             </button>
           </div>
-        </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5">
-          <figure className="overflow-hidden rounded-xl border border-neutral-200/90 bg-neutral-100 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-            <div className="relative aspect-[3/4] max-h-[min(42vh,340px)] w-full overflow-hidden rounded-lg bg-neutral-200 shadow-md ring-1 ring-black/[0.04]">
+          {/* Hero Image - Extra Large presentation with forced height */}
+          <div className="relative mb-10 shrink-0 overflow-hidden rounded-[2.5rem] bg-zinc-50 shadow-sm ring-1 ring-zinc-100">
+            <div className="flex h-[540px] w-full items-center justify-center">
               <img
                 src={item.image}
                 alt={item.name}
-                className="h-full w-full object-cover object-center"
+                className="max-h-full max-w-full object-contain p-6 transition duration-500 hover:scale-[1.05]"
               />
             </div>
-            <figcaption className="mt-2 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
-              Product image
-            </figcaption>
-          </figure>
-
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-neutral-200 bg-gradient-to-b from-white to-neutral-50/80 px-4 py-3.5 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Size</p>
-              <p className="mt-2 text-2xl font-semibold tabular-nums leading-none tracking-tight text-neutral-900">
-                {item.size}
-              </p>
-            </div>
-            <div className="rounded-xl border border-neutral-200 bg-gradient-to-b from-white to-neutral-50/80 px-4 py-3.5 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">Quantity</p>
-              <p className="mt-2 text-2xl font-semibold tabular-nums leading-none tracking-tight text-neutral-900">
-                {item.quantity}
-              </p>
-            </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900 text-white shadow-sm">
-            <div className="grid grid-cols-2 divide-x divide-white/10">
-              <div className="px-4 py-3.5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Unit</p>
-                <p className="mt-1.5 text-sm font-semibold tabular-nums text-white/95">
-                  GHC {item.price.toLocaleString()}
-                </p>
+          {/* Details Overview */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-100">
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">Selection</p>
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-xl font-bold text-zinc-900">{item.size}</span>
+                <span className="text-xs font-medium text-zinc-400">Size</span>
               </div>
-              <div className="px-4 py-3.5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Line total</p>
-                <p className="mt-1.5 text-lg font-bold tabular-nums tracking-tight text-white">
-                  GHC {lineTotal.toLocaleString()}
-                </p>
+            </div>
+            <div className="rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-100">
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">Quantity</p>
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-xl font-bold text-zinc-900">{item.quantity}</span>
+                <span className="text-xs font-medium text-zinc-400">Items</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 flex gap-3 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/90 px-3.5 py-3">
-            <Hash className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">Product ID</p>
-              <p className="mt-1 break-all font-mono text-[11px] leading-relaxed text-neutral-800">
-                {item.productId}
-              </p>
+          {/* Pricing Section */}
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-zinc-900 p-5 text-white shadow-lg">
+            <div className="flex items-center justify-between opacity-60">
+              <span className="text-xs font-medium uppercase tracking-wider">Unit Price</span>
+              <span className="font-mono text-sm">GHC {item.price.toLocaleString()}</span>
+            </div>
+            <div className="h-px bg-white/10" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-[0.15em] text-white/50">Total Amout</span>
+              <span className="text-xl font-bold tracking-tight">
+                GHC {lineTotal.toLocaleString()}
+              </span>
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          {/* Metadata */}
+          <div className="mt-6 space-y-4 px-2">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">Reference ID</span>
+              <code className="text-[11px] font-medium text-zinc-500 break-all">{item.productId}</code>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="mt-8 flex gap-3">
             <Link
               href="/products"
-              className="inline-flex flex-1 items-center justify-center rounded-xl bg-[#272B36] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#323846] active:scale-[0.99]"
+              className="flex h-12 flex-1 items-center justify-center rounded-xl bg-zinc-900 text-sm font-bold text-white transition hover:bg-zinc-800 active:scale-95"
             >
-              Open catalog
+              Edit Catalog
             </Link>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex flex-1 items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
+              className="flex h-12 flex-1 items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm font-bold text-zinc-600 transition hover:bg-zinc-50 active:scale-95"
             >
-              Close
+              Done
             </button>
           </div>
         </div>

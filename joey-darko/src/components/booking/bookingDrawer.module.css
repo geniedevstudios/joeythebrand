@@ -617,3 +617,74 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Consultation Plans */
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.planCard {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: var(--space-md);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.planCard:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.planCardActive {
+  background: rgba(145, 126, 113, 0.08);
+  border-color: var(--wood);
+}
+
+.planCardActive::after {
+  content: "✓";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  color: var(--wood);
+  font-size: 0.8rem;
+}
+
+.planTitle {
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--wood);
+  margin: 0;
+}
+
+.planDuration {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: #fff;
+  margin: 0;
+}
+
+.planPrice {
+  font-size: 0.85rem;
+  color: rgba(245, 241, 236, 0.75);
+  margin-top: auto;
+}
+
+.planCheck {
+  margin-top: var(--space-xs);
+  display: flex;
+  justify-content: center;
+}

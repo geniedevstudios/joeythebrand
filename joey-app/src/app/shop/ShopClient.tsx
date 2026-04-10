@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useSyncExternalStore, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./ShopClient.module.css";
 import { wishlistStore } from "@/store/wishlistStore";
@@ -24,6 +25,7 @@ export default function ShopClient() {
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
+  const searchParams = useSearchParams();
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
   const collections = useSyncExternalStore(
     dataStore.subscribe,
@@ -36,6 +38,18 @@ export default function ShopClient() {
   const scrollToPieces = useCallback(() => {
     document.getElementById("shop-pieces")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
+
+  useEffect(() => {
+    const raw = searchParams.get("collection");
+    const slug = raw?.trim() || "";
+    if (!slug) return;
+
+    // Allow direct linking from home and marketing pages.
+    setSelectedCollectionSlug(slug);
+    // Defer scroll until after initial render.
+    setTimeout(() => scrollToPieces(), 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     if (quickViewPiece) {
@@ -81,7 +95,8 @@ export default function ShopClient() {
           size: selectedSize || "Standard",
           price: quickViewPiece.price,
           image: quickViewPiece.image,
-          quantity: qty
+          quantity: qty,
+          maxStock: quickViewPiece.quantity,
         });
 
         setAddStatus("added");
@@ -127,45 +142,62 @@ export default function ShopClient() {
 
       <section className={styles.collectionsSection} aria-labelledby="shop-collections-heading">
         <div className="container">
-          <h2 id="shop-collections-heading" className={styles.collectionsHeading}>
-            The collections
-          </h2>
-          <p className={styles.collectionsIntro}>
-            Browse by story, then filter below by how you shop.
-          </p>
+          <div className={styles.collectionsHeaderRow}>
+            <div>
+              <span className="section-label">Archive</span>
+              <h2 id="shop-collections-heading" className={styles.collectionsHeading}>
+                Curated statement pieces from Joey The brand.
+              </h2>
+            </div>
+            <Link href="/collection" className={`btn btn-outline ${styles.collectionsCta}`} id="shop-collections-view-all">
+              Explore archive
+            </Link>
+          </div>
           <div
             className={styles.collectionsGrid}
             role="group"
             aria-label="Shop collections — swipe on mobile"
           >
-            <button
-              type="button"
-              className={`${styles.collectionCard} ${styles.collectionCardEntire} ${selectedCollectionSlug === null ? styles.collectionCardActive : ""}`}
-              onClick={() => {
-                setSelectedCollectionSlug(null);
-                scrollToPieces();
-              }}
-            >
-              <span className={styles.collectionName}>Entire shop</span>
-              <span className={styles.collectionDesc}>All collections, one grid.</span>
-              <span className={styles.collectionCta}>View pieces</span>
-            </button>
             {collections.map((col) => (
-              <button
+              <Link
                 key={col.id}
-                type="button"
-                className={`${styles.collectionCard} ${selectedCollectionSlug === col.slug ? styles.collectionCardActive : ""}`}
-                onClick={() => {
-                  setSelectedCollectionSlug(col.slug);
-                  scrollToPieces();
-                }}
+                href={`/collection/${col.slug}`}
+                className={styles.collectionCard}
               >
-                <span className={styles.collectionName}>{col.name}</span>
-                {col.description ? (
-                  <span className={styles.collectionDesc}>{col.description}</span>
-                ) : null}
-                <span className={styles.collectionCta}>View pieces</span>
-              </button>
+                <div className={styles.itemImageWrap}>
+                  <img 
+                    src={col.image || "/lookbook.png"} 
+                    alt={col.name} 
+                    className={styles.imagePrimary} 
+                    loading="lazy" 
+                  />
+                  {col.hoverImage && (
+                    <img 
+                      src={col.hoverImage} 
+                      alt="" 
+                      className={styles.imageHover} 
+                      loading="lazy" 
+                    />
+                  )}
+                </div>
+
+                {/* Persistent text on image */}
+                <div className={styles.textOverlay}>
+                  <h3 className={styles.collectionName}>{col.name}</h3>
+                  {col.description ? (
+                    <p className={styles.collectionDesc}>{col.description}</p>
+                  ) : null}
+                </div>
+
+                {/* Hover actions overlay */}
+                <div className={styles.cardOverlay}>
+                  <div className={styles.collectionPickMeWrap}>
+                    <span className={styles.collectionPickMeBtn}>
+                      VIEW PIECES
+                    </span>
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -235,24 +267,36 @@ export default function ShopClient() {
                       </div>
 
                       <div className={styles.pickMeWrap}>
-                        <Link
-                          href={`/shop/${p.id}`}
-                          className={styles.pickMeBtn}
-                          aria-label={`View ${p.name}`}
-                        >
-                          Pick Me
-                        </Link>
+                        {p.isOutOfStock ? (
+                          <span className={`${styles.pickMeBtn} ${styles.soldOutBtn}`}>
+                            Sold Out
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/shop/${p.id}`}
+                            className={styles.pickMeBtn}
+                            aria-label={`View ${p.name}`}
+                          >
+                            Pick Me
+                          </Link>
+                        )}
                       </div>
                     </div>
 
-                    {p.category === "sample-sale" && (
-                      <span className={styles.saleBadge}>SALE</span>
-                    )}
-                    {p.isLimited && p.category !== "sample-sale" && (
-                      <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
-                    )}
-                    {p.isBestSeller && (
-                      <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                    {p.isOutOfStock ? (
+                      <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                    ) : (
+                      <>
+                        {p.category === "sample-sale" && (
+                          <span className={styles.saleBadge}>SALE</span>
+                        )}
+                        {p.isLimited && p.category !== "sample-sale" && (
+                          <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                        )}
+                        {p.isBestSeller && (
+                          <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className={styles.info}>
@@ -344,12 +388,30 @@ export default function ShopClient() {
                 )}
 
                 <div className={styles.modalQtyRow}>
-                  <span className={styles.qtyLabel}>Quantity:</span>
-                  <div className={styles.qtyControl}>
-                    <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
-                    <span className={styles.qtyVal}>{qty}</span>
-                    <button className={styles.qtyBtn} onClick={() => setQty(qty + 1)}>+</button>
+                  <div className={styles.qtyLeft}>
+                    <span className={styles.qtyLabel}>Quantity:</span>
+                    <div className={styles.qtyControl}>
+                      <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
+                      <span className={styles.qtyVal}>{qty}</span>
+                      <button 
+                        className={styles.qtyBtn} 
+                        onClick={() => {
+                          if (qty < quickViewPiece.quantity) {
+                            setQty(qty + 1);
+                          } else {
+                            toast.error(`Only ${quickViewPiece.quantity} items available.`);
+                          }
+                        }}
+                        disabled={qty >= quickViewPiece.quantity}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
+
+                  {quickViewPiece.quantity > 0 && quickViewPiece.quantity < 6 && (
+                    <span className={styles.lowStockWarning}>Only {quickViewPiece.quantity} left</span>
+                  )}
                 </div>
 
                 <div className={styles.modalActions}>

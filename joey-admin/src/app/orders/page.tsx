@@ -86,46 +86,46 @@ export default function OrdersPage() {
           ) : (
             <table className="min-w-[1080px] w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-zinc-200 bg-gradient-to-b from-zinc-50 to-zinc-100/90">
+                <tr className="border-b border-zinc-200 bg-zinc-100">
                   <th
                     scope="col"
-                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700"
+                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900"
                   >
                     Order
                   </th>
                   <th
                     scope="col"
-                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700"
+                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900"
                   >
                     Customer
                   </th>
                   <th
                     scope="col"
-                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700"
+                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900"
                   >
                     Shipping
                   </th>
                   <th
                     scope="col"
-                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700"
+                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900"
                   >
                     Products
                   </th>
                   <th
                     scope="col"
-                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700"
+                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900"
                   >
                     Notes
                   </th>
                   <th
                     scope="col"
-                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700"
+                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900"
                   >
                     Total
                   </th>
                   <th
                     scope="col"
-                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-700"
+                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-zinc-900"
                   >
                     Status
                   </th>

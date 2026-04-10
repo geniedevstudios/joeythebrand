@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token")?.trim();
   if (!token || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token)) {
-    return NextResponse.json({ error: "Invalid link." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Invalid link." }, { status: 200 });
   }
 
   try {
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("consultation_bookings")
       .select(
-        "customer_name, customer_email, customer_phone, service, preferred_date, notes, status, booking_code, scheduled_at, created_at",
+        "customer_name, customer_email, customer_phone, service, preferred_date, notes, status, booking_code, scheduled_at, created_at, duration_hours, price_ghs, payment_status",
       )
       .eq("portfolio_access_token", token)
       .eq("source", "portfolio")
@@ -23,14 +23,17 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error("Slip fetch:", error);
-      return NextResponse.json({ error: "Could not load booking." }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "Could not load booking." }, { status: 200 });
     }
     if (!data) {
-      return NextResponse.json({ error: "Booking not found." }, { status: 404 });
+      // Returning 200 here prevents noisy "Failed to load resource" console spam for tokens
+      // that are stale/mistyped, while still allowing the client to show a friendly error.
+      return NextResponse.json({ ok: false, error: "Booking not found." }, { status: 200 });
     }
 
     const row = data as Record<string, unknown>;
     return NextResponse.json({
+      ok: true,
       status: row.status as string,
       customerName: row.customer_name as string,
       customerEmail: row.customer_email as string,
@@ -40,10 +43,13 @@ export async function GET(request: Request) {
       notes: (row.notes as string) || undefined,
       bookingCode: row.booking_code ? String(row.booking_code).trim() || undefined : undefined,
       scheduledAt: (row.scheduled_at as string) || undefined,
+      durationHours: (row.duration_hours as number) || undefined,
+      priceGhs: (row.price_ghs as number) || undefined,
+      paymentStatus: (row.payment_status as string) || "unpaid",
       createdAt: row.created_at as string,
     });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Server configuration error." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Server configuration error." }, { status: 200 });
   }
 }

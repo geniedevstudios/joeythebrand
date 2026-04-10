@@ -5,6 +5,7 @@ import { openConsultationPrintWindow, type SlipPayload } from "@/lib/printConsul
 import styles from "./bookingDrawer.module.css";
 
 type ApiSlip = SlipPayload;
+type ApiSlipResponse = ({ ok: true } & ApiSlip) | { ok: false; error: string };
 
 function formatDateShort(iso?: string) {
   if (!iso?.trim()) return "—";
@@ -24,10 +25,8 @@ export default function BookingStatusCard({ token }: { token: string }) {
     setError("");
     try {
       const res = await fetch(`/api/booking/slip?token=${encodeURIComponent(token)}`);
-      const data = (await res.json()) as ApiSlip & { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Could not load booking.");
-      }
+      const data = (await res.json()) as ApiSlipResponse;
+      if (!data.ok) throw new Error(data.error || "Could not load booking.");
       setSlip(data);
     } catch (e) {
       setSlip(null);
@@ -76,6 +75,12 @@ export default function BookingStatusCard({ token }: { token: string }) {
         <p className={styles.statusLead}>
           Request for <strong>{formatDateShort(slip.preferredDate)}</strong> is pending review.
         </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
+          <span className={styles.serviceTag}>{slip.durationHours ? `${slip.durationHours}h Session` : "—"}</span>
+          <span className={slip.paymentStatus === 'paid' ? styles.badgeConfirmed : styles.badgePending}>
+            {slip.paymentStatus === 'paid' ? "Paid" : "Unpaid"}
+          </span>
+        </div>
         <p className={styles.loadMuted}>We will confirm your exact appointment soon.</p>
       </div>
     );
@@ -107,7 +112,10 @@ export default function BookingStatusCard({ token }: { token: string }) {
       </p>
       <div className={styles.appointmentTime}>
         <strong>Scheduled Time:</strong><br />
-        {slip.scheduledAt ? new Date(slip.scheduledAt).toLocaleString() : "—"}
+        {slip.scheduledAt ? new Date(slip.scheduledAt).toLocaleString() : "—"}<br />
+        <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+          {slip.durationHours}h Session · ₵{slip.priceGhs?.toLocaleString()} · {slip.paymentStatus === 'paid' ? "Paid" : "Unpaid"}
+        </span>
       </div>
       <div className={styles.actionRow}>
         <button type="button" className={styles.printBtn} onClick={onPrint}>

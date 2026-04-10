@@ -47,83 +47,170 @@
 /* Collections showcase */
 .collectionsSection {
   background: var(--color-surface);
-  padding: var(--space-2xl) 0;
+  padding: var(--space-4xl) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
 .collectionsHeading {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 400;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 300;
   color: var(--blue-athracite);
   margin: 0 0 var(--space-sm);
+  line-height: 1.1;
 }
 
 .collectionsIntro {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: var(--alaska-gray);
   margin: 0 0 var(--space-xl);
-  max-width: 36rem;
+  max-width: 40rem;
+  font-style: italic;
+}
+
+.collectionsHeaderRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
+}
+
+.collectionsCta {
+  flex-shrink: 0;
 }
 
 .collectionsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-xl);
 }
 
 .collectionCard {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-xs);
-  padding: var(--space-lg);
-  text-align: left;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
   border-radius: var(--radius-md);
+  aspect-ratio: 4/5;
+  background: var(--skintone);
+  border: none;
   cursor: pointer;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+  text-decoration: none;
 }
 
-.collectionCard:hover {
-  border-color: var(--blue-athracite);
-  box-shadow: 0 8px 24px rgba(39, 43, 54, 0.08);
+.collectionCard:hover .imagePrimary {
+  transform: scale(1.08);
 }
 
-.collectionCardActive {
-  border-color: var(--blue-athracite);
-  background: rgba(39, 43, 54, 0.04);
+.imageHover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
 }
 
-.collectionCardEntire {
-  background: linear-gradient(135deg, var(--color-bg) 0%, rgba(145, 126, 113, 0.12) 100%);
+.collectionCard:hover .imageHover {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.itemImageWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.imagePrimary {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.textOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--space-xl);
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    rgba(39, 43, 54, 0) 0%,
+    rgba(39, 43, 54, 0) 40%,
+    rgba(39, 43, 54, 0.4) 65%,
+    rgba(39, 43, 54, 0.8) 100%
+  );
+  pointer-events: none;
 }
 
 .collectionName {
-  font-family: var(--font-label);
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--blue-athracite);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 300;
+  color: #fff;
+  margin-bottom: 4px;
 }
 
 .collectionDesc {
   font-size: 0.85rem;
-  color: var(--alaska-gray);
-  line-height: 1.45;
-  flex: 1;
+  color: rgba(255, 255, 255, 0.85);
+  font-style: italic;
+  max-width: 90%;
+  line-height: 1.4;
 }
 
-.collectionCta {
-  margin-top: var(--space-sm);
+/* Hover overlay for button */
+.cardOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(39, 43, 54, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 3;
+}
+
+.collectionCard:hover .cardOverlay {
+  opacity: 1;
+}
+
+.collectionPickMeWrap {
+  width: 75%;
+}
+
+.collectionPickMeBtn {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  text-align: center;
+  background: transparent;
+  color: #fff;
   font-family: var(--font-label);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--wood);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  text-decoration: none;
+}
+
+.collectionPickMeBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
 }
 
 /* Wear filter (sticky) */
@@ -159,24 +246,37 @@
 
 .wearPill {
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  padding: 8px 18px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 10px 24px;
   border-radius: 999px;
   border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--alaska-gray);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .wearPill:hover {
   border-color: var(--blue-athracite);
+  background: rgba(39, 43, 54, 0.04);
   color: var(--blue-athracite);
+  transform: translateY(-1px);
 }
 
 .wearPillActive {
   background: var(--blue-athracite);
   border-color: var(--blue-athracite);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(39, 43, 54, 0.2);
+}
+
+.wearPillActive:hover {
+  background: #1a1e26; /* even darker on hover when active */
   color: #fff;
 }
 
@@ -372,24 +472,24 @@
   width: 100%;
   padding: 12px 0;
   text-align: center;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--blue-athracite);
+  background: transparent;
+  color: #fff;
   font-family: var(--font-label);
   font-size: 0.78rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: var(--radius-full);
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.25s ease, color 0.25s ease;
+  transition: all 0.3s ease;
   backdrop-filter: blur(4px);
   text-decoration: none;
 }
 
 .pickMeBtn:hover {
-  background: var(--blue-athracite);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
 }
 
 /* Empty */
@@ -662,9 +762,23 @@
   margin-bottom: var(--space-lg);
 }
 
+.qtyLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
 .qtyLabel {
   font-size: 0.9rem;
   color: var(--alaska-gray);
+}
+
+.lowStockWarning {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--wood);
+  white-space: nowrap;
 }
 
 .qtyControl {
@@ -779,6 +893,16 @@
     font-size: clamp(3rem, 15vw, 6rem);
   }
 
+  .collectionsHeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .collectionsCta {
+    width: 100%;
+    text-align: center;
+  }
+
   /* Collections: horizontal slider (container uses --space-md padding ≤768px) */
   .collectionsGrid {
     display: flex;
@@ -836,11 +960,38 @@
 }
 
 @media (max-width: 480px) {
+  .wearFilterInner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    gap: var(--space-sm);
+  }
+
+  .wearFilterLabel {
+    flex: 0 0 auto;
+  }
+
+  .wearPills {
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
   .collectionCard {
     flex-basis: min(84vw, 300px);
     max-width: min(84vw, 300px);
   }
 
-  .grid { grid-template-columns: 1fr; }
+  .wearPill {
+    padding: 9px 16px;
+    font-size: 0.75rem;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
   .addBtn { width: 100%; justify-content: center; }
 }

@@ -1,6 +1,7 @@
 .founder {
   background: var(--blue-athracite);
   color: var(--color-text-light);
+  padding: var(--space-2xl) 0;
 }
 
 .grid {

@@ -1,0 +1,217 @@
+.collectionsSection {
+  background: var(--color-surface);
+  padding: var(--space-2xl) 0;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2xl);
+}
+
+.collectionsHeading {
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 3.6vw, 2.4rem);
+  font-weight: 300;
+  color: var(--blue-athracite);
+  margin: var(--space-sm) 0 var(--space-sm);
+  line-height: 1.15;
+}
+
+.collectionsIntro {
+  font-size: 1.1rem;
+  color: var(--alaska-gray);
+  margin: 0;
+  max-width: 40rem;
+  font-style: italic;
+}
+
+.viewAll {
+  flex-shrink: 0;
+}
+
+.collectionsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xl);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  aspect-ratio: 4/5;
+  background: var(--skintone);
+}
+
+.imageWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.imagePrimary {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover .imagePrimary {
+  transform: scale(1.08);
+}
+
+.imageHover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+
+.card:hover .imageHover {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.textOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--space-xl);
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    rgba(39, 43, 54, 0) 0%,
+    rgba(39, 43, 54, 0) 40%,
+    rgba(39, 43, 54, 0.4) 65%,
+    rgba(39, 43, 54, 0.8) 100%
+  );
+  pointer-events: none;
+}
+
+.collectionName {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2vw, 1.75rem);
+  font-weight: 300;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.collectionDesc {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-style: italic;
+  max-width: 90%;
+  line-height: 1.4;
+}
+
+/* Hover overlay for button */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(39, 43, 54, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 3;
+}
+
+.card:hover .overlay {
+  opacity: 1;
+}
+
+.pickMeWrap {
+  width: 75%;
+}
+
+.pickMeBtn {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  text-align: center;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  text-decoration: none;
+}
+
+.pickMeBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+}
+
+@media (max-width: 1024px) {
+  .collectionsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .viewAll {
+    width: 100%;
+    margin-top: var(--space-md);
+  }
+
+  /* Mobile: swipeable 1-card-per-view carousel */
+  .collectionsGrid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--space-md);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--space-md);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    padding-bottom: var(--space-xs);
+    margin-left: calc(-1 * var(--space-md));
+    margin-right: calc(-1 * var(--space-md));
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+    width: calc(100% + 2 * var(--space-md));
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .card {
+    flex: 0 0 min(84vw, 340px);
+    max-width: min(84vw, 340px);
+    scroll-snap-align: start;
+    aspect-ratio: 4/5;
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    flex-basis: min(88vw, 340px);
+    max-width: min(88vw, 340px);
+    aspect-ratio: 3/4;
+  }
+}

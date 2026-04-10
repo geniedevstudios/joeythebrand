@@ -6,6 +6,7 @@ import { openConsultationPrintWindow, type SlipPayload } from "@/lib/printConsul
 import styles from "../booking.module.css";
 
 type ApiSlip = SlipPayload;
+type ApiSlipResponse = ({ ok: true } & ApiSlip) | { ok: false; error: string };
 
 function formatDateShort(iso?: string) {
   if (!iso?.trim()) return "—";
@@ -34,10 +35,8 @@ export default function SlipClient() {
     setError("");
     try {
       const res = await fetch(`/api/booking/slip?token=${encodeURIComponent(t)}`);
-      const data = (await res.json()) as ApiSlip & { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Could not load booking.");
-      }
+      const data = (await res.json()) as ApiSlipResponse;
+      if (!data.ok) throw new Error(data.error || "Could not load booking.");
       setSlip(data);
     } catch (e) {
       setSlip(null);

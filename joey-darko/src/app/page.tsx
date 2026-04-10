@@ -97,7 +97,7 @@ export default function HomePage() {
             Let&apos;s start a conversation
           </h2>
           <p className={`${styles.sectionLead} ${styles.contactLead}`}>
-            Share your project and timeline — we&apos;ll follow up with next steps.
+            Share your project and timeline — I&apos;ll follow up with next steps.
           </p>
           <ContactSection />
         </div>

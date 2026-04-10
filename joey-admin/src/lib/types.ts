@@ -9,6 +9,8 @@ export interface Collection {
   slug: string;
   name: string;
   description: string;
+  image?: string;
+  hoverImage?: string;
   sortOrder: number;
   createdAt: string;
 }
@@ -37,6 +39,7 @@ export interface Product {
   isBestSeller: boolean;
   featured: boolean;
   wearTag: WearTag;
+  quantity: number;
 }
 
 export interface PromotionCode {
@@ -96,6 +99,10 @@ export interface ConsultationBooking {
   status: ConsultationStatus;
   bookingCode?: string;
   scheduledAt?: string;
+  durationHours?: number;
+  priceGhs?: number;
+  paymentStatus: string;
+  paymentRef?: string;
   createdAt: string;
   updatedAt: string;
 }

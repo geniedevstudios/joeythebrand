@@ -1,5 +1,5 @@
 "use client";
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import styles from "./CheckoutClient.module.css";
@@ -82,6 +82,17 @@ export default function CheckoutClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const checkoutHeroStyle = usePageHeroBackgroundStyle("checkout");
 
+  useEffect(() => {
+    const scriptId = "paystack-js";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   const subtotalRaw = items.reduce((acc, current) => acc + (current.price * current.quantity), 0);
   const discount = appliedPromo?.discount || 0;
   const total = subtotalRaw - discount;
@@ -134,6 +145,12 @@ export default function CheckoutClient() {
       toast.error("Please select your region.");
       return;
     }
+    // @ts-ignore
+    if (!window.PaystackPop) {
+      toast.error("Payment gateway is still loading. Please wait a moment.");
+      return;
+    }
+    
     if (shippingDestination === "international") {
       if (!formData.country.trim()) {
         toast.error("Please select a country.");
@@ -154,7 +171,7 @@ export default function CheckoutClient() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const order: Omit<Order, "id" | "createdAt" | "updatedAt" | "orderNumber"> = {
+      const order: Omit<Order, "id" | "createdAt" | "updatedAt" | "orderNumber" | "paymentStatus" | "paymentRef"> = {
         customerName: `${formData.firstName} ${formData.lastName}`,
         customerEmail: formData.email,
         customerPhone: formData.phone,
@@ -175,14 +192,62 @@ export default function CheckoutClient() {
         notes: formData.notes || undefined,
       };
 
+      // 1. Initial Order Creation (Unpaid)
       const placed = await dataStore.placeOrder(order);
 
-      cartStore.clearCart();
-      toast.success(`Order ${formatOrderNumber(placed)} placed successfully.`);
-      window.location.href = "/account";
+      // 2. Trigger Paystack
+      // @ts-ignore
+      const handler = window.PaystackPop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
+        email: formData.email,
+        amount: Math.round(total * 100), // Ensure integer Kobo
+        currency: "GHS",
+        ref: "ORDER-" + Date.now() + "-" + placed.id.slice(0, 8),
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Order ID",
+              variable_name: "order_id",
+              value: placed.id,
+            },
+          ],
+        },
+        callback: function (paystackRes: any) {
+          // 3. Verify on backend
+          // We wrap the async logic to keep the callback signature simple for Paystack's validator
+          (async () => {
+             try {
+                const verifyRes = await fetch("/api/paystack/verify-order", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    reference: paystackRes.reference,
+                    orderId: placed.id,
+                  }),
+                });
+
+                const verifyData = await verifyRes.json();
+                if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed");
+
+                cartStore.clearCart();
+                toast.success(`Order ${formatOrderNumber(placed)} placed successfully.`);
+                window.location.href = "/account";
+             } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Payment verification failed. Please contact support.");
+                setIsSubmitting(false);
+             }
+          })();
+        },
+        onClose: function () {
+          setIsSubmitting(false);
+          toast.info("Payment cancelled. You can try again from your account page if the order was saved.");
+        },
+      });
+
+      handler.openIframe();
     } catch (error) {
       console.error("Order error:", error);
-      toast.error("Failed to place order. Please try again.");
+      toast.error("Failed to initiate order. Please try again.");
       setIsSubmitting(false);
     }
   };

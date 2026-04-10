@@ -58,9 +58,16 @@ export default function ProductClient({ id }: { id: string }) {
   
   const product = products.find((p: any) => p.id === id);
 
+  const galleryImages = useMemo(() => {
+    if (!product || !product.images) return EMPTY_ARRAY;
+    return product.images.filter((img: string) => img !== product.hoverImage);
+  }, [product?.images, product?.hoverImage]);
+
   useEffect(() => {
-    if (product) setActiveImage(product.images[0]);
-  }, [product?.id]);
+    if (galleryImages.length > 0) {
+      setActiveImage(galleryImages[0]);
+    }
+  }, [galleryImages]);
 
   const { suggestedProducts, suggestionPhrase } = useMemo(() => {
     if (!product || products.length === 0) {
@@ -119,6 +126,7 @@ export default function ProductClient({ id }: { id: string }) {
           price: product.price,
           image: product.image,
           quantity: qty,
+          maxStock: product.quantity,
         });
         
         setAddStatus("added");
@@ -163,24 +171,30 @@ export default function ProductClient({ id }: { id: string }) {
           <div className={styles.galleryCol}>
             <div className={styles.mainImageWrap}>
               <img 
-                src={activeImage || product.images[0]} 
+                src={activeImage || galleryImages[0] || product.image} 
                 alt={product.name} 
                 className={styles.mainImage} 
               />
-              {product.category === "sample-sale" && (
-                <span className={styles.saleBadge}>SALE</span>
-              )}
-              {product.isLimited && product.category !== "sample-sale" && (
-                <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+              {product.isOutOfStock ? (
+                <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+              ) : (
+                <>
+                  {product.category === "sample-sale" && (
+                    <span className={styles.saleBadge}>SALE</span>
+                  )}
+                  {product.isLimited && product.category !== "sample-sale" && (
+                    <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                  )}
+                </>
               )}
             </div>
 
-            {product.images.length > 1 && (
+            {galleryImages.length > 1 && (
               <div className={styles.thumbnails}>
-                {product.images.map((img: string, idx: number) => (
+                {galleryImages.map((img: string, idx: number) => (
                   <button
                     key={idx}
-                    className={`${styles.thumb} ${(activeImage || product.images[0]) === img ? styles.thumbActive : ""}`}
+                    className={`${styles.thumb} ${(activeImage || galleryImages[0]) === img ? styles.thumbActive : ""}`}
                     onClick={() => setActiveImage(img)}
                     aria-label={`View image ${idx + 1}`}
                   >
@@ -238,11 +252,28 @@ export default function ProductClient({ id }: { id: string }) {
               )}
 
               <div className={styles.qtySection}>
-                <span className={styles.qtyLabel}>Quantity</span>
+                <div className={styles.qtyHeader}>
+                  <span className={styles.qtyLabel}>Quantity</span>
+                  {product.quantity > 0 && product.quantity < 6 && (
+                    <span className={styles.lowStockWarning}>Only {product.quantity} left</span>
+                  )}
+                </div>
                 <div className={styles.qtyControl}>
                   <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
                   <span className={styles.qtyVal}>{qty}</span>
-                  <button className={styles.qtyBtn} onClick={() => setQty(qty + 1)}>+</button>
+                  <button 
+                    className={styles.qtyBtn} 
+                    onClick={() => {
+                      if (qty < product.quantity) {
+                        setQty(qty + 1);
+                      } else {
+                        toast.error(`Only ${product.quantity} items available in stock.`);
+                      }
+                    }}
+                    disabled={qty >= product.quantity}
+                  >
+                    +
+                  </button>
                 </div>
               </div>
 
@@ -317,11 +348,17 @@ export default function ProductClient({ id }: { id: string }) {
                     ) : (
                       <img src={item.image} alt={item.name} className={styles.suggestImg} loading="lazy" />
                     )}
-                    {item.category === "limited-edition" && (
-                      <span className={styles.suggestBadge}>Limited</span>
-                    )}
-                    {item.category === "sample-sale" && (
-                      <span className={styles.suggestBadgeSale}>Sale</span>
+                    {item.isOutOfStock ? (
+                      <span className={styles.suggestBadgeSale} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                    ) : (
+                      <>
+                        {item.category === "limited-edition" && (
+                          <span className={styles.suggestBadge}>Limited</span>
+                        )}
+                        {item.category === "sample-sale" && (
+                          <span className={styles.suggestBadgeSale}>Sale</span>
+                        )}
+                      </>
                     )}
 
                     <div className={styles.suggestOverlay}>
@@ -349,13 +386,19 @@ export default function ProductClient({ id }: { id: string }) {
                       </div>
 
                       <div className={styles.suggestPickMeWrap}>
-                        <Link
-                          href={`/shop/${item.id}`}
-                          className={styles.suggestPickMeBtn}
-                          aria-label={`View ${item.name}`}
-                        >
-                          Pick Me
-                        </Link>
+                        {item.isOutOfStock ? (
+                          <span className={`${styles.suggestPickMeBtn} ${styles.soldOutBtn}`}>
+                            Sold Out
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/shop/${item.id}`}
+                            className={styles.suggestPickMeBtn}
+                            aria-label={`View ${item.name}`}
+                          >
+                            Pick Me
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -386,18 +429,21 @@ export default function ProductClient({ id }: { id: string }) {
               <div className={styles.modalImageWrap}>
                 <img src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
               </div>
-              {quickViewItem.images && quickViewItem.images.length > 1 && (
+              {quickViewItem.images && 
+               quickViewItem.images.filter((img: string) => img !== quickViewItem.hoverImage).length > 1 && (
                 <div className={styles.modalThumbnails}>
-                  {quickViewItem.images.map((img: string, idx: number) => (
-                    <button 
-                      key={idx} 
-                      className={`${styles.thumbBtn} ${(quickViewImage || quickViewItem.image) === img ? styles.thumbActive : ""}`}
-                      aria-label={`Thumbnail ${idx + 1}`}
-                      onClick={() => setQuickViewImage(img)}
-                    >
-                      <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
-                    </button>
-                  ))}
+                  {quickViewItem.images
+                    .filter((img: string) => img !== quickViewItem.hoverImage)
+                    .map((img: string, idx: number) => (
+                      <button 
+                        key={idx} 
+                        className={`${styles.thumbBtn} ${(quickViewImage || quickViewItem.image) === img ? styles.thumbActive : ""}`}
+                        aria-label={`Thumbnail ${idx + 1}`}
+                        onClick={() => setQuickViewImage(img)}
+                      >
+                        <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
@@ -436,12 +482,30 @@ export default function ProductClient({ id }: { id: string }) {
               )}
 
               <div className={styles.modalQtyRow}>
-                <span className={styles.qtyLabel}>Quantity:</span>
-                <div className={styles.qtyControl}>
-                  <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
-                  <span className={styles.qtyVal}>{qty}</span>
-                  <button className={styles.qtyBtn} onClick={() => setQty(qty + 1)}>+</button>
+                <div className={styles.qtyLeft}>
+                  <span className={styles.qtyLabel}>Quantity:</span>
+                  <div className={styles.qtyControl}>
+                    <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
+                    <span className={styles.qtyVal}>{qty}</span>
+                    <button 
+                      className={styles.qtyBtn} 
+                      onClick={() => {
+                        if (qty < (quickViewItem.quantity ?? 999)) {
+                          setQty(qty + 1);
+                        } else {
+                          toast.error(`Only ${quickViewItem.quantity} items available.`);
+                        }
+                      }}
+                      disabled={qty >= (quickViewItem.quantity ?? 999)}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
+
+                {typeof quickViewItem.quantity === "number" && quickViewItem.quantity > 0 && quickViewItem.quantity < 6 && (
+                  <span className={styles.lowStockWarning}>Only {quickViewItem.quantity} left</span>
+                )}
               </div>
 
               <div className={styles.modalActions}>
@@ -452,9 +516,21 @@ export default function ProductClient({ id }: { id: string }) {
                       toast.error(`Please select a size for ${quickViewItem.name} first!`);
                       return;
                     }
-                    toast.success(`${quickViewItem.name} added to your cart!`);
-                    setQuickViewItem(null);
-                    setQuickViewImage("");
+
+                    import("@/store/cartStore").then(({ cartStore }) => {
+                      cartStore.addItem({
+                        productId: quickViewItem.id,
+                        name: quickViewItem.name,
+                        size: quickViewSize || "Standard",
+                        price: quickViewItem.price,
+                        image: quickViewItem.image,
+                        quantity: qty,
+                        maxStock: quickViewItem.quantity,
+                      });
+                      toast.success(`${quickViewItem.name} added to your cart!`);
+                      setQuickViewItem(null);
+                      setQuickViewImage("");
+                    });
                   }}
                   style={{ transition: "all 0.3s ease" }}
                 >

@@ -105,9 +105,15 @@ export default function StoryPage() {
                   Fashion is not just worn. It is built.
                 </p>
               </div>
-              <Link href="/bespoke" className="btn btn-primary" id="story-bespoke-cta">
+              <a 
+                href="https://consultwithurtailorstailor.joeythebrand.com/" 
+                className="btn btn-primary" 
+                id="story-bespoke-cta"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Work With Joey
-              </Link>
+              </a>
             </div>
           </div>
         </div>
