@@ -461,7 +461,7 @@
   color: rgba(255,255,255,0.40);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 600px) {
   .nav { padding: 1.5rem 1.5rem; }
   .logo { font-size: 1.1rem; }
   .hero {

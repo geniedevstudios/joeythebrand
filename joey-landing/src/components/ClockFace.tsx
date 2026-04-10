@@ -18,10 +18,10 @@ export default function ClockFace() {
     const isMain = i % 3 === 0;
     const inner  = isMain ? r - 22 : r - 12;
     return {
-      x1: cx + Math.cos(angle) * inner,
-      y1: cy + Math.sin(angle) * inner,
-      x2: cx + Math.cos(angle) * r,
-      y2: cy + Math.sin(angle) * r,
+      x1: Number((cx + Math.cos(angle) * inner).toFixed(3)),
+      y1: Number((cy + Math.sin(angle) * inner).toFixed(3)),
+      x2: Number((cx + Math.cos(angle) * r).toFixed(3)),
+      y2: Number((cy + Math.sin(angle) * r).toFixed(3)),
       isMain,
     };
   });
