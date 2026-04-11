@@ -496,7 +496,10 @@ input, textarea, select {
 
 /* Next.js dev: strip all built-in DevTools UI (badge, full error overlay, panels). The framework mounts this under <nextjs-portal> (shadow root). Errors still log to the browser console. Inert in production — these nodes are not rendered. */
 nextjs-portal,
-[data-nextjs-dev-overlay],
+[data-nextjs-dev-overlay] {
+  display: none !important;
+}
+
 /* 
    Stop mobile browsers (iOS Safari) from auto-zooming on focus.
    Font size must be at least 16px for input elements.
