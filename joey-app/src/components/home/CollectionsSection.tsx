@@ -52,12 +52,12 @@ export default function CollectionsSection({ initialCollections }: { initialColl
             <article key={col.id} className={styles.card}>
               <div className={styles.imageWrap}>
                 <img 
-                  src={col.image || "/lookbook.png"} 
+                  src={(col.image?.startsWith("/") || col.image?.startsWith("http")) ? col.image : "/lookbook.png"} 
                   alt={col.name} 
                   className={styles.imagePrimary} 
                   loading="lazy" 
                 />
-                {col.hoverImage && (
+                {col.hoverImage && (col.hoverImage?.startsWith("/") || col.hoverImage?.startsWith("http")) && (
                   <img 
                     src={col.hoverImage} 
                     alt="" 

@@ -19,6 +19,18 @@ export default async function HomePage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Brand",
+            name: "Joey The Brand",
+            url: "https://joeythebrand.com",
+            sameAs: ["https://instagram.com/joeythebrand"],
+          }),
+        }}
+      />
       <HeroSection initialSiteContent={initialSiteContent} />
       <ScrollReveal>
         <CollectionsSection initialCollections={initialCollections} />
