@@ -45,7 +45,8 @@ export default function WishlistClient() {
         size: "Standard",
         price: priceNum,
         image: item.image,
-        quantity: 1
+        quantity: 1,
+        maxStock: 99,
       });
       wishlistStore.removeItem(item.id);
       cartStore.toggleCart(true);

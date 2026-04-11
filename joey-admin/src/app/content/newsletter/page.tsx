@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import AssetUrlField from "@/components/AssetUrlField";
+import { toast } from "sonner";
 import {
   buildNewsletterTemplateHtml,
   wrapSimpleNewsletterHtml,
@@ -172,57 +173,64 @@ export default function NewsletterPage() {
 
   const sendNewsletter = async () => {
     resetMessages();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      throw new Error("Your session expired. Sign in again.");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Your session expired. Sign in again.");
+      }
+
+      let payload: Record<string, unknown> = {
+        subject: subject.trim(),
+        previewText: previewText.trim(),
+        editorMode,
+      };
+
+      if (editorMode === "template") {
+        payload.template = toPayloadTemplate(tpl);
+      } else {
+        payload.body = body;
+        payload.simpleMode = editorMode === "simple" ? simpleMode : false;
+      }
+
+      const res = await fetch("/api/newsletter/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        campaignId?: number;
+        message?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(data.error || "Request failed");
+      }
+
+      setConfirmOpen(false);
+      setSubject("");
+      setPreviewText("");
+      setBody("");
+      setTpl(createInitialTemplate());
+      const summary =
+        data.campaignId != null
+          ? `${data.message ?? "Sent."} Brevo campaign #${data.campaignId}.`
+          : (data.message ?? "Newsletter sent.");
+      setStatusMsg(summary);
+      toast.success(summary);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to send newsletter.";
+      toast.error(msg);
+      throw err;
     }
-
-    let payload: Record<string, unknown> = {
-      subject: subject.trim(),
-      previewText: previewText.trim(),
-      editorMode,
-    };
-
-    if (editorMode === "template") {
-      payload.template = toPayloadTemplate(tpl);
-    } else {
-      payload.body = body;
-      payload.simpleMode = editorMode === "simple" ? simpleMode : false;
-    }
-
-    const res = await fetch("/api/newsletter/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = (await res.json().catch(() => ({}))) as {
-      ok?: boolean;
-      error?: string;
-      campaignId?: number;
-      message?: string;
-    };
-
-    if (!res.ok) {
-      throw new Error(data.error || "Request failed");
-    }
-
-    setConfirmOpen(false);
-    setSubject("");
-    setPreviewText("");
-    setBody("");
-    setTpl(createInitialTemplate());
-    setStatusMsg(
-      data.campaignId != null
-        ? `${data.message ?? "Sent."} Brevo campaign #${data.campaignId}.`
-        : (data.message ?? "Sent."),
-    );
   };
 
   const openConfirm = () => {

@@ -7,6 +7,7 @@ import { Edit2, Plus, X, Trash2, Layers, Package } from "lucide-react";
 import AssetUrlField from "@/components/AssetUrlField";
 import AdminStyledSelect from "@/components/AdminStyledSelect";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 
 const DEFAULT_SIZES: ProductSize[] = [
   { name: "XS", available: true },
@@ -22,6 +23,7 @@ const FALLBACK_COLLECTIONS: Collection[] = [
     id: "fallback-1",
     slug: "always-lit",
     name: "Always Lit",
+    briefDescription: "",
     description: "",
     sortOrder: 1,
     createdAt: "",
@@ -30,6 +32,7 @@ const FALLBACK_COLLECTIONS: Collection[] = [
     id: "fallback-2",
     slug: "limited-edition",
     name: "Limited Edition",
+    briefDescription: "",
     description: "",
     sortOrder: 2,
     createdAt: "",
@@ -38,6 +41,7 @@ const FALLBACK_COLLECTIONS: Collection[] = [
     id: "fallback-3",
     slug: "sample-sale",
     name: "Sample Sale",
+    briefDescription: "",
     description: "",
     sortOrder: 3,
     createdAt: "",
@@ -152,7 +156,15 @@ export default function ProductsPage() {
     
     // Add "None" option
     const optionsWithNone = [
-      { id: "none", slug: "none", name: "None (Standalone Product)", description: "", sortOrder: -1, createdAt: "" },
+      {
+        id: "none",
+        slug: "none",
+        name: "None (Standalone Product)",
+        briefDescription: "",
+        description: "",
+        sortOrder: -1,
+        createdAt: "",
+      },
       ...base
     ];
 
@@ -163,6 +175,7 @@ export default function ProductsPage() {
           id: "orphan",
           slug: editingProduct.category,
           name: `${editingProduct.categoryName} (current)`,
+          briefDescription: "",
           description: "",
           sortOrder: 999,
           createdAt: "",
@@ -204,6 +217,11 @@ export default function ProductsPage() {
     const extras = extraImageUrls.map((s) => s.trim()).filter((u) => u && u !== primary);
     const images = [primary, ...extras];
     const description = formData.get("description") as string;
+    const detailsRaw = (formData.get("details") as string) || "";
+    const details = detailsRaw
+      .split(/\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     const isOutOfStock = formData.get("isOutOfStock") === "on";
     const isLimited = formData.get("isLimited") === "on";
     const isBestSeller = formData.get("isBestSeller") === "on";
@@ -233,6 +251,7 @@ export default function ProductsPage() {
           hoverImage: hoverImageUrl.trim(),
           images,
           description,
+          details,
           isOutOfStock,
           isLimited,
           isBestSeller,
@@ -251,7 +270,7 @@ export default function ProductsPage() {
           hoverImage: hoverImageUrl.trim(),
           images,
           description,
-          details: [],
+          details,
           sizes: newSizes,
           isOutOfStock,
           isLimited,
@@ -261,9 +280,12 @@ export default function ProductsPage() {
           quantity,
         });
       }
+      toast.success(editingProduct ? "Product updated." : "Product created.");
       setIsModalOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save product.");
+      const msg = err instanceof Error ? err.message : "Failed to save product.";
+      setError(msg);
+      toast.error(msg);
       console.error(err);
     } finally {
       setIsSaving(false);
@@ -292,13 +314,15 @@ export default function ProductsPage() {
     setCollectionFormError("");
     const form = e.currentTarget;
     const name = (form.querySelector('[name="col-name"]') as HTMLInputElement).value.trim();
-    const description = (form.querySelector('[name="col-description"]') as HTMLTextAreaElement).value.trim();
+    const briefDescription = (form.querySelector('[name="col-brief-description"]') as HTMLTextAreaElement).value.trim();
+    const description = (form.querySelector('[name="col-detailed-description"]') as HTMLTextAreaElement).value.trim();
     const sortOrder = Number((form.querySelector('[name="col-sort"]') as HTMLInputElement).value) || 0;
 
     try {
       if (editingCollection) {
         await dataStore.updateCollection(editingCollection.id, {
           name,
+          briefDescription,
           description,
           sortOrder,
           image: colMainImageUrl,
@@ -307,23 +331,30 @@ export default function ProductsPage() {
       } else {
         const slug = (form.querySelector('[name="col-slug"]') as HTMLInputElement).value.trim().toLowerCase();
         if (!SLUG_PATTERN.test(slug)) {
-          setCollectionFormError("Slug: lowercase letters, numbers, and hyphens only (e.g. spring- drop).");
+          const msg =
+            "Slug: lowercase letters, numbers, and hyphens only (e.g. spring-drop).";
+          setCollectionFormError(msg);
+          toast.error(msg);
           setCollectionSaving(false);
           return;
         }
         await dataStore.addCollection({
           slug,
           name,
+          briefDescription,
           description,
           sortOrder,
           image: colMainImageUrl,
           hoverImage: colHoverImageUrl,
         });
       }
+      toast.success(editingCollection ? "Collection updated." : "Collection created.");
       setCollectionModalOpen(false);
       await loadCollectionsOnly();
     } catch (err) {
-      setCollectionFormError(err instanceof Error ? err.message : "Failed to save collection.");
+      const msg = err instanceof Error ? err.message : "Failed to save collection.";
+      setCollectionFormError(msg);
+      toast.error(msg);
     } finally {
       setCollectionSaving(false);
     }
@@ -409,7 +440,7 @@ export default function ProductsPage() {
                       Sort
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Description
+                      Brief
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Actions
@@ -423,7 +454,7 @@ export default function ProductsPage() {
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">{c.name}</td>
                         <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-500">{c.slug}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500">{c.sortOrder}</td>
-                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-500">{c.description || "—"}</td>
+                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-500">{c.briefDescription || "—"}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                           <button
                             type="button"
@@ -448,7 +479,7 @@ export default function ProductsPage() {
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">{c.name}</td>
                         <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-500">{c.slug}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500">{c.sortOrder}</td>
-                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-500">{c.description || "—"}</td>
+                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-500">{c.briefDescription || "—"}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-xs text-zinc-400">
                           Run SQL to edit
                         </td>
@@ -737,6 +768,23 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="col-span-2">
+                  <label className="block text-sm font-medium text-zinc-700">
+                    The Details <span className="font-normal text-zinc-500">(product page)</span>
+                  </label>
+                  <textarea
+                    name="details"
+                    rows={5}
+                    defaultValue={editingProduct?.details?.length ? editingProduct.details.join("\n") : ""}
+                    placeholder={"One bullet per line, e.g.\nHand-woven kente\nRelaxed fit\nDry clean only"}
+                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                  />
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Shown in the &quot;The Details&quot; list on the product page (above Shipping &amp; Returns). Leave
+                    empty to hide that block.
+                  </p>
+                </div>
+
+                <div className="col-span-2">
                   <label className="mb-2 block text-sm font-medium text-zinc-700">Inventory &amp; tags</label>
                   <div className="space-y-2">
                     <label className="flex items-center space-x-2">
@@ -827,7 +875,7 @@ export default function ProductsPage() {
 
       {collectionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+          <div className="max-h-[min(90vh,720px)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">{editingCollection ? "Edit collection" : "Add collection"}</h2>
               <button
@@ -862,10 +910,27 @@ export default function ProductsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700">Description</label>
+                <label className="block text-sm font-medium text-zinc-700">Brief description</label>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  Home page, shop collection cards, and the hero line on the collection page.
+                </p>
                 <textarea
-                  name="col-description"
+                  name="col-brief-description"
                   rows={2}
+                  placeholder="One or two short lines"
+                  defaultValue={editingCollection?.briefDescription}
+                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">Detailed description</label>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  Full story on the collection detail page (below the hero).
+                </p>
+                <textarea
+                  name="col-detailed-description"
+                  rows={5}
+                  placeholder="Longer copy for /collection/your-slug"
                   defaultValue={editingCollection?.description}
                   className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
                 />
@@ -943,8 +1008,15 @@ export default function ProductsPage() {
         onCancel={() => setProductPendingDelete(null)}
         onConfirm={async () => {
           if (!productPendingDelete) return;
-          await dataStore.deleteProduct(productPendingDelete.id);
-          setProductPendingDelete(null);
+          try {
+            await dataStore.deleteProduct(productPendingDelete.id);
+            setProductPendingDelete(null);
+            toast.success("Product deleted.");
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "Could not delete product.";
+            toast.error(msg);
+            throw e;
+          }
         }}
       />
 
@@ -965,9 +1037,16 @@ export default function ProductsPage() {
         onCancel={() => setCollectionPendingDelete(null)}
         onConfirm={async () => {
           if (!collectionPendingDelete) return;
-          await dataStore.deleteCollection(collectionPendingDelete.id, collectionPendingDelete.slug);
-          await loadCollectionsOnly();
-          setCollectionPendingDelete(null);
+          try {
+            await dataStore.deleteCollection(collectionPendingDelete.id, collectionPendingDelete.slug);
+            await loadCollectionsOnly();
+            setCollectionPendingDelete(null);
+            toast.success("Collection deleted.");
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "Could not delete collection.";
+            toast.error(msg);
+            throw e;
+          }
         }}
       />
     </div>

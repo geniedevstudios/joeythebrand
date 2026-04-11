@@ -299,21 +299,28 @@ export default function ProductClient({ id }: { id: string }) {
                 </div>
                 <div className={styles.supportLinks}>
                   <p>Questions about this piece?</p>
-                  <a href="https://wa.me/233504148009" target="_blank" rel="noopener noreferrer" className={styles.waLink}>
-                    Ask on WhatsApp
-                  </a>
+                  <Link
+                    href="/contact?subject=general"
+                    className={styles.waLink}
+                  >
+                    Get in touch
+                  </Link>
                 </div>
               </div>
 
               <div className={styles.detailsList}>
-                <div className={styles.detailBlock}>
-                  <h3 className={styles.detailHeading}>The Details</h3>
-                  <ul className={styles.detailUl}>
-                    {product.details.map((d: string, i: number) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                  </ul>
-                </div>
+                {(product.details ?? []).filter((d: string) => d?.trim()).length > 0 ? (
+                  <div className={styles.detailBlock}>
+                    <h3 className={styles.detailHeading}>The Details</h3>
+                    <ul className={styles.detailUl}>
+                      {(product.details ?? [])
+                        .filter((d: string) => d?.trim())
+                        .map((d: string, i: number) => (
+                          <li key={i}>{d.trim()}</li>
+                        ))}
+                    </ul>
+                  </div>
+                ) : null}
                 <div className={styles.detailBlock}>
                   <h3 className={styles.detailHeading}>Shipping & Returns</h3>
                   <p className={styles.detailText}>

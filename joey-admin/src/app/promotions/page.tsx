@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { dataStore } from "@/lib/dataStore";
 import type { PromotionCode } from "@/lib/types";
 import { Plus, Trash2, Tag } from "lucide-react";
+import { toast } from "sonner";
 
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<PromotionCode[]>([]);
@@ -56,8 +57,11 @@ export default function PromotionsPage() {
       await dataStore.addPromotion({ code: normalizedCode, percentage, active });
       form.reset();
       await load();
+      toast.success(`Promotion ${normalizedCode} created.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create promotion.");
+      const msg = err instanceof Error ? err.message : "Failed to create promotion.";
+      setError(msg);
+      toast.error(msg);
       console.error(err);
     } finally {
       setIsSaving(false);
@@ -68,7 +72,10 @@ export default function PromotionsPage() {
     try {
       await dataStore.updatePromotion(promo.id, { active: !promo.active });
       await load();
+      toast.success(promo.active ? "Promotion deactivated." : "Promotion activated.");
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update promotion.";
+      toast.error(msg);
       console.error("Failed to toggle promo:", err);
     }
   };
@@ -78,7 +85,10 @@ export default function PromotionsPage() {
     try {
       await dataStore.deletePromotion(id);
       await load();
+      toast.success("Promotion deleted.");
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete promotion.";
+      toast.error(msg);
       console.error("Failed to delete promo:", err);
     }
   };

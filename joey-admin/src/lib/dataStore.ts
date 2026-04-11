@@ -32,7 +32,9 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   hoverImage: (row.hover_image as string) || undefined,
   images: (row.images as string[]) || [],
   description: row.description as string,
-  details: (row.details as string[]) || [],
+  details: Array.isArray(row.details)
+    ? (row.details as string[]).filter((d) => typeof d === "string" && d.trim())
+    : [],
   sizes: (row.sizes as ProductSize[]) || [],
   isOutOfStock: Boolean(row.is_out_of_stock),
   isLimited: Boolean(row.is_limited),
@@ -95,6 +97,7 @@ const mapCollection = (row: Record<string, unknown>): Collection => ({
   id: row.id as string,
   slug: row.slug as string,
   name: row.name as string,
+  briefDescription: (row.brief_description as string) || "",
   description: (row.description as string) || "",
   image: (row.image as string) || undefined,
   hoverImage: (row.hover_image as string) || undefined,
@@ -141,6 +144,7 @@ export const dataStore = {
     const { error } = await supabase.from("collections").insert({
       slug: c.slug.trim().toLowerCase(),
       name: c.name.trim(),
+      brief_description: c.briefDescription.trim(),
       description: c.description.trim(),
       image: c.image || null,
       hover_image: c.hoverImage || null,
@@ -152,10 +156,13 @@ export const dataStore = {
 
   updateCollection: async (
     id: string,
-    updates: Partial<Pick<Collection, "name" | "description" | "sortOrder" | "image" | "hoverImage">>,
+    updates: Partial<
+      Pick<Collection, "name" | "briefDescription" | "description" | "sortOrder" | "image" | "hoverImage">
+    >,
   ): Promise<void> => {
     const payload: Record<string, unknown> = {};
     if (updates.name !== undefined) payload.name = updates.name.trim();
+    if (updates.briefDescription !== undefined) payload.brief_description = updates.briefDescription.trim();
     if (updates.description !== undefined) payload.description = updates.description.trim();
     if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
     if (updates.image !== undefined) payload.image = updates.image || null;

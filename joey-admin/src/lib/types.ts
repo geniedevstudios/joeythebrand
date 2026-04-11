@@ -8,6 +8,9 @@ export interface Collection {
   id: string;
   slug: string;
   name: string;
+  /** Shown on home, shop filters, and collection hero. */
+  briefDescription: string;
+  /** Full story on /collection/[slug]. */
   description: string;
   image?: string;
   hoverImage?: string;
@@ -123,6 +126,7 @@ export type PageHeroKey =
   | "checkout"
   | "account"
   | "shipping"
+  | "privacy"
   | "login"
   | "product";
 

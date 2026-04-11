@@ -90,7 +90,31 @@ export const authStore = {
         ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
     });
-    if (error) throw new Error(error.message);
+
+    if (error) {
+      const m = error.message.toLowerCase();
+      if (
+        m.includes("already registered") ||
+        m.includes("already been registered") ||
+        m.includes("user already exists") ||
+        m.includes("email address is already")
+      ) {
+        const err = new Error(
+          "An account with this email already exists. Sign in instead.",
+        );
+        err.name = "DuplicateSignupEmail";
+        throw err;
+      }
+      throw new Error(error.message);
+    }
+
+    /** With email confirmation on, Supabase may return a user with no identities to limit enumeration. */
+    if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+      const err = new Error("An account with this email already exists. Sign in instead.");
+      err.name = "DuplicateSignupEmail";
+      throw err;
+    }
+
     const needsEmailVerification = !data.session;
     return { needsEmailVerification };
   },

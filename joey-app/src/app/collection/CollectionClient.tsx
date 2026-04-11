@@ -1,78 +1,160 @@
 "use client";
-import { useSyncExternalStore } from "react";
-import Link from "next/link";
+import { useSyncExternalStore, useState, useEffect, useRef } from "react";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
 import styles from "./CollectionClient.module.css";
 import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { CollectionBlobClipDefs, CollectionBlobViewer } from "@/components/collection/CollectionBlobViewer";
 
-export default function CollectionClient() {
-  const collections = useSyncExternalStore(
-    dataStore.subscribe,
-    dataStore.getCollections,
-    () => SHOP_COLLECTIONS_FALLBACK
+/** Visual rhythm for section shells (gradients in CSS via data-theme). */
+const SECTION_THEME_IDS = ["warm", "dark", "paper", "earth"] as const;
+
+function useReveal() {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = useRef<any>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setIsVisible(true);
+        });
+      },
+      { threshold: 0.15 },
+    );
+
+    if (domRef.current) observer.observe(domRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return { isVisible, domRef };
+}
+
+const EMPTY_ARRAY: any[] = [];
+const FALLBACK_FN = () => SHOP_COLLECTIONS_FALLBACK;
+const EMPTY_ARRAY_FN = () => EMPTY_ARRAY;
+
+function CollectionRowSection({
+  col,
+  idx,
+  themes,
+  isLast,
+}: {
+  col: any;
+  idx: number;
+  themes: any[];
+  isLast: boolean;
+}) {
+  const theme = themes[idx % themes.length];
+  const { isVisible, domRef } = useReveal();
+  const themeId = SECTION_THEME_IDS[idx % SECTION_THEME_IDS.length];
+  const zigEven = idx % 2 === 0;
+
+  const brief = (col.briefDescription || "").trim();
+  const detailed = (col.description || "").trim();
+  const same = brief.length > 0 && detailed.length > 0 && brief === detailed;
+  const showBriefLead = brief.length > 0 && detailed.length > 0 && !same;
+  const bodyText = detailed || brief;
+
+  return (
+    <section
+      ref={domRef}
+      data-theme={themeId}
+      className={`${styles.collectionRowSection} ${isVisible ? styles.rowVisible : styles.rowHidden}`}
+      style={{ zIndex: idx + 1 }}
+    >
+      <div
+        className={`${styles.sectionZigzagBg} ${zigEven ? styles.zigZagEven : styles.zigZagOdd} ${isLast ? styles.zigZagLast : ""}`}
+        aria-hidden="true"
+      />
+
+      <div className="container">
+        <div className={`${styles.editorialRow} ${idx % 2 !== 0 ? styles.rowReverse : ""}`}>
+          <div className={`${styles.editorialText} ${styles.animateIn}`}>
+            {showBriefLead ? (
+              <p className={styles.collectionBriefLead} style={{ color: theme.sub }}>
+                {brief}
+              </p>
+            ) : null}
+            {bodyText ? (
+              <p className={styles.collectionDesc} style={{ color: theme.sub }}>
+                {bodyText}
+              </p>
+            ) : null}
+          </div>
+
+          <div className={`${styles.editorialVisual} ${styles.animateInSlow}`}>
+            <h2 className={styles.collectionNameAboveShape} style={{ color: theme.text }}>
+              {col.name}
+            </h2>
+            <CollectionBlobViewer
+              images={col.images}
+              slug={col.slug}
+              blobIndex={idx}
+              fallbackImage={col.image}
+              variant="index"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
   );
+}
+
+const THEMES = [
+  { text: "var(--blue-athracite)", sub: "var(--alaska-gray)" },
+  { text: "#fff", sub: "rgba(255,255,255,0.72)" },
+  { text: "var(--blue-athracite)", sub: "var(--alaska-gray)" },
+  { text: "#fff", sub: "rgba(255,255,255,0.82)" },
+];
+export default function CollectionClient() {
+  const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, FALLBACK_FN);
+  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, EMPTY_ARRAY_FN);
   const collectionHeroStyle = usePageHeroBackgroundStyle("collection");
 
   const list = collections?.length ? collections : SHOP_COLLECTIONS_FALLBACK;
 
+  const collectionData = list.map((col) => {
+    const colProducts = products.filter(
+      (p) =>
+        p.category?.toLowerCase() === col.slug?.toLowerCase() ||
+        p.categoryName?.toLowerCase() === col.name?.toLowerCase() ||
+        p.category?.toLowerCase() === col.name?.toLowerCase() ||
+        p.category?.toLowerCase() === col.slug?.replace(/-/g, " ").toLowerCase(),
+    );
+
+    const images = slideshowImagesForCollectionBlob(col, colProducts, 8);
+
+    return {
+      ...col,
+      images,
+    };
+  });
+
   return (
     <div className={styles.page}>
+      <CollectionBlobClipDefs />
+
       {/* Page header */}
       <div className={styles.pageHeader} style={collectionHeroStyle}>
         <div className="container">
           <span className="section-label">THE ARCHIVE</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Collections</h1>
-          <p className={styles.pageSubtext}>
-            Explore the curated statement pieces from Joey The brand.
-          </p>
+          <p className={styles.pageSubtext}>Explore the curated statement pieces from Joey The brand.</p>
         </div>
       </div>
 
-      {/* Collections Grid */}
-      <div className={`section ${styles.productsSection}`}>
-        <div className="container">
-          <div className={styles.grid}>
-            {list.map((col) => (
-              <article key={col.id} className={styles.card}>
-                <div className={styles.imageWrap}>
-                  <img 
-                    src={col.image || "/lookbook.png"} 
-                    alt={col.name} 
-                    className={styles.imagePrimary} 
-                    loading="lazy" 
-                  />
-                  {col.hoverImage && (
-                    <img 
-                      src={col.hoverImage} 
-                      alt="" 
-                      className={styles.imageHover} 
-                      loading="lazy" 
-                    />
-                  )}
-                </div>
-                
-                {/* Always visible text on image */}
-                <div className={styles.textOverlay}>
-                  <h2 className={styles.name}>{col.name}</h2>
-                  <p className={styles.desc}>{col.description}</p>
-                </div>
-                
-                {/* Hover actions overlay */}
-                <div className={styles.overlay}>
-                  <div className={styles.pickMeWrap}>
-                    <Link
-                      href={`/collection/${col.slug}`}
-                      className={styles.pickMeBtn}
-                      aria-label={`View ${col.name}`}
-                    >
-                      VIEW PIECES
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
+      {/* Collections Editorial List */}
+      <div className={styles.editorialList}>
+        {collectionData.map((col, idx) => (
+          <CollectionRowSection
+            key={col.id}
+            col={col}
+            idx={idx}
+            themes={THEMES}
+            isLast={idx === collectionData.length - 1}
+          />
+        ))}
       </div>
     </div>
   );

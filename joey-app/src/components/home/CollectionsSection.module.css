@@ -33,6 +33,7 @@
   flex-shrink: 0;
 }
 
+/* Grid Layout Structure */
 .collectionsGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -46,42 +47,19 @@
   overflow: hidden;
   border-radius: var(--radius-md);
   aspect-ratio: 4/5;
-  background: var(--skintone);
+  background: transparent;
 }
 
 .imageWrap {
   position: absolute;
   inset: 0;
   z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.imagePrimary {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.card:hover .imagePrimary {
-  transform: scale(1.08);
-}
-
-.imageHover {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 1;
-}
-
-.card:hover .imageHover {
-  opacity: 1;
-  transform: scale(1.08);
-}
-
+/* Text Overlays inside the card */
 .textOverlay {
   position: absolute;
   inset: 0;
@@ -116,11 +94,48 @@
   line-height: 1.4;
 }
 
-/* Hover overlay for button */
-.overlay {
+/* SVG Blob Viewer */
+.blobViewerWrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  cursor: pointer;
+}
+
+.blobContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--skintone);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.blobViewerWrapper:hover .blobContainer {
+  transform: scale(1.05); /* organic scale on hover */
+}
+
+.blobImage {
   position: absolute;
   inset: 0;
-  background: rgba(39, 43, 54, 0.3);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out, transform 10s linear;
+  transform: scale(1.05);
+}
+
+.blobImageActive {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Hover overlay for button */
+.blobOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(39, 43, 54, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,39 +144,34 @@
   z-index: 3;
 }
 
-.card:hover .overlay {
+.blobViewerWrapper:hover .blobOverlay {
   opacity: 1;
 }
 
-.pickMeWrap {
-  width: 75%;
-}
-
 .pickMeBtn {
-  display: block;
-  width: 100%;
-  padding: 12px 0;
+  display: inline-block;
+  padding: 10px 20px;
   text-align: center;
   background: transparent;
   color: #fff;
   font-family: var(--font-label);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-full);
-  cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
   backdrop-filter: blur(4px);
   text-decoration: none;
 }
 
-.pickMeBtn:hover {
-  background: rgba(255, 255, 255, 0.12);
+.blobViewerWrapper:hover .pickMeBtn {
+  background: rgba(255, 255, 255, 0.15);
   border-color: #fff;
 }
 
+/* Responsive adjustments */
 @media (max-width: 1024px) {
   .collectionsGrid {
     grid-template-columns: repeat(3, 1fr);
@@ -173,6 +183,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
+  
   .viewAll {
     width: 100%;
     margin-top: var(--space-md);
@@ -215,3 +226,4 @@
     aspect-ratio: 3/4;
   }
 }
+

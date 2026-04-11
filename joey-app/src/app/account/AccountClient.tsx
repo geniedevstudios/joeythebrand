@@ -1,6 +1,7 @@
 "use client";
 import { useState, useSyncExternalStore, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { authStore } from "@/store/authStore";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
@@ -479,7 +480,11 @@ export default function AccountClient() {
         // onAuthStateChange will update the user, page re-renders automatically
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+      const msg = err instanceof Error ? err.message : "Something went wrong. Try again.";
+      setError(msg);
+      if (err instanceof Error && err.name === "DuplicateSignupEmail") {
+        toast.error(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -554,6 +559,12 @@ export default function AccountClient() {
                     ? mode === "signin" ? "Signing in..." : "Creating account..."
                     : mode === "signin" ? "Sign In" : "Create Account"}
                 </button>
+                {mode === "signup" && (
+                  <p className={styles.signupPrivacy}>
+                    Read our{" "}
+                    <Link href="/privacy">Privacy Policy</Link> to see how we use your information.
+                  </p>
+                )}
               </form>
             </>
           ) : (

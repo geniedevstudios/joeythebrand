@@ -85,6 +85,24 @@
   gap: var(--space-md);
 }
 
+.signupPrivacy {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--alaska-gray);
+  text-align: center;
+}
+
+.signupPrivacy a {
+  color: var(--wood);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.signupPrivacy a:hover {
+  color: var(--dark-wood);
+}
+
 /* Profile */
 .profileHeader {
   display: flex;

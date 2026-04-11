@@ -115,6 +115,29 @@
   cursor: not-allowed;
 }
 
+.newsletterPrivacy {
+  margin: var(--space-sm) 0 0;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--alaska-gray);
+}
+
+.newsletterPrivacy span {
+  opacity: 0.9;
+}
+
+.newsletterPrivacyLink {
+  color: var(--cloudy-sky);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--transition-fast);
+}
+
+.newsletterPrivacyLink:hover {
+  color: #fff;
+}
+
 .top {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1.5fr;
@@ -236,6 +259,12 @@ a.contactItem:hover { color: #fff; }
 .socialIconLink:hover {
   color: #fff;
   transform: translateY(-2px);
+}
+
+.socialIconInactive {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Divider */

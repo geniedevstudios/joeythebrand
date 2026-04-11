@@ -1,11 +1,22 @@
 "use client";
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
+import shopStyles from "@/app/shop/ShopClient.module.css";
 import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 import { wishlistStore } from "@/store/wishlistStore";
+
+const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
+
+type WearFilter = "all" | "mens" | "womens";
+
+const wearFilters: { id: WearFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "mens", label: "Men's wear" },
+  { id: "womens", label: "Women's wear" },
+];
 
 interface CollectionDetailClientProps {
   slug: string;
@@ -21,21 +32,36 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
-  
+  const [wearFilter, setWearFilter] = useState<WearFilter>("all");
+
   const collectionHeroStyle = usePageHeroBackgroundStyle("collection");
 
   // Find the specific collection - flexible case comparison
   const collection = collections.find(c => c.slug?.toLowerCase() === slug?.toLowerCase()) || 
                      SHOP_COLLECTIONS_FALLBACK.find(c => c.slug?.toLowerCase() === slug?.toLowerCase());
 
-  // Filter products by this collection
-  // We use both category and categoryName for robustness
-  const filteredProducts = products.filter(p => 
-    p.category?.toLowerCase() === collection?.slug?.toLowerCase() ||
-    p.categoryName?.toLowerCase() === collection?.name?.toLowerCase() || 
-    p.category?.toLowerCase() === collection?.name?.toLowerCase() ||
-    p.category?.toLowerCase() === collection?.slug?.replace(/-/g, " ").toLowerCase()
-  );
+  const briefHero = (collection?.briefDescription ?? "").trim();
+
+  const collectionProducts = useMemo(() => {
+    if (!collection) return [];
+    return products.filter(
+      (p) =>
+        p.category?.toLowerCase() === collection.slug?.toLowerCase() ||
+        p.categoryName?.toLowerCase() === collection.name?.toLowerCase() ||
+        p.category?.toLowerCase() === collection.name?.toLowerCase() ||
+        p.category?.toLowerCase() === collection.slug?.replace(/-/g, " ").toLowerCase(),
+    );
+  }, [products, collection]);
+
+  const displayedProducts = useMemo(() => {
+    let list = collectionProducts;
+    if (wearFilter === "mens") {
+      list = list.filter((p: any) => p.wearTag === "mens" || p.wearTag === "unisex");
+    } else if (wearFilter === "womens") {
+      list = list.filter((p: any) => p.wearTag === "womens" || p.wearTag === "unisex");
+    }
+    return list;
+  }, [collectionProducts, wearFilter]);
 
   useEffect(() => {
     if (quickViewPiece) {
@@ -49,23 +75,18 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
     return () => { document.body.style.overflow = ""; };
   }, [quickViewPiece]);
 
-  const isInWishlist = (id: string) => wishlistItems.some(item => item.id === id);
-  const toggleWishlist = (p: any, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isInWishlist(p.id)) {
-      wishlistStore.removeItem(p.id);
-      toast.success("Removed from wishlist");
-    } else {
-      wishlistStore.addItem({
-        id: p.id,
-        name: p.name,
-        price: p.price,
-        image: p.image,
-        category: p.categoryName || p.category
-      });
-      toast.success("Added to wishlist");
-    }
+  const isInWishlist = (id: string) => wishlistItems.some((item) => item.id === id);
+  const toggleWishlist = (p: any) => {
+    const wasInWishlist = isInWishlist(p.id);
+    wishlistStore.toggleItem({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      hoverImage: p.hoverImage,
+      category: p.categoryName,
+    });
+    toast.success(wasInWishlist ? `${p.name} removed from wishlist` : `${p.name} added to wishlist`);
   };
 
   const handleAddToCart = () => {
@@ -115,51 +136,88 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
 
   return (
     <div className={styles.page}>
-      {/* Page header - DYNAMIC based on collection */}
       <div className={styles.pageHeader} style={collectionHeroStyle}>
         <div className="container">
           <span className="section-label">COLLECTIONS</span>
           <h1 className={`t-display ${styles.pageTitle}`}>{collection.name}</h1>
-          <p className={styles.pageSubtext}>
-            {collection.description}
-          </p>
+          {briefHero ? (
+            <p className={styles.pageSubtext}>{briefHero}</p>
+          ) : null}
         </div>
       </div>
 
-      {/* Products */}
-      <div className={`section ${styles.productsSection}`}>
-        <div className="container">
-          {filteredProducts.length > 0 ? (
-            <div className={styles.grid}>
-              {filteredProducts.map((p) => (
-                <article key={p.id} className={styles.card}>
-                  <div className={styles.imageWrap}>
-                    <Link href={`/shop/${p.id}`} className="block h-full w-full">
-                      {p.hoverImage ? (
-                        <>
-                          <img src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
-                          <img src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
-                        </>
-                      ) : (
-                        <img src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
-                      )}
-                    </Link>
+      {collectionProducts.length > 0 ? (
+        <div className={shopStyles.wearFilterBar}>
+          <div className={`container ${shopStyles.wearFilterInner}`}>
+            <span className={shopStyles.wearFilterLabel} id="collection-wear-filter-label">
+              Shop by
+            </span>
+            <div
+              className={shopStyles.wearPills}
+              role="group"
+              aria-labelledby="collection-wear-filter-label"
+            >
+              {wearFilters.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={`${shopStyles.wearPill} ${wearFilter === f.id ? shopStyles.wearPillActive : ""}`}
+                  onClick={() => setWearFilter(f.id)}
+                  aria-pressed={wearFilter === f.id}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-                    {/* Hover actions overlay */}
-                    <div className={styles.productOverlay}>
-                      <div className={styles.actionButtons}>
+      {/* Product grid — same markup/styles as Shop */}
+      <div id="collection-products" className={`section ${shopStyles.productsSection}`}>
+        <div className="container">
+          {collectionProducts.length === 0 ? (
+            <div className={shopStyles.empty}>
+              <p>No pieces found in this collection yet.</p>
+              <Link href="/collection" className="btn btn-outline mt-4">
+                Browse All Collections
+              </Link>
+            </div>
+          ) : displayedProducts.length === 0 ? (
+            <div className={shopStyles.empty}>
+              <p>No pieces match this filter yet. Try &quot;All&quot; or another wear option.</p>
+              <button type="button" className="btn btn-outline mt-4" onClick={() => setWearFilter("all")}>
+                Show all pieces
+              </button>
+            </div>
+          ) : (
+            <div className={shopStyles.grid}>
+              {displayedProducts.map((p: any) => (
+                <article key={p.id} className={shopStyles.card}>
+                  <div className={shopStyles.imageWrap}>
+                    {p.hoverImage ? (
+                      <>
+                        <img src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
+                        <img src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
+                      </>
+                    ) : (
+                      <img src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
+                    )}
+
+                    <div className={shopStyles.overlay}>
+                      <div className={shopStyles.actionButtons}>
                         <button
-                          className={styles.iconBtn}
+                          className={shopStyles.iconBtn}
                           aria-label="Add to Wishlist"
                           title="Add to Wishlist"
-                          onClick={(e) => toggleWishlist(p, e)}
+                          onClick={() => toggleWishlist(p)}
                         >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill={isInWishlist(p.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" suppressHydrationWarning>
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                           </svg>
                         </button>
                         <button
-                          className={styles.iconBtn}
+                          className={shopStyles.iconBtn}
                           aria-label="Quick View"
                           title="Quick View"
                           onClick={() => setQuickViewPiece(p)}
@@ -170,17 +228,11 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                         </button>
                       </div>
 
-                      <div className={styles.productPickMeWrap}>
+                      <div className={shopStyles.pickMeWrap}>
                         {p.isOutOfStock ? (
-                          <span className={styles.productPickMeBtn} style={{ opacity: 0.7, background: "rgba(0,0,0,0.2)" }}>
-                            Sold Out
-                          </span>
+                          <span className={`${shopStyles.pickMeBtn} ${shopStyles.soldOutBtn}`}>Sold Out</span>
                         ) : (
-                          <Link
-                            href={`/shop/${p.id}`}
-                            className={styles.productPickMeBtn}
-                            aria-label={`View ${p.name}`}
-                          >
+                          <Link href={`/shop/${p.id}`} className={shopStyles.pickMeBtn} aria-label={`View ${p.name}`}>
                             Pick Me
                           </Link>
                         )}
@@ -188,35 +240,37 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                     </div>
 
                     {p.isOutOfStock ? (
-                      <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                      <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>
+                        OUT OF STOCK
+                      </span>
                     ) : (
                       <>
-                        {p.category === "sample-sale" && (
-                          <span className={styles.saleBadge}>SALE</span>
-                        )}
+                        {p.category === "sample-sale" && <span className={shopStyles.saleBadge}>SALE</span>}
                         {p.isLimited && p.category !== "sample-sale" && (
-                          <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                          <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>
+                            LIMITED
+                          </span>
                         )}
                         {p.isBestSeller && (
-                          <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                          <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>
+                            BEST SELLER
+                          </span>
                         )}
                       </>
                     )}
                   </div>
-                  <div className={styles.info}>
-                    <span className={styles.category}>{p.categoryName || p.category}</span>
-                    <h2 className={styles.name}>{p.name}</h2>
-                    <div className={styles.priceRow}>
-                      <span className={styles.price}>GHC {p.price.toLocaleString()}</span>
+                  <div className={shopStyles.info}>
+                    <span className={shopStyles.category}>{p.categoryName}</span>
+                    <h2 className={shopStyles.name}>{p.name}</h2>
+                    <div className={shopStyles.priceRow}>
+                      <span className={shopStyles.price}>{formatPrice(p.price)}</span>
+                      {p.originalPrice ? (
+                        <span className={shopStyles.originalPrice}>{formatPrice(p.originalPrice)}</span>
+                      ) : null}
                     </div>
                   </div>
                 </article>
               ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>
-              <p>No pieces found in this collection yet.</p>
-              <Link href="/collection" className="btn btn-outline mt-4">Browse All Collections</Link>
             </div>
           )}
         </div>
@@ -301,7 +355,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                   </button>
                   <button
                     className={styles.modalWishlistBtn}
-                    onClick={(e) => toggleWishlist(quickViewPiece, e)}
+                    onClick={() => toggleWishlist(quickViewPiece)}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill={isInWishlist(quickViewPiece.id) ? "var(--alaska-gray)" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" suppressHydrationWarning>
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>

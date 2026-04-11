@@ -7,6 +7,7 @@ import type { SiteContent, PageHeroKey, PageHeroMedia } from "@/lib/types";
 import { PAGE_HERO_KEYS, PAGE_HERO_LABELS } from "@/lib/pageHeroes";
 import AssetUrlField from "@/components/AssetUrlField";
 import HeroFitSelectors from "@/components/HeroFitSelectors";
+import { toast } from "sonner";
 
 export default function ContentPage() {
   const [content, setContent] = useState<SiteContent | null>(null);
@@ -17,7 +18,6 @@ export default function ContentPage() {
   const [aboutImageUrl, setAboutImageUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState("");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -61,7 +61,6 @@ export default function ContentPage() {
     e.preventDefault();
     if (!content || !pageHeroes) return;
     setIsSaving(true);
-    setSaveMsg("");
     setError("");
 
     const formData = new FormData(e.currentTarget);
@@ -101,10 +100,12 @@ export default function ContentPage() {
         aboutText: formData.get("aboutText") as string,
         pageHeroes: nextHeroes,
       });
-      setSaveMsg("Site content updated successfully!");
+      toast.success("Site content saved.");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save content.");
+      const msg = err instanceof Error ? err.message : "Failed to save content.";
+      setError(msg);
+      toast.error(msg);
       console.error(err);
     } finally {
       setIsSaving(false);
@@ -272,9 +273,6 @@ export default function ContentPage() {
           </div>
         </div>
 
-        {saveMsg && (
-          <p className="text-green-700 text-sm bg-green-50 border border-green-200 rounded p-3">{saveMsg}</p>
-        )}
         {error && (
           <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3">{error}</p>
         )}

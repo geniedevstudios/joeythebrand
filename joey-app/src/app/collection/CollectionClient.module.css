@@ -9,7 +9,8 @@
   background-size: cover;
   background-position: center top;
   color: var(--color-text-light);
-  padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-2xl);
+  padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-3xl);
+  z-index: 10;
 }
 
 .pageHeader::before {
@@ -44,147 +45,424 @@
   margin-top: var(--space-md);
 }
 
-/* Base card styling for collections */
+/* Collection detail: long copy + blob (not above product grid) */
+.collectionDetailEditorial {
+  padding: var(--space-3xl) 0;
+  background: var(--color-bg);
+}
+
+.collectionDetailEditorialRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4xl);
+  width: 100%;
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+}
+
+.collectionDetailProseCol {
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.collectionDetailProse {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--alaska-gray);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.collectionDetailVisual {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+  min-width: 0;
+  max-width: 550px;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .collectionDetailEditorialRow {
+    gap: var(--space-xl);
+  }
+}
+
+@media (max-width: 768px) {
+  .collectionDetailEditorialRow {
+    flex-direction: column-reverse;
+    text-align: center;
+    gap: var(--space-lg);
+  }
+
+  .collectionDetailProseCol {
+    max-width: 100%;
+  }
+
+  .collectionDetailVisual {
+    align-items: center;
+    margin-inline: auto;
+  }
+}
+
+/* Base card styling for collections - Now an Editorial Stack */
 .productsSection {
   background: var(--color-bg);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-xl);
-}
-
-.card {
+/* Editorial Layout Structure — zigzag stack (background layer clipped; content stays readable) */
+.editorialList {
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  aspect-ratio: 4/5;
 }
 
-.imageWrap {
+.collectionRowSection {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  position: relative;
+  isolation: isolate;
+  /* Diagonal depth: vmin keeps phone + desktop proportional */
+  --zig-cut: clamp(1rem, 7vmin, 2.85rem);
+  --zig-overlap: var(--zig-cut);
+  /* Extra bottom padding = zig depth so copy isn’t covered by the next section’s overlap + bg */
+  --section-pad-y: clamp(var(--space-3xl), 9vmin, var(--space-4xl));
+  padding: var(--section-pad-y) 0 calc(var(--section-pad-y) + var(--zig-cut));
+}
+
+/* Pull sections together so diagonal edges meet (no rectangular gap) */
+.collectionRowSection:not(:first-child) {
+  margin-top: calc(var(--zig-overlap) * -1);
+}
+
+.sectionZigzagBg {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   z-index: 0;
-  background: var(--skintone);
+  pointer-events: none;
 }
 
-.imagePrimary,
-.imageHover {
+/* Alternating chevrons: even = flat top / cut bottom-right up; odd = cut top / bottom-left up */
+.zigZagEven {
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--zig-cut)), 0 100%);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--zig-cut)), 0 100%);
+}
+
+.zigZagOdd {
+  -webkit-clip-path: polygon(0 var(--zig-cut), 100% 0, 100% 100%, 0 calc(100% - var(--zig-cut)));
+  clip-path: polygon(0 var(--zig-cut), 100% 0, 100% 100%, 0 calc(100% - var(--zig-cut)));
+}
+
+.zigZagLast.zigZagEven {
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.zigZagLast.zigZagOdd {
+  -webkit-clip-path: polygon(0 var(--zig-cut), 100% 0, 100% 100%, 0 100%);
+  clip-path: polygon(0 var(--zig-cut), 100% 0, 100% 100%, 0 100%);
+}
+
+.sectionZigzagBg::before,
+.sectionZigzagBg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Soft light bloom + edge vignette (shared shell) */
+.sectionZigzagBg::before {
+  background:
+    radial-gradient(ellipse 85% 55% at 100% 0%, rgba(255, 255, 255, 0.45) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 50% at 0% 100%, rgba(255, 255, 255, 0.12) 0%, transparent 55%);
+  opacity: 0.9;
+}
+
+.sectionZigzagBg::after {
+  background: radial-gradient(ellipse 100% 80% at 50% 120%, rgba(39, 43, 54, 0.06) 0%, transparent 45%);
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+}
+
+.collectionRowSection > .container {
+  position: relative;
+  z-index: 5;
+}
+
+/* Per-section palettes on clipped surface */
+.collectionRowSection[data-theme="warm"] .sectionZigzagBg {
+  background:
+    linear-gradient(168deg, #f3ebe3 0%, #e8dfd6 38%, #dcd1c7 72%, #d2c6bb 100%);
+}
+
+.collectionRowSection[data-theme="warm"] .sectionZigzagBg::before {
+  background:
+    radial-gradient(ellipse 90% 60% at 15% 10%, rgba(160, 138, 129, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 45% at 92% 85%, rgba(145, 126, 113, 0.12) 0%, transparent 52%);
+  opacity: 1;
+}
+
+.collectionRowSection[data-theme="dark"] .sectionZigzagBg {
+  background:
+    linear-gradient(165deg, #1a1e26 0%, #222731 42%, #272b36 100%);
+}
+
+.collectionRowSection[data-theme="dark"] .sectionZigzagBg::before {
+  background:
+    radial-gradient(ellipse 80% 55% at 12% 18%, rgba(97, 111, 132, 0.22) 0%, transparent 52%),
+    radial-gradient(ellipse 65% 50% at 88% 75%, rgba(145, 126, 113, 0.1) 0%, transparent 48%);
+  opacity: 1;
+}
+
+.collectionRowSection[data-theme="dark"] .sectionZigzagBg::after {
+  background: radial-gradient(ellipse 100% 70% at 50% 100%, rgba(0, 0, 0, 0.22) 0%, transparent 52%);
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+}
+
+.collectionRowSection[data-theme="paper"] .sectionZigzagBg {
+  background:
+    linear-gradient(180deg, #faf8f4 0%, #f5f1ec 45%, #efe9e2 100%);
+}
+
+.collectionRowSection[data-theme="paper"] .sectionZigzagBg::before {
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      transparent,
+      transparent 11px,
+      rgba(39, 43, 54, 0.025) 11px,
+      rgba(39, 43, 54, 0.025) 12px
+    ),
+    radial-gradient(ellipse 75% 50% at 80% 12%, rgba(215, 215, 214, 0.55) 0%, transparent 55%);
+  opacity: 0.95;
+}
+
+.collectionRowSection[data-theme="earth"] .sectionZigzagBg {
+  background:
+    linear-gradient(172deg, #6d5f56 0%, #5c5149 38%, #4a413b 85%, #3f3833 100%);
+}
+
+.collectionRowSection[data-theme="earth"] .sectionZigzagBg::before {
+  background:
+    radial-gradient(ellipse 85% 55% at 20% 15%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 45% at 95% 80%, rgba(0, 0, 0, 0.15) 0%, transparent 50%);
+  opacity: 1;
+}
+
+.collectionRowSection[data-theme="earth"] .sectionZigzagBg::after {
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255, 255, 255, 0.06) 0%, transparent 45%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.collectionRowSection[data-theme="warm"] .blobContainer {
+  background: linear-gradient(155deg, #e8dfd6, #d4c4b8);
+}
+
+.collectionRowSection[data-theme="dark"] .blobContainer {
+  background: linear-gradient(155deg, #343a48, #252a34);
+}
+
+.collectionRowSection[data-theme="paper"] .blobContainer {
+  background: linear-gradient(155deg, #ebe6df, #dcd1c7);
+}
+
+.collectionRowSection[data-theme="earth"] .blobContainer {
+  background: linear-gradient(155deg, #7a6d64, #5e534c);
+}
+
+/* Scroll Animations */
+.rowHidden .animateIn {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.rowHidden .animateInSlow {
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+.rowVisible .animateIn {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0.1s;
+}
+
+.rowVisible .animateInSlow {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 1.2s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 0.3s;
+}
+
+.editorialRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4xl);
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  z-index: 5;
+}
+
+.rowReverse {
+  flex-direction: row-reverse;
+}
+
+.editorialText {
+  flex: 1;
+  min-width: 0;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.collectionName {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 300;
+  color: var(--blue-athracite);
+  margin-bottom: var(--space-md);
+}
+
+.collectionBriefLead {
+  font-size: 0.95rem;
+  font-family: var(--font-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--alaska-gray);
+  margin-bottom: var(--space-md);
+  line-height: 1.45;
+}
+
+.collectionDesc {
+  font-size: 1.1rem;
+  color: var(--alaska-gray);
+  line-height: 1.6;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.editorialVisual {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.collectionNameAboveShape {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3.5vw, 2.75rem);
+  font-weight: 300;
+  color: var(--blue-athracite);
+  margin: 0 0 0 var(--space-xl);
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* SVG Blob Viewer */
+.blobViewerWrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 550px;
+  aspect-ratio: 1;
+  cursor: pointer;
+}
+
+.blobContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--skintone);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.blobViewerWrapper:hover .blobContainer {
+  transform: scale(1.03);
+}
+
+.blobImage {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity 0.45s ease;
-}
-
-.imagePrimary {
-  z-index: 0;
-}
-
-.imageHover {
-  z-index: 1;
   opacity: 0;
-  pointer-events: none;
+  transition: opacity 1.5s ease-in-out, transform 10s linear;
+  transform: scale(1.05); /* Slight zoom for subtle breathing effect */
 }
 
-.card:hover .imageHover {
+.blobImageActive {
   opacity: 1;
-}
-
-.card:hover .imagePrimary {
-  transform: none; /* remove previous scale to match shop */
-}
-
-/* Persistent labels on image */
-.textOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: var(--space-xl);
-  z-index: 2;
-  background: linear-gradient(
-    to bottom,
-    rgba(39, 43, 54, 0) 0%,
-    rgba(39, 43, 54, 0) 40%,
-    rgba(39, 43, 54, 0.4) 70%,
-    rgba(39, 43, 54, 0.8) 100%
-  );
-}
-
-.name {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.desc {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-style: italic;
-  max-width: 90%;
+  transform: scale(1);
 }
 
 /* Hover overlay for button */
-.overlay {
+.blobOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(39, 43, 54, 0.3);
+  background: rgba(39, 43, 54, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   transition: opacity 0.4s ease;
   z-index: 3;
 }
 
-.card:hover .overlay {
+.blobViewerWrapper:hover .blobOverlay {
   opacity: 1;
-}
-
-.pickMeWrap {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 75%;
-  transform: translate(-50%, -50%) scale(0.95);
-  pointer-events: auto;
-  opacity: 0;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.card:hover .pickMeWrap {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
 }
 
 .pickMeBtn {
-  display: block;
-  width: 100%;
-  padding: 12px 0;
+  display: inline-block;
+  padding: 14px 32px;
   text-align: center;
   background: transparent;
   color: #fff;
   font-family: var(--font-label);
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-full);
-  cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
   text-decoration: none;
 }
 
-.pickMeBtn:hover {
-  background: rgba(255, 255, 255, 0.12);
+.blobViewerWrapper:hover .pickMeBtn {
+  background: rgba(255, 255, 255, 0.15);
   border-color: #fff;
 }
 
@@ -292,24 +570,42 @@
   border-radius: var(--radius-full);
 }
 
-@media (max-width: 1200px) {
-  .grid { grid-template-columns: repeat(4, 1fr); }
-}
-
 @media (max-width: 1024px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+  .editorialRow {
+    gap: var(--space-xl);
   }
 }
 
-@media (max-width: 480px) {
-  .grid {
-    grid-template-columns: 1fr;
+@media (max-width: 768px) {
+  .collectionRowSection {
+    --zig-cut: clamp(0.85rem, 9vmin, 2.1rem);
+    --section-pad-y: clamp(var(--space-2xl), 11vmin, var(--space-3xl));
+    padding: var(--section-pad-y) 0 calc(var(--section-pad-y) + var(--zig-cut));
+  }
+
+  /* Stack vertically on mobile, overriding rowReverse */
+  .editorialRow, .rowReverse {
+    flex-direction: column-reverse;
+    text-align: center;
+    gap: var(--space-lg);
+  }
+
+  .editorialText {
+    max-width: 100%;
+  }
+
+  .editorialVisual {
+    align-items: center;
+    width: 100%;
+  }
+
+  .collectionNameAboveShape {
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .blobViewerWrapper {
+    max-width: min(85vw, 420px);
   }
 }
 

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./ShopClient.module.css";
+import CollectionsSection from "@/components/home/CollectionsSection";
 import { wishlistStore } from "@/store/wishlistStore";
-import { dataStore, DEFAULT_SIZES, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
 import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 
 type WearFilter = "all" | "mens" | "womens";
@@ -27,11 +28,6 @@ export default function ShopClient() {
   const [selectedSize, setSelectedSize] = useState("");
   const searchParams = useSearchParams();
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
-  const collections = useSyncExternalStore(
-    dataStore.subscribe,
-    dataStore.getCollections,
-    () => SHOP_COLLECTIONS_FALLBACK,
-  );
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
 
@@ -140,68 +136,12 @@ export default function ShopClient() {
         </div>
       </div>
 
-      <section className={styles.collectionsSection} aria-labelledby="shop-collections-heading">
-        <div className="container">
-          <div className={styles.collectionsHeaderRow}>
-            <div>
-              <span className="section-label">Archive</span>
-              <h2 id="shop-collections-heading" className={styles.collectionsHeading}>
-                Curated statement pieces from Joey The brand.
-              </h2>
-            </div>
-            <Link href="/collection" className={`btn btn-outline ${styles.collectionsCta}`} id="shop-collections-view-all">
-              Explore archive
-            </Link>
-          </div>
-          <div
-            className={styles.collectionsGrid}
-            role="group"
-            aria-label="Shop collections — swipe on mobile"
-          >
-            {collections.map((col) => (
-              <Link
-                key={col.id}
-                href={`/collection/${col.slug}`}
-                className={styles.collectionCard}
-              >
-                <div className={styles.itemImageWrap}>
-                  <img 
-                    src={col.image || "/lookbook.png"} 
-                    alt={col.name} 
-                    className={styles.imagePrimary} 
-                    loading="lazy" 
-                  />
-                  {col.hoverImage && (
-                    <img 
-                      src={col.hoverImage} 
-                      alt="" 
-                      className={styles.imageHover} 
-                      loading="lazy" 
-                    />
-                  )}
-                </div>
-
-                {/* Persistent text on image */}
-                <div className={styles.textOverlay}>
-                  <h3 className={styles.collectionName}>{col.name}</h3>
-                  {col.description ? (
-                    <p className={styles.collectionDesc}>{col.description}</p>
-                  ) : null}
-                </div>
-
-                {/* Hover actions overlay */}
-                <div className={styles.cardOverlay}>
-                  <div className={styles.collectionPickMeWrap}>
-                    <span className={styles.collectionPickMeBtn}>
-                      VIEW PIECES
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className={styles.collectionsSectionWrap}>
+        <CollectionsSection
+          headingId="shop-collections-heading"
+          viewAllId="shop-collections-view-all"
+        />
+      </div>
 
       <div className={styles.wearFilterBar}>
         <div className={`container ${styles.wearFilterInner}`}>

@@ -35,6 +35,9 @@ export interface PublicCollection {
   id: string;
   slug: string;
   name: string;
+  /** Short line for home, /collection index, and collection hero. */
+  briefDescription: string;
+  /** Long-form copy for the collection detail page body. */
   description: string;
   image?: string;
   hoverImage?: string;
@@ -125,6 +128,7 @@ export type PageHeroKey =
   | "checkout"
   | "account"
   | "shipping"
+  | "privacy"
   | "login"
   | "product";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import styles from "./Footer.module.css";
 
@@ -33,7 +34,15 @@ export default function FooterNewsletter() {
         return;
       }
       setEmail("");
-      toast.success(data.message || "You’re on the list. Welcome to the clan.");
+      const already = Boolean((data as { alreadySubscribed?: boolean }).alreadySubscribed);
+      const message =
+        (data as { message?: string }).message ||
+        (already ? "You’re already subscribed." : "You’re on the list. Welcome to the clan.");
+      if (already) {
+        toast.info(message);
+      } else {
+        toast.success(message);
+      }
     } catch {
       toast.error("Something went wrong. Check your connection and try again.");
     } finally {
@@ -71,6 +80,12 @@ export default function FooterNewsletter() {
           {pending ? "…" : "Subscribe"}
         </button>
       </form>
+      <p className={styles.newsletterPrivacy}>
+        <Link href="/privacy" className={styles.newsletterPrivacyLink}>
+          Privacy Policy
+        </Link>
+        <span> — how we use your email.</span>
+      </p>
     </section>
   );
 }

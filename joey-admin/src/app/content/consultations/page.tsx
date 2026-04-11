@@ -6,6 +6,7 @@ import { dataStore } from "@/lib/dataStore";
 import type { ConsultationBooking, ConsultationSource } from "@/lib/types";
 import { openConsultationPrintWindow } from "@/lib/printConsultation";
 import { CalendarRange } from "lucide-react";
+import { toast } from "sonner";
 
 function formatDate(iso?: string) {
   if (!iso || !iso.trim()) return "—";
@@ -26,7 +27,6 @@ export default function ConsultationsPage() {
   const [tab, setTab] = useState<ConsultationSource>("shop");
   const [maxSlotsDraft, setMaxSlotsDraft] = useState(5);
   const [settingsSaving, setSettingsSaving] = useState(false);
-  const [settingsMsg, setSettingsMsg] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ConsultationBooking | null>(null);
@@ -66,13 +66,13 @@ export default function ConsultationsPage() {
   const saveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSettingsSaving(true);
-    setSettingsMsg("");
     try {
       await dataStore.updateConsultationSettings(maxSlotsDraft);
-      setSettingsMsg("Saved.");
       await load();
+      toast.success("Consultation calendar settings saved.");
     } catch (err) {
-      setSettingsMsg(err instanceof Error ? err.message : "Could not save settings.");
+      const msg = err instanceof Error ? err.message : "Could not save settings.";
+      toast.error(msg);
     } finally {
       setSettingsSaving(false);
     }
@@ -93,8 +93,11 @@ export default function ConsultationsPage() {
       await dataStore.confirmConsultation(confirmTarget.id, iso);
       setConfirmTarget(null);
       await load();
+      toast.success("Consultation confirmed and scheduled.");
     } catch (err) {
-      setModalError(err instanceof Error ? err.message : "Failed to confirm.");
+      const msg = err instanceof Error ? err.message : "Failed to confirm.";
+      setModalError(msg);
+      toast.error(msg);
     } finally {
       setUpdatingId(null);
     }
@@ -112,7 +115,12 @@ export default function ConsultationsPage() {
     try {
       await dataStore.declineConsultation(b.id);
       await load();
+      toast.success(
+        b.status === "confirmed" ? "Appointment revoked." : "Request declined.",
+      );
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not update request.";
+      toast.error(msg);
       console.error(err);
     } finally {
       setUpdatingId(null);
@@ -124,7 +132,10 @@ export default function ConsultationsPage() {
     try {
       await dataStore.updateConsultationPaymentStatus(id, "paid");
       await load();
+      toast.success("Marked as paid.");
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not update payment.";
+      toast.error(msg);
       console.error(err);
     } finally {
       setUpdatingId(null);
@@ -288,11 +299,6 @@ export default function ConsultationsPage() {
         >
           {settingsSaving ? "Saving…" : "Save calendar rule"}
         </button>
-        {settingsMsg ? (
-          <span className="text-sm text-neutral-600" aria-live="polite">
-            {settingsMsg}
-          </span>
-        ) : null}
       </form>
 
       <div className="overflow-hidden rounded-xl rounded-tl-none border border-zinc-200 bg-white shadow-sm">

@@ -14,6 +14,7 @@ export const PAGE_HERO_KEYS: PageHeroKey[] = [
   "checkout",
   "account",
   "shipping",
+  "privacy",
   "login",
   "product",
 ];
@@ -30,6 +31,7 @@ export const PAGE_HERO_LABELS: Record<PageHeroKey, string> = {
   checkout: "Checkout",
   account: "Account",
   shipping: "Shipping & returns",
+  privacy: "Privacy policy",
   login: "Login",
   product: "Product (detail)",
 };
@@ -46,6 +48,7 @@ export const DEFAULT_PAGE_HEROES: Record<PageHeroKey, PageHeroMedia> = {
   checkout: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
   account: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
   shipping: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
+  privacy: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
   login: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
   product: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
 };

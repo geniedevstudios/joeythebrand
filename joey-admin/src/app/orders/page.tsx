@@ -9,6 +9,7 @@ import AdminStyledSelect from "@/components/AdminStyledSelect";
 import OrderItemDetailModal from "@/components/OrderItemDetailModal";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
+import { toast } from "sonner";
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
@@ -46,7 +47,10 @@ export default function OrdersPage() {
     try {
       await dataStore.updateOrderStatus(id, newStatus);
       await load();
+      toast.success(`Order status updated to ${STATUS_OPTIONS.find((o) => o.value === newStatus)?.label ?? newStatus}.`);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update order status.";
+      toast.error(msg);
       console.error("Failed to update order status:", err);
     } finally {
       setUpdatingId(null);

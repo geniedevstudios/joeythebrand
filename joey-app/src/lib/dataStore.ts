@@ -19,21 +19,24 @@ export const SHOP_COLLECTIONS_FALLBACK: PublicCollection[] = [
     id: "fallback-1",
     slug: "always-lit",
     name: "Always Lit",
-    description: "Available every season",
+    briefDescription: "Available every season",
+    description: "Available every season — signature pieces you can wear year round.",
     sortOrder: 1,
   },
   {
     id: "fallback-2",
     slug: "limited-edition",
     name: "Limited Edition",
-    description: "Limited runs and archive pieces",
+    briefDescription: "Limited runs and archive pieces",
+    description: "Small-batch drops and archive silhouettes. When they are gone, they are gone.",
     sortOrder: 2,
   },
   {
     id: "fallback-3",
     slug: "sample-sale",
     name: "Sample Sale",
-    description: "Samples and specials",
+    briefDescription: "Samples and specials",
+    description: "One-off samples, experiments, and special pricing while supplies last.",
     sortOrder: 3,
   },
 ];
@@ -44,11 +47,15 @@ function normalizeWearTag(v: unknown): WearTag {
 }
 
 export function mapPublicCollectionFromSupabaseRow(row: Record<string, unknown>): PublicCollection {
+  const detailed = (row.description as string) || "";
+  const briefRaw =
+    row.brief_description != null ? String(row.brief_description).trim() : "";
   return {
     id: row.id as string,
     slug: row.slug as string,
     name: row.name as string,
-    description: (row.description as string) || "",
+    briefDescription: briefRaw,
+    description: detailed,
     image: (row.image as string) || undefined,
     hoverImage: (row.hover_image as string) || undefined,
     sortOrder: Number(row.sort_order ?? 0),
@@ -92,7 +99,9 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   hoverImage: (row.hover_image as string) || undefined,
   images: (row.images as string[]) || [],
   description: row.description as string,
-  details: (row.details as string[]) || [],
+  details: Array.isArray(row.details)
+    ? (row.details as string[]).filter((d) => typeof d === "string" && d.trim())
+    : [],
   sizes: (row.sizes as ProductSize[]) || DEFAULT_SIZES,
   isOutOfStock: Boolean(row.is_out_of_stock),
   isLimited: Boolean(row.is_limited),

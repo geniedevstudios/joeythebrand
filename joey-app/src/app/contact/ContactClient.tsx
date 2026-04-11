@@ -1,11 +1,14 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import styles from "./ContactClient.module.css";
 import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 import CustomSelect from "@/components/CustomSelect";
 import { authStore } from "@/store/authStore";
 
 export default function ContactClient() {
+  const searchParams = useSearchParams();
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "", website: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -18,6 +21,32 @@ export default function ContactClient() {
     { value: "Collaboration", label: "Collaboration" },
     { value: "General Inquiry", label: "General Inquiry" },
   ];
+
+  /** URL: ?subject=General%20Inquiry or ?subject=general */
+  useEffect(() => {
+    const raw = searchParams.get("subject")?.trim();
+    if (!raw) return;
+    const aliases: Record<string, string> = {
+      general: "General Inquiry",
+      "general-inquiry": "General Inquiry",
+      general_inquiry: "General Inquiry",
+    };
+    const fromAlias = aliases[raw.toLowerCase()];
+    if (fromAlias) {
+      setForm((prev) => ({ ...prev, subject: fromAlias }));
+      return;
+    }
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      decoded = raw;
+    }
+    const match = subjectOptions.find((o) => o.value.toLowerCase() === decoded.toLowerCase());
+    if (match) {
+      setForm((prev) => ({ ...prev, subject: match.value }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) return;
@@ -90,7 +119,9 @@ export default function ContactClient() {
 
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>Appointments</span>
-                  <span className={styles.infoValue}>By appointment only</span>
+                  <Link href="/bespoke" className={styles.infoValue}>
+                    By bookings only
+                  </Link>
                 </div>
               </div>
 

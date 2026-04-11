@@ -55,7 +55,14 @@ export async function postSubscribe(request: Request): Promise<NextResponse> {
     if (error.code === "23505") {
       // unique_violation — already subscribed; still try Brevo in case they were only in DB
       void addToAllUpdates(email);
-      return NextResponse.json({ ok: true, message: "You’re already subscribed." }, { status: 200 });
+      return NextResponse.json(
+        {
+          ok: true,
+          alreadySubscribed: true,
+          message: "You’re already subscribed to the list.",
+        },
+        { status: 200 },
+      );
     }
     console.error("[subscribe] Supabase insert:", error);
     return NextResponse.json({ ok: false, error: "Could not save subscription." }, { status: 500 });
