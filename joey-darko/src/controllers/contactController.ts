@@ -56,7 +56,7 @@ export async function postContact(request: Request): Promise<NextResponse> {
       {
         ok: false,
         error:
-          "Email is not configured. Add BREVO_API_KEY (and BREVO_SENDER_EMAIL) to joey-darko/.env.local — see .env.example — then restart the dev server.",
+          "Email is not configured. Add BREVO_API_KEY (and BREVO_SENDER_EMAIL) to joey-darko/.env.local, then restart the dev server.",
       },
       { status: 503 },
     );

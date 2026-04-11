@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import styles from "./page.module.css";
 import ClockFace from "@/components/ClockFace";
 import CuratedPill from "@/components/CuratedPill";
@@ -9,13 +10,13 @@ const INSTAGRAM_URL = process.env.NEXT_PUBLIC_INSTAGRAM_URL || "https://www.inst
 const FACEBOOK_URL  = process.env.NEXT_PUBLIC_FACEBOOK_URL  || "#";
 const TWITTER_URL   = process.env.NEXT_PUBLIC_TWITTER_URL   || "#";
 
-type Status = "idle" | "success" | "error";
+type SubscribeBtnState = "idle" | "loading" | "subscribed" | "already";
 
 export default function LandingPage() {
   const [email, setEmail]     = useState("");
   const [checked, setChecked] = useState(false);
-  const [status, setStatus]   = useState<Status>("idle");
-  const [message, setMessage] = useState<string | null>(null);
+  const [subscribeBtn, setSubscribeBtn] = useState<SubscribeBtnState>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, start]    = useTransition();
   const section2Ref           = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -41,8 +42,9 @@ export default function LandingPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const trimmed = email.trim();
+    const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
+    setErrorMsg(null);
     start(async () => {
       try {
         const res  = await fetch("/api/subscribe", {
@@ -50,19 +52,34 @@ export default function LandingPage() {
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({ email: trimmed }),
         });
-        const data = (await res.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
+        const data = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          message?: string;
+          alreadySubscribed?: boolean;
+        } | null;
         if (!res.ok || !data?.ok) {
-          setStatus("error");
-          setMessage(data?.message ?? "Could not subscribe. Please try again.");
+          setSubscribeBtn("idle");
+          const msg = data?.message ?? "Could not subscribe. Please try again.";
+          setErrorMsg(msg);
+          toast.error(msg);
           return;
         }
-        setStatus("success");
-        setMessage("You're on the list. Watch your inbox.");
+
         setEmail("");
         setChecked(false);
+
+        if (data.alreadySubscribed) {
+          setSubscribeBtn("already");
+          toast.info("You're already subscribed.");
+        } else {
+          setSubscribeBtn("subscribed");
+          toast.success("You've successfully subscribed to our newsletter.");
+        }
       } catch {
-        setStatus("error");
-        setMessage("Network error. Please try again.");
+        setSubscribeBtn("idle");
+        const msg = "Network error. Please try again.";
+        setErrorMsg(msg);
+        toast.error(msg);
       }
     });
   }
@@ -140,7 +157,13 @@ export default function LandingPage() {
                 autoComplete="email"
                 placeholder=""
                 value={email}
-                onChange={ev => setEmail(ev.target.value)}
+                onChange={(ev) => {
+                  setEmail(ev.target.value);
+                  if (subscribeBtn === "subscribed" || subscribeBtn === "already") {
+                    setSubscribeBtn("idle");
+                    setErrorMsg(null);
+                  }
+                }}
                 required
               />
             </div>
@@ -157,22 +180,39 @@ export default function LandingPage() {
                 <span className={styles.checkText}>Yes, subscribe me to your newsletter. *</span>
               </label>
               <button
-                className={styles.submitBtn}
+                className={`${styles.submitBtn} ${
+                  subscribeBtn === "subscribed"
+                    ? styles.submitBtnDone
+                    : subscribeBtn === "already"
+                      ? styles.submitBtnAlready
+                      : ""
+                }`}
                 type="submit"
-                disabled={!isValid || isPending}
+                disabled={!isValid || isPending || subscribeBtn === "subscribed" || subscribeBtn === "already"}
               >
-                {isPending ? "…" : "Subscribe"}
+                {isPending ? (
+                  "…"
+                ) : subscribeBtn === "subscribed" ? (
+                  <span className={styles.submitBtnInner}>
+                    Subscribed
+                    <CheckIcon />
+                  </span>
+                ) : subscribeBtn === "already" ? (
+                  <span className={styles.submitBtnInner}>
+                    Already subscribed
+                    <CheckIcon />
+                  </span>
+                ) : (
+                  "Subscribe"
+                )}
               </button>
             </div>
 
-            {message && (
-              <p
-                className={`${styles.statusMsg} ${status === "success" ? styles.statusMsgSuccess : ""}`}
-                role="status"
-              >
-                {message}
+            {errorMsg ? (
+              <p className={styles.statusMsg} role="alert">
+                {errorMsg}
               </p>
-            )}
+            ) : null}
           </form>
 
           {/* Follow Us block below form */}
@@ -207,5 +247,16 @@ export default function LandingPage() {
       </footer>
 
     </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg className={styles.checkIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41L9 16.17z"
+      />
+    </svg>
   );
 }

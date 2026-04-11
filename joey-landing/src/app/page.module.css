@@ -412,8 +412,46 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-.submitBtn:hover { background: rgba(255,255,255,0.88); }
+.submitBtn:hover:not(:disabled) { background: rgba(255,255,255,0.88); }
 .submitBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.submitBtnDone:disabled,
+.submitBtnAlready:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.submitBtnDone,
+.submitBtnAlready {
+  opacity: 1 !important;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.submitBtnDone {
+  background: rgba(180, 230, 180, 0.95);
+  color: #0a1f0a;
+}
+
+.submitBtnAlready {
+  background: rgba(220, 220, 220, 0.95);
+  color: #1a1a1a;
+}
+
+.submitBtnInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.checkIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+}
 
 /* Status message */
 .statusMsg {

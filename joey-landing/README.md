@@ -1,6 +1,6 @@
 # joey-landing
 
-Landing page you can deploy while `joey-app` is in active development.
+Coming-soon landing for **JOEY THE BRAND**.
 
 ## Local dev
 
@@ -12,13 +12,14 @@ npm run dev
 
 ## Environment variables
 
-These control where the buttons point:
+Use the same keys as **`joey-app`**: copy **`joey-app/.env.local`** to **`joey-landing/.env.local`** (or paste the same values in your host’s env UI).
 
-- `NEXT_PUBLIC_JOEY_APP_URL` (example: `https://app.joeythebrand.com`)
-- `NEXT_PUBLIC_JOEY_ADMIN_URL` (example: `https://admin.joeythebrand.com`)
+**Newsletter (Brevo):** `BREVO_API_KEY`, `BREVO_SUBSCRIBE_LIST_ID`
 
-Newsletter subscribe endpoint (optional):
+**Supabase (same names as `joey-app`):** `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (and `NEXT_PUBLIC_SUPABASE_ANON_KEY` if you keep a full mirror)
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+The landing subscribe route does not require the anon key.
 
+If **only** Brevo is set, subscriptions go to Brevo only (GET contact → POST if new).
+
+**Landing-only (optional):** add to **`joey-landing/.env.local`** — `NEXT_PUBLIC_INSTAGRAM_URL`, `NEXT_PUBLIC_FACEBOOK_URL`, `NEXT_PUBLIC_TWITTER_URL` (empty FB/X fall back to `#` in the UI).
