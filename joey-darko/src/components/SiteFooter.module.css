@@ -94,10 +94,10 @@
 
 .bottomBar {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-md) var(--space-lg);
+  gap: var(--space-md);
   width: 100%;
   padding-top: var(--space-md);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -109,7 +109,7 @@
   font-weight: 300;
   letter-spacing: 0.03em;
   color: rgba(245, 241, 236, 0.38);
-  margin: 0 auto;
+  margin: 0;
   line-height: 1.45;
   text-align: center;
   max-width: min(22rem, 100%);

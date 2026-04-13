@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FOOTER_LINKS } from "@/lib/footerLinks";
+import CuratedPill from "./CuratedPill";
 import styles from "./SiteFooter.module.css";
 
 function IconInstagram({ className }: { className?: string }) {
@@ -88,6 +89,7 @@ export default function SiteFooter() {
 
         <div className={styles.bottomBar}>
           <p className={styles.copy}>© 2026 JOEY The brand. All rights reserved.</p>
+          <CuratedPill devHref={null} />
         </div>
       </div>
     </footer>

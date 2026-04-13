@@ -79,6 +79,8 @@ type CollectionsSectionProps = {
   ctaLabel?: string;
 };
 
+const EMPTY_ARRAY: any[] = [];
+
 export default function CollectionsSection({
   initialCollections,
   headingId = "home-collections-heading",
@@ -94,7 +96,7 @@ export default function CollectionsSection({
     () => (initialCollections && initialCollections.length > 0 ? initialCollections : SHOP_COLLECTIONS_FALLBACK),
   );
 
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => []);
+  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
 
   const list =
     collections?.length && !isFallback(collections)

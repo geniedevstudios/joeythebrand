@@ -18,15 +18,13 @@ const wearFilters: { id: WearFilter; label: string }[] = [
   { id: "womens", label: "Women's wear" },
 ];
 
-interface CollectionDetailClientProps {
-  slug: string;
-}
+const EMPTY_ARRAY: any[] = [];
 
 export default function CollectionDetailClient({ slug }: CollectionDetailClientProps) {
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => []);
+  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
   const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => SHOP_COLLECTIONS_FALLBACK);
   
-  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => []);
+  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
   const [quickViewPiece, setQuickViewPiece] = useState<any | null>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
