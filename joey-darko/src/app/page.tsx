@@ -16,7 +16,7 @@ export default function HomePage() {
           alt=""
           fill
           priority
-          sizes="100vw"
+          sizes="(max-width: 768px) 0px, 100vw"
           className={`${styles.heroBg} ${styles.desktopOnly}`}
         />
         <Image
@@ -24,7 +24,7 @@ export default function HomePage() {
           alt=""
           fill
           priority
-          sizes="100vw"
+          sizes="(max-width: 768px) 100vw, 0px"
           className={`${styles.heroBg} ${styles.mobileOnly}`}
         />
         <div className={styles.heroJoeyWrap} aria-hidden>
