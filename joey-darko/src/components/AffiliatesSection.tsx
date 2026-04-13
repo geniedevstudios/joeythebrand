@@ -1,4 +1,4 @@
-import { AFFILIATE_NAMES } from "@/lib/affiliatesData";
+import { AFFILIATES } from "@/lib/affiliatesData";
 import styles from "./AffiliatesSection.module.css";
 
 export default function AffiliatesSection() {
@@ -11,9 +11,21 @@ export default function AffiliatesSection() {
           A selection of labels, programmes, and partners from recent work and ongoing relationships.
         </p>
         <ul className={styles.grid}>
-          {AFFILIATE_NAMES.map((name) => (
-            <li key={name} className={styles.cell}>
-              {name}
+          {AFFILIATES.map(({ name, href }) => (
+            <li key={name} className={styles.cellItem}>
+              {href ? (
+                <a
+                  href={href}
+                  className={styles.cell}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${name} on Instagram (opens in a new tab)`}
+                >
+                  {name}
+                </a>
+              ) : (
+                <span className={styles.cell}>{name}</span>
+              )}
             </li>
           ))}
         </ul>

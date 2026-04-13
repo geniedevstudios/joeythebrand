@@ -69,7 +69,18 @@
   overflow: hidden;
 }
 
+.cellItem {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  min-width: 0;
+}
+
 .cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
   padding: 1.05rem 0.85rem 1.1rem;
   font-family: var(--font-label), system-ui, sans-serif;
@@ -80,13 +91,30 @@
   text-transform: uppercase;
   color: rgba(245, 241, 236, 0.78);
   text-align: center;
+  text-decoration: none;
   background: rgba(28, 31, 38, 0.97);
   transition:
     color var(--transition-base),
     background var(--transition-base);
 }
 
-.cell:hover {
+a.cell {
+  cursor: pointer;
+}
+
+a.cell:hover {
+  color: var(--color-text-light);
+  background: rgba(39, 43, 54, 0.98);
+}
+
+a.cell:focus-visible {
+  outline: 2px solid var(--wood);
+  outline-offset: -2px;
+  color: var(--color-text-light);
+  background: rgba(39, 43, 54, 0.98);
+}
+
+span.cell:hover {
   color: var(--color-text-light);
   background: rgba(39, 43, 54, 0.98);
 }
