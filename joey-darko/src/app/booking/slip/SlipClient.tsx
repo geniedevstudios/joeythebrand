@@ -19,6 +19,7 @@ export default function SlipClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [slip, setSlip] = useState<ApiSlip | null>(null);
+  const [autoPayStatus, setAutoPayStatus] = useState<"" | "checking" | "timed_out">("");
 
   const load = useCallback(async () => {
     const t =
@@ -53,6 +54,53 @@ export default function SlipClient() {
     window.addEventListener("joeyydarko-refresh", onRefresh);
     return () => window.removeEventListener("joeyydarko-refresh", onRefresh);
   }, [load]);
+
+  useEffect(() => {
+    if (!slip) return;
+    if (slip.paymentStatus === "paid") {
+      setAutoPayStatus("");
+      return;
+    }
+    if (slip.status !== "pending") {
+      setAutoPayStatus("");
+      return;
+    }
+    if (!slip.bookingId || !slip.paymentRef) {
+      setAutoPayStatus("");
+      return;
+    }
+
+    let stopped = false;
+    setAutoPayStatus("checking");
+
+    const startedAt = Date.now();
+    const tick = async () => {
+      if (stopped) return;
+      if (Date.now() - startedAt > 2 * 60 * 1000) {
+        setAutoPayStatus("timed_out");
+        return;
+      }
+      try {
+        await fetch("/api/paystack/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: slip.paymentRef, bookingId: slip.bookingId }),
+        });
+      } catch {
+        // ignore network errors; we'll retry
+      } finally {
+        await load();
+      }
+    };
+
+    const interval = window.setInterval(() => { void tick(); }, 8000);
+    void tick();
+
+    return () => {
+      stopped = true;
+      window.clearInterval(interval);
+    };
+  }, [slip, load]);
 
   const onPrint = () => {
     if (!slip) return;
@@ -94,6 +142,14 @@ export default function SlipClient() {
               confirm soon; once approved, your <strong>booking code</strong> and appointment time will show here.
             </p>
             <p className={styles.slipMuted}>Bookmark this page and check back, or refresh below.</p>
+            {slip.paymentStatus !== "paid" && autoPayStatus === "checking" ? (
+              <p className={styles.slipMuted}>Payment is pending — checking automatically…</p>
+            ) : null}
+            {slip.paymentStatus !== "paid" && autoPayStatus === "timed_out" ? (
+              <p className={styles.slipMuted}>
+                Payment is still pending. Complete it in your MoMo/bank app, then refresh this page.
+              </p>
+            ) : null}
             <button type="button" className={styles.btnOutline} onClick={() => void load()}>
               Refresh status
             </button>

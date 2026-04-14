@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("consultation_bookings")
       .select(
-        "customer_name, customer_email, customer_phone, service, preferred_date, notes, status, booking_code, scheduled_at, created_at, duration_hours, price_ghs, payment_status",
+        "id, customer_name, customer_email, customer_phone, service, preferred_date, notes, status, booking_code, scheduled_at, created_at, duration_hours, price_ghs, payment_status, payment_ref",
       )
       .eq("portfolio_access_token", token)
       .eq("source", "portfolio")
@@ -34,6 +34,8 @@ export async function GET(request: Request) {
     const row = data as Record<string, unknown>;
     return NextResponse.json({
       ok: true,
+      bookingId: row.id as string,
+      paymentRef: row.payment_ref ? String(row.payment_ref).trim() || undefined : undefined,
       status: row.status as string,
       customerName: row.customer_name as string,
       customerEmail: row.customer_email as string,

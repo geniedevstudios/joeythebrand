@@ -15,6 +15,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing reference or bookingId" }, { status: 400 });
     }
 
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return NextResponse.json({ error: "Paystack is not configured." }, { status: 500 });
+    }
+
     // 1) Verify with Paystack
     const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       headers: {
@@ -25,6 +29,23 @@ export async function POST(request: Request) {
     const paystackData = await paystackRes.json();
 
     if (!paystackRes.ok || !paystackData.status || paystackData.data.status !== "success") {
+      const providerStatus =
+        paystackData && typeof paystackData === "object" && paystackData.data && typeof paystackData.data === "object"
+          ? (paystackData.data.status as unknown)
+          : null;
+
+      const paymentStatus = providerStatus === "failed" ? "failed" : "pending";
+
+      const supabase = getSupabaseAdmin();
+      await supabase
+        .from("consultation_bookings")
+        .update({
+          payment_status: paymentStatus,
+          payment_ref: reference,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", bookingId);
+
       return NextResponse.json({ 
         error: "Payment verification failed", 
         details: paystackData.message || "Unknown error" 

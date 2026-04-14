@@ -143,6 +143,10 @@ export default function ConsultationsPage() {
   };
 
   const openConfirm = (b: ConsultationBooking) => {
+    if (b.paymentStatus !== "paid") {
+      toast.error("This booking is not paid yet. Mark it as paid before confirming.");
+      return;
+    }
     setConfirmTarget(b);
   };
 

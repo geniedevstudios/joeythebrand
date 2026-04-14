@@ -34,6 +34,7 @@ export async function POST(request: Request) {
   const notes = typeof o.notes === "string" ? o.notes.trim() : "";
   const durationHours = typeof o.durationHours === "number" ? o.durationHours : null;
   const priceGhs = typeof o.priceGhs === "number" ? o.priceGhs : null;
+  const paymentRef = typeof o.paymentRef === "string" ? o.paymentRef.trim() : "";
 
   if (!customerName || customerName.length > 200) {
     return NextResponse.json({ error: "Please enter your full name." }, { status: 400 });
@@ -78,7 +79,8 @@ export async function POST(request: Request) {
       status: "pending",
       duration_hours: durationHours,
       price_ghs: priceGhs,
-      payment_status: "unpaid",
+      payment_status: paymentRef ? "pending" : "unpaid",
+      payment_ref: paymentRef || null,
     }).select("id").single();
 
     if (error) {

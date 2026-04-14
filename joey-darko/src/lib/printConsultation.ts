@@ -1,6 +1,8 @@
 import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
 
 export type SlipPayload = {
+  bookingId?: string;
+  paymentRef?: string;
   status: string;
   customerName: string;
   customerEmail: string;

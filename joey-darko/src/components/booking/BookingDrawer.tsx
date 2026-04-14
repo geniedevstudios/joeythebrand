@@ -205,6 +205,8 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
     setStatus("sending");
 
     try {
+      const paymentRef = "JOEY-" + new Date().getTime();
+
       // 1) Save the booking first as 'unpaid'
       const res = await fetch("/api/booking", {
         method: "POST",
@@ -218,6 +220,7 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
           notes: form.notes || undefined,
           durationHours: selectedPlan.id === "1h" ? 1 : selectedPlan.id === "3h" ? 3 : 8,
           priceGhs: selectedPlan.price,
+          paymentRef,
         }),
       });
 
@@ -233,7 +236,7 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
         email: form.email,
         amount: selectedPlan.price * 100,
         currency: "GHS",
-        ref: "JOEY-" + new Date().getTime(),
+        ref: paymentRef,
         metadata: {
           custom_fields: [
             {

@@ -74,7 +74,10 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM public.consultation_bookings
     WHERE user_id = NEW.user_id
-      AND status IN ('pending', 'confirmed')
+      AND (
+        status = 'confirmed'
+        OR (status = 'pending' AND payment_status = 'paid')
+      )
       AND (
         preferred_date = NEW.preferred_date
         OR (
@@ -116,6 +119,11 @@ BEGIN
   END IF;
 
   IF NEW.status = 'confirmed' THEN
+    IF NEW.payment_status IS DISTINCT FROM 'paid' THEN
+      RAISE EXCEPTION 'Cannot confirm a consultation booking unless payment is marked paid.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
     IF NEW.scheduled_at IS NULL THEN
       RAISE EXCEPTION 'Set an appointment date and time before confirming.'
         USING ERRCODE = 'check_violation';
@@ -176,7 +184,10 @@ BEGIN
         FROM (
           SELECT preferred_date AS dt FROM public.consultation_bookings
           WHERE user_id = p_user_id
-            AND status IN ('pending', 'confirmed')
+            AND (
+              status = 'confirmed'
+              OR (status = 'pending' AND payment_status = 'paid')
+            )
             AND preferred_date IS NOT NULL
           UNION
           SELECT (scheduled_at AT TIME ZONE 'UTC')::date AS dt FROM public.consultation_bookings
