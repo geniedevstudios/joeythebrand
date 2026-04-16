@@ -41,6 +41,8 @@ export interface PublicCollection {
   description: string;
   image?: string;
   hoverImage?: string;
+  /** Images above the wear filter on /collection/[slug] (same layout as event galleries). */
+  galleryUrls?: string[];
   sortOrder: number;
 }
 

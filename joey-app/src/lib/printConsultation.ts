@@ -30,6 +30,9 @@ export function openConsultationPrintWindow(b: ConsultationBooking): void {
   const statusLabel =
     b.status === "pending" ? "Pending review" : b.status === "confirmed" ? "Confirmed" : "Declined";
 
+  const logoSrc =
+    typeof window === "undefined" ? "/white%20logo.png" : `${window.location.origin}/white%20logo.png`;
+
   const pairs: { label: string; value: string; mono?: boolean }[] = [
     { label: "Customer name", value: b.customerName },
     { label: "Email", value: b.customerEmail },
@@ -89,12 +92,9 @@ export function openConsultationPrintWindow(b: ConsultationBooking): void {
     }
     .logo-mark {
       flex-shrink: 0;
-      font-family: "Bodoni Moda", "Bodoni MT", Didot, "Libre Bodoni", Georgia, serif;
-      font-size: 2.35rem;
-      font-weight: 500;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      color: #fff;
+      height: 90px;
+      width: auto;
+      display: block;
     }
     .top-copy {
       min-width: 0;
@@ -108,12 +108,32 @@ export function openConsultationPrintWindow(b: ConsultationBooking): void {
       margin-left: 4px;
     }
     .brand-line {
+      display: flex;
+      align-items: center;
+      gap: 0px;
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 0.98rem;
       font-weight: 600;
       letter-spacing: 0.06em;
       line-height: 1.35;
       color: #fff;
+    }
+
+    .brand-wordmark {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .brand-logo {
+      height: 72px;
+      width: auto;
+      display: block;
+    }
+
+    .brand-line > span {
+      display: inline-block;
+      line-height: 1;
     }
     .sub {
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -183,9 +203,12 @@ export function openConsultationPrintWindow(b: ConsultationBooking): void {
   <div class="sheet">
     <div class="machine">
       <div class="machine-top">
-        <div class="logo-mark" aria-hidden="true">JOEY</div>
+        <img class="logo-mark" src="${logoSrc}" alt="JOEY THE BRAND" />
         <div class="top-copy">
-          <div class="brand-line">JOEY The brand</div>
+          <div class="brand-line">
+            <span class="brand-wordmark"><img class="brand-logo" src="${logoSrc}" alt="JOEY" /></span>
+            <span>The brand</span>
+          </div>
           <div class="sub">Appointment confirmation — print or save as PDF and bring this slip with you.</div>
         </div>
       </div>

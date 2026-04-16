@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "./HeroSection.module.css";
 import type { SiteContent } from "@/lib/types";
-import { useHomeHeroMediaWithSSRSeed } from "@/hooks/usePageHero";
+import { useHomeHeroMediaWithSSRSeed, useHomeHeroPosterWithSSRSeed } from "@/hooks/usePageHero";
 import { resolveHeroLayout } from "@/lib/pageHeroes";
 
 const words = ["Power.", "Precision.", "Presence."];
@@ -12,7 +12,14 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const heroVideoRevealOnce = useRef(false);
   const media = useHomeHeroMediaWithSSRSeed(initialSiteContent);
+  const posterUrl = useHomeHeroPosterWithSSRSeed(initialSiteContent);
   const { fit, position } = resolveHeroLayout(media);
+  const posterTrimmed = posterUrl?.trim() ?? "";
+  /** Poster image URL (not the video file); avoids using MP4 as <img src>. */
+  const usablePoster =
+    media.kind === "video" && posterTrimmed && posterTrimmed !== media.src.trim()
+      ? posterTrimmed
+      : "";
   const [heroVideoLoading, setHeroVideoLoading] = useState(media.kind === "video");
 
   const revealHeroVideo = useCallback(() => {
@@ -49,30 +56,45 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
     >
       <div className={styles.bg} aria-hidden="true">
         {media.kind === "video" ? (
-          <video
-            key={media.src}
-            className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
-            style={{
-              objectFit: fit === "contain" ? "contain" : "cover",
-              objectPosition: position,
-            }}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            onPlaying={revealHeroVideo}
-            onCanPlay={(e) => {
-              const v = e.currentTarget;
-              if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealHeroVideo();
-            }}
-            onTimeUpdate={(e) => {
-              if (e.currentTarget.currentTime > 0.02) revealHeroVideo();
-            }}
-            onError={revealHeroVideo}
-          >
-            <source src={media.src} />
-          </video>
+          <>
+            {usablePoster ? (
+              <img
+                src={usablePoster}
+                alt=""
+                className={`${styles.bgImg} ${styles.heroPoster}`}
+                style={{
+                  objectFit: fit === "contain" ? "contain" : "cover",
+                  objectPosition: position,
+                }}
+                draggable={false}
+              />
+            ) : null}
+            <video
+              key={media.src}
+              className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
+              style={{
+                objectFit: fit === "contain" ? "contain" : "cover",
+                objectPosition: position,
+              }}
+              poster={usablePoster || undefined}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              onPlaying={revealHeroVideo}
+              onCanPlay={(e) => {
+                const v = e.currentTarget;
+                if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealHeroVideo();
+              }}
+              onTimeUpdate={(e) => {
+                if (e.currentTarget.currentTime > 0.02) revealHeroVideo();
+              }}
+              onError={revealHeroVideo}
+            >
+              <source src={media.src} />
+            </video>
+          </>
         ) : (
           <img
             src={media.src}
@@ -87,7 +109,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
         <div className={styles.overlay} />
         {media.kind === "video" && (
           <div
-            className={`${styles.videoLoader} ${heroVideoLoading ? "" : styles.videoLoaderDone}`}
+            className={`${styles.videoLoader} ${heroVideoLoading ? "" : styles.videoLoaderDone} ${usablePoster ? styles.videoLoaderOverPoster : ""}`}
             aria-hidden={!heroVideoLoading}
           >
             <div className={styles.videoLoaderSpinner} />

@@ -175,18 +175,20 @@ export default function ProductClient({ id }: { id: string }) {
                 alt={product.name} 
                 className={styles.mainImage} 
               />
-              {product.isOutOfStock ? (
-                <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-              ) : (
-                <>
-                  {product.category === "sample-sale" && (
-                    <span className={styles.saleBadge}>SALE</span>
-                  )}
-                  {product.isLimited && product.category !== "sample-sale" && (
-                    <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
-                  )}
-                </>
-              )}
+              <div className={styles.badgeStack} aria-hidden="true">
+                {product.isOutOfStock ? (
+                  <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                ) : (
+                  <>
+                    {product.category === "sample-sale" && (
+                      <span className={styles.saleBadge}>SALE</span>
+                    )}
+                    {product.isLimited && product.category !== "sample-sale" && (
+                      <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
 
             {galleryImages.length > 1 && (
@@ -355,18 +357,20 @@ export default function ProductClient({ id }: { id: string }) {
                     ) : (
                       <img src={item.image} alt={item.name} className={styles.suggestImg} loading="lazy" />
                     )}
-                    {item.isOutOfStock ? (
-                      <span className={styles.suggestBadgeSale} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                    ) : (
-                      <>
-                        {item.category === "limited-edition" && (
-                          <span className={styles.suggestBadge}>Limited</span>
-                        )}
-                        {item.category === "sample-sale" && (
-                          <span className={styles.suggestBadgeSale}>Sale</span>
-                        )}
-                      </>
-                    )}
+                    <div className={styles.suggestBadgeStack} aria-hidden="true">
+                      {item.isOutOfStock ? (
+                        <span className={styles.suggestBadgeSale} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                      ) : (
+                        <>
+                          {item.category === "limited-edition" && (
+                            <span className={styles.suggestBadge}>Limited</span>
+                          )}
+                          {item.category === "sample-sale" && (
+                            <span className={styles.suggestBadgeSale}>Sale</span>
+                          )}
+                        </>
+                      )}
+                    </div>
 
                     <div className={styles.suggestOverlay}>
                       <div className={styles.suggestActions}>

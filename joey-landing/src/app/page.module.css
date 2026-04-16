@@ -53,12 +53,31 @@
 }
 
 .logo {
-  font-family: var(--font-logo);
-  font-size: 1.25rem;
-  letter-spacing: 0.10em;
-  color: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
   user-select: none;
   pointer-events: auto; /* re-enable clicks on the logo itself */
+  /* Nudge toward top-left of the nav padding */
+  transform: translate(-3.5rem, -3.75rem);
+}
+
+/* Match joey-app home Nav: .logoImg height 150px desktop, 120px ≤768px */
+.logoImg {
+  width: auto;
+  height: 150px;
+  max-width: min(92vw, 760px);
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .logoImg {
+    height: 120px;
+    max-width: min(92vw, 600px);
+  }
+
+  .logo {
+    transform: translate(-2rem, -2.35rem);
+  }
 }
 
 .navRight {
@@ -228,7 +247,6 @@
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .nav { padding: 1.5rem 1.5rem; }
-  .logo { font-size: 1.1rem; }
   .hero {
     width: min(340px, 90vw);
     height: min(340px, 90vw);
@@ -501,7 +519,6 @@
 
 @media (max-width: 600px) {
   .nav { padding: 1.5rem 1.5rem; }
-  .logo { font-size: 1.1rem; }
   .hero {
     width: min(340px, 90vw);
     height: min(340px, 90vw);

@@ -55,19 +55,26 @@
 
 /* Logo */
 .logo {
-  font-family: var(--font-logo);
-  font-size: 2.4rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
   color: inherit;
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
 }
 
 .logo:hover { opacity: 0.65; }
+
+.logoImg {
+  height: 150px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
 
 /* Desktop nav links */
 .leftLinks,
@@ -307,17 +314,24 @@
 }
 
 .mobileMenuLogo {
-  font-family: var(--font-logo);
-  font-size: 2.4rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
   color: var(--color-text-light);
   text-decoration: none;
   transition: opacity var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 68px;
 }
 
 .mobileMenuLogo:hover {
   opacity: 0.65;
+}
+
+.mobileLogoImg {
+  height: 68px;
+  width: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .mobileMenuInner {
@@ -425,7 +439,11 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 2rem; /* Slightly smaller for mobile */
+    height: 120px;
+  }
+
+  .logoImg {
+    height: 120px;
   }
 
   .inner {

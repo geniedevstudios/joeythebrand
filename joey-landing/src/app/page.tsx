@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import styles from "./page.module.css";
 import ClockFace from "@/components/ClockFace";
@@ -96,7 +97,17 @@ export default function LandingPage() {
 
       {/* ── Navbar ── */}
       <nav className={styles.nav} aria-label="Site navigation">
-        <div className={styles.logo} aria-label="JOEY">JOEY</div>
+        <div className={styles.logo}>
+          <Image
+            src="/white-logo.png"
+            alt="JOEY THE BRAND"
+            width={560}
+            height={112}
+            className={styles.logoImg}
+            priority
+            sizes="560px"
+          />
+        </div>
         {/* Nav items removed per request */}
       </nav>
 

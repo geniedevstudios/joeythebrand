@@ -30,109 +30,83 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      {/* Explicit Full-Viewport Backdrop */}
-      <div 
-        className="fixed inset-0 bg-[#000]/60 backdrop-blur-2xl" 
-        onClick={onClose}
-      />
+      {/* Explicit full-viewport backdrop */}
+      <div className="fixed inset-0 bg-black/55 backdrop-blur-sm" aria-hidden onClick={onClose} />
 
       <div
         role="dialog"
         aria-modal="true"
-        className="relative flex max-h-[92vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[2.5rem] bg-white p-2 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Inner container for scroll and padding */}
-        <div className="flex flex-col overflow-y-auto px-6 pb-10 pt-6 custom-scrollbar">
-          {/* Header */}
-          <div className="mb-8 flex items-start justify-between px-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
-                {orderLabel}
-              </div>
-              <h2 className="mt-2 text-4xl font-semibold tracking-tight text-zinc-900 leading-tight">
-                {item.name}
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="ml-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 shadow-sm"
-              aria-label="Close"
-            >
-              <X className="h-7 w-7" strokeWidth={2.5} />
-            </button>
+        <div className="flex items-center justify-between border-b px-6 py-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-700">{orderLabel}</p>
+            <h2 className="mt-1 truncate text-lg font-bold text-zinc-900">{item.name}</h2>
           </div>
+          <button type="button" onClick={onClose} className="text-zinc-600 hover:text-zinc-900" aria-label="Close">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
 
-          {/* Hero Image - Extra Large presentation with forced height */}
-          <div className="relative mb-10 shrink-0 overflow-hidden rounded-[2.5rem] bg-zinc-50 shadow-sm ring-1 ring-zinc-100">
-            <div className="flex h-[540px] w-full items-center justify-center">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="max-h-full max-w-full object-contain p-6 transition duration-500 hover:scale-[1.05]"
-              />
-            </div>
-          </div>
-
-          {/* Details Overview */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-100">
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">Selection</p>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-xl font-bold text-zinc-900">{item.size}</span>
-                <span className="text-xs font-medium text-zinc-400">Size</span>
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
+            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+              <div className="flex aspect-[3/4] w-full items-center justify-center p-4">
+                <img src={item.image} alt={item.name} className="h-full w-full object-contain" />
               </div>
             </div>
-            <div className="rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-100">
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">Quantity</p>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-xl font-bold text-zinc-900">{item.quantity}</span>
-                <span className="text-xs font-medium text-zinc-400">Items</span>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                  <p className="text-xs font-semibold text-zinc-700">Size</p>
+                  <p className="mt-2 text-xl font-bold text-zinc-900">{item.size}</p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                  <p className="text-xs font-semibold text-zinc-700">Quantity</p>
+                  <p className="mt-2 text-xl font-bold text-zinc-900">{item.quantity}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-zinc-700">Unit price</p>
+                  <p className="font-mono text-sm font-semibold text-zinc-900">GHC {item.price.toLocaleString()}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-zinc-200 pt-3">
+                  <p className="text-sm font-semibold text-zinc-900">Line total</p>
+                  <p className="text-lg font-bold text-zinc-900">GHC {lineTotal.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                <p className="text-xs font-semibold text-zinc-700">Reference ID</p>
+                <code className="mt-2 block break-all rounded-lg bg-zinc-100 px-3 py-2 text-xs font-mono text-zinc-900">
+                  {item.productId}
+                </code>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-md border px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                >
+                  Done
+                </button>
+                <Link
+                  href="/products"
+                  className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
+                >
+                  Edit catalog
+                </Link>
               </div>
             </div>
-          </div>
-
-          {/* Pricing Section */}
-          <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-zinc-900 p-5 text-white shadow-lg">
-            <div className="flex items-center justify-between opacity-60">
-              <span className="text-xs font-medium uppercase tracking-wider">Unit Price</span>
-              <span className="font-mono text-sm">GHC {item.price.toLocaleString()}</span>
-            </div>
-            <div className="h-px bg-white/10" />
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-[0.15em] text-white/50">Total Amout</span>
-              <span className="text-xl font-bold tracking-tight">
-                GHC {lineTotal.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {/* Metadata */}
-          <div className="mt-6 space-y-4 px-2">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">Reference ID</span>
-              <code className="text-[11px] font-medium text-zinc-500 break-all">{item.productId}</code>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="mt-8 flex gap-3">
-            <Link
-              href="/products"
-              className="flex h-12 flex-1 items-center justify-center rounded-xl bg-zinc-900 text-sm font-bold text-white transition hover:bg-zinc-800 active:scale-95"
-            >
-              Edit Catalog
-            </Link>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-12 flex-1 items-center justify-center rounded-xl border border-zinc-200 bg-white text-sm font-bold text-zinc-600 transition hover:bg-zinc-50 active:scale-95"
-            >
-              Done
-            </button>
           </div>
         </div>
       </div>

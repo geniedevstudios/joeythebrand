@@ -257,43 +257,35 @@ export default function FeaturedSection() {
         <div className={styles.grid}>
           {featured.map((item) => (
             <article key={item.id} className={styles.card}>
-              <div className={styles.imageWrap}>
-                {item.hoverImage ? (
-                  <>
+              <div className={styles.imageWrapOuter}>
+                <div className={styles.imageWrap}>
+                  {item.hoverImage ? (
+                    <>
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className={styles.imagePrimary}
+                        loading="lazy"
+                      />
+                      <img
+                        src={item.hoverImage}
+                        alt=""
+                        className={styles.imageHover}
+                        loading="lazy"
+                        aria-hidden
+                      />
+                    </>
+                  ) : (
                     <img
                       src={item.image}
                       alt={item.name}
-                      className={styles.imagePrimary}
+                      className={styles.image}
                       loading="lazy"
                     />
-                    <img
-                      src={item.hoverImage}
-                      alt=""
-                      className={styles.imageHover}
-                      loading="lazy"
-                      aria-hidden
-                    />
-                  </>
-                ) : (
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className={styles.image}
-                    loading="lazy"
-                  />
-                )}
-                
-                {item.isOutOfStock ? (
-                  <span className={styles.tag} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                ) : (
-                  <>
-                    {item.isBestSeller && <span className={styles.tag} style={{ background: "#f59e0b" }}>Bestseller</span>}
-                    {item.isLimited && <span className={styles.tag} style={{ background: "#8b5cf6" }}>Limited</span>}
-                  </>
-                )}
+                  )}
 
-                <div className={styles.overlay}>
-                  <div className={styles.actionButtons}>
+                  <div className={styles.overlay}>
+                    <div className={styles.actionButtons}>
                     <button
                       type="button"
                       className={styles.iconBtn}
@@ -339,6 +331,18 @@ export default function FeaturedSection() {
                       View Piece
                     </Link>
                   </div>
+                </div>
+                </div>
+
+                <div className={styles.badgeStack} aria-hidden="true">
+                  {item.isOutOfStock ? (
+                    <span className={styles.tag} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                  ) : (
+                    <>
+                      {item.isBestSeller && <span className={styles.tag} style={{ background: "#f59e0b" }}>Bestseller</span>}
+                      {item.isLimited && <span className={styles.tag} style={{ background: "#8b5cf6" }}>Limited</span>}
+                    </>
+                  )}
                 </div>
               </div>
               <div className={styles.info}>

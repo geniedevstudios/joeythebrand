@@ -101,6 +101,9 @@ const mapCollection = (row: Record<string, unknown>): Collection => ({
   description: (row.description as string) || "",
   image: (row.image as string) || undefined,
   hoverImage: (row.hover_image as string) || undefined,
+  galleryUrls: Array.isArray(row.gallery_urls)
+    ? (row.gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
+    : [],
   sortOrder: Number(row.sort_order ?? 0),
   createdAt: row.created_at as string,
 });
@@ -148,6 +151,7 @@ export const dataStore = {
       description: c.description.trim(),
       image: c.image || null,
       hover_image: c.hoverImage || null,
+      gallery_urls: (c.galleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
       sort_order: c.sortOrder,
     });
     if (error) throw new Error(error.message);
@@ -157,7 +161,10 @@ export const dataStore = {
   updateCollection: async (
     id: string,
     updates: Partial<
-      Pick<Collection, "name" | "briefDescription" | "description" | "sortOrder" | "image" | "hoverImage">
+      Pick<
+        Collection,
+        "name" | "briefDescription" | "description" | "sortOrder" | "image" | "hoverImage" | "galleryUrls"
+      >
     >,
   ): Promise<void> => {
     const payload: Record<string, unknown> = {};
@@ -167,6 +174,9 @@ export const dataStore = {
     if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
     if (updates.image !== undefined) payload.image = updates.image || null;
     if (updates.hoverImage !== undefined) payload.hover_image = updates.hoverImage || null;
+    if (updates.galleryUrls !== undefined) {
+      payload.gallery_urls = updates.galleryUrls.map((u) => String(u || "").trim()).filter(Boolean);
+    }
 
     const { error } = await supabase.from("collections").update(payload).eq("id", id);
     if (error) throw new Error(error.message);

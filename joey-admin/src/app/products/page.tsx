@@ -5,6 +5,7 @@ import { dataStore } from "@/lib/dataStore";
 import type { Product, ProductSize, Collection, WearTag } from "@/lib/types";
 import { Edit2, Plus, X, Trash2, Layers, Package } from "lucide-react";
 import AssetUrlField from "@/components/AssetUrlField";
+import AssetGalleryField from "@/components/AssetGalleryField";
 import AdminStyledSelect from "@/components/AdminStyledSelect";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ const FALLBACK_COLLECTIONS: Collection[] = [
     name: "Always Lit",
     briefDescription: "",
     description: "",
+    galleryUrls: [],
     sortOrder: 1,
     createdAt: "",
   },
@@ -34,6 +36,7 @@ const FALLBACK_COLLECTIONS: Collection[] = [
     name: "Limited Edition",
     briefDescription: "",
     description: "",
+    galleryUrls: [],
     sortOrder: 2,
     createdAt: "",
   },
@@ -43,12 +46,21 @@ const FALLBACK_COLLECTIONS: Collection[] = [
     name: "Sample Sale",
     briefDescription: "",
     description: "",
+    galleryUrls: [],
     sortOrder: 3,
     createdAt: "",
   },
 ];
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function sanitizeCollectionSlug(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 type TabId = "collections" | "products";
 
@@ -78,6 +90,8 @@ export default function ProductsPage() {
 
   const [colMainImageUrl, setColMainImageUrl] = useState("/lookbook.png");
   const [colHoverImageUrl, setColHoverImageUrl] = useState("");
+  const [colGalleryUrls, setColGalleryUrls] = useState<string[]>([]);
+  const [pendingColSlug, setPendingColSlug] = useState("");
 
   const productUploadFolder = editingProduct?.id
     ? `products/${editingProduct.id}`
@@ -297,6 +311,8 @@ export default function ProductsPage() {
     setCollectionFormError("");
     setColMainImageUrl("/lookbook.png");
     setColHoverImageUrl("");
+    setColGalleryUrls([]);
+    setPendingColSlug("");
     setCollectionModalOpen(true);
   };
 
@@ -305,8 +321,18 @@ export default function ProductsPage() {
     setCollectionFormError("");
     setColMainImageUrl(c.image || "/lookbook.png");
     setColHoverImageUrl(c.hoverImage || "");
+    setColGalleryUrls(c.galleryUrls ?? []);
+    setPendingColSlug("");
     setCollectionModalOpen(true);
   };
+
+  const collectionGalleryFolder = useMemo(() => {
+    const slug =
+      (editingCollection?.slug && editingCollection.slug.trim()) ||
+      sanitizeCollectionSlug(pendingColSlug) ||
+      "draft";
+    return `collections/${slug}/gallery`;
+  }, [editingCollection?.slug, pendingColSlug]);
 
   const handleSaveCollection = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -319,6 +345,7 @@ export default function ProductsPage() {
     const sortOrder = Number((form.querySelector('[name="col-sort"]') as HTMLInputElement).value) || 0;
 
     try {
+      const galleryUrls = colGalleryUrls.map((u) => String(u || "").trim()).filter(Boolean);
       if (editingCollection) {
         await dataStore.updateCollection(editingCollection.id, {
           name,
@@ -327,6 +354,7 @@ export default function ProductsPage() {
           sortOrder,
           image: colMainImageUrl,
           hoverImage: colHoverImageUrl,
+          galleryUrls,
         });
       } else {
         const slug = (form.querySelector('[name="col-slug"]') as HTMLInputElement).value.trim().toLowerCase();
@@ -346,6 +374,7 @@ export default function ProductsPage() {
           sortOrder,
           image: colMainImageUrl,
           hoverImage: colHoverImageUrl,
+          galleryUrls,
         });
       }
       toast.success(editingCollection ? "Collection updated." : "Collection created.");
@@ -367,7 +396,7 @@ export default function ProductsPage() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-sm text-zinc-500">Loading…</div>
+        <div className="text-sm text-zinc-900">Loading…</div>
       </div>
     );
   }
@@ -452,9 +481,9 @@ export default function ProductsPage() {
                     collections.map((c) => (
                       <tr key={c.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">{c.name}</td>
-                        <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-500">{c.slug}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500">{c.sortOrder}</td>
-                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-500">{c.briefDescription || "—"}</td>
+                        <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-700">{c.slug}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-700">{c.sortOrder}</td>
+                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-700">{c.briefDescription || "—"}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                           <button
                             type="button"
@@ -477,17 +506,17 @@ export default function ProductsPage() {
                     FALLBACK_COLLECTIONS.map((c) => (
                       <tr key={c.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">{c.name}</td>
-                        <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-500">{c.slug}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500">{c.sortOrder}</td>
-                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-500">{c.briefDescription || "—"}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-xs text-zinc-400">
+                        <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-700">{c.slug}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-700">{c.sortOrder}</td>
+                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-700">{c.briefDescription || "—"}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-right text-xs text-zinc-700">
                           Run SQL to edit
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-10 text-center text-sm text-zinc-500">
+                      <td colSpan={5} className="px-6 py-10 text-center text-sm text-zinc-900">
                         No collections yet. Use <strong>Add collection</strong> or run the SQL seed file.
                       </td>
                     </tr>
@@ -551,7 +580,7 @@ export default function ProductsPage() {
                           </div>
                           <div className="ml-4">
                             <div className="font-medium text-zinc-900">{product.name}</div>
-                            <div className="text-xs text-zinc-400">{product.id}</div>
+                            <div className="text-xs text-zinc-600">{product.id}</div>
                           </div>
                         </div>
                       </td>
@@ -613,7 +642,7 @@ export default function ProductsPage() {
           <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="text-xl font-bold">{editingProduct ? "Edit product" : "Add product"}</h2>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="text-zinc-400 hover:text-zinc-900">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="text-zinc-600 hover:text-zinc-900">
                 <X className="h-6 w-6" />
               </button>
             </div>
@@ -710,7 +739,7 @@ export default function ProductsPage() {
                     accept="image/*"
                     placeholder="https://… or upload"
                   />
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-1 text-xs text-zinc-700">
                     Used as the main photo on the shop and in lists. Upload or paste a URL.
                   </p>
                 </div>
@@ -725,14 +754,14 @@ export default function ProductsPage() {
                     accept="image/*"
                     placeholder="Optional — shown when customers hover the product card"
                   />
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-1 text-xs text-zinc-700">
                     Optional second shot for the shop and wishlist cards. Leave empty to only zoom the main image on hover.
                   </p>
                 </div>
 
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-zinc-700">Gallery images</p>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  <p className="mt-0.5 text-xs text-zinc-700">
                     Up to three extra photos for the product detail page (thumbnails / gallery).
                   </p>
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -769,7 +798,7 @@ export default function ProductsPage() {
 
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-zinc-700">
-                    The Details <span className="font-normal text-zinc-500">(product page)</span>
+                    The Details <span className="font-normal text-zinc-700">(product page)</span>
                   </label>
                   <textarea
                     name="details"
@@ -778,7 +807,7 @@ export default function ProductsPage() {
                     placeholder={"One bullet per line, e.g.\nHand-woven kente\nRelaxed fit\nDry clean only"}
                     className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
                   />
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-1 text-xs text-zinc-700">
                     Shown in the &quot;The Details&quot; list on the product page (above Shipping &amp; Returns). Leave
                     empty to hide that block.
                   </p>
@@ -844,7 +873,7 @@ export default function ProductsPage() {
                       </label>
                     ))}
                   </div>
-                  <p className="mt-2 text-xs text-zinc-500">Uncheck a size to mark it unavailable.</p>
+                  <p className="mt-2 text-xs text-zinc-700">Uncheck a size to mark it unavailable.</p>
                 </div>
               </div>
 
@@ -875,13 +904,13 @@ export default function ProductsPage() {
 
       {collectionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="max-h-[min(90vh,720px)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+          <div className="max-h-[min(90vh,860px)] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">{editingCollection ? "Edit collection" : "Add collection"}</h2>
               <button
                 type="button"
                 onClick={() => setCollectionModalOpen(false)}
-                className="text-zinc-400 hover:text-zinc-900"
+                className="text-zinc-600 hover:text-zinc-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -893,11 +922,13 @@ export default function ProductsPage() {
                   <input
                     name="col-slug"
                     required
+                    value={pendingColSlug}
+                    onChange={(e) => setPendingColSlug(e.target.value)}
                     placeholder="e.g. spring-drop"
                     pattern="[a-z0-9]+(-[a-z0-9]+)*"
                     className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm font-mono shadow-sm"
                   />
-                  <p className="mt-1 text-xs text-zinc-500">Lowercase, hyphens only. Cannot be changed later.</p>
+                  <p className="mt-1 text-xs text-zinc-700">Lowercase, hyphens only. Cannot be changed later.</p>
                 </div>
               )}
               <div>
@@ -911,7 +942,7 @@ export default function ProductsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700">Brief description</label>
-                <p className="mt-0.5 text-xs text-zinc-500">
+                <p className="mt-0.5 text-xs text-zinc-700">
                   Home page, shop collection cards, and the hero line on the collection page.
                 </p>
                 <textarea
@@ -924,7 +955,7 @@ export default function ProductsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700">Detailed description</label>
-                <p className="mt-0.5 text-xs text-zinc-500">
+                <p className="mt-0.5 text-xs text-zinc-700">
                   Full story on the collection detail page (below the hero).
                 </p>
                 <textarea
@@ -968,6 +999,17 @@ export default function ProductsPage() {
                   placeholder="Optional hover effect image"
                 />
               </div>
+
+              <AssetGalleryField
+                label="Collection page gallery"
+                value={colGalleryUrls}
+                onChange={setColGalleryUrls}
+                uploadFolder={collectionGalleryFolder}
+                accept="image/*"
+              />
+              <p className="-mt-1 text-xs text-zinc-700">
+                Shown on the collection page above the shop filter (same grid as event galleries).
+              </p>
               {collectionFormError && (
                 <p className="text-sm text-red-600">{collectionFormError}</p>
               )}

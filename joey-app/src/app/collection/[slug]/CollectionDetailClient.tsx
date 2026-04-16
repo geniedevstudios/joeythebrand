@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
 import shopStyles from "@/app/shop/ShopClient.module.css";
+import eventStyles from "@/app/events/events.module.css";
 import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
 import { wishlistStore } from "@/store/wishlistStore";
 
@@ -17,6 +18,10 @@ const wearFilters: { id: WearFilter; label: string }[] = [
   { id: "mens", label: "Men's wear" },
   { id: "womens", label: "Women's wear" },
 ];
+
+type CollectionDetailClientProps = {
+  slug: string;
+};
 
 const EMPTY_ARRAY: any[] = [];
 
@@ -39,6 +44,11 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                      SHOP_COLLECTIONS_FALLBACK.find(c => c.slug?.toLowerCase() === slug?.toLowerCase());
 
   const briefHero = (collection?.briefDescription ?? "").trim();
+
+  const collectionGallery = useMemo(
+    () => (collection?.galleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
+    [collection?.galleryUrls],
+  );
 
   const collectionProducts = useMemo(() => {
     if (!collection) return [];
@@ -144,6 +154,24 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
         </div>
       </div>
 
+      {collectionGallery.length > 0 ? (
+        <section className={eventStyles.section}>
+          <div className="container">
+            <div className={eventStyles.shotsSection}>
+              <h3 className={eventStyles.shotsTitle}>From the collection</h3>
+              <div className={eventStyles.shotsGrid} aria-label="Collection gallery">
+                {collectionGallery.map((u, idx) => (
+                  <div key={`${u}-${idx}`} className={eventStyles.shotCard}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className={eventStyles.shotImg} src={u} alt="" loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {collectionProducts.length > 0 ? (
         <div className={shopStyles.wearFilterBar}>
           <div className={`container ${shopStyles.wearFilterInner}`}>
@@ -192,18 +220,19 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
             <div className={shopStyles.grid}>
               {displayedProducts.map((p: any) => (
                 <article key={p.id} className={shopStyles.card}>
-                  <div className={shopStyles.imageWrap}>
-                    {p.hoverImage ? (
-                      <>
-                        <img src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
-                        <img src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
-                      </>
-                    ) : (
-                      <img src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
-                    )}
+                  <div className={shopStyles.imageWrapOuter}>
+                    <div className={shopStyles.imageWrap}>
+                      {p.hoverImage ? (
+                        <>
+                          <img src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
+                          <img src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
+                        </>
+                      ) : (
+                        <img src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
+                      )}
 
-                    <div className={shopStyles.overlay}>
-                      <div className={shopStyles.actionButtons}>
+                      <div className={shopStyles.overlay}>
+                        <div className={shopStyles.actionButtons}>
                         <button
                           className={shopStyles.iconBtn}
                           aria-label="Add to Wishlist"
@@ -224,38 +253,41 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                             <circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/>
                           </svg>
                         </button>
-                      </div>
+                        </div>
 
-                      <div className={shopStyles.pickMeWrap}>
-                        {p.isOutOfStock ? (
-                          <span className={`${shopStyles.pickMeBtn} ${shopStyles.soldOutBtn}`}>Sold Out</span>
-                        ) : (
-                          <Link href={`/shop/${p.id}`} className={shopStyles.pickMeBtn} aria-label={`View ${p.name}`}>
-                            Pick Me
-                          </Link>
-                        )}
+                        <div className={shopStyles.pickMeWrap}>
+                          {p.isOutOfStock ? (
+                            <span className={`${shopStyles.pickMeBtn} ${shopStyles.soldOutBtn}`}>Sold Out</span>
+                          ) : (
+                            <Link href={`/shop/${p.id}`} className={shopStyles.pickMeBtn} aria-label={`View ${p.name}`}>
+                              Pick Me
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {p.isOutOfStock ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>
-                        OUT OF STOCK
-                      </span>
-                    ) : (
-                      <>
-                        {p.category === "sample-sale" && <span className={shopStyles.saleBadge}>SALE</span>}
-                        {p.isLimited && p.category !== "sample-sale" && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>
-                            LIMITED
-                          </span>
-                        )}
-                        {p.isBestSeller && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>
-                            BEST SELLER
-                          </span>
-                        )}
-                      </>
-                    )}
+                    <div className={shopStyles.badgeStack} aria-hidden="true">
+                      {p.isOutOfStock ? (
+                        <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>
+                          OUT OF STOCK
+                        </span>
+                      ) : (
+                        <>
+                          {p.category === "sample-sale" && <span className={shopStyles.saleBadge}>SALE</span>}
+                          {p.isLimited && p.category !== "sample-sale" && (
+                            <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>
+                              LIMITED
+                            </span>
+                          )}
+                          {p.isBestSeller && (
+                            <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>
+                              BEST SELLER
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div className={shopStyles.info}>
                     <span className={shopStyles.category}>{p.categoryName}</span>

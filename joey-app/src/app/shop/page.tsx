@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import ShopClient from "./ShopClient";
 
 export const metadata: Metadata = {
@@ -7,5 +8,11 @@ export const metadata: Metadata = {
 };
 
 export default function ShopPage() {
-  return <ShopClient />;
+  return (
+    <Suspense
+      fallback={<div className="container" style={{ padding: "clamp(3rem, 12vw, 6rem) 0" }} aria-busy="true" />}
+    >
+      <ShopClient />
+    </Suspense>
+  );
 }

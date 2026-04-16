@@ -5,6 +5,7 @@ import {
   Head,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Row,
@@ -20,6 +21,16 @@ export type ContactSiteMessageProps = {
   subject: string;
   message: string;
 };
+
+function getBaseUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
+
+  return "";
+}
 
 const main = {
   backgroundColor: "#f4f4f5",
@@ -47,13 +58,9 @@ const headerBand = {
 };
 
 const logoMark = {
-  margin: 0,
-  fontFamily: '"Bodoni Moda", "Bodoni MT", Didot, "Libre Bodoni", Georgia, serif',
-  fontSize: "38px",
-  fontWeight: 500 as const,
-  letterSpacing: "-0.02em",
-  lineHeight: 1,
-  color: "#ffffff",
+  display: "block",
+  height: "64px",
+  width: "auto",
 };
 
 const topCopyCol = {
@@ -160,6 +167,8 @@ export default function ContactSiteMessage({
   const preview = `${subject} — ${name}`;
   const phoneDisplay = phone.trim();
   const telHref = phoneDisplay.replace(/[^\d+]/g, "");
+  const baseUrl = getBaseUrl();
+  const logoUrl = baseUrl ? new URL("/white%20logo.png", baseUrl).toString() : "";
 
   return (
     <Html lang="en">
@@ -176,7 +185,17 @@ export default function ContactSiteMessage({
             <Section style={headerBand}>
               <Row>
                 <Column style={{ width: "92px", verticalAlign: "middle", paddingRight: "24px" }}>
-                  <Text style={logoMark}>JOEY</Text>
+                  {logoUrl ? (
+                    <Img
+                      src={logoUrl}
+                      alt="JOEY THE BRAND"
+                      width={240}
+                      height={64}
+                      style={logoMark}
+                    />
+                  ) : (
+                    <Text style={{ margin: 0, color: "#ffffff", fontWeight: 600 }}>JOEY</Text>
+                  )}
                 </Column>
                 <Column style={topCopyCol}>
                   <Text style={brandLine}>JOEY The brand</Text>

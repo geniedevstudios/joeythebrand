@@ -14,6 +14,8 @@ export interface Collection {
   description: string;
   image?: string;
   hoverImage?: string;
+  /** Shown on /collection/[slug] above the wear filter (same layout as event galleries). */
+  galleryUrls: string[];
   sortOrder: number;
   createdAt: string;
 }

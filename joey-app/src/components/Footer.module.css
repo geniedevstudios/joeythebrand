@@ -153,13 +153,20 @@
   align-items: flex-start;
 }
 
-.logo {
-  font-family: var(--font-logo);
-  font-size: 2.4rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: #fff;
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  margin-top: calc(-1 * var(--space-2xl));
   margin-bottom: var(--space-sm);
+}
+
+.logoImg {
+  height: 150px;
+  width: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .tagline {

@@ -58,6 +58,9 @@ export function mapPublicCollectionFromSupabaseRow(row: Record<string, unknown>)
     description: detailed,
     image: (row.image as string) || undefined,
     hoverImage: (row.hover_image as string) || undefined,
+    galleryUrls: Array.isArray(row.gallery_urls)
+      ? (row.gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
+      : undefined,
     sortOrder: Number(row.sort_order ?? 0),
   };
 }
@@ -413,6 +416,11 @@ export const dataStore = {
         ? input.preferredDate.trim().slice(0, 10)
         : null;
 
+    // Downpayment flow (Paystack): the booking is created in "pending" status, but
+    // only becomes calendar-blocking once payment_status is marked "paid"
+    // (see supabase_consultation_calendar.sql).
+    const BESPOKE_DOWNPAYMENT_GHS = 1110;
+
     const { data, error } = await supabase
       .from("consultation_bookings")
       .insert({
@@ -424,12 +432,19 @@ export const dataStore = {
         preferred_date: preferred,
         notes: input.notes?.trim() ? input.notes.trim() : null,
         status: "pending" satisfies ConsultationStatus,
+        price_ghs: BESPOKE_DOWNPAYMENT_GHS,
+        payment_status: "pending",
       })
       .select()
       .single();
 
     if (error) {
       const msg = error.message || "";
+      if (/column .*payment_status.*does not exist/i.test(msg) || /column .*price_ghs.*does not exist/i.test(msg)) {
+        throw new Error(
+          "Consultation payments are not enabled in Supabase. Run `supabase_consultation_payments.sql` in the Supabase SQL Editor, then try again.",
+        );
+      }
       if (/fully booked|day is fully booked/i.test(msg)) {
         throw new Error("That day is fully booked. Please choose another date.");
       }

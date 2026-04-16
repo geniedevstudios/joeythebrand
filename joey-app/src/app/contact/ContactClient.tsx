@@ -10,7 +10,8 @@ import { authStore } from "@/store/authStore";
 export default function ContactClient() {
   const searchParams = useSearchParams();
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "", website: "" });
+  const emptyForm = { name: "", email: "", phone: "", subject: "", message: "", website: "" };
+  const [form, setForm] = useState(emptyForm);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const contactHeroStyle = usePageHeroBackgroundStyle("contact");
 
@@ -56,6 +57,19 @@ export default function ContactClient() {
       name: prev.name.trim() ? prev.name : user.name,
     }));
   }, [user?.id, user?.email, user?.name]);
+
+  useEffect(() => {
+    if (status !== "sent") return;
+    const t = window.setTimeout(() => {
+      setStatus("idle");
+      setForm((prev) => ({
+        ...emptyForm,
+        email: prev.email.trim() ? prev.email : "",
+        name: prev.name.trim() ? prev.name : "",
+      }));
+    }, 4500);
+    return () => window.clearTimeout(t);
+  }, [status]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -156,6 +170,16 @@ export default function ContactClient() {
                   <p className={styles.successBody}>
                     Thank you for reaching out. We&apos;ll be in touch shortly.
                   </p>
+                  <button
+                    type="button"
+                    className={styles.sendAnother}
+                    onClick={() => {
+                      setStatus("idle");
+                      setForm(emptyForm);
+                    }}
+                  >
+                    Send another message
+                  </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className={styles.form} noValidate>

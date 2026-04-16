@@ -28,3 +28,6 @@ insert into public.collections (slug, name, brief_description, description, sort
   ('limited-edition', 'Limited Edition', 'Limited runs and archive pieces', 'Small-batch drops and archive silhouettes.', 2),
   ('sample-sale', 'Sample Sale', 'Samples and specials', 'One-off samples and special pricing while supplies last.', 3)
 on conflict (slug) do nothing;
+
+-- Multiple hero-style images on /collection/[slug] (before shop filter); same grid as event detail galleries.
+alter table public.collections add column if not exists gallery_urls text[] not null default '{}'::text[];

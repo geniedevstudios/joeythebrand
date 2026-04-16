@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useSyncExternalStore, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { toggleCart } from "./CartDrawer";
 import { cartStore } from "@/store/cartStore";
 import { authStore } from "@/store/authStore";
@@ -9,12 +10,19 @@ import styles from "./Nav.module.css";
 
 const EMPTY_ARRAY: any[] = [];
 
-const navLinks = [
+const leftNavLinks = [
+  { label: "Collections", href: "/collection" },
   { label: "Shop", href: "/shop" },
   { label: "Story", href: "/story" },
+];
+
+const rightNavLinks = [
   { label: "Bespoke", href: "/bespoke" },
+  { label: "Events", href: "/events" },
   { label: "Contact", href: "/contact" },
 ];
+
+const navLinks = [...leftNavLinks, ...rightNavLinks];
 
 const ICONS = ["cart", "wishlist", "profile"] as const;
 type IconType = typeof ICONS[number];
@@ -34,7 +42,10 @@ export default function Nav() {
   const initials = user ? authStore.getInitials() : "";
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 40);
+    const getScrollY = () =>
+      window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const handleScroll = () => setScrolled(getScrollY() > 40);
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -140,7 +151,7 @@ export default function Nav() {
           </button>
 
           <nav className={styles.leftLinks} aria-label="Primary navigation">
-            {navLinks.slice(0, 2).map((l) => (
+            {leftNavLinks.map((l) => (
               <Link key={l.href} href={l.href} className={styles.navLink}>
                 {l.label}
               </Link>
@@ -148,11 +159,20 @@ export default function Nav() {
           </nav>
 
           <Link href="/" className={styles.logo} aria-label="JOEY homepage">
-            JOEY
+            <Image
+              key={scrolled ? "logo-black" : "logo-white"}
+              src={scrolled ? "/blacklogo21.png" : "/white%20logo.png"}
+              alt="JOEY THE BRAND"
+              width={560}
+              height={112}
+              priority
+              className={styles.logoImg}
+              sizes="560px"
+            />
           </Link>
 
           <nav className={styles.rightLinks} aria-label="Secondary navigation">
-            {navLinks.slice(2).map((l) => (
+            {rightNavLinks.map((l) => (
               <Link key={l.href} href={l.href} className={styles.navLink}>
                 {l.label}
               </Link>
@@ -202,13 +222,20 @@ export default function Nav() {
       <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`} role="dialog" aria-modal="true">
         <div className={styles.mobileMenuHeader}>
           <Link href="/" className={styles.mobileMenuLogo} onClick={() => setMenuOpen(false)}>
-            JOEY
+            <Image
+              src="/white%20logo.png"
+              alt="JOEY THE BRAND"
+              width={560}
+              height={112}
+              className={styles.mobileLogoImg}
+              sizes="560px"
+            />
           </Link>
         </div>
         <div className={styles.mobileMenuInner}>
           <p className={styles.mobileMenuLabel}>Menu</p>
           <nav className={styles.mobileNav}>
-            {navLinks.slice(0, 2).map((l, i) => (
+            {leftNavLinks.map((l, i) => (
               <Link key={l.href} href={l.href} className={styles.mobileNavLink}
                 onClick={() => setMenuOpen(false)} style={{ animationDelay: `${i * 0.08}s` }}>
                 {l.label}
@@ -218,7 +245,7 @@ export default function Nav() {
               onClick={() => setMenuOpen(false)} style={{ animationDelay: "0.16s" }}>
               Home
             </Link>
-            {navLinks.slice(2).map((l, i) => (
+            {rightNavLinks.map((l, i) => (
               <Link key={l.href} href={l.href} className={styles.mobileNavLink}
                 onClick={() => setMenuOpen(false)} style={{ animationDelay: `${(i + 3) * 0.08}s` }}>
                 {l.label}

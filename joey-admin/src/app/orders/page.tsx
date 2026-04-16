@@ -60,7 +60,7 @@ export default function OrdersPage() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-sm text-neutral-600">Loading orders...</div>
+        <div className="text-sm text-zinc-900">Loading orders...</div>
       </div>
     );
   }
@@ -76,7 +76,7 @@ export default function OrdersPage() {
 
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Orders</h1>
-        <span className="text-sm text-neutral-600">{orders.length} total</span>
+        <span className="text-sm text-zinc-800">{orders.length} total</span>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
@@ -85,7 +85,7 @@ export default function OrdersPage() {
             <div className="py-12 text-center">
               <PackageOpen className="mx-auto h-12 w-12 text-zinc-300" />
               <h3 className="mt-2 text-sm font-semibold text-zinc-900">No Orders Yet</h3>
-              <p className="mt-1 text-sm text-neutral-600">Orders placed from the shop will appear here.</p>
+              <p className="mt-1 text-sm text-zinc-800">Orders placed from the shop will appear here.</p>
             </div>
           ) : (
             <table className="min-w-[1080px] w-full border-collapse text-left">
@@ -142,14 +142,14 @@ export default function OrdersPage() {
                       <div className="text-sm font-semibold tracking-tight text-zinc-900">
                         {formatOrderNumber(order)}
                       </div>
-                      <div className="mt-1 text-xs text-neutral-600">
+                      <div className="mt-1 text-xs text-zinc-800">
                         {formatOrderPlacedAt(order.createdAt)}
                       </div>
                     </td>
                     <td className="max-w-[200px] px-5 py-4">
                       <div className="text-sm font-medium text-zinc-900">{order.customerName}</div>
                       <div className="mt-0.5 text-xs text-zinc-600 break-all">{order.customerEmail}</div>
-                      <div className="mt-1 text-xs text-neutral-600">{order.customerPhone}</div>
+                      <div className="mt-1 text-xs text-zinc-800">{order.customerPhone}</div>
                       {order.userId && (
                         <div className="mt-1 text-xs font-medium text-blue-600">Linked account</div>
                       )}
@@ -166,7 +166,7 @@ export default function OrdersPage() {
                             <button
                               type="button"
                               onClick={() => setItemModal({ order, item })}
-                              className="flex w-full items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50/50 p-2 text-left transition hover:border-zinc-200 hover:bg-gradient-to-b hover:from-stone-50 hover:to-zinc-50/90 hover:shadow-sm"
+                              className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2 text-left transition hover:border-white/15 hover:bg-white/[0.06] hover:shadow-[0_18px_70px_rgba(0,0,0,0.35)]"
                               aria-label={`Details for ${item.name}, size ${item.size}, quantity ${item.quantity}`}
                             >
                               <span className="relative h-11 w-9 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 shadow-sm">
@@ -176,7 +176,7 @@ export default function OrdersPage() {
                                 <span className="line-clamp-2 text-sm font-medium text-zinc-900">
                                   {item.name}
                                 </span>
-                                <span className="mt-0.5 block text-xs text-neutral-600">
+                                <span className="mt-0.5 block text-xs text-zinc-800">
                                   Size{" "}
                                   <span className="font-semibold text-zinc-700">{item.size}</span>
                                   <span className="mx-1 text-zinc-300">·</span>
@@ -218,7 +218,7 @@ export default function OrdersPage() {
                         wrapperClassName="min-w-[156px]"
                       />
                       {updatingId === order.id ? (
-                        <p className="mt-1 text-xs text-zinc-400">Saving…</p>
+                        <p className="mt-1 text-xs text-zinc-700">Saving…</p>
                       ) : null}
                     </td>
                   </tr>
@@ -229,7 +229,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <p className="text-xs text-neutral-600">
+      <p className="text-xs text-zinc-800">
         Tip: click a product row to see size, quantity, and line total.{" "}
         <Link href="/products" className="font-medium text-zinc-800 underline hover:text-zinc-950">
           Edit products

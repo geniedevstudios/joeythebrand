@@ -54,27 +54,33 @@ export default function RevenueModal({ isOpen, onClose, orders, consultations }:
   const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-[2px]">
-      <div 
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" role="presentation">
+      <div
+        className="fixed inset-0 bg-black/55 backdrop-blur-sm"
+        aria-hidden
+        onClick={onClose}
+      />
+      <div
         role="dialog"
         aria-modal="true"
-        className="flex flex-col w-full max-w-5xl h-[80vh] overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.04]"
+        className="relative flex h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.04]"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-6 py-5">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-zinc-900">Revenue Breakdown</h2>
-            <p className="text-sm text-neutral-500 mt-0.5">Tracking all successful orders and paid consultations.</p>
+            <p className="text-sm text-zinc-800 mt-0.5">Tracking all successful orders and paid consultations.</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Total Revenue</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-800">Total Revenue</span>
               <span className="text-lg font-bold text-zinc-900 leading-none mt-0.5">GHC {totalRevenue.toLocaleString()}</span>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+              className="rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
               aria-label="Close"
             >
               <X className="h-5 w-5" strokeWidth={2} />
@@ -97,27 +103,27 @@ export default function RevenueModal({ isOpen, onClose, orders, consultations }:
             <tbody className="divide-y divide-zinc-100">
               {payments.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-neutral-500 italic">
+                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-800 italic">
                     No payment history found.
                   </td>
                 </tr>
               ) : (
                 payments.map((payment) => (
                   <tr key={`${payment.type}-${payment.id}`} className="group hover:bg-zinc-50/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-800">
                       {formatOrderPlacedAt(payment.createdAt)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-zinc-900">{payment.customerName}</span>
-                        <span className="text-xs text-neutral-500 truncate max-w-[200px]" title={payment.customerEmail}>
+                        <span className="text-xs text-zinc-700 truncate max-w-[200px]" title={payment.customerEmail}>
                           {payment.customerEmail}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="shrink-0 p-1.5 rounded-md bg-zinc-100 text-zinc-400 group-hover:text-zinc-600 transition-colors">
+                        <div className="shrink-0 p-1.5 rounded-md bg-zinc-100 text-zinc-600 group-hover:text-zinc-800 transition-colors">
                           {payment.type === "order" ? (
                             <ShoppingBag className="h-3.5 w-3.5" />
                           ) : (
@@ -130,7 +136,7 @@ export default function RevenueModal({ isOpen, onClose, orders, consultations }:
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-mono font-medium text-neutral-500 bg-zinc-100 px-2 py-1 rounded">
+                      <span className="text-xs font-mono font-medium text-zinc-800 bg-zinc-100 px-2 py-1 rounded">
                         {payment.refId}
                       </span>
                     </td>
@@ -147,7 +153,7 @@ export default function RevenueModal({ isOpen, onClose, orders, consultations }:
         {/* Footer info (mobile only total) */}
         <div className="sm:hidden border-t border-zinc-100 bg-zinc-50 p-4">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Total Revenue</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-800">Total Revenue</span>
             <span className="text-lg font-bold text-zinc-900">GHC {totalRevenue.toLocaleString()}</span>
           </div>
         </div>

@@ -71,6 +71,53 @@ create table if not exists public.site_content (
   page_heroes jsonb not null default '{}'::jsonb
 );
 
+-- 5. EVENTS PAGE (single row, always id = 1)
+create table if not exists public.events_page (
+  id integer primary key default 1 check (id = 1),
+  heading text not null default 'Events',
+  subheading text,
+  body text,
+  top_video_url text,
+  top_video_poster_url text,
+  updated_at timestamptz not null default now()
+);
+
+-- 6. EVENTS (upcoming + past)
+create table if not exists public.events (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  title text not null,
+  category text not null default 'fashion_shows',
+  status text not null default 'upcoming', -- upcoming | past
+  location text,
+  start_at timestamptz,
+  date_label text,
+  description text,
+  details text,
+  details_ready boolean not null default false,
+  main_video_url text,
+  main_video_poster_url text,
+  flyer_url text,
+  gallery_urls text[] not null default '{}'::text[],
+  recap_youtube_url text,
+  pixieset_url text,
+  collection_slugs text[] not null default '{}'::text[],
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Existing projects: flyer image used for card background
+alter table public.events
+  add column if not exists flyer_url text;
+
+-- Existing projects: event gallery images
+alter table public.events
+  add column if not exists gallery_urls text[] not null default '{}'::text[];
+
+-- Still image while main show MP4 loads on /events/[slug]
+alter table public.events add column if not exists main_video_poster_url text;
+
 -- Existing projects created before page_heroes was added:
 alter table public.site_content
   add column if not exists page_heroes jsonb not null default '{}'::jsonb;
@@ -83,6 +130,8 @@ alter table public.products enable row level security;
 alter table public.promotion_codes enable row level security;
 alter table public.orders enable row level security;
 alter table public.site_content enable row level security;
+alter table public.events_page enable row level security;
+alter table public.events enable row level security;
 
 -- PRODUCTS: anyone can read, only authenticated users can write
 drop policy if exists "products_public_read" on public.products;
@@ -120,6 +169,24 @@ create policy "site_content_public_read" on public.site_content for select using
 create policy "site_content_auth_update" on public.site_content for update using (auth.role() = 'authenticated');
 create policy "site_content_auth_insert" on public.site_content for insert with check (auth.role() = 'authenticated');
 
+-- EVENTS PAGE: anyone can read, only authenticated can write
+drop policy if exists "events_page_public_read" on public.events_page;
+drop policy if exists "events_page_auth_update" on public.events_page;
+drop policy if exists "events_page_auth_insert" on public.events_page;
+create policy "events_page_public_read" on public.events_page for select using (true);
+create policy "events_page_auth_update" on public.events_page for update using (auth.role() = 'authenticated');
+create policy "events_page_auth_insert" on public.events_page for insert with check (auth.role() = 'authenticated');
+
+-- EVENTS: anyone can read, only authenticated can write
+drop policy if exists "events_public_read" on public.events;
+drop policy if exists "events_auth_insert" on public.events;
+drop policy if exists "events_auth_update" on public.events;
+drop policy if exists "events_auth_delete" on public.events;
+create policy "events_public_read" on public.events for select using (true);
+create policy "events_auth_insert" on public.events for insert with check (auth.role() = 'authenticated');
+create policy "events_auth_update" on public.events for update using (auth.role() = 'authenticated');
+create policy "events_auth_delete" on public.events for delete using (auth.role() = 'authenticated');
+
 -- ============================================================
 -- SEED DATA — Essential Site Initialization 
 -- ============================================================
@@ -133,6 +200,13 @@ values (
   '{}'
 )
 on conflict (id) do nothing;
+
+insert into public.events_page (id, heading)
+values (1, 'Events')
+on conflict (id) do nothing;
+
+-- Optional still image while the /events top MP4 loads (matches site_content.hero_image pattern for home hero)
+alter table public.events_page add column if not exists top_video_poster_url text;
 
 -- ============================================================
 -- Admin login — DO NOT insert into auth.users via SQL

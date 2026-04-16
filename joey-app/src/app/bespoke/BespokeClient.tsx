@@ -8,12 +8,15 @@ import CustomDatePicker from "@/components/CustomDatePicker";
 import { authStore } from "@/store/authStore";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Dressing"];
 const serviceOptions = services.map((s) => ({ value: s, label: s }));
 
 export default function BespokeClient() {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
+  const [bookingIdForPayment, setBookingIdForPayment] = useState<string | null>(null);
+  const [payConfirmOpen, setPayConfirmOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -91,11 +94,33 @@ export default function BespokeClient() {
     };
   }, [user?.id, loadCalendar]);
 
+  useEffect(() => {
+    const scriptId = "paystack-js";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!payConfirmOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPayConfirmOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [payConfirmOpen]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const DOWNPAYMENT_GHS = 1110;
+
+  const openPayConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setSubmitError("");
@@ -103,9 +128,24 @@ export default function BespokeClient() {
       setSubmitError("Please choose a preferred date.");
       return;
     }
+    if (!form.service?.trim()) {
+      setSubmitError("Please select a service type.");
+      return;
+    }
+    // @ts-ignore
+    if (!window.PaystackPop) {
+      toast.error("Payment gateway is still loading. Please wait a moment.");
+      return;
+    }
+    setPayConfirmOpen(true);
+  };
+
+  const proceedToPay = async () => {
+    if (!user) return;
+    setPayConfirmOpen(false);
     setStatus("sending");
     try {
-      await dataStore.createConsultationBooking({
+      const booking = await dataStore.createConsultationBooking({
         userId: user.id,
         customerName: form.name,
         customerEmail: form.email,
@@ -114,7 +154,62 @@ export default function BespokeClient() {
         preferredDate: form.date.trim(),
         notes: form.notes || undefined,
       });
-      setStatus("sent");
+      setBookingIdForPayment(booking.id);
+
+      const amount = Math.round(DOWNPAYMENT_GHS * 100);
+
+      // @ts-ignore
+      const handler = window.PaystackPop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
+        email: form.email,
+        amount,
+        currency: "GHS",
+        ref: "BSP-" + Date.now() + "-" + booking.id.slice(0, 8),
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Consultation Booking ID",
+              variable_name: "booking_id",
+              value: booking.id,
+            },
+          ],
+        },
+        callback: function (paystackRes: any) {
+          (async () => {
+            try {
+              const verifyRes = await fetch("/api/paystack/verify-consultation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  reference: paystackRes.reference,
+                  bookingId: booking.id,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed");
+              setStatus("sent");
+              toast.success("Down payment received. Your slot request is in.");
+              void loadCalendar();
+            } catch (err) {
+              setStatus("error");
+              setSubmitError(err instanceof Error ? err.message : "Payment verification failed.");
+              toast.error(err instanceof Error ? err.message : "Payment verification failed.");
+            }
+          })();
+        },
+        onClose: function () {
+          setStatus("idle");
+          toast.info("Payment cancelled.");
+          if (!booking?.id) return;
+          void fetch("/api/paystack/abandon-consultation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingId: booking.id }),
+          });
+        },
+      });
+
+      handler.openIframe();
     } catch (err) {
       setStatus("error");
       setSubmitError(err instanceof Error ? err.message : "Something went wrong.");
@@ -136,7 +231,9 @@ export default function BespokeClient() {
                 together for the big day or your next phase. We offer custom tailoring experiences
                 crafted around your presence and personality.
               </p>
-              <p className={styles.note}>By appointment only. Payment signals attached.</p>
+              <p className={styles.note}>
+                By appointment only. A down payment of <strong>GHS 1,110</strong> is required to reserve a slot.
+              </p>
             </div>
 
             <div className={styles.steps}>
@@ -197,7 +294,7 @@ export default function BespokeClient() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className={styles.form} noValidate>
+              <form onSubmit={openPayConfirm} className={styles.form} noValidate>
                 <p className={styles.signedInNote}>
                   Signed in as <strong>{user.email}</strong>. This request will appear on your account.
                 </p>
@@ -321,6 +418,39 @@ export default function BespokeClient() {
           </div>
         </div>
       </div>
+
+      {payConfirmOpen ? (
+        <div
+          className={styles.payBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm down payment"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setPayConfirmOpen(false);
+          }}
+        >
+          <div className={styles.payModal}>
+            <div className={styles.payModalHeader}>
+              <div className={styles.payModalKicker}>Down payment</div>
+              <h3 className={styles.payModalTitle}>Proceed to pay to book your slot</h3>
+            </div>
+            <div className={styles.payModalBody}>
+              <p className={styles.payModalMsg}>
+                You will be charged <strong>GHS {DOWNPAYMENT_GHS.toLocaleString()}</strong> to reserve your slot.
+                After payment, your request will appear on your account for confirmation.
+              </p>
+            </div>
+            <div className={styles.payModalActions}>
+              <button type="button" className="btn btn-outline" onClick={() => setPayConfirmOpen(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={proceedToPay}>
+                Confirm &amp; Pay
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

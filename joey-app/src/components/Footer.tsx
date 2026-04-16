@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import FooterNewsletter from "./FooterNewsletter";
 import styles from "./Footer.module.css";
 
@@ -18,9 +19,16 @@ export default function Footer() {
         {/* Top — brand + tagline + compact newsletter */}
         <div className={styles.top}>
           <div className={styles.brand}>
-            <p className={styles.logo}>
-              JOEY
-            </p>
+            <Link href="/" className={styles.logoLink} aria-label="JOEY homepage">
+              <Image
+                src="/white%20logo.png"
+                alt="JOEY THE BRAND"
+                width={750}
+                height={150}
+                className={styles.logoImg}
+                sizes="750px"
+              />
+            </Link>
             <p className={styles.tagline}>Power. Precision. Presence.</p>
             <FooterNewsletter />
           </div>

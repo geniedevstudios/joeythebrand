@@ -6,7 +6,8 @@
   --color-zinc-900: #272B36; 
   --color-zinc-800: #685C54; /* dark-wood (hover states) */
   --color-zinc-700: #595D66; /* alaska-gray */
-  --color-zinc-500: #FFFFFF; /* changed to white per request */
+  /* Must be a mid gray: text-zinc-500 / border-zinc-500 etc. rely on this token. White here makes muted text invisible on white backgrounds. */
+  --color-zinc-500: #71717a;
   --color-zinc-400: #B7B8BB; /* cloudy-sky */
   --color-zinc-300: #D7D7D6; /* concerto (borders) */
   --color-zinc-200: #DCD1C7; /* skintone */
@@ -16,8 +17,8 @@
 }
 
 body {
-  background-color: #FFFFFF;
-  color: var(--color-zinc-950);
+  background-color: #0b0d10;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 /* Hide all scrollbars visually; scrolling still works */
@@ -152,3 +153,139 @@ nextjs-portal,
     font-size: 16px !important;
   }
 }
+
+/* ============================================================
+   Admin dark theme overrides (match dashboard look)
+   ============================================================ */
+
+/* Card surfaces (many pages use Tailwind's `bg-white`) */
+.bg-white {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Common light neutral fills used for headers/rows/chips */
+.bg-zinc-50,
+.bg-stone-50 {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.bg-zinc-100 {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Tailwind opacity variants used in a few places */
+.bg-zinc-50\/50 {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+.bg-zinc-50\/80 {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+.bg-zinc-100\/80 {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Common neutral borders on light UI -> subtle white borders */
+.border-zinc-100,
+.border-zinc-200,
+.border-zinc-300,
+.border-zinc-400 {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Ring tokens used around cards/inputs */
+.ring-zinc-100,
+.ring-zinc-200,
+.ring-zinc-300,
+.ring-black\/5,
+.ring-black\/\[0\.04\] {
+  --tw-ring-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Common muted separators */
+.divide-zinc-100 > :not([hidden]) ~ :not([hidden]),
+.divide-zinc-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Text colors (Tailwind zinc palette used widely in admin pages) */
+.text-zinc-950,
+.text-zinc-900 {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.text-zinc-800,
+.text-zinc-700 {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.text-zinc-600,
+.text-zinc-500 {
+  color: rgba(255, 255, 255, 0.60) !important;
+}
+
+.text-zinc-400 {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+
+/* Inputs / textareas that use light background */
+input,
+textarea,
+select {
+  color-scheme: dark;
+}
+
+input,
+textarea,
+select,
+.bg-zinc-50 {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.40) !important;
+}
+
+/* Subtle top/bottom bar separators */
+.border-b.border-zinc-200,
+.border-t.border-zinc-200 {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Light badges backgrounds */
+.bg-zinc-100 {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Soft tinted alerts (convert light tints to dark tints) */
+.bg-red-50,
+.bg-red-50\/50 {
+  background-color: rgba(220, 38, 38, 0.12) !important;
+}
+.border-red-200,
+.border-red-200\/50,
+.border-red-200\/80 {
+  border-color: rgba(220, 38, 38, 0.22) !important;
+}
+
+.bg-amber-50,
+.bg-amber-50\/40,
+.bg-amber-50\/50 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+}
+.border-amber-200,
+.border-amber-100,
+.ring-amber-100 {
+  border-color: rgba(245, 158, 11, 0.22) !important;
+  --tw-ring-color: rgba(245, 158, 11, 0.22) !important;
+}
+
+.bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.14) !important;
+}
+.text-green-800 {
+  color: rgba(187, 247, 208, 0.92) !important;
+}
+

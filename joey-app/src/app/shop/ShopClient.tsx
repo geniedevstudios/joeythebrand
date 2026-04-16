@@ -172,18 +172,19 @@ export default function ShopClient() {
             <div className={styles.grid}>
               {filtered.map((p: any) => (
                 <article key={p.id} className={styles.card}>
-                  <div className={styles.imageWrap}>
-                    {p.hoverImage ? (
-                      <>
-                        <img src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
-                        <img src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
-                      </>
-                    ) : (
-                      <img src={p.image} alt={p.name} className={styles.image} loading="lazy" />
-                    )}
+                  <div className={styles.imageWrapOuter}>
+                    <div className={styles.imageWrap}>
+                      {p.hoverImage ? (
+                        <>
+                          <img src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
+                          <img src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
+                        </>
+                      ) : (
+                        <img src={p.image} alt={p.name} className={styles.image} loading="lazy" />
+                      )}
 
-                    <div className={styles.overlay}>
-                      <div className={styles.actionButtons}>
+                      <div className={styles.overlay}>
+                        <div className={styles.actionButtons}>
                         <button
                           className={styles.iconBtn}
                           aria-label="Add to Wishlist"
@@ -204,40 +205,43 @@ export default function ShopClient() {
                             <circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/>
                           </svg>
                         </button>
-                      </div>
+                        </div>
 
-                      <div className={styles.pickMeWrap}>
-                        {p.isOutOfStock ? (
-                          <span className={`${styles.pickMeBtn} ${styles.soldOutBtn}`}>
-                            Sold Out
-                          </span>
-                        ) : (
-                          <Link
-                            href={`/shop/${p.id}`}
-                            className={styles.pickMeBtn}
-                            aria-label={`View ${p.name}`}
-                          >
-                            Pick Me
-                          </Link>
-                        )}
+                        <div className={styles.pickMeWrap}>
+                          {p.isOutOfStock ? (
+                            <span className={`${styles.pickMeBtn} ${styles.soldOutBtn}`}>
+                              Sold Out
+                            </span>
+                          ) : (
+                            <Link
+                              href={`/shop/${p.id}`}
+                              className={styles.pickMeBtn}
+                              aria-label={`View ${p.name}`}
+                            >
+                              Pick Me
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {p.isOutOfStock ? (
-                      <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                    ) : (
-                      <>
-                        {p.category === "sample-sale" && (
-                          <span className={styles.saleBadge}>SALE</span>
-                        )}
-                        {p.isLimited && p.category !== "sample-sale" && (
-                          <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
-                        )}
-                        {p.isBestSeller && (
-                          <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                        )}
-                      </>
-                    )}
+                    <div className={styles.badgeStack} aria-hidden="true">
+                      {p.isOutOfStock ? (
+                        <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                      ) : (
+                        <>
+                          {p.category === "sample-sale" && (
+                            <span className={styles.saleBadge}>SALE</span>
+                          )}
+                          {p.isLimited && p.category !== "sample-sale" && (
+                            <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                          )}
+                          {p.isBestSeller && (
+                            <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div className={styles.info}>
                     <span className={styles.category}>

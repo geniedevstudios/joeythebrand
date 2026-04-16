@@ -20,8 +20,19 @@
   /* object-fit / object-position set inline from admin (cover vs contain, anchor) */
 }
 
+/* Still image saved in admin as “poster” — sits under the video until playback */
+.heroPoster {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* No poster flash: keep video transparent until we confirm frames are moving, then fade in with loader out */
 .heroBgVideo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   opacity: 0;
   transition: opacity 0.55s ease;
 }
@@ -52,6 +63,11 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.55s ease, visibility 0s linear 0.55s;
+}
+
+/* When a real poster image exists, let it show through instead of a flat black scrim */
+.videoLoaderOverPoster {
+  background: rgba(32, 35, 44, 0.38);
 }
 
 /* Thin ring spinner (similar to UIActivityIndicator) */

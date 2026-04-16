@@ -153,7 +153,7 @@ export default function ConsultationsPage() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-sm text-neutral-600">Loading consultations…</div>
+        <div className="text-sm text-zinc-900">Loading consultations…</div>
       </div>
     );
   }
@@ -175,10 +175,10 @@ export default function ConsultationsPage() {
             <h2 id="confirm-consultation-title" className="text-lg font-semibold text-zinc-900">
               Confirm appointment
             </h2>
-            <p className="mt-1 text-sm text-neutral-600">
+            <p className="mt-1 text-sm text-zinc-800">
               {confirmTarget.customerName} · {confirmTarget.service}
             </p>
-            <p className="mt-3 text-sm text-neutral-600">
+            <p className="mt-3 text-sm text-zinc-800">
               Set the date and time they should arrive.{" "}
               {confirmTarget.source === "portfolio"
                 ? "They will see the booking code and time on their portfolio booking page (the link from their submission)."
@@ -235,7 +235,7 @@ export default function ConsultationsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <nav className="mb-2 text-sm text-neutral-600">
+          <nav className="mb-2 text-sm text-zinc-800">
             <Link href="/content" className="hover:text-zinc-900">
               Site Content
             </Link>
@@ -243,12 +243,12 @@ export default function ConsultationsPage() {
             <span className="font-medium text-zinc-900">Consultations</span>
           </nav>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Consultations</h1>
-          <p className="mt-1 text-sm text-neutral-600">
+          <p className="mt-1 text-sm text-zinc-900">
             Shop (app) requests are tied to customer accounts. Portfolio site requests have no login — they use a
             private link to see status, booking code, and print after you confirm.
           </p>
         </div>
-        <span className="text-sm text-neutral-600">{rows.length} total</span>
+        <span className="text-sm text-zinc-800">{rows.length} total</span>
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-zinc-200 pb-0">
@@ -268,7 +268,7 @@ export default function ConsultationsPage() {
               className={`rounded-t-lg border border-b-0 px-4 py-2.5 text-sm font-medium transition-colors ${
                 active
                   ? "border-zinc-200 bg-white text-zinc-900"
-                  : "border-transparent bg-zinc-100/80 text-neutral-600 hover:bg-zinc-100"
+                  : "border-transparent bg-zinc-100/80 text-zinc-800 hover:bg-zinc-100"
               }`}
             >
               {t.label}
@@ -314,7 +314,7 @@ export default function ConsultationsPage() {
                 <div className="py-12 text-center">
                   <CalendarRange className="mx-auto h-12 w-12 text-zinc-300" />
                   <h3 className="mt-2 text-sm font-semibold text-zinc-900">No requests in this tab</h3>
-                  <p className="mt-1 text-sm text-neutral-600">
+                  <p className="mt-1 text-sm text-zinc-800">
                     {tab === "shop"
                       ? "Signed-in customers who submit the bespoke form on the shop will appear here."
                       : "Submissions from the portfolio booking page appear here."}
@@ -366,8 +366,8 @@ export default function ConsultationsPage() {
                     </td>
                     <td className="px-5 py-4 text-sm">
                       <div className="font-medium text-zinc-900">{b.customerName}</div>
-                      <div className="text-neutral-600">{b.customerEmail}</div>
-                      <div className="text-neutral-600">{b.customerPhone}</div>
+                      <div className="text-zinc-800">{b.customerEmail}</div>
+                      <div className="text-zinc-800">{b.customerPhone}</div>
                     </td>
                     <td className="px-5 py-4 text-sm text-zinc-800 max-w-[180px]">{b.service}</td>
                     <td className="px-5 py-4 text-sm text-zinc-800 whitespace-nowrap">
@@ -376,7 +376,7 @@ export default function ConsultationsPage() {
                     <td className="px-5 py-4 text-sm text-zinc-800 whitespace-nowrap">
                       {formatScheduled(b.scheduledAt)}
                       {b.durationHours ? (
-                        <div className="text-[11px] text-neutral-500 mt-1 uppercase tracking-wider">
+                        <div className="text-[11px] text-zinc-700 mt-1 uppercase tracking-wider">
                           {b.durationHours}h Session
                         </div>
                       ) : null}
@@ -387,7 +387,7 @@ export default function ConsultationsPage() {
                           {b.bookingCode}
                         </code>
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-zinc-600">—</span>
                       )}
                     </td>
                     <td className="px-5 py-4 text-sm">
@@ -419,10 +419,10 @@ export default function ConsultationsPage() {
                           {b.paymentStatus === "paid" ? "Paid" : "Unpaid"}
                         </span>
                         {b.paymentRef ? (
-                          <div className="text-[10px] text-zinc-400 font-mono mt-1">Ref: {b.paymentRef}</div>
+                          <div className="text-[10px] text-zinc-600 font-mono mt-1">Ref: {b.paymentRef}</div>
                         ) : null}
                         {b.priceGhs ? (
-                          <div className="text-xs text-neutral-500 text-center font-medium">₵{b.priceGhs.toLocaleString()}</div>
+                          <div className="text-xs text-zinc-800 text-center font-medium">₵{b.priceGhs.toLocaleString()}</div>
                         ) : null}
 
                       </div>
@@ -470,7 +470,7 @@ export default function ConsultationsPage() {
                             </button>
                           </>
                         ) : (
-                          <span className="text-xs text-zinc-400">—</span>
+                          <span className="text-xs text-zinc-600">—</span>
                         )}
                       </div>
                     </td>

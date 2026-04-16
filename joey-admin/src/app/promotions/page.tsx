@@ -96,7 +96,7 @@ export default function PromotionsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-zinc-500">Loading promotions...</div>
+        <div className="text-sm text-zinc-900">Loading promotions...</div>
       </div>
     );
   }
@@ -147,19 +147,19 @@ export default function PromotionsPage() {
         <div className="md:col-span-2">
           <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
             {promotions.length === 0 ? (
-              <div className="p-12 text-center text-zinc-500">
+              <div className="p-12 text-center text-zinc-900">
                 <Tag className="mx-auto h-12 w-12 text-zinc-300" />
                 <h3 className="mt-2 text-sm font-semibold text-zinc-900">No promotions</h3>
-                <p className="mt-1 text-sm text-zinc-500">Get started by creating a new discount code.</p>
+                <p className="mt-1 text-sm text-zinc-800">Get started by creating a new discount code.</p>
               </div>
             ) : (
               <table className="min-w-full divide-y divide-zinc-200">
                 <thead className="bg-white">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Code</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Discount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Status</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-800">Code</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-800">Discount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-800">Status</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-800">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 bg-white">
@@ -168,7 +168,7 @@ export default function PromotionsPage() {
                       <td className="whitespace-nowrap px-6 py-4 font-mono font-medium text-zinc-900">
                         {promo.code}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-800">
                         {promo.percentage}% off
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">

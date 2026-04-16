@@ -99,10 +99,19 @@
   object-fit: cover;
 }
 
-.saleBadge {
+.badgeStack {
   position: absolute;
   top: var(--space-md);
   left: var(--space-md);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.saleBadge {
   background: var(--wood);
   color: #fff;
   font-family: var(--font-label);
@@ -110,6 +119,8 @@
   letter-spacing: 0.12em;
   padding: 6px 14px;
   border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Thumbnail strip */
@@ -642,10 +653,19 @@
   color: #fff;
 }
 
-.suggestBadge {
+.suggestBadgeStack {
   position: absolute;
   top: 10px;
   left: 10px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.suggestBadge {
   background: var(--blue-athracite);
   color: #fff;
   font-family: var(--font-label);
@@ -654,12 +674,11 @@
   padding: 4px 10px;
   border-radius: var(--radius-full);
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
 }
 
 .suggestBadgeSale {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   background: var(--wood);
   color: #fff;
   font-family: var(--font-label);
@@ -668,6 +687,8 @@
   padding: 4px 10px;
   border-radius: var(--radius-full);
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
 }
 
 .suggestInfo {

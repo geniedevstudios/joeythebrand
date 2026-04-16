@@ -167,7 +167,7 @@ export default function NewsletterPage() {
       return plain.includes("<html") || plain.includes("<!DOCTYPE") ? plain : `<div class="p-4">${plain}</div>`;
     }
     const h = body.trim();
-    if (!h) return "<p class=\"p-4 text-zinc-500\">Paste HTML to preview.</p>";
+    if (!h) return "<p class=\"p-4 text-zinc-800\">Paste HTML to preview.</p>";
     return h.includes("<html") || h.includes("<!DOCTYPE") ? h : `<div class="p-4">${h}</div>`;
   }, [editorMode, body, tpl, simpleMode]);
 
@@ -290,7 +290,7 @@ export default function NewsletterPage() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-6 pb-12">
       <div>
-        <nav className="mb-2 text-sm text-neutral-600">
+        <nav className="mb-2 text-sm text-zinc-800">
           <Link href="/content" className="hover:text-zinc-900">
             Site Content
           </Link>
@@ -349,7 +349,7 @@ export default function NewsletterPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wide text-zinc-600">
-                Preview text <span className="font-normal normal-case text-zinc-400">(optional)</span>
+                Preview text <span className="font-normal normal-case text-zinc-700">(optional)</span>
               </label>
               <input
                 type="text"
@@ -364,7 +364,7 @@ export default function NewsletterPage() {
 
           {editorMode === "template" && (
             <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm space-y-8">
-              <p className="text-sm text-zinc-600">
+              <p className="text-sm text-zinc-800">
                 Order in the email: <strong className="text-zinc-800">Logo</strong> →{" "}
                 <strong className="text-zinc-800">View in browser</strong> → optional{" "}
                 <strong className="text-zinc-800">hero</strong> (collection / flyer) → headline &amp; copy → footer with
@@ -451,7 +451,7 @@ export default function NewsletterPage() {
                 {tpl.sections.map((sec, i) => (
                   <div key={i} className="rounded-lg border border-zinc-100 bg-zinc-50/80 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Block {i + 1}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-zinc-800">Block {i + 1}</span>
                       {tpl.sections.length > 1 && (
                         <button
                           type="button"
@@ -495,7 +495,7 @@ export default function NewsletterPage() {
 
               <div className="border-t border-zinc-100 pt-6">
                 <label className="block text-sm font-medium text-zinc-700">Extra footer copy (optional)</label>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-zinc-700">
                   Booking, payment, policies — separate paragraphs with a blank line.
                 </p>
                 <textarea
@@ -594,7 +594,7 @@ export default function NewsletterPage() {
             >
               Send to list
             </button>
-            <p className="text-xs text-zinc-500">Sends immediately to everyone subscribed to your newsletter.</p>
+            <p className="text-xs text-zinc-700">Sends immediately to everyone subscribed to your newsletter.</p>
           </div>
         </div>
 
