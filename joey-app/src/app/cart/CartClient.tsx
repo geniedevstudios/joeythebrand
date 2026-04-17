@@ -3,7 +3,7 @@ import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import styles from "./CartClient.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
 import { cartStore } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 
@@ -24,6 +24,7 @@ export default function CartClient() {
   const formattedSubtotal = `GHC ${subtotalRaw.toLocaleString()}`;
   const formattedTotal = `GHC ${total.toLocaleString()}`;
   const cartHeroStyle = usePageHeroBackgroundStyle("cart");
+  const cartHeroEmpty = usePageHeroEmpty("cart");
 
   const handleUpdateQuantity = (id: string, delta: number) => {
     cartStore.updateQuantity(id, delta);
@@ -64,7 +65,11 @@ export default function CartClient() {
   if (items.length === 0) {
     return (
       <div className={styles.cartPage}>
-        <div className={styles.pageHeader} style={cartHeroStyle}>
+        <div
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+          data-page-hero-empty={cartHeroEmpty ? "true" : "false"}
+          style={cartHeroStyle}
+        >
           <div className="container">
             <span className="section-label">Your Bag</span>
             <h1 className={`t-display ${styles.pageTitle}`}>Cart</h1>
@@ -90,7 +95,11 @@ export default function CartClient() {
 
   return (
     <div className={styles.cartPage}>
-      <div className={styles.pageHeader} style={cartHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={cartHeroEmpty ? "true" : "false"}
+        style={cartHeroStyle}
+      >
         <div className="container">
           <span className="section-label">Your Bag</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Cart</h1>

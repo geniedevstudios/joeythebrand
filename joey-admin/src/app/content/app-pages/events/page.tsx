@@ -341,7 +341,7 @@ export default function EventsContentPage() {
   );
 
   return (
-    <div className="space-y-8 max-w-5xl">
+    <div className="w-full max-w-none space-y-8">
       <div>
         <nav className="mb-2 text-sm text-zinc-800">
           <Link href="/content" className="hover:text-zinc-900">

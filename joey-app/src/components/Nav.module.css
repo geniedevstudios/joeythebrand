@@ -76,6 +76,31 @@
   object-fit: contain;
 }
 
+/* Two logo assets stacked — cross-fade without remounting (avoids refresh glitch). */
+.logoStack {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  place-items: center;
+  height: 150px;
+  min-width: 0;
+}
+
+.logoLayer {
+  grid-area: 1 / 1;
+  transition: opacity 0.2s ease;
+}
+
+.logoLayerVisible {
+  opacity: 1;
+  z-index: 2;
+}
+
+.logoLayerHidden {
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* Desktop nav links */
 .leftLinks,
 .rightLinks {
@@ -443,6 +468,10 @@
   }
 
   .logoImg {
+    height: 120px;
+  }
+
+  .logoStack {
     height: 120px;
   }
 

@@ -90,7 +90,7 @@ export default function PageHeroesIndexPage() {
   const keys = PAGE_HERO_KEYS.filter((k) => k !== "home");
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full max-w-none space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <nav className="mb-2 text-sm text-zinc-800">

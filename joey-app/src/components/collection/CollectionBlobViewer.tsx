@@ -52,8 +52,8 @@ export function CollectionBlobViewer({ images, slug, blobIndex, fallbackImage, v
 
   const clipId = `blob-mask-${blobIndex % COLLECTION_BLOB_PATHS.length}`;
   const validFallback =
-    fallbackImage?.startsWith("/") || fallbackImage?.startsWith("http") ? fallbackImage : "/lookbook.png";
-  const renderImages = images.length > 0 ? images : [validFallback];
+    fallbackImage?.startsWith("/") || fallbackImage?.startsWith("http") ? fallbackImage : null;
+  const renderImages = images.length > 0 ? images : validFallback ? [validFallback] : [];
 
   const inner = (
     <>

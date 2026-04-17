@@ -7,11 +7,35 @@ import styles from "./ShopClient.module.css";
 import CollectionsSection from "@/components/home/CollectionsSection";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { useStoreLoading } from "@/hooks/useStoreLoading";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+
 
 type WearFilter = "all" | "mens" | "womens";
 
 const EMPTY_ARRAY: any[] = [];
+const _getEmptyArray = () => EMPTY_ARRAY;
+const _getProducts = () => dataStore.getProducts();
+const _getWishlistItems = () => wishlistStore.getItems();
+
+function ShopProductsSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className={styles.grid}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            className="skeleton"
+            style={{ aspectRatio: "3/4", width: "100%", borderRadius: 8 }}
+          />
+          <div className="skeleton" style={{ height: 12, width: "50%", borderRadius: 4 }} />
+          <div className="skeleton" style={{ height: 18, width: "75%", borderRadius: 4 }} />
+          <div className="skeleton" style={{ height: 14, width: "40%", borderRadius: 4 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
 const wearFilters: { id: WearFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -27,9 +51,11 @@ export default function ShopClient() {
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const searchParams = useSearchParams();
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
-  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
+  const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
+  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, _getWishlistItems, _getEmptyArray);
+  const isStoreLoading = useStoreLoading();
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+
 
   const scrollToPieces = useCallback(() => {
     document.getElementById("shop-pieces")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -123,10 +149,15 @@ export default function ShopClient() {
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
   const shopHeroStyle = usePageHeroBackgroundStyle("shop");
+  const shopHeroEmpty = usePageHeroEmpty("shop");
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader} style={shopHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={shopHeroEmpty ? "true" : "false"}
+        style={shopHeroStyle}
+      >
         <div className="container">
           <span className="section-label">The Shop</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Shop</h1>
@@ -137,10 +168,7 @@ export default function ShopClient() {
       </div>
 
       <div className={styles.collectionsSectionWrap}>
-        <CollectionsSection
-          headingId="shop-collections-heading"
-          viewAllId="shop-collections-view-all"
-        />
+        <CollectionsSection headingId="shop-collections-heading" viewAllId="shop-collections-view-all" />
       </div>
 
       <div className={styles.wearFilterBar}>
@@ -164,7 +192,9 @@ export default function ShopClient() {
 
       <div id="shop-pieces" className={`section ${styles.productsSection}`}>
         <div className="container">
-          {filtered.length === 0 ? (
+          {isStoreLoading ? (
+            <ShopProductsSkeleton count={6} />
+          ) : filtered.length === 0 ? (
             <div className={styles.empty}>
               <p>No pieces match these filters yet. Try another collection or wear filter.</p>
             </div>

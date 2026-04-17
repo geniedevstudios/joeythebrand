@@ -4,13 +4,68 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
-import { usePageHeroImageSrc, usePageHeroMedia } from "@/hooks/usePageHero";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroImageSrc, usePageHeroMedia, usePageHeroEmpty } from "@/hooks/usePageHero";
 import { resolveHeroLayout } from "@/lib/pageHeroes";
+import { useStoreLoading } from "@/hooks/useStoreLoading";
 import styles from "./ProductClient.module.css";
 
 const EMPTY_ARRAY: any[] = [];
+const _getEmptyArray = () => EMPTY_ARRAY;
+const _getProducts = () => dataStore.getProducts();
+const _getWishlistItems = () => wishlistStore.getItems();
+
+function ProductDetailSkeleton() {
+  return (
+    <div className={styles.page}>
+      {/* Banner placeholder */}
+      <div className={styles.heroBanner}>
+        <div className={styles.heroBannerBg} style={{ background: "#e8e5e0" }} />
+      </div>
+      <div className="container" style={{ paddingTop: "2rem" }}>
+        <div className={styles.layout}>
+          {/* Gallery column */}
+          <div className={styles.galleryCol}>
+            <div
+              className={`${styles.mainImageWrap} skeleton`}
+              style={{ aspectRatio: "3/4", width: "100%", borderRadius: 8 }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="skeleton"
+                  style={{ width: 72, height: 72, borderRadius: 6, flexShrink: 0 }}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Info column */}
+          <div className={styles.infoCol}>
+            <div className={styles.infoSticky}>
+              <div className="skeleton" style={{ height: 14, width: "35%", marginBottom: 16 }} />
+              <div className="skeleton" style={{ height: 52, width: "80%", marginBottom: 12 }} />
+              <div className="skeleton" style={{ height: 28, width: "40%", marginBottom: 24 }} />
+              <div className={styles.divider} style={{ marginBottom: 24 }} />
+              <div className="skeleton" style={{ height: 14, width: "100%", marginBottom: 8 }} />
+              <div className="skeleton" style={{ height: 14, width: "85%", marginBottom: 8 }} />
+              <div className="skeleton" style={{ height: 14, width: "70%", marginBottom: 32 }} />
+              <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+                {["XS","S","M","L","XL","Custom"].map((s) => (
+                  <div key={s} className="skeleton" style={{ width: 48, height: 40, borderRadius: 6 }} />
+                ))}
+              </div>
+              <div className="skeleton" style={{ height: 54, width: "100%", borderRadius: 9999, marginBottom: 12 }} />
+              <div className="skeleton" style={{ height: 54, width: "100%", borderRadius: 9999 }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const SUGGESTION_PHRASES = [
+
   "You may also like",
   "You can pair these with",
   "Don't leave without taking a look at these",
@@ -39,8 +94,9 @@ export default function ProductClient({ id }: { id: string }) {
   const [quickViewSize, setQuickViewSize] = useState("");
   const [quickViewImage, setQuickViewImage] = useState("");
 
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
-  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
+  const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
+  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, _getWishlistItems, _getEmptyArray);
+  const isStoreLoading = useStoreLoading();
   const isInWishlist = (itemId: string) => wishlistItems.some(item => item.id === itemId);
 
   const toggleWishlist = (item: any) => {
@@ -92,10 +148,17 @@ export default function ProductClient({ id }: { id: string }) {
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
   const productHeroSrc = usePageHeroImageSrc("product");
+  const productHeroEmpty = usePageHeroEmpty("product");
   const productHeroMedia = usePageHeroMedia("product");
   const productHeroLayout = resolveHeroLayout(productHeroMedia);
 
   if (!product) {
+    // Show the skeleton while:
+    //  a) the store is explicitly initializing, OR
+    //  b) products are still empty (init() fired but notify() hasn't landed yet)
+    // Only show "not found" once we have a loaded product list that doesn't
+    // contain the requested id — i.e. the product genuinely doesn't exist.
+    if (isStoreLoading || products.length === 0) return <ProductDetailSkeleton />;
     return (
       <div className={styles.page}>
         <div className="container" style={{ textAlign: "center", padding: "100px 0" }}>
@@ -142,17 +205,23 @@ export default function ProductClient({ id }: { id: string }) {
     <>
     <div className={styles.page}>
       <div className={styles.heroBanner}>
-        <div className={styles.heroBannerBg}>
-          <img
-            src={productHeroSrc}
-            alt=""
-            className={styles.heroBannerImg}
-            style={{
-              objectFit: productHeroLayout.fit === "contain" ? "contain" : "cover",
-              objectPosition: productHeroLayout.position,
-            }}
-          />
-          <div className={styles.heroBannerOverlay} />
+        <div
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.heroBannerBg}`}
+          data-page-hero-empty={productHeroEmpty ? "true" : "false"}
+          style={productHeroEmpty ? { background: "#000" } : undefined}
+        >
+          {!productHeroEmpty ? (
+            <img
+              src={productHeroSrc}
+              alt=""
+              className={styles.heroBannerImg}
+              style={{
+                objectFit: productHeroLayout.fit === "contain" ? "contain" : "cover",
+                objectPosition: productHeroLayout.position,
+              }}
+            />
+          ) : null}
+          {!productHeroEmpty ? <div className={styles.heroBannerOverlay} /> : null}
         </div>
       </div>
 

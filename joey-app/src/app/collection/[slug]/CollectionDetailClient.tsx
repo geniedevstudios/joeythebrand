@@ -6,8 +6,10 @@ import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
 import shopStyles from "@/app/shop/ShopClient.module.css";
 import eventStyles from "@/app/events/events.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import { useStoreLoading } from "@/hooks/useStoreLoading";
 import { wishlistStore } from "@/store/wishlistStore";
+
 
 const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
 
@@ -28,8 +30,10 @@ const EMPTY_ARRAY: any[] = [];
 export default function CollectionDetailClient({ slug }: CollectionDetailClientProps) {
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
   const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => SHOP_COLLECTIONS_FALLBACK);
-  
+  const isStoreLoading = useStoreLoading();
+
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
+
   const [quickViewPiece, setQuickViewPiece] = useState<any | null>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
@@ -38,6 +42,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const [wearFilter, setWearFilter] = useState<WearFilter>("all");
 
   const collectionHeroStyle = usePageHeroBackgroundStyle("collection");
+  const collectionHeroEmpty = usePageHeroEmpty("collection");
 
   // Find the specific collection - flexible case comparison
   const collection = collections.find(c => c.slug?.toLowerCase() === slug?.toLowerCase()) || 
@@ -122,14 +127,48 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   };
 
   if (!collection) {
+    if (isStoreLoading) {
+      return (
+        <div className={styles.page}>
+          <div
+            className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+            style={{ background: "#e8e5e0", minHeight: 280 }}
+          >
+            <div className="container" style={{ paddingTop: 80 }}>
+              <div className="skeleton" style={{ height: 12, width: 100, marginBottom: 16 }} />
+              <div className="skeleton" style={{ height: 52, width: "55%", marginBottom: 12 }} />
+              <div className="skeleton" style={{ height: 16, width: "40%" }} />
+            </div>
+          </div>
+          <div className={`section ${shopStyles.productsSection}`}>
+            <div className="container">
+              <div className={shopStyles.grid}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div className="skeleton" style={{ aspectRatio: "3/4", width: "100%", borderRadius: 8 }} />
+                    <div className="skeleton" style={{ height: 12, width: "50%" }} />
+                    <div className="skeleton" style={{ height: 18, width: "75%" }} />
+                    <div className="skeleton" style={{ height: 14, width: "40%" }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.page}>
-        <div className={styles.pageHeader} style={collectionHeroStyle}>
+        <div
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+          data-page-hero-empty={collectionHeroEmpty ? "true" : "false"}
+          style={collectionHeroStyle}
+        >
           <div className="container">
             <span className="section-label">COLLECTIONS</span>
             <h1 className={`t-display ${styles.pageTitle}`}>Collection Not Found</h1>
             <p className={styles.pageSubtext}>
-               We couldn't find a collection matching "{slug}".
+               We couldn&apos;t find a collection matching &quot;{slug}&quot;.
             </p>
           </div>
         </div>
@@ -142,9 +181,14 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
     );
   }
 
+
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader} style={collectionHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={collectionHeroEmpty ? "true" : "false"}
+        style={collectionHeroStyle}
+      >
         <div className="container">
           <span className="section-label">COLLECTIONS</span>
           <h1 className={`t-display ${styles.pageTitle}`}>{collection.name}</h1>

@@ -6,7 +6,7 @@ import styles from "./CheckoutClient.module.css";
 import { cartStore } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
 import CustomSelect from "@/components/CustomSelect";
 import { INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS, countryNameFromIso2 } from "@/lib/countrySelectOptions";
 import type { Order } from "@/lib/types";
@@ -81,6 +81,7 @@ export default function CheckoutClient() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const checkoutHeroStyle = usePageHeroBackgroundStyle("checkout");
+  const checkoutHeroEmpty = usePageHeroEmpty("checkout");
 
   useEffect(() => {
     const scriptId = "paystack-js";
@@ -102,7 +103,11 @@ export default function CheckoutClient() {
   if (items.length === 0) {
     return (
       <div className={styles.page}>
-        <div className={styles.pageHeader} style={checkoutHeroStyle}>
+        <div
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+          data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
+          style={checkoutHeroStyle}
+        >
           <div className="container">
             <span className="section-label">Checkout</span>
             <h1 className={styles.pageTitle}>Your Order</h1>
@@ -254,7 +259,11 @@ export default function CheckoutClient() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader} style={checkoutHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
+        style={checkoutHeroStyle}
+      >
         <div className="container">
           <span className="section-label">Checkout</span>
           <h1 className={styles.pageTitle}>Complete Your Order</h1>

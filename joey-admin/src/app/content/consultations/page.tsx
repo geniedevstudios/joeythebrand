@@ -357,7 +357,7 @@ export default function ConsultationsPage() {
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {filtered.map((b) => (
-                  <tr key={b.id} className="align-top hover:bg-zinc-50/80">
+                  <tr key={b.id} className="align-top transition hover:bg-white/[0.07]">
                     <td className="px-5 py-4 text-sm text-zinc-700 whitespace-nowrap">
                       {new Date(b.createdAt).toLocaleString(undefined, {
                         dateStyle: "medium",

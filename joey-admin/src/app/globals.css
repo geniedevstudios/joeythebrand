@@ -289,3 +289,200 @@ textarea::placeholder {
   color: rgba(187, 247, 208, 0.92) !important;
 }
 
+/* ============================================================
+   Glass + lemon (match dashboard homepage)
+   ============================================================ */
+
+:root {
+  --admin-lemon: #d6ff2a;
+  --admin-lemon-hover: #c5eb24;
+  --admin-lemon-dim: rgba(214, 255, 42, 0.18);
+  --admin-glass-edge: rgba(255, 255, 255, 0.14);
+  --admin-glass-shine: rgba(255, 255, 255, 0.12);
+}
+
+/* Stat / feature cards on dashboard (rounded-3xl + white/10 border + translucent fill) */
+[class*="rounded-3xl"][class*="border-white/10"][class*="bg-white/"] {
+  backdrop-filter: blur(22px) saturate(1.12);
+  -webkit-backdrop-filter: blur(22px) saturate(1.12);
+  box-shadow:
+    0 16px 56px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 var(--admin-glass-shine) !important;
+}
+
+/* Typical page shells: white cards with zinc border + shadow */
+main .rounded-xl.border.border-zinc-200.bg-white,
+main a.rounded-xl.border.border-zinc-200.bg-white {
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  background-image: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.03) 42%,
+    rgba(255, 255, 255, 0.07) 100%
+  ) !important;
+  background-color: transparent !important;
+  box-shadow:
+    0 8px 36px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 var(--admin-glass-shine) !important;
+  border-color: var(--admin-glass-edge) !important;
+}
+
+main .rounded-xl.border.border-zinc-200.bg-white:hover,
+main a.rounded-xl.border.border-zinc-200.bg-white:hover {
+  border-color: rgba(214, 255, 42, 0.28) !important;
+  box-shadow:
+    0 12px 44px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Modals / panels that use rounded-2xl + zinc border (ConfirmDialog, etc.) */
+.rounded-2xl.border.border-zinc-200\/80.bg-white {
+  backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  background-image: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  ) !important;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Table wrappers + large modals */
+main .overflow-hidden.rounded-xl.border.border-zinc-200.bg-white.shadow-sm,
+main .overflow-hidden.rounded-xl.border.border-zinc-200.bg-white.shadow-xl {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Modal shells (products / orders item detail) — white panel + heavy shadow */
+main .overflow-hidden.rounded-xl.bg-white.shadow-2xl {
+  backdrop-filter: blur(24px) saturate(1.08);
+  -webkit-backdrop-filter: blur(24px) saturate(1.08);
+  border: 1px solid var(--admin-glass-edge) !important;
+  background-image: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  ) !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Newsletter HTML preview well */
+main .overflow-hidden.rounded-xl.border.border-zinc-200.bg-zinc-100.shadow-inner {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(0, 0, 0, 0.18)
+  ) !important;
+}
+
+/* Table header strip */
+main thead tr.border-b.border-zinc-200,
+main thead tr.bg-zinc-100 {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Lemon primary buttons (zinc-950 / zinc-900 + white label — excludes video drop zones with text-zinc-600) */
+.bg-zinc-950.text-white:not(.text-zinc-600),
+button.bg-zinc-950.text-white:not(.text-zinc-600),
+a.bg-zinc-950.text-white {
+  background-color: var(--admin-lemon) !important;
+  color: #0b0d10 !important;
+  border-color: transparent !important;
+  box-shadow: 0 10px 32px var(--admin-lemon-dim);
+}
+
+.bg-zinc-950.text-white:hover:not(:disabled),
+button.bg-zinc-950.text-white:hover:not(:disabled),
+a.bg-zinc-950.text-white:hover:not(:disabled),
+.bg-zinc-950.hover\:bg-zinc-800:hover:not(:disabled) {
+  background-color: var(--admin-lemon-hover) !important;
+  color: #0b0d10 !important;
+}
+
+button.bg-zinc-900.text-white.rounded-md,
+a.bg-zinc-900.text-white.rounded-md {
+  background-color: var(--admin-lemon) !important;
+  color: #0b0d10 !important;
+  box-shadow: 0 8px 28px var(--admin-lemon-dim);
+}
+
+button.bg-zinc-900.text-white.rounded-md:hover:not(:disabled),
+a.bg-zinc-900.text-white.rounded-md:hover:not(:disabled) {
+  background-color: var(--admin-lemon-hover) !important;
+  color: #0b0d10 !important;
+}
+
+/* Promotions full-width submit */
+button.border-transparent.bg-zinc-950.text-white,
+button.bg-zinc-950.text-white.shadow-sm {
+  background-color: var(--admin-lemon) !important;
+  color: #0b0d10 !important;
+}
+
+button.border-transparent.bg-zinc-950.text-white:hover:not(:disabled) {
+  background-color: var(--admin-lemon-hover) !important;
+}
+
+/* Ghost / outline secondaries — glass hover + lemon edge */
+button.rounded-lg.border.border-zinc-200.bg-white:hover:not(:disabled),
+button.rounded-md.border.border-zinc-300.bg-white:hover:not(:disabled) {
+  border-color: rgba(214, 255, 42, 0.38) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Focus rings — lemon */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none !important;
+  border-color: rgba(214, 255, 42, 0.55) !important;
+  box-shadow: 0 0 0 2px rgba(214, 255, 42, 0.2) !important;
+}
+
+/* ── Table / sheet row hovers ─────────────────────────────────
+   @theme remaps zinc-50 → near-white, so hover:bg-zinc-50* becomes a
+   solid light bar on dark UI. Force glassy dark hovers instead. */
+
+.hover\:bg-zinc-50:hover,
+.hover\:bg-zinc-50\/50:hover,
+.hover\:bg-zinc-50\/80:hover,
+.hover\:bg-zinc-100:hover,
+.hover\:bg-zinc-100\/80:hover {
+  background-color: rgba(255, 255, 255, 0.075) !important;
+}
+
+.hover\:bg-zinc-200:hover {
+  background-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+.hover\:bg-red-50:hover {
+  background-color: rgba(220, 38, 38, 0.18) !important;
+}
+
+.hover\:bg-red-50\/50:hover,
+.hover\:bg-red-50\/80:hover {
+  background-color: rgba(220, 38, 38, 0.14) !important;
+}
+
+/* Sonner toasts: `.bg-white` remap above makes default toasts nearly invisible; keep title/body readable */
+[data-sonner-toaster] [data-sonner-toast] {
+  color: rgba(255, 255, 255, 0.92);
+}
+[data-sonner-toaster] [data-sonner-toast] [data-title] {
+  color: rgba(255, 255, 255, 0.96) !important;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  color: rgba(255, 255, 255, 0.72) !important;
+}

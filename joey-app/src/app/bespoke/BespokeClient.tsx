@@ -2,7 +2,12 @@
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import Link from "next/link";
 import styles from "./BespokeClient.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import {
+  PAGE_HERO_SHELL_CLASS,
+  usePageHeroBackgroundStyleWithSSRSeed,
+  usePageHeroEmptyWithSSRSeed,
+} from "@/hooks/usePageHero";
+import type { SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import { authStore } from "@/store/authStore";
@@ -13,7 +18,7 @@ import { toast } from "sonner";
 const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Dressing"];
 const serviceOptions = services.map((s) => ({ value: s, label: s }));
 
-export default function BespokeClient() {
+export default function BespokeClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const [bookingIdForPayment, setBookingIdForPayment] = useState<string | null>(null);
   const [payConfirmOpen, setPayConfirmOpen] = useState(false);
@@ -29,7 +34,8 @@ export default function BespokeClient() {
   const [submitError, setSubmitError] = useState("");
   const [disabledDates, setDisabledDates] = useState<string[]>([]);
   const [calendarLoadError, setCalendarLoadError] = useState("");
-  const bespokeHeroStyle = usePageHeroBackgroundStyle("bespoke");
+  const bespokeHeroStyle = usePageHeroBackgroundStyleWithSSRSeed("bespoke", initialSiteContent);
+  const bespokeHeroEmpty = usePageHeroEmptyWithSSRSeed("bespoke", initialSiteContent);
 
   useEffect(() => {
     if (!user) return;
@@ -218,7 +224,11 @@ export default function BespokeClient() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header} style={bespokeHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
+        data-page-hero-empty={bespokeHeroEmpty ? "true" : "false"}
+        style={bespokeHeroStyle}
+      >
         <div className="container">
           <div className={styles.headerInner}>
             <div className={styles.headerText}>

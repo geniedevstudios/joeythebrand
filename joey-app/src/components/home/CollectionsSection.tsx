@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useSyncExternalStore, useState, useEffect } from "react";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { PublicCollection } from "@/lib/types";
 import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
 import styles from "./CollectionsSection.module.css";
+
 
 const BLOB_PATHS = [
   "M0.8,0.2 C0.9,0.3, 0.9,0.7, 0.75,0.85 C0.6,1, 0.3,0.9, 0.15,0.7 C0,0.5, 0,0.3, 0.2,0.15 C0.4,0, 0.6,0.1, 0.8,0.2 Z",
@@ -40,8 +42,8 @@ function CollectionBlobViewer({
   }, [images]);
 
   const clipId = `blob-mask-${blobIndex % BLOB_PATHS.length}`;
-  const validFallback = (fallbackImage?.startsWith("/") || fallbackImage?.startsWith("http")) ? fallbackImage : "/lookbook.png";
-  const renderImages = images.length > 0 ? images : [validFallback];
+  const validFallback = (fallbackImage?.startsWith("/") || fallbackImage?.startsWith("http")) ? fallbackImage : null;
+  const renderImages = images.length > 0 ? images : validFallback ? [validFallback] : [];
 
   return (
     <Link href={`/collection/${slug}`} className={styles.blobViewerWrapper} aria-label={`View ${slug} collection pieces`}>
@@ -80,6 +82,35 @@ type CollectionsSectionProps = {
 };
 
 const EMPTY_ARRAY: any[] = [];
+const _getEmptyArray = () => EMPTY_ARRAY;
+const _getCollections = () => dataStore.getCollections();
+const _getProducts = () => dataStore.getProducts();
+
+function CollectionsSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className={styles.collectionsGrid}>
+      {Array.from({ length: count }).map((_, i) => (
+        <article key={i} className={styles.card}>
+          <div className={styles.imageWrap}>
+            <div
+              className="skeleton"
+              style={{
+                borderRadius: "50% 40% 55% 45% / 45% 55% 45% 55%",
+                aspectRatio: "1/1",
+                width: "100%",
+              }}
+            />
+          </div>
+          <div className={styles.textOverlay}>
+            <div className="skeleton" style={{ height: 20, width: "60%", marginBottom: 8 }} />
+            <div className="skeleton" style={{ height: 14, width: "80%" }} />
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 
 export default function CollectionsSection({
   initialCollections,
@@ -92,11 +123,12 @@ export default function CollectionsSection({
 
   const collections = useSyncExternalStore(
     dataStore.subscribe,
-    dataStore.getCollections,
+    _getCollections,
     () => (initialCollections && initialCollections.length > 0 ? initialCollections : SHOP_COLLECTIONS_FALLBACK),
   );
 
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
+  const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
+  const isStoreLoading = useStoreLoading();
 
   const list =
     collections?.length && !isFallback(collections)
@@ -106,6 +138,7 @@ export default function CollectionsSection({
         : SHOP_COLLECTIONS_FALLBACK;
 
   if (!list || list.length === 0) return null;
+
 
   // Enhance collections with their respective product images for the slideshow
   const collectionData = list.map((col) => {
@@ -157,25 +190,29 @@ export default function CollectionsSection({
         </div>
 
         <div className={styles.collectionsGrid}>
-          {collectionData.map((col, idx) => (
-            <article key={col.id} className={styles.card}>
-               <div className={styles.imageWrap}>
-                 <CollectionBlobViewer 
-                   images={col.images} 
-                   slug={col.slug} 
-                   blobIndex={idx} 
-                   fallbackImage={col.image} 
-                 />
-               </div>
-               
-               <div className={styles.textOverlay}>
-                 <h3 className={styles.collectionName}>{col.name}</h3>
-                 {(col.briefDescription || col.description)?.trim() ? (
-                   <p className={styles.collectionDesc}>{(col.briefDescription || col.description).trim()}</p>
-                 ) : null}
-               </div>
-            </article>
-          ))}
+          {isStoreLoading && isFallback(list) ? (
+            <CollectionsSkeleton count={3} />
+          ) : (
+            collectionData.map((col, idx) => (
+              <article key={col.id} className={styles.card}>
+                 <div className={styles.imageWrap}>
+                   <CollectionBlobViewer
+                     images={col.images}
+                     slug={col.slug}
+                     blobIndex={idx}
+                     fallbackImage={col.image}
+                   />
+                 </div>
+
+                 <div className={styles.textOverlay}>
+                   <h3 className={styles.collectionName}>{col.name}</h3>
+                   {(col.briefDescription || col.description)?.trim() ? (
+                     <p className={styles.collectionDesc}>{(col.briefDescription || col.description).trim()}</p>
+                   ) : null}
+                 </div>
+              </article>
+            ))
+          )}
         </div>
       </div>
     </section>

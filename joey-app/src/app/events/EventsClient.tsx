@@ -133,6 +133,9 @@ export default function EventsClient({
   const videoRevealOnce = useRef(false);
   const [videoLoading, setVideoLoading] = useState(true);
   const [nowTick, setNowTick] = useState(0);
+  /** True until the first client-side DB refresh completes — drives skeleton UI. */
+  const [isFetching, setIsFetching] = useState(events.length === 0);
+
 
   const revealVideo = useCallback(() => {
     if (videoRevealOnce.current) return;
@@ -228,6 +231,8 @@ export default function EventsClient({
         })) as PublicEvent[];
 
         setLiveEvents(next);
+        setIsFetching(false);
+
       }, 150);
     };
 
@@ -432,9 +437,27 @@ export default function EventsClient({
         <div className="container">
           <div className={styles.sectionHead}>
             <h2 className={styles.sectionTitle}>Upcoming events</h2>
-            <p className={styles.sectionSub}>What’s next — save the date.</p>
+            <p className={styles.sectionSub}>What&apos;s next — save the date.</p>
           </div>
-          {upcomingCards.length ? (
+          {isFetching ? (
+            <div className={styles.grid}>
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className={styles.card}
+                  style={{ padding: 32, display: "flex", flexDirection: "column", gap: 16, minHeight: 220 }}
+                >
+                  <div className="skeleton" style={{ height: 22, width: "30%" }} />
+                  <div className="skeleton" style={{ height: 28, width: "65%" }} />
+                  <div className="skeleton" style={{ height: 14, width: "45%" }} />
+                  <div className="skeleton" style={{ height: 14, width: "80%" }} />
+                  <div style={{ display: "flex", gap: 10, marginTop: "auto" }}>
+                    <div className="skeleton" style={{ height: 38, width: 110, borderRadius: 9999 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : upcomingCards.length ? (
             <EventGrid items={upcomingCards} onOpenDetails={(id) => openDetails(id)} />
           ) : (
             <p className={styles.empty}>No upcoming events right now.</p>
@@ -449,7 +472,30 @@ export default function EventsClient({
             <h2 className={styles.sectionTitle}>Past events</h2>
             <p className={styles.sectionSub}>Revisit the moments — shows, galleries, and collections.</p>
           </div>
-          {pastCards.length ? <EventGrid items={pastCards} /> : <p className={styles.empty}>No past events yet.</p>}
+          {isFetching ? (
+            <div className={styles.grid}>
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={styles.card}
+                  style={{ padding: 32, display: "flex", flexDirection: "column", gap: 16, minHeight: 260 }}
+                >
+                  <div className="skeleton" style={{ height: 22, width: "40%" }} />
+                  <div className="skeleton" style={{ height: 28, width: "70%" }} />
+                  <div className="skeleton" style={{ height: 14, width: "50%" }} />
+                  <div className="skeleton" style={{ height: 14, width: "85%", marginTop: 8 }} />
+                  <div style={{ display: "flex", gap: 10, marginTop: "auto" }}>
+                    <div className="skeleton" style={{ height: 38, width: 120, borderRadius: 9999 }} />
+                    <div className="skeleton" style={{ height: 38, width: 110, borderRadius: 9999 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : pastCards.length ? (
+            <EventGrid items={pastCards} />
+          ) : (
+            <p className={styles.empty}>No past events yet.</p>
+          )}
         </div>
       </section>
 

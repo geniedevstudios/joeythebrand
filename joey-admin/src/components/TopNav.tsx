@@ -1,10 +1,12 @@
- "use client";
+"use client";
 
- import Link from "next/link";
- import { usePathname } from "next/navigation";
- import { useEffect, useMemo, useRef, useState } from "react";
- import { dataStore } from "@/lib/dataStore";
- import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Menu, X } from "lucide-react";
+import { dataStore } from "@/lib/dataStore";
+import { supabase } from "@/lib/supabase";
 import { compressImageIfNeeded } from "@/lib/compressImageClient";
 import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
 
@@ -36,13 +38,33 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
     email: string;
     initials: string;
     avatarUrl?: string;
-  } | null>(null);
+  } | null>(() => {
+    try {
+      const raw = localStorage.getItem("joey_admin_user_label_v1");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as {
+        name?: unknown;
+        email?: unknown;
+        initials?: unknown;
+        avatarUrl?: unknown;
+      };
+      const name = String(parsed.name ?? "").trim();
+      const email = String(parsed.email ?? "").trim();
+      const initials = String(parsed.initials ?? "").trim();
+      const avatarUrl = String(parsed.avatarUrl ?? "").trim();
+      if (!name || !email || !initials) return null;
+      return { name, email, initials, avatarUrl: avatarUrl || undefined };
+    } catch {
+      return null;
+    }
+  });
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string>("");
   const [profileUploading, setProfileUploading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
    useEffect(() => {
      const refresh = async () => {
@@ -83,9 +105,23 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
       return { name, email, initials, avatarUrl };
      };
 
-     supabase.auth.getUser().then(({ data }) => setUserLabel(pick(data.user)));
+    supabase.auth.getUser().then(({ data }) => {
+      const next = pick(data.user);
+      setUserLabel(next);
+      try {
+        if (next) localStorage.setItem("joey_admin_user_label_v1", JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+    });
      const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
-       setUserLabel(pick(session?.user));
+      const next = pick(session?.user);
+      setUserLabel(next);
+      try {
+        if (next) localStorage.setItem("joey_admin_user_label_v1", JSON.stringify(next));
+      } catch {
+        // ignore
+      }
      });
      return () => sub.subscription.unsubscribe();
    }, []);
@@ -105,23 +141,36 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
     return () => document.removeEventListener("keydown", onKey);
   }, [profileOpen]);
 
-   useEffect(() => {
-     if (!contentOpen) return;
-     const onDoc = (e: MouseEvent) => {
-       if (contentRootRef.current && !contentRootRef.current.contains(e.target as Node)) {
-         setContentOpen(false);
-       }
-     };
-     const onKey = (e: KeyboardEvent) => {
-       if (e.key === "Escape") setContentOpen(false);
-     };
-     document.addEventListener("mousedown", onDoc);
-     document.addEventListener("keydown", onKey);
-     return () => {
-       document.removeEventListener("mousedown", onDoc);
-       document.removeEventListener("keydown", onKey);
-     };
-   }, [contentOpen]);
+  useEffect(() => {
+    if (!contentOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (contentRootRef.current && !contentRootRef.current.contains(e.target as Node)) {
+        setContentOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContentOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [contentOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
    const nav: NavItem[] = useMemo(
      () => [
@@ -129,6 +178,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
        { label: "Products", href: "/products" },
        { label: "Orders", href: "/orders", badge: processingOrdersCount || undefined },
        { label: "Promotions", href: "/promotions" },
+       { label: "Clan", href: "/users" },
      ],
      [processingOrdersCount],
    );
@@ -155,139 +205,227 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
 
   return (
     <>
-      <header className="border-b border-white/10 bg-[#0b0d10] px-6">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4">
-         <div className="flex items-center gap-3">
-           <div
-             className="flex h-9 w-14 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10"
-             aria-hidden
-           >
-             <svg viewBox="0 0 120 44" width="46" height="18" role="img" aria-label="JOEY">
-               <rect width="120" height="44" fill="none" />
-               <text
-                 x="60"
-                 y="30"
-                 textAnchor="middle"
-                 fontFamily="Georgia, 'Times New Roman', serif"
-                 fontSize="30"
-                 fontWeight="700"
-                 fill="#ffffff"
-                 letterSpacing="2"
-               >
-                 JOEY
-               </text>
-             </svg>
-           </div>
-           <div className="min-w-0">
-             <div className="truncate text-sm font-semibold tracking-wide text-white">ADMIN</div>
-             <div className="truncate text-[11px] font-medium text-white/55">Management portal</div>
-           </div>
-         </div>
+      <header className="relative z-30 border-b border-white/10 bg-[#0b0d10] px-3 sm:px-5 md:px-6">
+        <div className="flex min-h-24 w-full min-w-0 items-center justify-between gap-2 py-2 sm:gap-3 lg:justify-start lg:gap-4">
+          <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center">
+              <Image
+                src="/white-logo.png"
+                alt="JOEY THE BRAND"
+                width={560}
+                height={112}
+                className="h-14 w-auto max-w-[9rem] object-contain opacity-95 sm:h-16 sm:max-w-[12rem] md:h-[4.5rem] md:max-w-[15rem] lg:h-20 lg:max-w-[22rem] xl:max-w-[26rem]"
+                priority
+                sizes="(max-width: 640px) 9rem, (max-width: 1024px) 15rem, 26rem"
+              />
+            </div>
+            <div className="hidden min-w-0 sm:block">
+              <div className="truncate text-sm font-semibold tracking-wide text-white">ADMIN</div>
+              <div className="truncate text-[11px] font-medium text-white/55">Management portal</div>
+            </div>
+          </div>
 
-         <nav className="hidden items-center md:flex" aria-label="Admin navigation">
-           <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
-             {nav.map((item) => {
-               const active = isActivePath(pathname, item.href);
-               return (
-                 <Link
-                   key={item.href}
-                   href={item.href}
-                   className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                     active
-                       ? "border border-[#d6ff2a]/60 bg-white/[0.02] text-[#d6ff2a] shadow-[0_0_0_1px_rgba(214,255,42,0.15)]"
-                       : "text-white/70 hover:bg-white/5 hover:text-white"
-                   }`}
-                 >
-                   {item.label}
-                   {item.badge ? (
-                     <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ring-1 ring-white/20">
-                       {item.badge}
-                     </span>
-                   ) : null}
-                 </Link>
-               );
-             })}
+          <nav
+            className="hidden min-h-[3rem] min-w-0 flex-1 items-center justify-center lg:flex"
+            aria-label="Admin navigation"
+          >
+            <div className="flex w-max min-w-0 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
+              {nav.map((item) => {
+                const active = isActivePath(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      active
+                        ? "border border-[#d6ff2a]/60 bg-white/[0.02] text-[#d6ff2a] shadow-[0_0_0_1px_rgba(214,255,42,0.15)]"
+                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                    {item.badge ? (
+                      <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ring-1 ring-white/20">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
 
-             <div className="relative" ref={contentRootRef}>
-               <button
-                 type="button"
-                 onClick={() => setContentOpen((v) => !v)}
-                 aria-haspopup="menu"
-                 aria-expanded={contentOpen}
-                 className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                   contentActive
-                     ? "border border-[#d6ff2a]/60 bg-white/[0.02] text-[#d6ff2a] shadow-[0_0_0_1px_rgba(214,255,42,0.15)]"
-                     : "text-white/70 hover:bg-white/5 hover:text-white"
-                 }`}
-               >
-                 Site
-                 <span className="text-white/40" aria-hidden>
-                   ▾
-                 </span>
-               </button>
+              <div className="relative" ref={contentRootRef}>
+                <button
+                  type="button"
+                  onClick={() => setContentOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={contentOpen}
+                  className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    contentActive
+                      ? "border border-[#d6ff2a]/60 bg-white/[0.02] text-[#d6ff2a] shadow-[0_0_0_1px_rgba(214,255,42,0.15)]"
+                      : "text-white/70 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  Site
+                  <span className="text-white/40" aria-hidden>
+                    ▾
+                  </span>
+                </button>
 
-               {contentOpen ? (
-                 <div
-                   role="menu"
-                   className="absolute left-0 top-[calc(100%+10px)] z-50 w-64 overflow-hidden rounded-2xl border border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)]"
-                 >
-                   <div className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">
-                     Site Content
-                   </div>
-                   <div className="px-2 pb-2">
-                     {contentItems.map((it) => {
-                       const active = isActivePath(pathname, it.href);
-                       return (
-                         <Link
-                           key={it.href}
-                           href={it.href}
-                           role="menuitem"
-                           onClick={() => setContentOpen(false)}
-                           className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                             active
-                               ? "bg-white/6 text-white"
-                               : "text-white/75 hover:bg-white/5 hover:text-white"
-                           }`}
-                         >
-                           <span>{it.label}</span>
-                           {it.badge ? (
-                             <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ring-1 ring-white/20">
-                               {it.badge}
-                             </span>
-                           ) : null}
-                         </Link>
-                       );
-                     })}
-                   </div>
-                 </div>
-               ) : null}
-             </div>
-           </div>
-         </nav>
+                {contentOpen ? (
+                  <div
+                    role="menu"
+                    className="absolute left-0 top-[calc(100%+10px)] z-50 w-64 overflow-hidden rounded-2xl border border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)]"
+                  >
+                    <div className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">
+                      Site Content
+                    </div>
+                    <div className="px-2 pb-2">
+                      {contentItems.map((it) => {
+                        const active = isActivePath(pathname, it.href);
+                        return (
+                          <Link
+                            key={it.href}
+                            href={it.href}
+                            role="menuitem"
+                            onClick={() => setContentOpen(false)}
+                            className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                              active
+                                ? "bg-white/6 text-white"
+                                : "text-white/75 hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            <span>{it.label}</span>
+                            {it.badge ? (
+                              <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ring-1 ring-white/20">
+                                {it.badge}
+                              </span>
+                            ) : null}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] lg:hidden"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              aria-controls="admin-mobile-nav"
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              {menuOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
+            </button>
+
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
               className="group inline-flex items-center gap-3 rounded-full px-2 py-1.5 transition hover:bg-white/5"
               aria-label="Open profile settings"
+              aria-busy={userLabel ? undefined : true}
             >
               <div className="hidden text-right sm:block">
-                <div className="text-sm font-semibold text-white">{userLabel?.name || "Admin"}</div>
-                <div className="text-[11px] font-medium text-white/55">{userLabel?.email || ""}</div>
+                {userLabel ? (
+                  <>
+                    <div className="text-sm font-semibold text-white">{userLabel.name}</div>
+                    <div className="text-[11px] font-medium text-white/55">{userLabel.email}</div>
+                  </>
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-28 rounded bg-white/10" />
+                    <div className="h-3 w-40 rounded bg-white/7" />
+                  </div>
+                )}
               </div>
               <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/10 text-xs font-bold text-white ring-1 ring-white/10">
                 {userLabel?.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={userLabel.avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : userLabel ? (
+                  <span>{userLabel.initials}</span>
                 ) : (
-                  <span>{userLabel?.initials || "AD"}</span>
+                  <span className="opacity-0">AD</span>
                 )}
               </div>
             </button>
           </div>
         </div>
       </header>
+
+      {menuOpen ? (
+        <div className="fixed inset-0 z-[100] lg:hidden" id="admin-mobile-nav" role="dialog" aria-modal="true" aria-label="Admin menu">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          />
+          <div className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col border-l border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)]">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+              <span className="text-sm font-semibold tracking-wide text-white">Menu</span>
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white hover:bg-white/5"
+                aria-label="Close menu"
+                onClick={() => setMenuOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Admin navigation">
+              <div className="space-y-1">
+                {nav.map((item) => {
+                  const active = isActivePath(pathname, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold ${
+                        active ? "bg-white/[0.08] text-[#d6ff2a]" : "text-white/85 hover:bg-white/[0.06]"
+                      }`}
+                    >
+                      {item.label}
+                      {item.badge ? (
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </div>
+              <p className="mb-2 mt-6 px-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/50">Site</p>
+              <div className="space-y-1">
+                {contentItems.map((it) => {
+                  const active = isActivePath(pathname, it.href);
+                  return (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold ${
+                        active ? "bg-white/[0.08] text-[#d6ff2a]" : "text-white/85 hover:bg-white/[0.06]"
+                      }`}
+                    >
+                      {it.label}
+                      {it.badge ? (
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                          {it.badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+        </div>
+      ) : null}
 
       {profileOpen ? (
         <div

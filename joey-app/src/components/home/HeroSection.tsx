@@ -59,6 +59,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
           <>
             {usablePoster ? (
               <img
+                key={usablePoster}
                 src={usablePoster}
                 alt=""
                 className={`${styles.bgImg} ${styles.heroPoster}`}
@@ -95,8 +96,10 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
               <source src={media.src} />
             </video>
           </>
-        ) : (
+        ) : media.src.trim() ? (
+          /* Admin has set an image — render it */
           <img
+            key={media.src}
             src={media.src}
             alt="JOEY THE BRAND editorial"
             className={styles.bgImg}
@@ -105,8 +108,9 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
               objectPosition: position,
             }}
           />
-        )}
+        ) : null /* No hero set — black bg from .bg, spinner below */}
         <div className={styles.overlay} />
+        {/* Spinner while video loads */}
         {media.kind === "video" && (
           <div
             className={`${styles.videoLoader} ${heroVideoLoading ? "" : styles.videoLoaderDone} ${usablePoster ? styles.videoLoaderOverPoster : ""}`}
@@ -117,6 +121,10 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
               {heroVideoLoading ? "Loading hero video" : ""}
             </span>
           </div>
+        )}
+        {/* Spinner when no hero is set by admin */}
+        {media.kind === "image" && !media.src.trim() && (
+          <div className={styles.heroEmptySpinner} aria-hidden="true" />
         )}
       </div>
 

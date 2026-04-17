@@ -3,8 +3,10 @@ import { useSyncExternalStore, useState, useEffect, useRef } from "react";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
 import styles from "./CollectionClient.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { useStoreLoading } from "@/hooks/useStoreLoading";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
 import { CollectionBlobClipDefs, CollectionBlobViewer } from "@/components/collection/CollectionBlobViewer";
+
 
 /** Visual rhythm for section shells (gradients in CSS via data-theme). */
 const SECTION_THEME_IDS = ["warm", "dark", "paper", "earth"] as const;
@@ -30,9 +32,58 @@ function useReveal() {
   return { isVisible, domRef };
 }
 
+function CollectionEditorialSkeleton() {
+  return (
+    <div>
+      {[0, 1, 2].map((i) => (
+        <section
+          key={i}
+          style={{
+            padding: "80px 0",
+            borderBottom: "1px solid var(--concerto)",
+          }}
+        >
+          <div className="container">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "3rem",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div className="skeleton" style={{ height: 14, width: "60%" }} />
+                <div className="skeleton" style={{ height: 14, width: "85%" }} />
+                <div className="skeleton" style={{ height: 14, width: "70%" }} />
+              </div>
+              <div>
+                <div className="skeleton" style={{ height: 36, width: "55%", marginBottom: 16 }} />
+                <div
+                  className="skeleton"
+                  style={{
+                    borderRadius: "50% 40% 55% 45% / 45% 55% 45% 55%",
+                    aspectRatio: "1/1",
+                    maxWidth: 340,
+                    margin: "0 auto",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+
+
 const EMPTY_ARRAY: any[] = [];
 const FALLBACK_FN = () => SHOP_COLLECTIONS_FALLBACK;
 const EMPTY_ARRAY_FN = () => EMPTY_ARRAY;
+const _getCollections = () => dataStore.getCollections();
+const _getProducts = () => dataStore.getProducts();
 
 function CollectionRowSection({
   col,
@@ -108,11 +159,14 @@ const THEMES = [
   { text: "#fff", sub: "rgba(255,255,255,0.82)" },
 ];
 export default function CollectionClient() {
-  const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, FALLBACK_FN);
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, EMPTY_ARRAY_FN);
+  const collections = useSyncExternalStore(dataStore.subscribe, _getCollections, FALLBACK_FN);
+  const products = useSyncExternalStore(dataStore.subscribe, _getProducts, EMPTY_ARRAY_FN);
+  const isStoreLoading = useStoreLoading();
   const collectionHeroStyle = usePageHeroBackgroundStyle("collection");
+  const collectionHeroEmpty = usePageHeroEmpty("collection");
 
   const list = collections?.length ? collections : SHOP_COLLECTIONS_FALLBACK;
+
 
   const collectionData = list.map((col) => {
     const colProducts = products.filter(
@@ -136,7 +190,11 @@ export default function CollectionClient() {
       <CollectionBlobClipDefs />
 
       {/* Page header */}
-      <div className={styles.pageHeader} style={collectionHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={collectionHeroEmpty ? "true" : "false"}
+        style={collectionHeroStyle}
+      >
         <div className="container">
           <span className="section-label">THE ARCHIVE</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Collections</h1>
@@ -146,15 +204,19 @@ export default function CollectionClient() {
 
       {/* Collections Editorial List */}
       <div className={styles.editorialList}>
-        {collectionData.map((col, idx) => (
-          <CollectionRowSection
-            key={col.id}
-            col={col}
-            idx={idx}
-            themes={THEMES}
-            isLast={idx === collectionData.length - 1}
-          />
-        ))}
+        {isStoreLoading ? (
+          <CollectionEditorialSkeleton />
+        ) : (
+          collectionData.map((col, idx) => (
+            <CollectionRowSection
+              key={col.id}
+              col={col}
+              idx={idx}
+              themes={THEMES}
+              isLast={idx === collectionData.length - 1}
+            />
+          ))
+        )}
       </div>
     </div>
   );

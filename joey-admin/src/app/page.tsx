@@ -6,7 +6,7 @@ import { dataStore } from "@/lib/dataStore";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
 import type { Product, Order, PromotionCode, ConsultationBooking } from "@/lib/types";
-import { ShoppingBag, ShoppingCart, Tag, ExternalLink } from "lucide-react";
+import { ShoppingBag, ShoppingCart, ClipboardList, Tag, CalendarDays, ExternalLink } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import RevenueModal from "@/components/RevenueModal";
@@ -22,10 +22,13 @@ function CediIcon({ className }: { className?: string }) {
   );
 }
 
-type StatCard = {
+type DashboardStat = {
   name: string;
   stat: string;
   icon: LucideIcon | typeof CediIcon;
+  clickable: boolean;
+  onClick: () => void;
+  badge?: number;
 };
 
 function startOfTodayLabel(): string {
@@ -110,8 +113,10 @@ export default function Dashboard() {
   const totalRevenue = orderRevenue + consultationRevenue;
   const activePromos = promotions.filter((p) => p.active).length;
   const processingOrdersCount = orders.filter((o) => o.status === "processing").length;
+  /** Shop + portfolio rows share `consultation_bookings`; status `pending` = awaiting admin action */
+  const pendingConsultationsCount = consultations.filter((c) => c.status === "pending").length;
 
-  const stats = [
+  const stats: DashboardStat[] = [
     { 
       name: "Total Revenue", 
       stat: `GHC ${totalRevenue.toLocaleString()}`, 
@@ -119,13 +124,12 @@ export default function Dashboard() {
       clickable: true,
       onClick: () => setIsRevenueModalOpen(true)
     },
-    { 
-      name: "Total Orders", 
-      stat: orders.length.toString(), 
-      icon: ShoppingCart,
+    {
+      name: "New orders",
+      stat: processingOrdersCount.toLocaleString(),
+      icon: ClipboardList,
       clickable: true,
       onClick: () => router.push("/orders"),
-      badge: processingOrdersCount > 0 ? processingOrdersCount : undefined
     },
     { 
       name: "Total Products", 
@@ -141,11 +145,18 @@ export default function Dashboard() {
       clickable: true,
       onClick: () => router.push("/promotions")
     },
+    {
+      name: "Consultations",
+      stat: pendingConsultationsCount.toLocaleString(),
+      icon: CalendarDays,
+      clickable: true,
+      onClick: () => router.push("/content/consultations"),
+    },
   ];
 
   if (isLoading) {
     return (
-      <div className="-m-6 flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#0b0d10] p-6 text-white">
+      <div className="flex min-h-[calc(100vh-6rem)] w-full min-w-0 items-center justify-center text-white">
         <div className="text-sm text-white/80">Loading dashboard…</div>
       </div>
     );
@@ -159,8 +170,8 @@ export default function Dashboard() {
   const t = todayParts();
 
   return (
-    <div className="-m-6 min-h-[calc(100vh-4rem)] bg-[#0b0d10] p-6 text-white">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
+    <div className="min-h-[calc(100vh-6rem)] w-full min-w-0 max-w-none text-white">
+      <div className="w-full min-w-0 max-w-none space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="flex min-w-0 flex-wrap items-end gap-5">
             <div className="min-w-0">
@@ -196,7 +207,7 @@ export default function Dashboard() {
         {/* Main grid */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* Feature card */}
-          <section className="lg:col-span-6">
+          <section className="min-w-0 lg:col-span-6">
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_70px_rgba(0,0,0,0.45)]">
               <div
                 className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#d6ff2a]/10 blur-3xl"
@@ -230,16 +241,19 @@ export default function Dashboard() {
                   onClick={() => router.push("/orders")}
                   className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:bg-black/30"
                 >
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
-                    Total orders
-                  </p>
-                  <div className="mt-2 flex items-baseline justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
+                      Total orders
+                    </p>
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#d6ff2a]/20 text-[#d6ff2a] ring-1 ring-white/10"
+                      aria-hidden
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2">
                     <p className="text-2xl font-semibold tracking-tight">{orders.length.toLocaleString()}</p>
-                    {processingOrdersCount > 0 ? (
-                      <span className="rounded-full bg-red-600/90 px-2.5 py-1 text-xs font-bold text-white">
-                        {processingOrdersCount} processing
-                      </span>
-                    ) : null}
                   </div>
                 </button>
 
@@ -265,8 +279,8 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Stat cards */}
-          <section className="lg:col-span-6">
+          {/* Stat cards: row 1 = New orders + Total products; row 2 = Active promotions + Consultations */}
+          <section className="min-w-0 lg:col-span-6">
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {stats.slice(1).map((item) => (
                 <div
@@ -301,7 +315,7 @@ export default function Dashboard() {
           </section>
 
           {/* Recent orders */}
-          <section className="lg:col-span-7">
+          <section className="min-w-0 lg:col-span-7">
             <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_70px_rgba(0,0,0,0.45)]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -363,7 +377,7 @@ export default function Dashboard() {
           </section>
 
           {/* Inventory + promotions */}
-          <section className="lg:col-span-5">
+          <section className="min-w-0 lg:col-span-5">
             <div className="space-y-5">
               <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_70px_rgba(0,0,0,0.45)]">
                 <div className="flex items-center justify-between gap-3">

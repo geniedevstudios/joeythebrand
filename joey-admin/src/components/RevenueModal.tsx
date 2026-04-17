@@ -80,7 +80,7 @@ export default function RevenueModal({ isOpen, onClose, orders, consultations }:
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+              className="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
               aria-label="Close"
             >
               <X className="h-5 w-5" strokeWidth={2} />
@@ -109,7 +109,7 @@ export default function RevenueModal({ isOpen, onClose, orders, consultations }:
                 </tr>
               ) : (
                 payments.map((payment) => (
-                  <tr key={`${payment.type}-${payment.id}`} className="group hover:bg-zinc-50/50 transition-colors">
+                  <tr key={`${payment.type}-${payment.id}`} className="group transition-colors hover:bg-white/[0.07]">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-800">
                       {formatOrderPlacedAt(payment.createdAt)}
                     </td>

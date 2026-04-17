@@ -288,7 +288,7 @@ export default function NewsletterPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px] space-y-6 pb-12">
+    <div className="w-full max-w-none space-y-6 pb-12">
       <div>
         <nav className="mb-2 text-sm text-zinc-800">
           <Link href="/content" className="hover:text-zinc-900">

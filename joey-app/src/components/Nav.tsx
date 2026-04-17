@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useSyncExternalStore, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useSyncExternalStore, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { toggleCart } from "./CartDrawer";
@@ -41,7 +41,8 @@ export default function Nav() {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const initials = user ? authStore.getInitials() : "";
 
-  useEffect(() => {
+  /** Layout effect: read scroll before paint to avoid one frame of wrong logo / nav colors. */
+  useLayoutEffect(() => {
     const getScrollY = () =>
       window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
     const handleScroll = () => setScrolled(getScrollY() > 40);
@@ -158,17 +159,31 @@ export default function Nav() {
             ))}
           </nav>
 
-          <Link href="/" className={styles.logo} aria-label="JOEY homepage">
-            <Image
-              key={scrolled ? "logo-black" : "logo-white"}
-              src={scrolled ? "/blacklogo21.png" : "/white%20logo.png"}
-              alt="JOEY THE BRAND"
-              width={560}
-              height={112}
-              priority
-              className={styles.logoImg}
-              sizes="560px"
-            />
+          <Link href="/" className={styles.logo} aria-label="JOEY THE BRAND homepage">
+            {/*
+              Stack both logo assets and cross-fade — swapping a single Image src + key remounted the
+              node and caused a visible glitch on refresh when scroll state updated.
+            */}
+            <span className={styles.logoStack}>
+              <Image
+                src="/white%20logo.png"
+                alt=""
+                width={560}
+                height={112}
+                priority
+                className={`${styles.logoImg} ${styles.logoLayer} ${scrolled ? styles.logoLayerHidden : styles.logoLayerVisible}`}
+                sizes="(max-width: 900px) 45vw, 280px"
+              />
+              <Image
+                src="/blacklogo21.png"
+                alt=""
+                width={560}
+                height={112}
+                priority
+                className={`${styles.logoImg} ${styles.logoLayer} ${scrolled ? styles.logoLayerVisible : styles.logoLayerHidden}`}
+                sizes="(max-width: 900px) 45vw, 280px"
+              />
+            </span>
           </Link>
 
           <nav className={styles.rightLinks} aria-label="Secondary navigation">

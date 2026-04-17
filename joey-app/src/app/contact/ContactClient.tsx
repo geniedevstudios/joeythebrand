@@ -3,17 +3,23 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import styles from "./ContactClient.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import {
+  PAGE_HERO_SHELL_CLASS,
+  usePageHeroBackgroundStyleWithSSRSeed,
+  usePageHeroEmptyWithSSRSeed,
+} from "@/hooks/usePageHero";
+import type { SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import { authStore } from "@/store/authStore";
 
-export default function ContactClient() {
+export default function ContactClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const searchParams = useSearchParams();
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const emptyForm = { name: "", email: "", phone: "", subject: "", message: "", website: "" };
   const [form, setForm] = useState(emptyForm);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const contactHeroStyle = usePageHeroBackgroundStyle("contact");
+  const contactHeroStyle = usePageHeroBackgroundStyleWithSSRSeed("contact", initialSiteContent);
+  const contactHeroEmpty = usePageHeroEmptyWithSSRSeed("contact", initialSiteContent);
 
   const subjectOptions = [
     { value: "Custom Order", label: "Custom Order" },
@@ -93,7 +99,11 @@ export default function ContactClient() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header} style={contactHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
+        data-page-hero-empty={contactHeroEmpty ? "true" : "false"}
+        style={contactHeroStyle}
+      >
         <div className="container">
           <span className="section-label" style={{ color: "var(--cinereous)" }}>Contact</span>
           <h1 className={`t-display ${styles.title}`}>

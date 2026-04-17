@@ -121,6 +121,38 @@ main {
   flex: 1;
 }
 
+/* Per-route hero: when admin has not set an image (empty src), background is black with a loader */
+.page-hero-shell {
+  position: relative;
+}
+
+.page-hero-shell[data-page-hero-empty="true"]::before {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.page-hero-shell[data-page-hero-empty="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  animation: pageHeroShellSpin 0.85s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes pageHeroShellSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 img {
   max-width: 100%;
   height: auto;
@@ -471,6 +503,42 @@ input, textarea, select {
 .form-textarea {
   min-height: 140px;
   resize: vertical;
+}
+
+/* =============================================
+   SKELETON LOADING SHIMMER
+   ============================================= */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--concerto) 25%,
+    #ece9e4 50%,
+    var(--concerto) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+  color: transparent !important;
+  user-select: none;
+}
+
+.skeleton-dark {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.07) 25%,
+    rgba(255,255,255,0.13) 50%,
+    rgba(255,255,255,0.07) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+  color: transparent !important;
+  user-select: none;
 }
 
 /* =============================================

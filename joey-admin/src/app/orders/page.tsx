@@ -59,14 +59,14 @@ export default function OrdersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-64 items-center justify-center">
+      <div className="flex min-h-full w-full items-center justify-center">
         <div className="text-sm text-zinc-900">Loading orders...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex min-h-full w-full min-w-0 max-w-none flex-col gap-6 overflow-x-hidden">
       <OrderItemDetailModal
         open={itemModal !== null}
         onClose={() => setItemModal(null)}
@@ -79,10 +79,10 @@ export default function OrdersPage() {
         <span className="text-sm text-zinc-800">{orders.length} total</span>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
+      <div className="flex-1 min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div className="h-full min-w-0 overflow-x-auto overscroll-x-contain">
           {orders.length === 0 ? (
-            <div className="py-12 text-center">
+            <div className="flex h-full min-h-[16rem] flex-col items-center justify-center py-12 text-center">
               <PackageOpen className="mx-auto h-12 w-12 text-zinc-300" />
               <h3 className="mt-2 text-sm font-semibold text-zinc-900">No Orders Yet</h3>
               <p className="mt-1 text-sm text-zinc-800">Orders placed from the shop will appear here.</p>

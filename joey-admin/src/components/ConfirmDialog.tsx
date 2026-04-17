@@ -66,7 +66,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="-mr-1 -mt-1 shrink-0 rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50"
+            className="-mr-1 -mt-1 shrink-0 rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-5 w-5" strokeWidth={2} />
@@ -89,7 +89,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-lg border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-medium text-white/85 shadow-sm transition-colors hover:bg-white/[0.1] hover:border-white/25 disabled:opacity-50"
           >
             {cancelLabel}
           </button>

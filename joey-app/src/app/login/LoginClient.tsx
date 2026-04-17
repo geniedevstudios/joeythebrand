@@ -3,11 +3,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./LoginClient.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
 
 export default function LoginClient() {
   const router = useRouter();
   const loginHeroStyle = usePageHeroBackgroundStyle("login");
+  const loginHeroEmpty = usePageHeroEmpty("login");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -40,7 +41,12 @@ export default function LoginClient() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.topHero} style={loginHeroStyle} aria-hidden />
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.topHero}`}
+        data-page-hero-empty={loginHeroEmpty ? "true" : "false"}
+        style={loginHeroStyle}
+        aria-hidden
+      />
       <div className={styles.container}>
         
         {/* Decorative Brand Element */}

@@ -10,7 +10,7 @@ import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { openConsultationPrintWindow } from "@/lib/printConsultation";
 import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
 import styles from "./account.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
 import { SignupOTPDialog } from "./SignupOTPDialog";
 
 type Mode = "signin" | "signup";
@@ -176,10 +176,15 @@ function AccountDashboard({ userId }: { userId: string }) {
 
   const initials = authStore.getInitials();
   const accountHeroStyle = usePageHeroBackgroundStyle("account");
+  const accountHeroEmpty = usePageHeroEmpty("account");
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader} style={accountHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
+        style={accountHeroStyle}
+      >
         <div className="container">
           <span className="section-label">Welcome back</span>
           <h1 className={styles.pageTitle}>{user?.name}</h1>
@@ -439,6 +444,7 @@ function AccountDashboard({ userId }: { userId: string }) {
 export default function AccountClient() {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const accountHeroStyle = usePageHeroBackgroundStyle("account");
+  const accountHeroEmpty = usePageHeroEmpty("account");
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -492,7 +498,11 @@ export default function AccountClient() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader} style={accountHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
+        style={accountHeroStyle}
+      >
         <div className="container">
           <span className="section-label">Your Account</span>
           <h1 className={styles.pageTitle}>

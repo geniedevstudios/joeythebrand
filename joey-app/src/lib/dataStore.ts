@@ -77,7 +77,7 @@ export const DEFAULT_SIZES: ProductSize[] = [
 ];
 
 export const DEFAULT_SITE_CONTENT: SiteContent = {
-  heroImage: "/hero.png",
+  heroImage: "",
   heroTitle: "JOEY THE BRAND",
   heroSubtitle: "Contemporary fashion redefining modern silhouettes",
   aboutImage: "/founder.png",
@@ -86,8 +86,16 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   pageHeroes: DEFAULT_PAGE_HEROES,
 };
 
-/** True after the first `site_content` fetch attempt in `init()` (success or fail). Used to avoid hero flash before client cache is filled. */
+/** True after the first `site_content` fetch attempt in `init()` finishes (success or fail). */
 let siteContentRemoteResolved = false;
+/** True only after we successfully map a `site_content` row into `siteContent` (init or refresh). If init fails, keep using SSR-passed content so we never flash bundled defaults over the server-rendered hero. */
+let siteContentAppliedFromRemote = false;
+
+/**
+ * True from module load until the very first `init()` completes (success or fail).
+ * Used by skeleton loaders to distinguish "still fetching" from "genuinely empty".
+ */
+let storeInitializing = true;
 
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
@@ -198,11 +206,23 @@ export const dataStore = {
   getCollections: () => collectionsList,
   getSiteContent: () => siteContent,
 
-  /** Whether client `init()` has finished loading `site_content` (avoids hero flash when SSR already sent real URLs). */
+  /** Returns true until the first init() attempt finishes. Use this in skeleton loaders. */
+  isInitializing: () => storeInitializing,
+
   hasRemoteSiteContentResolved: () => siteContentRemoteResolved,
+
+  /** Use client `site_content` only after a row was actually applied — avoids replacing SSR heroes with in-memory defaults when the client fetch fails or returns no row. */
+  hasAppliedSiteContentFromRemote: () => siteContentAppliedFromRemote,
 
   // ── Async: initialise cache from Supabase ──────────────────────────────────
   init: async () => {
+    // Reset initializing flag so hard-refreshes always show skeleton loaders
+    // while the first Supabase fetch is in-flight.
+    storeInitializing = true;
+    siteContentRemoteResolved = false;
+    siteContentAppliedFromRemote = false;
+    dataStore.notify();
+
     try {
       const { data: rows } = await supabase
         .from("products")
@@ -227,11 +247,13 @@ export const dataStore = {
 
       if (sc) {
         siteContent = mapSiteContent(sc as Record<string, unknown>);
+        siteContentAppliedFromRemote = true;
       }
     } catch {
       // fall back to default
     } finally {
       siteContentRemoteResolved = true;
+      storeInitializing = false;
       dataStore.notify();
     }
   },
@@ -246,6 +268,7 @@ export const dataStore = {
 
       if (sc) {
         siteContent = mapSiteContent(sc as Record<string, unknown>);
+        siteContentAppliedFromRemote = true;
         dataStore.notify();
       }
     } catch {

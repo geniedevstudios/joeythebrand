@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { wishlistStore } from "@/store/wishlistStore";
 import { cartStore } from "@/store/cartStore";
 import styles from "./WishlistClient.module.css";
-import { usePageHeroBackgroundStyle } from "@/hooks/usePageHero";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
 
 const EMPTY_ARRAY: any[] = [];
 
@@ -22,6 +22,7 @@ export default function WishlistClient() {
   const items = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
   const [addStatus, setAddStatus] = useState<Record<string, AddStatus>>({});
   const wishlistHeroStyle = usePageHeroBackgroundStyle("wishlist");
+  const wishlistHeroEmpty = usePageHeroEmpty("wishlist");
 
   const getCategoryLabel = (cat: string) => {
     const tab = tabs.find(t => t.id === cat);
@@ -67,7 +68,11 @@ export default function WishlistClient() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader} style={wishlistHeroStyle}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        data-page-hero-empty={wishlistHeroEmpty ? "true" : "false"}
+        style={wishlistHeroStyle}
+      >
         <div className="container">
           <span className="section-label">Saved For Later</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Wishlist</h1>

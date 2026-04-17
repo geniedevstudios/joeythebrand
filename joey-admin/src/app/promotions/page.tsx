@@ -102,7 +102,7 @@ export default function PromotionsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full max-w-none space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Promotions</h1>
       </div>

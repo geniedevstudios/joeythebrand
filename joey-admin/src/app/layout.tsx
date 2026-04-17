@@ -30,13 +30,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full w-full antialiased`}
     >
-      <body className="flex h-full flex-col overflow-hidden bg-[#0b0d10] font-sans text-white">
+      <body className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden overscroll-x-none touch-pan-y bg-[#0b0d10] font-sans text-white">
         <AdminAuthGate>
           <AdminRealtimeSync />
           <TopNav />
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <main className="box-border min-h-0 min-w-0 w-full max-w-none flex-1 overflow-x-hidden overflow-y-auto overscroll-x-none touch-pan-y px-3 py-6 sm:px-5 md:px-6">
+            {children}
+          </main>
         </AdminAuthGate>
         <AdminToaster />
         <Analytics />
