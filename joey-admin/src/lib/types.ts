@@ -149,4 +149,10 @@ export interface SiteContent {
   aboutText: string;
   featuredProductIds: string[];
   pageHeroes: Record<PageHeroKey, PageHeroMedia>;
+  founderVideoUrl: string;
+  founderVideoPosterUrl: string;
+  founderKicker: string;
+  founderHeadline: string;
+  founderCtaLabel: string;
+  founderCtaHref: string;
 }

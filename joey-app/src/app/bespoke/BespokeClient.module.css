@@ -41,6 +41,16 @@
   gap: var(--space-lg);
 }
 
+/* Dark-hero kicker: global .section-label defaults are low-contrast on photo + scrim */
+.headerKicker:global(.section-label) {
+  color: rgba(232, 226, 220, 0.96);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
+}
+
+.headerKicker:global(.section-label)::before {
+  background: rgba(232, 226, 220, 0.75);
+}
+
 .title {
   color: #fff;
   font-weight: 300;
@@ -56,16 +66,18 @@
   font-size: 1rem;
   font-weight: 300;
   line-height: 1.8;
-  color: var(--cloudy-sky);
+  color: rgba(230, 228, 225, 0.95);
   max-width: 480px;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.35);
 }
 
 .note {
   font-family: var(--font-label);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   letter-spacing: 0.16em;
-  color: var(--wood);
+  color: rgba(220, 209, 199, 0.98);
   text-transform: uppercase;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Steps */
@@ -95,17 +107,21 @@
 
 .stepLabel {
   font-family: var(--font-label);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   letter-spacing: 0.14em;
   color: #fff;
   text-transform: uppercase;
 }
 
+/* Light body text for dark hero — alaska-gray is for light sections only */
 .stepDesc {
-  font-size: 0.85rem;
-  color: var(--alaska-gray);
-  margin-top: 2px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(245, 241, 236, 0.92);
+  margin-top: 4px;
   font-style: italic;
+  font-weight: 400;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45);
 }
 
 /* Form section */

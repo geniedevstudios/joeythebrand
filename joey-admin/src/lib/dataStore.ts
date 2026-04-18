@@ -109,6 +109,13 @@ const mapCollection = (row: Record<string, unknown>): Collection => ({
   createdAt: row.created_at as string,
 });
 
+const FD = {
+  kicker: "BEHIND THE PATTERN",
+  headline: "An intimate look at the craft behind every design.",
+  ctaLabel: "DISCOVER THE STORY",
+  ctaHref: "/story",
+};
+
 const mapSiteContent = (row: Record<string, unknown>): SiteContent => {
   const { pageHeroes, heroImage } = siteContentWithPageHeroes(row);
   return {
@@ -119,6 +126,24 @@ const mapSiteContent = (row: Record<string, unknown>): SiteContent => {
     aboutText: row.about_text as string,
     featuredProductIds: (row.featured_product_ids as string[]) || [],
     pageHeroes,
+    founderVideoUrl: row.founder_video_url != null ? String(row.founder_video_url).trim() : "",
+    founderVideoPosterUrl: row.founder_video_poster_url != null ? String(row.founder_video_poster_url).trim() : "",
+    founderKicker:
+      row.founder_kicker != null && String(row.founder_kicker).trim()
+        ? String(row.founder_kicker).trim()
+        : FD.kicker,
+    founderHeadline:
+      row.founder_headline != null && String(row.founder_headline).trim()
+        ? String(row.founder_headline).trim()
+        : FD.headline,
+    founderCtaLabel:
+      row.founder_cta_label != null && String(row.founder_cta_label).trim()
+        ? String(row.founder_cta_label).trim()
+        : FD.ctaLabel,
+    founderCtaHref:
+      row.founder_cta_href != null && String(row.founder_cta_href).trim()
+        ? String(row.founder_cta_href).trim()
+        : FD.ctaHref,
   };
 };
 
@@ -357,6 +382,12 @@ export const dataStore = {
     if (updates.aboutText !== undefined) payload.about_text = updates.aboutText;
     if (updates.featuredProductIds !== undefined) payload.featured_product_ids = updates.featuredProductIds;
     if (updates.pageHeroes !== undefined) payload.page_heroes = updates.pageHeroes;
+    if (updates.founderVideoUrl !== undefined) payload.founder_video_url = updates.founderVideoUrl;
+    if (updates.founderVideoPosterUrl !== undefined) payload.founder_video_poster_url = updates.founderVideoPosterUrl;
+    if (updates.founderKicker !== undefined) payload.founder_kicker = updates.founderKicker;
+    if (updates.founderHeadline !== undefined) payload.founder_headline = updates.founderHeadline;
+    if (updates.founderCtaLabel !== undefined) payload.founder_cta_label = updates.founderCtaLabel;
+    if (updates.founderCtaHref !== undefined) payload.founder_cta_href = updates.founderCtaHref;
 
     const { error } = await supabase.from("site_content").upsert(payload);
     if (error) throw new Error(error.message);

@@ -4,8 +4,10 @@ import FooterNewsletter from "./FooterNewsletter";
 import styles from "./Footer.module.css";
 
 const footerLinks = [
+  { label: "Collections", href: "/collection" },
   { label: "Shop", href: "/shop" },
   { label: "Story", href: "/story" },
+  { label: "Events", href: "/events" },
   { label: "Bespoke", href: "/bespoke" },
   { label: "Contact", href: "/contact" },
   { label: "Shipping Policy", href: "/shipping" },

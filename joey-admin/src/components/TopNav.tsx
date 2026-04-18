@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import { compressImageIfNeeded } from "@/lib/compressImageClient";
@@ -63,6 +63,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string>("");
   const [profileUploading, setProfileUploading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -521,6 +522,32 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90 placeholder:text-white/40 outline-none focus:border-[#d6ff2a]/50 focus:ring-2 focus:ring-[#d6ff2a]/20"
                 />
                 <p className="mt-2 text-xs text-white/50">{userLabel?.email || ""}</p>
+                <button
+                  type="button"
+                  aria-label="Sign out of admin"
+                  disabled={signingOut || profileSaving}
+                  onClick={async () => {
+                    setSigningOut(true);
+                    try {
+                      await supabase.auth.signOut();
+                      try {
+                        localStorage.removeItem("joey_admin_user_label_v1");
+                      } catch {
+                        // ignore
+                      }
+                      setUserLabel(null);
+                      setProfileOpen(false);
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setSigningOut(false);
+                    }
+                  }}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/75 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-60"
+                >
+                  <LogOut className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+                  {signingOut ? "Signing out…" : "Sign out"}
+                </button>
               </div>
             </div>
 
@@ -528,14 +555,14 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
               <button
                 type="button"
                 onClick={() => setProfileOpen(false)}
-                disabled={profileSaving}
+                disabled={profileSaving || signingOut}
                 className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.06] disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={profileSaving}
+                disabled={profileSaving || signingOut}
                 onClick={async () => {
                   setProfileSaving(true);
                   try {

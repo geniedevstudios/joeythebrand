@@ -68,8 +68,21 @@ create table if not exists public.site_content (
   about_image text not null default '/founder.png',
   about_text text not null default 'JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity.',
   featured_product_ids text[] not null default '{}',
-  page_heroes jsonb not null default '{}'::jsonb
+  page_heroes jsonb not null default '{}'::jsonb,
+  founder_video_url text not null default '',
+  founder_video_poster_url text not null default '',
+  founder_kicker text not null default 'BEHIND THE PATTERN',
+  founder_headline text not null default 'An intimate look at the craft behind every design.',
+  founder_cta_label text not null default 'DISCOVER THE STORY',
+  founder_cta_href text not null default '/story'
 );
+
+alter table public.site_content add column if not exists founder_video_url text not null default '';
+alter table public.site_content add column if not exists founder_video_poster_url text not null default '';
+alter table public.site_content add column if not exists founder_kicker text not null default 'BEHIND THE PATTERN';
+alter table public.site_content add column if not exists founder_headline text not null default 'An intimate look at the craft behind every design.';
+alter table public.site_content add column if not exists founder_cta_label text not null default 'DISCOVER THE STORY';
+alter table public.site_content add column if not exists founder_cta_href text not null default '/story';
 
 -- 5. EVENTS PAGE (single row, always id = 1)
 create table if not exists public.events_page (

@@ -1,7 +1,7 @@
 -- ============================================================
 -- JOEY THE BRAND — Bespoke / consultation bookings
 -- Run in Supabase SQL Editor after auth is configured.
--- Admin email in RLS must match your dashboard login (same as orders).
+-- PREREQUISITE: Run supabase_admin_operator_identity.sql first so public.is_admin_dashboard_user() exists.
 -- ============================================================
 
 CREATE SEQUENCE IF NOT EXISTS public.consultation_booking_code_seq;
@@ -88,8 +88,8 @@ CREATE POLICY "consultation_bookings_select_own" ON public.consultation_bookings
 
 CREATE POLICY "consultation_bookings_select_admin" ON public.consultation_bookings
   FOR SELECT
-  USING ((auth.jwt() ->> 'email')::text = 'joeythebrandonline@gmail.com');
+  USING (public.is_admin_dashboard_user());
 
 CREATE POLICY "consultation_bookings_update_admin" ON public.consultation_bookings
   FOR UPDATE
-  USING ((auth.jwt() ->> 'email')::text = 'joeythebrandonline@gmail.com');
+  USING (public.is_admin_dashboard_user());

@@ -108,6 +108,30 @@
   background: var(--color-bg);
 }
 
+/* Event detail: same visual as listing cards — flyer image + gradient (see EventsClient card --card-bg) */
+.headingSectionWithFlyer {
+  padding: var(--space-3xl) 0;
+  background:
+    linear-gradient(180deg, rgba(15, 18, 24, 0.55), rgba(15, 18, 24, 0.78)),
+    var(--detail-flyer, rgba(39, 43, 54, 0.92));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.kicker.kickerOnFlyer {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.title.titleOnFlyer {
+  color: rgba(255, 255, 255, 0.98);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
+.subtitle.subtitleOnFlyer {
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .headingRow {
   display: flex;
   align-items: flex-end;

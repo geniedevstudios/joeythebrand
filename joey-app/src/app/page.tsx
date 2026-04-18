@@ -45,7 +45,7 @@ export default async function HomePage() {
         <FeaturedSection />
       </ScrollReveal>
       <ScrollReveal>
-        <FounderSection initialCollections={initialCollections} />
+        <FounderSection initialCollections={initialCollections} initialSiteContent={initialSiteContent} />
       </ScrollReveal>
       <ScrollReveal>
         <BespokeTeaser />

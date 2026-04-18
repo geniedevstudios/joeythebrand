@@ -33,6 +33,49 @@
   flex-shrink: 0;
 }
 
+/* Wrapper for horizontal track + “Slide” hint (matches home hero scroll indicator) */
+.carouselOuter {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Same rhythm as HeroSection .scrollIndicator: line + label, subtle horizontal motion */
+.slideHint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  pointer-events: none;
+  animation: collectionsSlideHint 2s ease-in-out 1.5s infinite alternate;
+}
+
+.slideLine {
+  display: block;
+  width: 48px;
+  height: 1px;
+  background: rgba(39, 43, 54, 0.38);
+}
+
+.slideText {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: rgba(39, 43, 54, 0.48);
+  text-transform: uppercase;
+}
+
+@keyframes collectionsSlideHint {
+  from {
+    opacity: 0.45;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(6px);
+  }
+}
+
 /* Horizontal swipeable carousel */
 .collectionsGrid {
   display: flex;

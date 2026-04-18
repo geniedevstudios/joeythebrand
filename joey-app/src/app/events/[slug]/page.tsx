@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import styles from "../events.module.css";
 import { fetchPublicEventBySlug } from "@/lib/fetchEventsServer";
@@ -42,6 +43,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   const when = formatWhen(event.startAt, event.dateLabel);
   const longText = (event.details ?? "").trim();
   const gallery = (event.galleryUrls ?? []).filter((u) => String(u || "").trim());
+  const flyer = (event.flyerUrl ?? "").trim();
+  const headingFlyerStyle: (CSSProperties & { "--detail-flyer"?: string }) | undefined =
+    flyer.length > 0
+      ? { "--detail-flyer": `url("${flyer.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")` }
+      : undefined;
 
   return (
     <main className={styles.page}>
@@ -49,11 +55,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
         <EventVideo src={event.mainVideoUrl} posterUrl={event.mainVideoPosterUrl ?? event.flyerUrl} />
       </section>
 
-      <section className={styles.headingSection}>
+      <section
+        className={flyer ? `${styles.headingSection} ${styles.headingSectionWithFlyer}` : styles.headingSection}
+        style={headingFlyerStyle}
+      >
         <div className="container">
-          <span className={styles.kicker}>Events</span>
-          <h1 className={styles.title}>{event.title}</h1>
-          <p className={styles.subtitle}>{event.description ?? ""}</p>
+          <span className={`${styles.kicker} ${flyer ? styles.kickerOnFlyer : ""}`}>Events</span>
+          <h1 className={`${styles.title} ${flyer ? styles.titleOnFlyer : ""}`}>{event.title}</h1>
+          <p className={`${styles.subtitle} ${flyer ? styles.subtitleOnFlyer : ""}`}>{event.description ?? ""}</p>
         </div>
       </section>
 
@@ -98,8 +107,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
           {gallery.length ? (
             <div className={styles.shotsSection}>
-              <h3 className={styles.shotsTitle}>Shots from the event</h3>
-              <div className={styles.shotsGrid} aria-label="Shots from the event">
+              <h3 className={styles.shotsTitle}>Pieces from the event</h3>
+              <div className={styles.shotsGrid} aria-label="Pieces from the event">
                 {gallery.map((u, idx) => (
                   <div key={`${u}-${idx}`} className={styles.shotCard}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}

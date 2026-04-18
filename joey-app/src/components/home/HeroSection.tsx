@@ -13,7 +13,6 @@ import { resolveHeroLayout } from "@/lib/pageHeroes";
 const words = ["Power.", "Precision.", "Presence."];
 
 export default function HeroSection({ initialSiteContent }: { initialSiteContent: SiteContent }) {
-  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const heroVideoRevealOnce = useRef(false);
   const media = useHomeHeroMediaWithSSRSeed(initialSiteContent);
   const posterUrl = useHomeHeroPosterWithSSRSeed(initialSiteContent);
@@ -26,6 +25,8 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
       ? posterTrimmed
       : "";
   const [heroVideoLoading, setHeroVideoLoading] = useState(media.kind === "video");
+  /** Staggered CSS reveal for headline / subtext / CTAs (see .heroReady in CSS). */
+  const [heroCopyReady, setHeroCopyReady] = useState(false);
 
   const revealHeroVideo = useCallback(() => {
     if (heroVideoRevealOnce.current) return;
@@ -46,18 +47,18 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
   }, [media.kind, media.src]);
 
   useEffect(() => {
-    wordRefs.current.forEach((el, i) => {
-      if (!el) return;
-      setTimeout(() => {
-        el.style.opacity = "1";
-        el.style.transform = "translateY(0)";
-      }, 200 + i * 180);
-    });
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setHeroCopyReady(true);
+      return;
+    }
+    const id = requestAnimationFrame(() => setHeroCopyReady(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
   return (
     <section
-      className={styles.hero}
+      className={`${styles.hero} ${heroCopyReady ? styles.heroReady : ""}`}
       id="hero"
       aria-busy={media.kind === "video" && heroVideoLoading ? true : undefined}
     >
@@ -140,13 +141,8 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
         <span className={styles.preLabel}>EST. ACCRA, GHANA</span>
 
         <h1 className={styles.headline}>
-          {words.map((word, i) => (
-            <span
-              key={word}
-              ref={(el) => { wordRefs.current[i] = el; }}
-              className={styles.word}
-              style={{ transitionDelay: `${i * 0.18}s` }}
-            >
+          {words.map((word) => (
+            <span key={word} className={styles.word}>
               {word}
             </span>
           ))}

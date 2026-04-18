@@ -1,7 +1,7 @@
 -- ============================================================
 -- JOEY THE BRAND — Consultation calendar: slots/day, scheduled time, validation
 -- Run in Supabase SQL Editor AFTER supabase_consultation_bookings.sql
--- Replace admin email if needed (same as orders RLS).
+-- PREREQUISITE: supabase_admin_operator_identity.sql (public.is_admin_dashboard_user) must exist first.
 -- ============================================================
 
 -- 1) Settings: max confirmed appointments per calendar day (UTC date bucket)
@@ -27,12 +27,12 @@ CREATE POLICY "consultation_settings_select_auth" ON public.consultation_setting
 
 CREATE POLICY "consultation_settings_update_admin" ON public.consultation_settings
   FOR UPDATE
-  USING ((auth.jwt() ->> 'email')::text = 'joeythebrandonline@gmail.com');
+  USING (public.is_admin_dashboard_user());
 
 CREATE POLICY "consultation_settings_insert_admin" ON public.consultation_settings
   FOR INSERT
   TO authenticated
-  WITH CHECK ((auth.jwt() ->> 'email')::text = 'joeythebrandonline@gmail.com');
+  WITH CHECK (public.is_admin_dashboard_user());
 
 -- 2) Actual appointment time (set when admin confirms)
 ALTER TABLE public.consultation_bookings

@@ -87,6 +87,12 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   aboutText: "JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity.",
   featuredProductIds: ["structured-blazer", "presence-set"],
   pageHeroes: DEFAULT_PAGE_HEROES,
+  founderVideoUrl: "",
+  founderVideoPosterUrl: "",
+  founderKicker: "BEHIND THE PATTERN",
+  founderHeadline: "An intimate look at the craft behind every design.",
+  founderCtaLabel: "DISCOVER THE STORY",
+  founderCtaHref: "/story",
 };
 
 /** True after the first `site_content` fetch attempt in `init()` finishes (success or fail). */
@@ -144,6 +150,24 @@ export function mapSiteContentFromSupabaseRow(row: Record<string, unknown>): Sit
     aboutText: row.about_text as string,
     featuredProductIds: (row.featured_product_ids as string[]) || [],
     pageHeroes,
+    founderVideoUrl: row.founder_video_url != null ? String(row.founder_video_url).trim() : "",
+    founderVideoPosterUrl: row.founder_video_poster_url != null ? String(row.founder_video_poster_url).trim() : "",
+    founderKicker:
+      row.founder_kicker != null && String(row.founder_kicker).trim()
+        ? String(row.founder_kicker).trim()
+        : DEFAULT_SITE_CONTENT.founderKicker,
+    founderHeadline:
+      row.founder_headline != null && String(row.founder_headline).trim()
+        ? String(row.founder_headline).trim()
+        : DEFAULT_SITE_CONTENT.founderHeadline,
+    founderCtaLabel:
+      row.founder_cta_label != null && String(row.founder_cta_label).trim()
+        ? String(row.founder_cta_label).trim()
+        : DEFAULT_SITE_CONTENT.founderCtaLabel,
+    founderCtaHref:
+      row.founder_cta_href != null && String(row.founder_cta_href).trim()
+        ? String(row.founder_cta_href).trim()
+        : DEFAULT_SITE_CONTENT.founderCtaHref,
   };
 }
 

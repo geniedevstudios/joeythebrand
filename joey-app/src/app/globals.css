@@ -153,6 +153,49 @@ main {
   }
 }
 
+/* ── Global Page Hero text stagger ─────────────────── */
+@keyframes pageHeroTextFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(1.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-hero-shell .container {
+  position: relative;
+  z-index: 5; /* Ensure text sits above the background loader (z-index 4) */
+}
+
+.page-hero-shell .container > * {
+  opacity: 0;
+  animation: pageHeroTextFadeUp 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.page-hero-shell .container > *:nth-child(1) {
+  animation-delay: 0.14s;
+}
+.page-hero-shell .container > *:nth-child(2) {
+  animation-delay: 0.28s;
+}
+.page-hero-shell .container > *:nth-child(3) {
+  animation-delay: 0.42s;
+}
+.page-hero-shell .container > *:nth-child(4) {
+  animation-delay: 0.56s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-hero-shell .container > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 img {
   max-width: 100%;
   height: auto;
@@ -581,6 +624,29 @@ input, textarea, select {
 @media (max-width: 480px) {
   .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .btn { width: 100%; justify-content: center; }
+}
+
+/* Optional page copy: add `jtb-enter-soft` to a main heading or block for a light fade-up (shop, product, account, etc.) */
+@keyframes jtb-fade-up-soft {
+  from {
+    opacity: 0;
+    transform: translateY(0.65rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jtb-enter-soft {
+  animation: jtb-fade-up-soft 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jtb-enter-soft {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* Next.js dev: strip all built-in DevTools UI (badge, full error overlay, panels). The framework mounts this under <nextjs-portal> (shadow root). Errors still log to the browser console. Inert in production — these nodes are not rendered. */

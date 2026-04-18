@@ -85,6 +85,44 @@
   gap: var(--space-md);
 }
 
+.passwordField {
+  position: relative;
+}
+
+.passwordField .form-input {
+  padding-right: 2.75rem;
+  box-sizing: border-box;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--alaska-gray);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.passwordToggle:hover {
+  color: var(--blue-athracite);
+  background: rgba(39, 43, 54, 0.06);
+}
+
+.passwordToggle:focus-visible {
+  outline: 2px solid var(--wood);
+  outline-offset: 2px;
+}
+
 .signupPrivacy {
   margin: 0;
   font-size: 0.85rem;

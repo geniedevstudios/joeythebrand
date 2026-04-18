@@ -146,6 +146,94 @@
   text-transform: uppercase;
 }
 
+/* ── Hero copy stagger (paired with .heroReady on section) ─────────────────── */
+.hero:not(.heroReady) .preLabel,
+.hero:not(.heroReady) .headline .word,
+.hero:not(.heroReady) .subtext {
+  opacity: 0;
+  transform: translateY(1.75rem);
+}
+
+.hero:not(.heroReady) .scrollIndicator {
+  opacity: 0;
+  transform: translateX(-50%) translateY(1.35rem);
+}
+
+.hero .preLabel,
+.hero .headline .word,
+.hero .subtext,
+.hero .scrollIndicator {
+  transition:
+    opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero.heroReady .preLabel {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.06s;
+}
+
+.hero.heroReady .headline .word:nth-child(1) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.14s;
+}
+
+.hero.heroReady .headline .word:nth-child(2) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.28s;
+}
+
+.hero.heroReady .headline .word:nth-child(3) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.42s;
+}
+
+.hero.heroReady .subtext {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.56s;
+}
+
+.hero.heroReady .ctas :global(a) {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.hero:not(.heroReady) .ctas :global(a) {
+  opacity: 0;
+  transform: translateY(1.1rem);
+  transition:
+    opacity 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.62s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.hero.heroReady .ctas :global(a):nth-child(1) {
+  transition-delay: 0.68s;
+}
+
+.hero.heroReady .ctas :global(a):nth-child(2) {
+  transition-delay: 0.8s;
+}
+
+.hero.heroReady .scrollIndicator {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: 0.95s;
+}
+
 /* Headline */
 .headline {
   display: flex;
@@ -160,9 +248,6 @@
   font-size: clamp(3rem, 8.5vw, 8.5rem);
   font-weight: 300;
   color: #fff;
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
   letter-spacing: -0.02em;
 }
 
@@ -171,7 +256,7 @@
   font-family: var(--font-body);
   font-size: clamp(0.95rem, 2vw, 1.1rem);
   font-weight: 300;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.7;
   max-width: 520px;
 }
@@ -194,7 +279,10 @@
   align-items: center;
   gap: var(--space-sm);
   z-index: 2;
-  animation: scrollFade 2s ease-in-out 1.5s infinite alternate;
+}
+
+.hero.heroReady .scrollIndicator {
+  animation: scrollFade 2.1s ease-in-out 1.25s infinite alternate;
 }
 
 .scrollLine {
@@ -213,8 +301,32 @@
 }
 
 @keyframes scrollFade {
-  from { opacity: 0.4; transform: translateX(-50%) translateY(0); }
-  to { opacity: 1; transform: translateX(-50%) translateY(6px); }
+  from {
+    opacity: 0.45;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero:not(.heroReady) .preLabel,
+  .hero:not(.heroReady) .headline .word,
+  .hero:not(.heroReady) .subtext,
+  .hero:not(.heroReady) .scrollIndicator,
+  .hero:not(.heroReady) .ctas :global(a) {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .hero.heroReady .scrollIndicator {
+    animation: none;
+    opacity: 0.75;
+    transform: translateX(-50%);
+  }
 }
 
 @media (max-width: 768px) {

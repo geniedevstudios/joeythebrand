@@ -155,4 +155,11 @@ export interface SiteContent {
   featuredProductIds: string[];
   /** Per-route hero backgrounds (and optional home video). */
   pageHeroes: Record<PageHeroKey, PageHeroMedia>;
+  /** Home “Behind the pattern” block: background video + copy (admin). */
+  founderVideoUrl: string;
+  founderVideoPosterUrl: string;
+  founderKicker: string;
+  founderHeadline: string;
+  founderCtaLabel: string;
+  founderCtaHref: string;
 }

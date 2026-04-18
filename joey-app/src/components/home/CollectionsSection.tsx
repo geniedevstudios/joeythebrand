@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore, useState, useEffect, useRef, useCallback } from "react";
+import { useSyncExternalStore, useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { Product, PublicCollection } from "@/lib/types";
@@ -122,25 +122,8 @@ export default function CollectionsSection({
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
+  const [canScrollX, setCanScrollX] = useState(false);
 
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!trackRef.current) return;
-    isDragging.current = true;
-    startX.current = e.clientX - trackRef.current.offsetLeft;
-    scrollLeft.current = trackRef.current.scrollLeft;
-    trackRef.current.setPointerCapture(e.pointerId);
-  }, []);
-
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current || !trackRef.current) return;
-    e.preventDefault();
-    const x = e.clientX - trackRef.current.offsetLeft;
-    trackRef.current.scrollLeft = scrollLeft.current - (x - startX.current);
-  }, []);
-
-  const onPointerUp = useCallback(() => {
-    isDragging.current = false;
-  }, []);
   const isFallback = (cols?: PublicCollection[] | null) =>
     !!cols?.length && cols.every((c) => typeof c.id === "string" && c.id.startsWith("fallback-"));
 
@@ -159,6 +142,45 @@ export default function CollectionsSection({
       : initialCollections && initialCollections.length > 0
         ? initialCollections
         : SHOP_COLLECTIONS_FALLBACK;
+
+  const updateScrollOverflow = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    setCanScrollX(el.scrollWidth > el.clientWidth + 2);
+  }, []);
+
+  useLayoutEffect(() => {
+    updateScrollOverflow();
+    const el = trackRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => updateScrollOverflow());
+    ro.observe(el);
+    window.addEventListener("resize", updateScrollOverflow);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateScrollOverflow);
+    };
+  }, [updateScrollOverflow, list?.length, products.length, isStoreLoading]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!trackRef.current) return;
+    isDragging.current = true;
+    startX.current = e.clientX - trackRef.current.offsetLeft;
+    scrollLeft.current = trackRef.current.scrollLeft;
+    trackRef.current.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !trackRef.current) return;
+    e.preventDefault();
+    const x = e.clientX - trackRef.current.offsetLeft;
+    trackRef.current.scrollLeft = scrollLeft.current - (x - startX.current);
+  }, []);
+
+  const onPointerUp = useCallback(() => {
+    isDragging.current = false;
+    updateScrollOverflow();
+  }, [updateScrollOverflow]);
 
   if (!list || list.length === 0) return null;
 
@@ -212,37 +234,45 @@ export default function CollectionsSection({
           </Link>
         </div>
 
-        <div
-          ref={trackRef}
-          className={styles.collectionsGrid}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
-        >
-          {isStoreLoading && isFallback(list) ? (
-            <CollectionsSkeleton count={3} />
-          ) : (
-            collectionData.map((col, idx) => (
-              <article key={col.id} className={styles.card}>
-                 <div className={styles.imageWrap}>
-                   <CollectionBlobViewer
-                     images={col.images}
-                     slug={col.slug}
-                     blobIndex={idx}
-                     fallbackImage={col.image}
-                   />
-                 </div>
+        <div className={styles.carouselOuter}>
+          <div
+            ref={trackRef}
+            className={styles.collectionsGrid}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerUp}
+          >
+            {isStoreLoading && isFallback(list) ? (
+              <CollectionsSkeleton count={3} />
+            ) : (
+              collectionData.map((col, idx) => (
+                <article key={col.id} className={styles.card}>
+                   <div className={styles.imageWrap}>
+                     <CollectionBlobViewer
+                       images={col.images}
+                       slug={col.slug}
+                       blobIndex={idx}
+                       fallbackImage={col.image}
+                     />
+                   </div>
 
-                 <div className={styles.textOverlay}>
-                   <h3 className={styles.collectionName}>{col.name}</h3>
-                   {(col.briefDescription || col.description)?.trim() ? (
-                     <p className={styles.collectionDesc}>{(col.briefDescription || col.description).trim()}</p>
-                   ) : null}
-                 </div>
-              </article>
-            ))
-          )}
+                   <div className={styles.textOverlay}>
+                     <h3 className={styles.collectionName}>{col.name}</h3>
+                     {(col.briefDescription || col.description)?.trim() ? (
+                       <p className={styles.collectionDesc}>{(col.briefDescription || col.description).trim()}</p>
+                     ) : null}
+                   </div>
+                </article>
+              ))
+            )}
+          </div>
+          {canScrollX ? (
+            <div className={styles.slideHint} aria-hidden="true">
+              <span className={styles.slideLine} />
+              <span className={styles.slideText}>Slide</span>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

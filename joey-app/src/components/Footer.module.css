@@ -185,6 +185,9 @@
 }
 
 .link {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
   font-family: var(--font-label);
   font-size: 0.8rem;
   letter-spacing: 0.12em;
@@ -193,7 +196,28 @@
   transition: color var(--transition-fast);
 }
 
-.link:hover { color: #fff; }
+.link::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity var(--transition-fast);
+}
+
+.link:hover {
+  color: #fff;
+}
+
+.link:hover::after {
+  transform: scaleX(1);
+  opacity: 0.95;
+}
 
 /* Contact */
 .contact {

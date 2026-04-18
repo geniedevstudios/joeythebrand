@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { PRIMARY_ADMIN_EMAIL } from "@/lib/adminPrimary";
 
 export const runtime = "nodejs";
 
@@ -10,9 +11,8 @@ const service = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabaseAnon = createClient(url, anon);
 const supabaseAdmin = createClient(url, service);
 
-const ADMIN_EMAIL_ALLOWLIST = [
-  "joeythebrandonline@gmail.com",
-].map((s) => s.toLowerCase());
+/** Only the primary inbox may create admin accounts via this API. */
+const ADMIN_EMAIL_ALLOWLIST = [PRIMARY_ADMIN_EMAIL];
 
 export async function POST(req: Request) {
   try {
@@ -52,7 +52,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, userId: data.user?.id });
+    const { error: teamErr } = await supabaseAdmin.from("admin_operator_emails").upsert(
+      { email },
+      { onConflict: "email" },
+    );
+    if (teamErr) {
+      console.warn("[create-user] admin_operator_emails upsert:", teamErr.message);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      userId: data.user?.id,
+      ...(teamErr
+        ? {
+            teamSyncError:
+              "User was created, but saving to admin_operator_emails failed. Run supabase_repair_dashboard_operator_access.sql in Supabase or insert their email into that table so they can see orders and consultations.",
+          }
+        : {}),
+    });
   } catch (err) {
     return NextResponse.json(
       { error: "Internal server error", details: err instanceof Error ? err.message : String(err) },

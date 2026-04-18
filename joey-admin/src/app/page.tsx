@@ -6,12 +6,24 @@ import { dataStore } from "@/lib/dataStore";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
 import type { Product, Order, PromotionCode, ConsultationBooking } from "@/lib/types";
-import { ShoppingBag, ShoppingCart, ClipboardList, Tag, CalendarDays, ExternalLink } from "lucide-react";
+import {
+  ShoppingBag,
+  ShoppingCart,
+  ClipboardList,
+  Tag,
+  CalendarDays,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Users,
+  Trash2,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import RevenueModal from "@/components/RevenueModal";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { isPrimaryAdminEmail } from "@/lib/adminPrimary";
 
 /** Ghana cedi (₵) — Lucide has no cedi glyph */
 function CediIcon({ className }: { className?: string }) {
@@ -61,7 +73,17 @@ export default function Dashboard() {
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [editAdminOpen, setEditAdminOpen] = useState(false);
+  type TeamMember = { email: string; userId: string | null; name: string; isPrimary: boolean };
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamError, setTeamError] = useState<string | null>(null);
+  const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
+
+  const isPrimaryAdmin = isPrimaryAdminEmail(sessionEmail);
 
   const load = useCallback(async () => {
     try {
@@ -98,11 +120,37 @@ export default function Dashboard() {
       return nameRaw || (email ? email.split("@")[0] : "Admin");
     };
 
-    supabase.auth.getUser().then(({ data }) => setProfileName(pickName(data.user)));
+    supabase.auth.getUser().then(({ data }) => {
+      setProfileName(pickName(data.user));
+      setSessionEmail(data.user?.email ?? null);
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
       setProfileName(pickName(session?.user));
+      setSessionEmail(session?.user?.email ?? null);
     });
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const loadTeam = useCallback(async () => {
+    setTeamLoading(true);
+    setTeamError(null);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Not signed in.");
+
+      const res = await fetch("/api/admin/team", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const out = (await res.json()) as { error?: string; members?: TeamMember[] };
+      if (!res.ok) throw new Error(out.error || "Failed to load team");
+      setTeamMembers(out.members ?? []);
+    } catch (err) {
+      setTeamError(err instanceof Error ? err.message : "Failed to load team");
+      setTeamMembers([]);
+    } finally {
+      setTeamLoading(false);
+    }
   }, []);
 
   const orderRevenue = orders.reduce((sum, order) => sum + order.total, 0);
@@ -192,16 +240,33 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setCreateUserOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#d6ff2a] px-4 py-2 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(214,255,42,0.18)] transition hover:opacity-95 active:translate-y-[1px]"
-          >
-            Add user
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/10">
-              +
-            </span>
-          </button>
+          {isPrimaryAdmin ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditAdminOpen(true);
+                  void loadTeam();
+                }}
+                className="inline-flex items-center gap-2 rounded-full bg-[#d6ff2a] px-4 py-2 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(214,255,42,0.18)] transition hover:opacity-95 active:translate-y-[1px]"
+              >
+                Edit admin
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/10">
+                  <Users className="h-4 w-4 text-black/80" strokeWidth={2} />
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateUserOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-[#d6ff2a] px-4 py-2 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(214,255,42,0.18)] transition hover:opacity-95 active:translate-y-[1px]"
+              >
+                Add admin
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/10">
+                  +
+                </span>
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {/* Main grid */}
@@ -487,14 +552,14 @@ export default function Dashboard() {
           className="fixed inset-0 z-[400] flex items-center justify-center bg-black/55 p-5 backdrop-blur-[2px]"
           role="dialog"
           aria-modal="true"
-          aria-label="Create team member"
+          aria-label="Add admin"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) setCreateUserOpen(false);
           }}
         >
           <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)] ring-1 ring-white/5">
             <div className="border-b border-white/10 px-6 py-5">
-              <h2 className="text-lg font-semibold tracking-tight text-white">Add team member</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-white">Add admin</h2>
               <p className="mt-1 text-sm text-white/60">
                 Create an email + password that can sign into the admin portal.
               </p>
@@ -528,13 +593,17 @@ export default function Dashboard() {
                     },
                     body: JSON.stringify({ name, email, password }),
                   });
-                  const out = await res.json();
+                  const out = (await res.json()) as { error?: string; teamSyncError?: string };
                   if (!res.ok) throw new Error(out.error || "Failed to create user");
 
-                  toast.success("Team member created.");
+                  toast.success("Admin account created.");
+                  if (out.teamSyncError) {
+                    toast.warning(out.teamSyncError);
+                  }
                   setNewUserName("");
                   setNewUserEmail("");
                   setNewUserPassword("");
+                  setShowNewUserPassword(false);
                   setCreateUserOpen(false);
                 } catch (err) {
                   toast.error(err instanceof Error ? err.message : "Failed to create user.");
@@ -567,14 +636,25 @@ export default function Dashboard() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-white/80">Password</label>
-                <input
-                  type="password"
-                  value={newUserPassword}
-                  onChange={(e) => setNewUserPassword(e.target.value)}
-                  placeholder="Minimum 8 characters"
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90 placeholder:text-white/40 outline-none focus:border-[#d6ff2a]/50 focus:ring-2 focus:ring-[#d6ff2a]/20"
-                  required
-                />
+                <div className="relative mt-2">
+                  <input
+                    type={showNewUserPassword ? "text" : "password"}
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    placeholder="Minimum 8 characters"
+                    autoComplete="new-password"
+                    className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-4 pr-12 text-sm text-white/90 placeholder:text-white/40 outline-none focus:border-[#d6ff2a]/50 focus:ring-2 focus:ring-[#d6ff2a]/20"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewUserPassword((v) => !v)}
+                    aria-label={showNewUserPassword ? "Hide password" : "Show password"}
+                    className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-white/55 transition hover:bg-white/[0.06] hover:text-white/90"
+                  >
+                    {showNewUserPassword ? <EyeOff className="h-5 w-5" strokeWidth={2} /> : <Eye className="h-5 w-5" strokeWidth={2} />}
+                  </button>
+                </div>
                 <p className="mt-2 text-xs text-white/50">
                   Share these credentials securely. The user can sign in at the admin login screen.
                 </p>
@@ -594,10 +674,124 @@ export default function Dashboard() {
                   disabled={creatingUser}
                   className="rounded-2xl bg-[#d6ff2a] px-5 py-2.5 text-sm font-semibold text-black shadow-[0_12px_30px_rgba(214,255,42,0.14)] transition hover:opacity-95 disabled:opacity-60"
                 >
-                  {creatingUser ? "Creating…" : "Create user"}
+                  {creatingUser ? "Creating…" : "Create admin"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {editAdminOpen ? (
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/55 p-5 backdrop-blur-[2px]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Manage dashboard admins"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setEditAdminOpen(false);
+          }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)] ring-1 ring-white/5">
+            <div className="border-b border-white/10 px-6 py-5">
+              <h2 className="text-lg font-semibold tracking-tight text-white">Dashboard admins</h2>
+              <p className="mt-1 text-sm text-white/60">
+                Operators listed here can access the admin dashboard (same list as database access). Remove someone to revoke their access.
+              </p>
+            </div>
+            <div className="max-h-[min(60vh,420px)] overflow-y-auto px-6 py-4">
+              {teamLoading ? (
+                <p className="text-sm text-white/60">Loading…</p>
+              ) : teamError ? (
+                <p className="text-sm text-red-300/90">{teamError}</p>
+              ) : teamMembers.length === 0 ? (
+                <p className="text-sm text-white/60">No operators found.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {teamMembers.map((m) => (
+                    <li
+                      key={m.email}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-white">{m.name}</div>
+                        <div className="truncate text-xs text-white/55">{m.email}</div>
+                        {m.isPrimary ? (
+                          <span className="mt-1 inline-block rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+                            Primary
+                          </span>
+                        ) : null}
+                      </div>
+                      {m.isPrimary ? (
+                        <span className="shrink-0 text-xs text-white/40">—</span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={deletingEmail === m.email}
+                          onClick={async () => {
+                            if (
+                              !window.confirm(
+                                `Remove ${m.email} from dashboard access? Their login will be deleted if an account exists.`,
+                              )
+                            ) {
+                              return;
+                            }
+                            setDeletingEmail(m.email);
+                            try {
+                              const { data: sess } = await supabase.auth.getSession();
+                              const token = sess.session?.access_token;
+                              if (!token) throw new Error("Not signed in.");
+
+                              const res = await fetch("/api/admin/team", {
+                                method: "DELETE",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({ email: m.email }),
+                              });
+                              const out = (await res.json()) as { error?: string };
+                              if (!res.ok) throw new Error(out.error || "Failed to remove");
+
+                              toast.success("Admin removed.");
+                              await loadTeam();
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : "Failed to remove.");
+                            } finally {
+                              setDeletingEmail(null);
+                            }
+                          }}
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                          {deletingEmail === m.email ? "Removing…" : "Remove"}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="border-t border-white/10 px-6 py-4">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+                <button
+                  type="button"
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.06]"
+                  onClick={() => setEditAdminOpen(false)}
+                  disabled={!!deletingEmail}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-2.5 text-sm font-semibold text-white/90 transition hover:bg-white/10"
+                  onClick={() => void loadTeam()}
+                  disabled={teamLoading || !!deletingEmail}
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
