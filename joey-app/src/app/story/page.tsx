@@ -53,9 +53,9 @@ export default function StoryPage() {
               </div>
             <div className={styles.manifestoQuote}>
               <blockquote className={styles.bigQuote}>
-                "Style is not<br />
+                &ldquo;Style is not<br />
                 decoration —<br />
-                it is <em>declaration.</em>"
+                it is <em>declaration.</em>&rdquo;
               </blockquote>
               <p className={styles.quoteAttrib}>— JOEY THE BRAND</p>
             </div>

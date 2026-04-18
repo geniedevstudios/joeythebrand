@@ -3,31 +3,49 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import styles from "./ContactClient.module.css";
-import {
-  PAGE_HERO_SHELL_CLASS,
-  usePageHeroBackgroundStyleWithSSRSeed,
-  usePageHeroEmptyWithSSRSeed,
-} from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@/hooks/usePageHero";
 import type { SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import { authStore } from "@/store/authStore";
 
+type ContactFormState = {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  website: string;
+};
+
+const CONTACT_FORM_EMPTY: ContactFormState = {
+  name: "",
+  email: "",
+  phone: "",
+  subject: "",
+  message: "",
+  website: "",
+};
+
+const SUBJECT_OPTIONS = [
+  { value: "Custom Order", label: "Custom Order" },
+  { value: "Bespoke Inquiry", label: "Bespoke Inquiry" },
+  { value: "Press Inquiry", label: "Press Inquiry" },
+  { value: "Collaboration", label: "Collaboration" },
+  { value: "General Inquiry", label: "General Inquiry" },
+];
+
 export default function ContactClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const searchParams = useSearchParams();
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
-  const emptyForm = { name: "", email: "", phone: "", subject: "", message: "", website: "" };
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<ContactFormState>(CONTACT_FORM_EMPTY);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const contactHeroStyle = usePageHeroBackgroundStyleWithSSRSeed("contact", initialSiteContent);
-  const contactHeroEmpty = usePageHeroEmptyWithSSRSeed("contact", initialSiteContent);
-
-  const subjectOptions = [
-    { value: "Custom Order", label: "Custom Order" },
-    { value: "Bespoke Inquiry", label: "Bespoke Inquiry" },
-    { value: "Press Inquiry", label: "Press Inquiry" },
-    { value: "Collaboration", label: "Collaboration" },
-    { value: "General Inquiry", label: "General Inquiry" },
-  ];
+  const {
+    empty: contactHeroEmpty,
+    shellSpinner: contactHeroSpinner,
+    style: contactHeroStyle,
+    showImageLoader: contactHeroImageLoader,
+  } = usePageHeroShellRenderPropsWithSSRSeed("contact", initialSiteContent);
 
   /** URL: ?subject=General%20Inquiry or ?subject=general */
   useEffect(() => {
@@ -38,38 +56,42 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
       "general-inquiry": "General Inquiry",
       general_inquiry: "General Inquiry",
     };
-    const fromAlias = aliases[raw.toLowerCase()];
-    if (fromAlias) {
-      setForm((prev) => ({ ...prev, subject: fromAlias }));
-      return;
-    }
-    let decoded = raw;
-    try {
-      decoded = decodeURIComponent(raw);
-    } catch {
-      decoded = raw;
-    }
-    const match = subjectOptions.find((o) => o.value.toLowerCase() === decoded.toLowerCase());
-    if (match) {
-      setForm((prev) => ({ ...prev, subject: match.value }));
-    }
+    queueMicrotask(() => {
+      const fromAlias = aliases[raw.toLowerCase()];
+      if (fromAlias) {
+        setForm((prev) => ({ ...prev, subject: fromAlias }));
+        return;
+      }
+      let decoded = raw;
+      try {
+        decoded = decodeURIComponent(raw);
+      } catch {
+        decoded = raw;
+      }
+      const match = SUBJECT_OPTIONS.find((o) => o.value.toLowerCase() === decoded.toLowerCase());
+      if (match) {
+        setForm((prev) => ({ ...prev, subject: match.value }));
+      }
+    });
   }, [searchParams]);
 
   useEffect(() => {
     if (!user) return;
-    setForm((prev) => ({
-      ...prev,
-      email: prev.email.trim() ? prev.email : user.email,
-      name: prev.name.trim() ? prev.name : user.name,
-    }));
-  }, [user?.id, user?.email, user?.name]);
+    queueMicrotask(() => {
+      setForm((prev) => ({
+        ...prev,
+        email: prev.email.trim() ? prev.email : user.email,
+        name: prev.name.trim() ? prev.name : user.name,
+      }));
+    });
+  }, [user]);
 
   useEffect(() => {
     if (status !== "sent") return;
     const t = window.setTimeout(() => {
       setStatus("idle");
       setForm((prev) => ({
-        ...emptyForm,
+        ...CONTACT_FORM_EMPTY,
         email: prev.email.trim() ? prev.email : "",
         name: prev.name.trim() ? prev.name : "",
       }));
@@ -102,8 +124,10 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
         data-page-hero-empty={contactHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={contactHeroSpinner ? "true" : "false"}
         style={contactHeroStyle}
       >
+        {contactHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <span className="section-label" style={{ color: "var(--cinereous)" }}>Contact</span>
           <h1 className={`t-display ${styles.title}`}>
@@ -168,7 +192,7 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
               </a>
 
               <blockquote className={styles.quote}>
-                "Power worn well."
+                &ldquo;Power worn well.&rdquo;
               </blockquote>
             </div>
 
@@ -185,7 +209,7 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
                     className={styles.sendAnother}
                     onClick={() => {
                       setStatus("idle");
-                      setForm(emptyForm);
+                      setForm({ ...CONTACT_FORM_EMPTY });
                     }}
                   >
                     Send another message
@@ -259,7 +283,7 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
                       name="subject"
                       value={form.subject}
                       onChange={handleChange}
-                      options={subjectOptions}
+                      options={SUBJECT_OPTIONS}
                       placeholder="Select a subject"
                       required
                     />

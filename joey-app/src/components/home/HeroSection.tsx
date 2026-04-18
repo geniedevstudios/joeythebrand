@@ -3,7 +3,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "./HeroSection.module.css";
 import type { SiteContent } from "@/lib/types";
-import { useHomeHeroMediaWithSSRSeed, useHomeHeroPosterWithSSRSeed } from "@/hooks/usePageHero";
+import {
+  useHomeHeroMediaWithSSRSeed,
+  useHomeHeroPosterWithSSRSeed,
+  usePageHeroShellSpinnerWithSSRSeed,
+} from "@/hooks/usePageHero";
 import { resolveHeroLayout } from "@/lib/pageHeroes";
 
 const words = ["Power.", "Precision.", "Presence."];
@@ -14,6 +18,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
   const media = useHomeHeroMediaWithSSRSeed(initialSiteContent);
   const posterUrl = useHomeHeroPosterWithSSRSeed(initialSiteContent);
   const { fit, position } = resolveHeroLayout(media);
+  const homeHeroSpinner = usePageHeroShellSpinnerWithSSRSeed("home", initialSiteContent);
   const posterTrimmed = posterUrl?.trim() ?? "";
   /** Poster image URL (not the video file); avoids using MP4 as <img src>. */
   const usablePoster =
@@ -29,13 +34,15 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
   }, []);
 
   useEffect(() => {
-    if (media.kind === "video") {
-      heroVideoRevealOnce.current = false;
-      setHeroVideoLoading(true);
-    } else {
-      heroVideoRevealOnce.current = false;
-      setHeroVideoLoading(false);
-    }
+    queueMicrotask(() => {
+      if (media.kind === "video") {
+        heroVideoRevealOnce.current = false;
+        setHeroVideoLoading(true);
+      } else {
+        heroVideoRevealOnce.current = false;
+        setHeroVideoLoading(false);
+      }
+    });
   }, [media.kind, media.src]);
 
   useEffect(() => {
@@ -122,10 +129,10 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
             </span>
           </div>
         )}
-        {/* Spinner when no hero is set by admin */}
-        {media.kind === "image" && !media.src.trim() && (
+        {/* Spinner only while site content init runs; then black bg only if admin left hero empty */}
+        {media.kind === "image" && !media.src.trim() && homeHeroSpinner ? (
           <div className={styles.heroEmptySpinner} aria-hidden="true" />
-        )}
+        ) : null}
       </div>
 
       {/* Content */}

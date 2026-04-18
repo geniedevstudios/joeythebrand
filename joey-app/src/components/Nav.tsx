@@ -5,10 +5,12 @@ import Image from "next/image";
 import { toggleCart } from "./CartDrawer";
 import { cartStore } from "@/store/cartStore";
 import { authStore } from "@/store/authStore";
-import { wishlistStore } from "@/store/wishlistStore";
+import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
+import type { CartItem } from "@/store/cartStore";
 import styles from "./Nav.module.css";
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_CART: CartItem[] = [];
+const EMPTY_WISHLIST: WishlistItem[] = [];
 
 const leftNavLinks = [
   { label: "Collections", href: "/collection" },
@@ -22,8 +24,6 @@ const rightNavLinks = [
   { label: "Contact", href: "/contact" },
 ];
 
-const navLinks = [...leftNavLinks, ...rightNavLinks];
-
 const ICONS = ["cart", "wishlist", "profile"] as const;
 type IconType = typeof ICONS[number];
 
@@ -34,9 +34,9 @@ export default function Nav() {
   const [iconVisible, setIconVisible] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_ARRAY);
+  const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_CART);
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
-  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
+  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
   const wishlistCount = wishlistItems.length;
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const initials = user ? authStore.getInitials() : "";

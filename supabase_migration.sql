@@ -16,7 +16,7 @@ create table if not exists public.products (
   category_name text not null,
   price numeric not null,
   original_price numeric,
-  image text not null default '/lookbook.png',
+  image text not null default '',
   images text[] not null default '{}',
   description text not null default '',
   details text[] not null default '{}',
@@ -62,7 +62,7 @@ alter table public.orders add column if not exists order_number text;
 -- 4. SITE CONTENT TABLE (single row, always id = 1)
 create table if not exists public.site_content (
   id integer primary key default 1 check (id = 1),
-  hero_image text not null default '/hero.png',
+  hero_image text not null default '',
   hero_title text not null default 'JOEY THE BRAND',
   hero_subtitle text not null default 'Contemporary fashion redefining modern silhouettes',
   about_image text not null default '/founder.png',
@@ -194,7 +194,7 @@ create policy "events_auth_delete" on public.events for delete using (auth.role(
 -- Seed site content (single row) so the homepage has baseline copy
 insert into public.site_content (id, hero_image, hero_title, hero_subtitle, about_image, about_text, featured_product_ids)
 values (
-  1, '/hero.png', 'JOEY THE BRAND', 'Contemporary fashion redefining modern silhouettes',
+  1, '', 'JOEY THE BRAND', 'Contemporary fashion redefining modern silhouettes',
   '/founder.png',
   'JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity.',
   '{}'

@@ -1,17 +1,22 @@
 "use client";
 
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import {
+  PAGE_HERO_SHELL_CLASS,
+  usePageHeroShellRenderProps,
+} from "@/hooks/usePageHero";
 import styles from "./shipping.module.css";
 
 export default function ShippingHero({ children }: { children: React.ReactNode }) {
-  const bg = usePageHeroBackgroundStyle("shipping");
-  const empty = usePageHeroEmpty("shipping");
+  const { empty, shellSpinner, style, showImageLoader } = usePageHeroShellRenderProps("shipping");
   return (
     <div
       className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
       data-page-hero-empty={empty ? "true" : "false"}
-      style={bg}
+      data-page-hero-loading={shellSpinner ? "true" : "false"}
+      style={style}
     >
+      {showImageLoader ? <PageHeroShellImageLoader /> : null}
       {children}
     </div>
   );

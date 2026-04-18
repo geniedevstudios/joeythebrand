@@ -23,6 +23,7 @@ function normalizeWearTag(v: unknown): WearTag {
 
 const mapProduct = (row: Record<string, unknown>): Product => ({
   id: row.id as string,
+  slug: (row.slug as string) || undefined,
   name: row.name as string,
   category: row.category as Product["category"],
   categoryName: row.category_name as string,
@@ -214,6 +215,7 @@ export const dataStore = {
 
   updateProduct: async (id: string, updates: Partial<Product>): Promise<void> => {
     const payload: Record<string, unknown> = {};
+    if (updates.slug !== undefined) payload.slug = updates.slug;
     if (updates.name !== undefined) payload.name = updates.name;
     if (updates.category !== undefined) payload.category = updates.category;
     if (updates.categoryName !== undefined) payload.category_name = updates.categoryName;
@@ -242,8 +244,12 @@ export const dataStore = {
 
   addProduct: async (product: Omit<Product, "id"> & { id?: string }): Promise<void> => {
     const id = product.id || `product-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedSlug = product.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const slug = product.slug || generatedSlug;
+    
     const { error } = await supabase.from("products").insert({
       id,
+      slug,
       name: product.name,
       category: product.category,
       category_name: product.categoryName,

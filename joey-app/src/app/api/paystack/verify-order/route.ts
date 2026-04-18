@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import type { OrderItem } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -24,9 +25,12 @@ export async function POST(req: Request) {
       },
     });
 
-    const paystackData = await paystackRes.json();
+    const paystackData = (await paystackRes.json()) as {
+      status?: boolean;
+      data?: { status?: string };
+    };
 
-    if (!paystackRes.ok || !paystackData.status || paystackData.data.status !== "success") {
+    if (!paystackRes.ok || !paystackData.status || paystackData.data?.status !== "success") {
       return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
     }
 
@@ -53,7 +57,7 @@ export async function POST(req: Request) {
 
     // 3. Decrement Inventory using Admin Client
     try {
-      const items = orderData.items as any[];
+      const items = orderData.items as OrderItem[];
       if (items && Array.isArray(items)) {
         for (const item of items) {
           if (item.productId && item.quantity) {

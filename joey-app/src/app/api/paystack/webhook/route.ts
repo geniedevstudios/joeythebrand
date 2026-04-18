@@ -67,7 +67,10 @@ export async function POST(request: Request) {
   const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
     headers: { Authorization: `Bearer ${secret}` },
   });
-  const verifyData = (await verifyRes.json()) as any;
+  const verifyData = (await verifyRes.json()) as {
+    status?: boolean;
+    data?: { status?: string };
+  };
 
   if (!(verifyRes.ok && verifyData?.status && verifyData?.data?.status === "success")) {
     return NextResponse.json({ ok: true });

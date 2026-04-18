@@ -3,11 +3,12 @@ import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import styles from "./CartClient.module.css";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
-import { cartStore } from "@/store/cartStore";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
+import { cartStore, type CartItem } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_ARRAY: CartItem[] = [];
 
 export default function CartClient() {
   const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_ARRAY);
@@ -23,8 +24,12 @@ export default function CartClient() {
   const total = subtotalRaw - discount;
   const formattedSubtotal = `GHC ${subtotalRaw.toLocaleString()}`;
   const formattedTotal = `GHC ${total.toLocaleString()}`;
-  const cartHeroStyle = usePageHeroBackgroundStyle("cart");
-  const cartHeroEmpty = usePageHeroEmpty("cart");
+  const {
+    empty: cartHeroEmpty,
+    shellSpinner: cartHeroSpinner,
+    style: cartHeroStyle,
+    showImageLoader: cartHeroImageLoader,
+  } = usePageHeroShellRenderProps("cart");
 
   const handleUpdateQuantity = (id: string, delta: number) => {
     cartStore.updateQuantity(id, delta);
@@ -68,8 +73,10 @@ export default function CartClient() {
         <div
           className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
           data-page-hero-empty={cartHeroEmpty ? "true" : "false"}
+          data-page-hero-loading={cartHeroSpinner ? "true" : "false"}
           style={cartHeroStyle}
         >
+          {cartHeroImageLoader ? <PageHeroShellImageLoader /> : null}
           <div className="container">
             <span className="section-label">Your Bag</span>
             <h1 className={`t-display ${styles.pageTitle}`}>Cart</h1>
@@ -78,7 +85,7 @@ export default function CartClient() {
         <div className={`container section ${styles.emptyWrapper}`}>
           <div className={styles.centeredEmpty}>
             <div className={styles.emptyTextGroup}>
-              <span className={styles.emptyLine}>It's a little</span>
+              <span className={styles.emptyLine}>It&apos;s a little</span>
               <span className={styles.emptyLine}>
                 <em className={styles.emptyItalic}>empty</em> here
               </span>
@@ -98,8 +105,10 @@ export default function CartClient() {
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={cartHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={cartHeroSpinner ? "true" : "false"}
         style={cartHeroStyle}
       >
+        {cartHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <span className="section-label">Your Bag</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Cart</h1>

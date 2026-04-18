@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import styles from "./events.module.css";
 import DetailsModal from "./DetailsModal";
@@ -14,6 +14,8 @@ type PastAction =
   | { kind: "gallery"; label: string; href: string }
   | { kind: "collection"; label: string; href: string }
   | { kind: "recap"; label: string; href: string };
+
+type EventDbRow = Record<string, unknown>;
 
 type EventCard = {
   id: string;
@@ -68,7 +70,11 @@ function EventGrid({
           <article
             key={e.id}
             className={styles.card}
-            style={e.image ? ({ ["--card-bg" as any]: `url("${e.image}")` } as React.CSSProperties) : undefined}
+            style={
+              e.image
+                ? ({ "--card-bg": `url("${e.image}")` } as CSSProperties)
+                : undefined
+            }
           >
             <div className={styles.cardTop}>
               <div className={styles.cardMeta}>
@@ -206,7 +212,8 @@ export default function EventsClient({
           .order("created_at", { ascending: false });
 
         if (error || !data) return;
-        const next = (data as any[]).map((row) => ({
+        const rows = data as EventDbRow[];
+        const next = rows.map((row) => ({
           id: String(row.id),
           slug: String(row.slug),
           title: String(row.title),
@@ -219,11 +226,13 @@ export default function EventsClient({
           flyerUrl: row.flyer_url ? String(row.flyer_url) : undefined,
           mainVideoUrl: row.main_video_url ? String(row.main_video_url) : undefined,
           mainVideoPosterUrl: row.main_video_poster_url ? String(row.main_video_poster_url) : undefined,
-          galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls.map((x: any) => String(x)).filter(Boolean) : [],
+          galleryUrls: Array.isArray(row.gallery_urls)
+            ? row.gallery_urls.map((x) => String(x)).filter(Boolean)
+            : [],
           recapYoutubeUrl: row.recap_youtube_url ? String(row.recap_youtube_url) : undefined,
           pixiesetUrl: row.pixieset_url ? String(row.pixieset_url) : undefined,
           collectionSlugs: Array.isArray(row.collection_slugs)
-            ? row.collection_slugs.map((s: any) => String(s)).filter(Boolean)
+            ? row.collection_slugs.map((s) => String(s)).filter(Boolean)
             : [],
           detailsReady: Boolean(row.details_ready),
           details: row.details ? String(row.details) : undefined,
@@ -265,12 +274,12 @@ export default function EventsClient({
           .maybeSingle();
         if (error || !data) return;
 
-        const nextHeading = (data as any).heading ? String((data as any).heading).trim() : undefined;
-        const nextSubheading = (data as any).subheading ? String((data as any).subheading).trim() : undefined;
-        const nextTop = (data as any).top_video_url ? String((data as any).top_video_url).trim() : undefined;
-        const nextPoster = (data as any).top_video_poster_url
-          ? String((data as any).top_video_poster_url).trim()
-          : undefined;
+        const d = data as Record<string, unknown>;
+        const nextHeading = typeof d.heading === "string" ? d.heading.trim() : undefined;
+        const nextSubheading = typeof d.subheading === "string" ? d.subheading.trim() : undefined;
+        const nextTop = typeof d.top_video_url === "string" ? d.top_video_url.trim() : undefined;
+        const nextPoster =
+          typeof d.top_video_poster_url === "string" ? d.top_video_poster_url.trim() : undefined;
 
         setLiveHeading(nextHeading || "Events");
         setLiveSubheading(nextSubheading || undefined);
@@ -304,6 +313,7 @@ export default function EventsClient({
   }, [detailsEvent?.id, detailsOpen, liveEvents]);
 
   const upcomingCards: EventCard[] = useMemo(() => {
+    void nowTick;
     const list = liveEvents
       .filter((e) => effectiveStatus(e) === "upcoming")
       .map((e) => ({
@@ -322,6 +332,7 @@ export default function EventsClient({
   }, [effectiveStatus, filter, liveEvents, nowTick]);
 
   const pastCards: EventCard[] = useMemo(() => {
+    void nowTick;
     const list = liveEvents
       .filter((e) => effectiveStatus(e) === "past")
       .map((e) => {

@@ -64,12 +64,17 @@ function parseAnchor(o: Record<string, unknown>): PageHeroAnchor {
   return "top";
 }
 
+/** Legacy placeholder paths (removed from repo) — treat stored values as unset for heroes. */
+const LEGACY_BLOCKED_SRCS = new Set(["/hero.png", "/lookbook.png"]);
+
 function parseMedia(raw: unknown): PageHeroMedia | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const kind = o.kind === "video" ? "video" : o.kind === "image" ? "image" : null;
   const src = typeof o.src === "string" && o.src.trim() ? o.src.trim() : null;
   if (!kind || !src) return null;
+  // Reject stale legacy defaults stored in the DB before the admin hero system was live.
+  if (LEGACY_BLOCKED_SRCS.has(src)) return null;
   const fit = parseFit(o);
   const anchor = parseAnchor(o);
   return { kind, src, fit, anchor };
@@ -96,8 +101,9 @@ export function mergePageHeroes(
 ): Record<PageHeroKey, PageHeroMedia> {
   const base: Record<PageHeroKey, PageHeroMedia> = { ...DEFAULT_PAGE_HEROES };
   // Use whatever the admin stored as hero_image for the home key (may be empty).
-  if (heroImageFallback?.trim()) {
-    base.home = { kind: "image", src: heroImageFallback.trim(), fit: "cover", anchor: "top" };
+  const trimmedFallback = heroImageFallback?.trim();
+  if (trimmedFallback && !LEGACY_BLOCKED_SRCS.has(trimmedFallback)) {
+    base.home = { kind: "image", src: trimmedFallback, fit: "cover", anchor: "top" };
   }
 
   if (raw && typeof raw === "object") {

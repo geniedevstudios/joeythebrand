@@ -3,12 +3,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./LoginClient.module.css";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 
 export default function LoginClient() {
   const router = useRouter();
-  const loginHeroStyle = usePageHeroBackgroundStyle("login");
-  const loginHeroEmpty = usePageHeroEmpty("login");
+  const {
+    empty: loginHeroEmpty,
+    shellSpinner: loginHeroSpinner,
+    style: loginHeroStyle,
+    showImageLoader: loginHeroImageLoader,
+  } = usePageHeroShellRenderProps("login");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -44,9 +49,12 @@ export default function LoginClient() {
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.topHero}`}
         data-page-hero-empty={loginHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={loginHeroSpinner ? "true" : "false"}
         style={loginHeroStyle}
         aria-hidden
-      />
+      >
+        {loginHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+      </div>
       <div className={styles.container}>
         
         {/* Decorative Brand Element */}
@@ -122,7 +130,7 @@ export default function LoginClient() {
           )}
 
           <div className={styles.footer}>
-            <p>Don't have an account? <Link href="/contact" className={styles.link}>Contact us for bespoke access.</Link></p>
+            <p>Don&apos;t have an account? <Link href="/contact" className={styles.link}>Contact us for bespoke access.</Link></p>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import type { PageHeroKey, PageHeroAnchor, PageHeroFit, PageHeroMedia, SiteContent } from "./types";
 
-const FALLBACK_IMG = "/hero.png";
+/** Empty until set in admin — no bundled placeholder assets. */
+const EMPTY_PAGE_HERO: PageHeroMedia = { kind: "image", src: "", fit: "cover", anchor: "top" };
 
 export const PAGE_HERO_KEYS: PageHeroKey[] = [
   "home",
@@ -37,20 +38,20 @@ export const PAGE_HERO_LABELS: Record<PageHeroKey, string> = {
 };
 
 export const DEFAULT_PAGE_HEROES: Record<PageHeroKey, PageHeroMedia> = {
-  home: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  shop: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  story: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  bespoke: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  contact: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  wishlist: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  cart: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  collection: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  checkout: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  account: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  shipping: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  privacy: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  login: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
-  product: { kind: "image", src: FALLBACK_IMG, fit: "cover", anchor: "top" },
+  home: EMPTY_PAGE_HERO,
+  shop: EMPTY_PAGE_HERO,
+  story: EMPTY_PAGE_HERO,
+  bespoke: EMPTY_PAGE_HERO,
+  contact: EMPTY_PAGE_HERO,
+  wishlist: EMPTY_PAGE_HERO,
+  cart: EMPTY_PAGE_HERO,
+  collection: EMPTY_PAGE_HERO,
+  checkout: EMPTY_PAGE_HERO,
+  account: EMPTY_PAGE_HERO,
+  shipping: EMPTY_PAGE_HERO,
+  privacy: EMPTY_PAGE_HERO,
+  login: EMPTY_PAGE_HERO,
+  product: EMPTY_PAGE_HERO,
 };
 
 function parseFit(o: Record<string, unknown>): PageHeroFit {
@@ -79,7 +80,8 @@ export function mergePageHeroes(
   heroImageFallback: string
 ): Record<PageHeroKey, PageHeroMedia> {
   const base: Record<PageHeroKey, PageHeroMedia> = { ...DEFAULT_PAGE_HEROES };
-  base.home = { kind: "image", src: heroImageFallback || FALLBACK_IMG, fit: "cover", anchor: "top" };
+  const trimmedFallback = heroImageFallback?.trim() ?? "";
+  base.home = { kind: "image", src: trimmedFallback, fit: "cover", anchor: "top" };
 
   if (raw && typeof raw === "object") {
     const obj = raw as Record<string, unknown>;
@@ -104,7 +106,7 @@ export function mergePageHeroes(
 }
 
 export function siteContentWithPageHeroes(row: Record<string, unknown>): Pick<SiteContent, "pageHeroes" | "heroImage"> {
-  const heroImageCol = (row.hero_image as string) || FALLBACK_IMG;
+  const heroImageCol = typeof row.hero_image === "string" ? row.hero_image : "";
   const pageHeroes = mergePageHeroes(row.page_heroes, heroImageCol);
   const heroImage =
     pageHeroes.home.kind === "image" ? pageHeroes.home.src : heroImageCol;

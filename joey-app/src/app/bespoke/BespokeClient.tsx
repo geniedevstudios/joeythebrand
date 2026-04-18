@@ -2,11 +2,8 @@
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import Link from "next/link";
 import styles from "./BespokeClient.module.css";
-import {
-  PAGE_HERO_SHELL_CLASS,
-  usePageHeroBackgroundStyleWithSSRSeed,
-  usePageHeroEmptyWithSSRSeed,
-} from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@/hooks/usePageHero";
 import type { SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import CustomDatePicker from "@/components/CustomDatePicker";
@@ -20,7 +17,7 @@ const serviceOptions = services.map((s) => ({ value: s, label: s }));
 
 export default function BespokeClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
-  const [bookingIdForPayment, setBookingIdForPayment] = useState<string | null>(null);
+  const [, setBookingIdForPayment] = useState<string | null>(null);
   const [payConfirmOpen, setPayConfirmOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -34,8 +31,12 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
   const [submitError, setSubmitError] = useState("");
   const [disabledDates, setDisabledDates] = useState<string[]>([]);
   const [calendarLoadError, setCalendarLoadError] = useState("");
-  const bespokeHeroStyle = usePageHeroBackgroundStyleWithSSRSeed("bespoke", initialSiteContent);
-  const bespokeHeroEmpty = usePageHeroEmptyWithSSRSeed("bespoke", initialSiteContent);
+  const {
+    empty: bespokeHeroEmpty,
+    shellSpinner: bespokeHeroSpinner,
+    style: bespokeHeroStyle,
+    showImageLoader: bespokeHeroImageLoader,
+  } = usePageHeroShellRenderPropsWithSSRSeed("bespoke", initialSiteContent);
 
   useEffect(() => {
     if (!user) return;
@@ -44,7 +45,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
       name: prev.name.trim() ? prev.name : user.name || "",
       email: prev.email.trim() ? prev.email : user.email || "",
     }));
-  }, [user?.id, user?.email, user?.name]);
+  }, [user]);
 
   const loadCalendar = useCallback(async () => {
     if (!user?.id) {
@@ -138,8 +139,9 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
       setSubmitError("Please select a service type.");
       return;
     }
-    // @ts-ignore
-    if (!window.PaystackPop) {
+    const paystack = (window as Window & { PaystackPop?: { setup: (opts: Record<string, unknown>) => { openIframe: () => void } } })
+      .PaystackPop;
+    if (!paystack) {
       toast.error("Payment gateway is still loading. Please wait a moment.");
       return;
     }
@@ -164,8 +166,12 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
 
       const amount = Math.round(DOWNPAYMENT_GHS * 100);
 
-      // @ts-ignore
-      const handler = window.PaystackPop.setup({
+      const paystack = (window as Window & { PaystackPop?: { setup: (opts: Record<string, unknown>) => { openIframe: () => void } } })
+        .PaystackPop;
+      if (!paystack) {
+        throw new Error("Paystack failed to load.");
+      }
+      const handler = paystack.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
         email: form.email,
         amount,
@@ -180,7 +186,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
             },
           ],
         },
-        callback: function (paystackRes: any) {
+        callback: function (paystackRes: { reference?: string }) {
           (async () => {
             try {
               const verifyRes = await fetch("/api/paystack/verify-consultation", {
@@ -227,8 +233,10 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
         data-page-hero-empty={bespokeHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={bespokeHeroSpinner ? "true" : "false"}
         style={bespokeHeroStyle}
       >
+        {bespokeHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <div className={styles.headerInner}>
             <div className={styles.headerText}>

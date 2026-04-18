@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { cartStore } from "@/store/cartStore";
+import { cartStore, type CartItem } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 import styles from "./CartDrawer.module.css";
 
@@ -9,7 +9,7 @@ export const toggleCart = (state?: boolean) => {
   cartStore.toggleCart(state);
 };
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_ARRAY: CartItem[] = [];
 
 const emptyPhrases = [
   { line1: "It's a little", line2: "empty here" },
@@ -41,15 +41,19 @@ export default function CartDrawer() {
 
   useEffect(() => {
     if (isOpen) {
-      setEmptyPhrase(emptyPhrases[Math.floor(Math.random() * emptyPhrases.length)]);
+      queueMicrotask(() => {
+        setEmptyPhrase(emptyPhrases[Math.floor(Math.random() * emptyPhrases.length)]);
+      });
     }
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
-      setPromoInput("");
-      setPromoError("");
-      setPromoSuccess("");
+      queueMicrotask(() => {
+        setPromoInput("");
+        setPromoError("");
+        setPromoSuccess("");
+      });
     }
   }, [isOpen]);
 

@@ -42,17 +42,18 @@ export default function HomeHeroPage() {
     if (!content) return;
     setIsSaving(true);
     try {
+      const primary = homePrimaryUrl.trim();
       const homeMedia: PageHeroMedia =
         homeKind === "video"
-          ? { kind: "video", src: homePrimaryUrl.trim() || "/hero.png", fit, anchor }
-          : { kind: "image", src: homePrimaryUrl.trim() || "/hero.png", fit, anchor };
+          ? { kind: "video", src: primary, fit, anchor }
+          : { kind: "image", src: primary, fit, anchor };
 
       const nextHeroes = { ...content.pageHeroes, home: homeMedia };
 
       const heroImageOut =
         homeKind === "video"
-          ? (homePosterUrl.trim() || homePrimaryUrl.trim() || "/hero.png")
-          : (homePrimaryUrl.trim() || "/hero.png");
+          ? (homePosterUrl.trim() || primary)
+          : primary;
 
       await dataStore.updateSiteContent({
         heroImage: heroImageOut,
@@ -132,7 +133,7 @@ export default function HomeHeroPage() {
               onChange={setHomePrimaryUrl}
               uploadFolder="heroes/home"
               accept={homeKind === "video" ? "video/*" : "image/*"}
-              placeholder="https://… or /hero.png"
+              placeholder="https://… or /path/from/public.jpg"
             />
 
             {homeKind === "video" ? (

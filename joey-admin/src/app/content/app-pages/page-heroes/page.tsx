@@ -59,7 +59,7 @@ export default function PageHeroesIndexPage() {
         const local = heroes[k];
         const next: PageHeroMedia = {
           kind: cur.kind === "video" ? "image" : cur.kind,
-          src: local.src.trim() || "/hero.png",
+          src: local.src.trim(),
           fit: local.fit,
           anchor: local.anchor,
         };

@@ -76,7 +76,7 @@ export default function CustomDatePicker({
   };
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
+    <div id={id} ref={containerRef} style={{ position: "relative" }}>
       <div 
         onClick={() => setIsOpen(!isOpen)}
         style={{

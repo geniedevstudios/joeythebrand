@@ -51,7 +51,7 @@ export default function SingleHeroPage() {
     try {
       const next: PageHeroMedia = {
         kind: "image",
-        src: src.trim() || "/hero.png",
+        src: src.trim(),
         fit,
         anchor,
       };

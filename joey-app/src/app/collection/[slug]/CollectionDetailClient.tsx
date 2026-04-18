@@ -6,9 +6,12 @@ import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
 import shopStyles from "@/app/shop/ShopClient.module.css";
 import eventStyles from "@/app/events/events.module.css";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
-import { wishlistStore } from "@/store/wishlistStore";
+import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
+import type { Product } from "@/lib/types";
+import { ShopProductGridSkeleton } from "@/components/shop/ShopProductGridSkeleton";
 
 
 const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
@@ -25,24 +28,29 @@ type CollectionDetailClientProps = {
   slug: string;
 };
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_PRODUCTS: Product[] = [];
+const EMPTY_WISHLIST: WishlistItem[] = [];
 
 export default function CollectionDetailClient({ slug }: CollectionDetailClientProps) {
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
+  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
   const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => SHOP_COLLECTIONS_FALLBACK);
   const isStoreLoading = useStoreLoading();
 
-  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
+  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
 
-  const [quickViewPiece, setQuickViewPiece] = useState<any | null>(null);
+  const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
   const [wearFilter, setWearFilter] = useState<WearFilter>("all");
 
-  const collectionHeroStyle = usePageHeroBackgroundStyle("collection");
-  const collectionHeroEmpty = usePageHeroEmpty("collection");
+  const {
+    empty: collectionHeroEmpty,
+    shellSpinner: collectionHeroSpinner,
+    style: collectionHeroStyle,
+    showImageLoader: collectionHeroImageLoader,
+  } = usePageHeroShellRenderProps("collection");
 
   // Find the specific collection - flexible case comparison
   const collection = collections.find(c => c.slug?.toLowerCase() === slug?.toLowerCase()) || 
@@ -69,9 +77,9 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const displayedProducts = useMemo(() => {
     let list = collectionProducts;
     if (wearFilter === "mens") {
-      list = list.filter((p: any) => p.wearTag === "mens" || p.wearTag === "unisex");
+      list = list.filter((p) => p.wearTag === "mens" || p.wearTag === "unisex");
     } else if (wearFilter === "womens") {
-      list = list.filter((p: any) => p.wearTag === "womens" || p.wearTag === "unisex");
+      list = list.filter((p) => p.wearTag === "womens" || p.wearTag === "unisex");
     }
     return list;
   }, [collectionProducts, wearFilter]);
@@ -89,12 +97,12 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   }, [quickViewPiece]);
 
   const isInWishlist = (id: string) => wishlistItems.some((item) => item.id === id);
-  const toggleWishlist = (p: any) => {
+  const toggleWishlist = (p: Product) => {
     const wasInWishlist = isInWishlist(p.id);
     wishlistStore.toggleItem({
       id: p.id,
       name: p.name,
-      price: p.price,
+      price: String(p.price),
       image: p.image,
       hoverImage: p.hoverImage,
       category: p.categoryName,
@@ -142,16 +150,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
           </div>
           <div className={`section ${shopStyles.productsSection}`}>
             <div className="container">
-              <div className={shopStyles.grid}>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div className="skeleton" style={{ aspectRatio: "3/4", width: "100%", borderRadius: 8 }} />
-                    <div className="skeleton" style={{ height: 12, width: "50%" }} />
-                    <div className="skeleton" style={{ height: 18, width: "75%" }} />
-                    <div className="skeleton" style={{ height: 14, width: "40%" }} />
-                  </div>
-                ))}
-              </div>
+              <ShopProductGridSkeleton count={6} />
             </div>
           </div>
         </div>
@@ -162,8 +161,10 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
         <div
           className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
           data-page-hero-empty={collectionHeroEmpty ? "true" : "false"}
+          data-page-hero-loading={collectionHeroSpinner ? "true" : "false"}
           style={collectionHeroStyle}
         >
+          {collectionHeroImageLoader ? <PageHeroShellImageLoader /> : null}
           <div className="container">
             <span className="section-label">COLLECTIONS</span>
             <h1 className={`t-display ${styles.pageTitle}`}>Collection Not Found</h1>
@@ -187,8 +188,10 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={collectionHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={collectionHeroSpinner ? "true" : "false"}
         style={collectionHeroStyle}
       >
+        {collectionHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <span className="section-label">COLLECTIONS</span>
           <h1 className={`t-display ${styles.pageTitle}`}>{collection.name}</h1>
@@ -262,7 +265,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
             </div>
           ) : (
             <div className={shopStyles.grid}>
-              {displayedProducts.map((p: any) => (
+              {displayedProducts.map((p) => (
                 <article key={p.id} className={shopStyles.card}>
                   <div className={shopStyles.imageWrapOuter}>
                     <div className={shopStyles.imageWrap}>
@@ -303,7 +306,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                           {p.isOutOfStock ? (
                             <span className={`${shopStyles.pickMeBtn} ${shopStyles.soldOutBtn}`}>Sold Out</span>
                           ) : (
-                            <Link href={`/shop/${p.id}`} className={shopStyles.pickMeBtn} aria-label={`View ${p.name}`}>
+                            <Link href={`/shop/${p.slug || p.id}`} className={shopStyles.pickMeBtn} aria-label={`View ${p.name}`}>
                               Pick Me
                             </Link>
                           )}
@@ -442,7 +445,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                   <p><span>SKU:</span> {quickViewPiece.id}</p>
                   <p><span>Category:</span> {quickViewPiece.categoryName || quickViewPiece.category}</p>
                 </div>
-                <Link href={`/shop/${quickViewPiece.id}`} className={styles.modalFullDetail}>
+                <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={styles.modalFullDetail}>
                   View Full Details
                 </Link>
               </div>

@@ -80,7 +80,7 @@ export default function ProductsPage() {
   const [collectionFormError, setCollectionFormError] = useState("");
   const [collectionSaving, setCollectionSaving] = useState(false);
 
-  const [mainImageUrl, setMainImageUrl] = useState("/lookbook.png");
+  const [mainImageUrl, setMainImageUrl] = useState("");
   const [hoverImageUrl, setHoverImageUrl] = useState("");
   const [extraImageUrls, setExtraImageUrls] = useState<string[]>(["", "", ""]);
   const [newProductUploadKey, setNewProductUploadKey] = useState("");
@@ -88,7 +88,7 @@ export default function ProductsPage() {
   const [productPendingDelete, setProductPendingDelete] = useState<Product | null>(null);
   const [collectionPendingDelete, setCollectionPendingDelete] = useState<Collection | null>(null);
 
-  const [colMainImageUrl, setColMainImageUrl] = useState("/lookbook.png");
+  const [colMainImageUrl, setColMainImageUrl] = useState("");
   const [colHoverImageUrl, setColHoverImageUrl] = useState("");
   const [colGalleryUrls, setColGalleryUrls] = useState<string[]>([]);
   const [pendingColSlug, setPendingColSlug] = useState("");
@@ -105,7 +105,7 @@ export default function ProductsPage() {
       const main =
         editingProduct.image?.trim() ||
         editingProduct.images?.find((u) => u?.trim()) ||
-        "/lookbook.png";
+        "";
       setMainImageUrl(main);
       const extras = (editingProduct.images || [])
         .filter((u) => u?.trim() && u.trim() !== main)
@@ -113,7 +113,7 @@ export default function ProductsPage() {
       setExtraImageUrls([0, 1, 2].map((i) => extras[i] ?? ""));
       setHoverImageUrl(editingProduct.hoverImage?.trim() || "");
     } else {
-      setMainImageUrl("/lookbook.png");
+      setMainImageUrl("");
       setHoverImageUrl("");
       setExtraImageUrls(["", "", ""]);
     }
@@ -224,10 +224,16 @@ export default function ProductsPage() {
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
+    const slug = (formData.get("slug") as string)?.trim() || undefined;
     let categoryName = (formData.get("categoryName") as string)?.trim();
     const category = formData.get("category") as string;
     const price = Number(formData.get("price"));
-    const primary = mainImageUrl.trim() || "/lookbook.png";
+    const primary = mainImageUrl.trim();
+    if (!primary) {
+      setError("Add a main product image URL.");
+      setIsSaving(false);
+      return;
+    }
     const extras = extraImageUrls.map((s) => s.trim()).filter((u) => u && u !== primary);
     const images = [primary, ...extras];
     const description = formData.get("description") as string;
@@ -257,6 +263,7 @@ export default function ProductsPage() {
     try {
       if (editingProduct) {
         await dataStore.updateProduct(editingProduct.id, {
+          slug,
           name,
           categoryName: categoryName || editingProduct.categoryName,
           category,
@@ -276,6 +283,7 @@ export default function ProductsPage() {
         });
       } else {
         await dataStore.addProduct({
+          slug,
           name,
           categoryName: categoryName || col?.name || category,
           category,
@@ -309,7 +317,7 @@ export default function ProductsPage() {
   const openAddCollection = () => {
     setEditingCollection(null);
     setCollectionFormError("");
-    setColMainImageUrl("/lookbook.png");
+    setColMainImageUrl("");
     setColHoverImageUrl("");
     setColGalleryUrls([]);
     setPendingColSlug("");
@@ -319,7 +327,7 @@ export default function ProductsPage() {
   const openEditCollection = (c: Collection) => {
     setEditingCollection(c);
     setCollectionFormError("");
-    setColMainImageUrl(c.image || "/lookbook.png");
+    setColMainImageUrl(c.image?.trim() || "");
     setColHoverImageUrl(c.hoverImage || "");
     setColGalleryUrls(c.galleryUrls ?? []);
     setPendingColSlug("");
@@ -572,11 +580,18 @@ export default function ProductsPage() {
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
-                            <img
-                              className="h-10 w-10 rounded-md object-cover"
-                              src={product.image || "/lookbook.png"}
-                              alt=""
-                            />
+                            {product.image?.trim() ? (
+                              <img
+                                className="h-10 w-10 rounded-md object-cover"
+                                src={product.image.trim()}
+                                alt=""
+                              />
+                            ) : (
+                              <div
+                                className="h-10 w-10 rounded-md bg-zinc-200"
+                                aria-hidden
+                              />
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="font-medium text-zinc-900">{product.name}</div>
@@ -657,6 +672,17 @@ export default function ProductsPage() {
                     defaultValue={editingProduct?.name}
                     required
                     className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                  />
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-zinc-700">URL Slug (leave empty to auto-generate)</label>
+                  <input
+                    type="text"
+                    name="slug"
+                    defaultValue={editingProduct?.slug}
+                    placeholder="e.g. summer-crochet"
+                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm font-mono placeholder:text-zinc-400"
                   />
                 </div>
 

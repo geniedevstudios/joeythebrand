@@ -31,15 +31,14 @@ export async function fetchEventsPageContent(): Promise<EventsPageContent | null
 
   if (error || !data) return null;
 
+  const row = data as Record<string, unknown>;
   return {
-    heading: String((data as any).heading ?? "").trim() || "Events",
-    subheading: (data as any).subheading ? String((data as any).subheading).trim() : undefined,
-    body: (data as any).body ? String((data as any).body).trim() : undefined,
-    topVideoUrl: (data as any).top_video_url ? String((data as any).top_video_url).trim() : undefined,
-    topVideoPosterUrl: (data as any).top_video_poster_url
-      ? String((data as any).top_video_poster_url).trim()
-      : undefined,
-    updatedAt: (data as any).updated_at ? String((data as any).updated_at) : undefined,
+    heading: String(row.heading ?? "").trim() || "Events",
+    subheading: row.subheading ? String(row.subheading).trim() : undefined,
+    body: row.body ? String(row.body).trim() : undefined,
+    topVideoUrl: row.top_video_url ? String(row.top_video_url).trim() : undefined,
+    topVideoPosterUrl: row.top_video_poster_url ? String(row.top_video_poster_url).trim() : undefined,
+    updatedAt: row.updated_at ? String(row.updated_at) : undefined,
   };
 }
 

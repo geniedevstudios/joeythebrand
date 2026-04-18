@@ -121,7 +121,7 @@ main {
   flex: 1;
 }
 
-/* Per-route hero: when admin has not set an image (empty src), background is black with a loader */
+/* Per-route hero: empty src → black bg; loader only while dataStore.init() is still running (see data-page-hero-loading). */
 .page-hero-shell {
   position: relative;
 }
@@ -131,7 +131,7 @@ main {
   opacity: 0 !important;
 }
 
-.page-hero-shell[data-page-hero-empty="true"]::after {
+.page-hero-shell[data-page-hero-empty="true"][data-page-hero-loading="true"]::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -507,21 +507,28 @@ input, textarea, select {
 
 /* =============================================
    SKELETON LOADING SHIMMER
+   Softer gradient + slower sweep (reads more “premium”, less strobing).
    ============================================= */
 @keyframes skeleton-shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
 }
 
 .skeleton {
   background: linear-gradient(
-    90deg,
-    var(--concerto) 25%,
-    #ece9e4 50%,
-    var(--concerto) 75%
+    100deg,
+    var(--concerto) 0%,
+    #e8e4de 38%,
+    #f4f1ec 50%,
+    #e8e4de 62%,
+    var(--concerto) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  animation: skeleton-shimmer 2.25s cubic-bezier(0.45, 0, 0.25, 1) infinite;
   border-radius: var(--radius-sm);
   color: transparent !important;
   user-select: none;
@@ -529,16 +536,30 @@ input, textarea, select {
 
 .skeleton-dark {
   background: linear-gradient(
-    90deg,
-    rgba(255,255,255,0.07) 25%,
-    rgba(255,255,255,0.13) 50%,
-    rgba(255,255,255,0.07) 75%
+    100deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.11) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.11) 55%,
+    rgba(255, 255, 255, 0.06) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  animation: skeleton-shimmer 2.25s cubic-bezier(0.45, 0, 0.25, 1) infinite;
   border-radius: var(--radius-sm);
   color: transparent !important;
   user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton-dark {
+    animation: none;
+    background: var(--concerto);
+  }
+
+  .skeleton-dark {
+    background: rgba(255, 255, 255, 0.08);
+  }
 }
 
 /* =============================================

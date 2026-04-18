@@ -307,6 +307,42 @@
   transition-delay: 0.3s;
 }
 
+/* Loading: mirrors .collectionRowSection vertical rhythm without zigzag clip */
+.editorialSkeletonRoot {
+  display: flex;
+  flex-direction: column;
+}
+
+.editorialSkeletonSection {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  --section-pad-y: clamp(var(--space-3xl), 9vmin, var(--space-4xl));
+  padding: var(--section-pad-y) 0;
+  border-bottom: 1px solid var(--concerto);
+}
+
+.editorialSkeletonBlob {
+  width: 100%;
+  max-width: 550px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 50% 40% 55% 45% / 45% 55% 45% 55%;
+  background: var(--skintone);
+  position: relative;
+  overflow: hidden;
+}
+
+.editorialSkeletonBlobFill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.editorialSkeletonTitle {
+  align-self: flex-start;
+  margin: 0 0 var(--space-md) var(--space-xl);
+}
+
 .editorialRow {
   display: flex;
   align-items: center;

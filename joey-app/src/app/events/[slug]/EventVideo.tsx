@@ -17,7 +17,9 @@ export default function EventVideo({ src, posterUrl }: Props) {
 
   useEffect(() => {
     revealOnce.current = false;
-    setLoading(Boolean(src));
+    queueMicrotask(() => {
+      setLoading(Boolean(src));
+    });
   }, [src, posterUrl]);
 
   const reveal = useCallback(() => {

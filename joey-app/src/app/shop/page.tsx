@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import ShopClient from "./ShopClient";
+import styles from "./ShopClient.module.css";
 
 export const metadata: Metadata = {
   title: "Shop The Collection — JOEY THE BRAND",
@@ -10,7 +11,15 @@ export const metadata: Metadata = {
 export default function ShopPage() {
   return (
     <Suspense
-      fallback={<div className="container" style={{ padding: "clamp(3rem, 12vw, 6rem) 0" }} aria-busy="true" />}
+      fallback={
+        <div
+          className={`page-hero-shell ${styles.pageHeader}`}
+          data-page-hero-empty="true"
+          data-page-hero-loading="true"
+          style={{ backgroundColor: "#000" }}
+          aria-busy="true"
+        />
+      }
     >
       <ShopClient />
     </Suspense>

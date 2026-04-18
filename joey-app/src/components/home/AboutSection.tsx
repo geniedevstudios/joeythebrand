@@ -27,9 +27,9 @@ export default function AboutSection() {
             {/* Pull quote */}
             <blockquote className={styles.quote}>
               <span className={styles.quoteText}>
-                "Style is not decoration — it is declaration."
+                &ldquo;Style is not decoration — it is declaration.
               </span>
-              <span className={styles.quoteMark}>"</span>
+              <span className={styles.quoteMark}>&rdquo;</span>
             </blockquote>
 
             <p className={styles.signoff}>Power worn well.</p>

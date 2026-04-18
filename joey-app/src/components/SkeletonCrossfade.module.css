@@ -1,0 +1,49 @@
+.root {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.layer {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.skeletonLayer {
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.skeletonLayerOut {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.contentLayer {
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.contentLayerIn {
+  z-index: 2;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonLayer,
+  .contentLayer {
+    transition-duration: 1ms;
+  }
+
+  .skeletonLayerOut {
+    opacity: 0;
+  }
+
+  .contentLayerIn {
+    opacity: 1;
+  }
+}

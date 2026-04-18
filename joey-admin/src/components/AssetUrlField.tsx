@@ -22,7 +22,7 @@ export default function AssetUrlField({
   onChange,
   uploadFolder,
   accept,
-  placeholder = "https://… or /hero.png",
+  placeholder = "https://… or /path/from/public.jpg",
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

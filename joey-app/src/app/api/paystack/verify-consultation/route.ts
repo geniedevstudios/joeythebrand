@@ -29,7 +29,10 @@ export async function POST(req: Request) {
     const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(ref)}`, {
       headers: { Authorization: `Bearer ${secret}` },
     });
-    const paystackData = (await paystackRes.json()) as any;
+    const paystackData = (await paystackRes.json()) as {
+      status?: boolean;
+      data?: { status?: string };
+    };
 
     if (!(paystackRes.ok && paystackData?.status && paystackData?.data?.status === "success")) {
       return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });

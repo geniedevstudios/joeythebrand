@@ -85,7 +85,7 @@ function seededRandom(seed: string) {
   };
 }
 
-export default function ProductClient({ id }: { id: string }) {
+export default function ProductClient({ slug }: { slug: string }) {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
@@ -112,7 +112,7 @@ export default function ProductClient({ id }: { id: string }) {
     toast.success(wasInWishlist ? `${item.name} removed from wishlist` : `${item.name} added to wishlist`);
   };
   
-  const product = products.find((p: any) => p.id === id);
+  const product = products.find((p: any) => p.slug === slug || p.id === slug);
 
   const galleryImages = useMemo(() => {
     if (!product || !product.images) return EMPTY_ARRAY;
@@ -472,7 +472,7 @@ export default function ProductClient({ id }: { id: string }) {
                           </span>
                         ) : (
                           <Link
-                            href={`/shop/${item.id}`}
+                            href={`/shop/${item.slug || item.id}`}
                             className={styles.suggestPickMeBtn}
                             aria-label={`View ${item.name}`}
                           >
@@ -631,7 +631,7 @@ export default function ProductClient({ id }: { id: string }) {
                 <p><span>SKU:</span> {quickViewItem.id}</p>
                 <p><span>Categories:</span> {quickViewItem.categoryName}</p>
               </div>
-              <Link href={`/shop/${quickViewItem.id}`} className={styles.modalFullDetail} onClick={() => { setQuickViewItem(null); setQuickViewImage(""); }}>
+              <Link href={`/shop/${quickViewItem.slug || quickViewItem.id}`} className={styles.modalFullDetail} onClick={() => { setQuickViewItem(null); setQuickViewImage(""); }}>
                 View Full Details →
               </Link>
             </div>

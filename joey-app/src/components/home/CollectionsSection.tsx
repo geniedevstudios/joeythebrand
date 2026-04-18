@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore, useState, useEffect } from "react";
+import { useSyncExternalStore, useState, useEffect, useRef, useCallback } from "react";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
-import type { PublicCollection } from "@/lib/types";
+import type { Product, PublicCollection } from "@/lib/types";
 import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
 import styles from "./CollectionsSection.module.css";
 
@@ -81,14 +81,14 @@ type CollectionsSectionProps = {
   ctaLabel?: string;
 };
 
-const EMPTY_ARRAY: any[] = [];
-const _getEmptyArray = () => EMPTY_ARRAY;
+const EMPTY_PRODUCTS: Product[] = [];
+const _getEmptyProducts = () => EMPTY_PRODUCTS;
 const _getCollections = () => dataStore.getCollections();
 const _getProducts = () => dataStore.getProducts();
 
 function CollectionsSkeleton({ count = 3 }: { count?: number }) {
   return (
-    <div className={styles.collectionsGrid}>
+    <>
       {Array.from({ length: count }).map((_, i) => (
         <article key={i} className={styles.card}>
           <div className={styles.imageWrap}>
@@ -107,7 +107,7 @@ function CollectionsSkeleton({ count = 3 }: { count?: number }) {
           </div>
         </article>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -118,6 +118,29 @@ export default function CollectionsSection({
   viewAllId = "home-collections-view-all",
   ctaLabel = "Explore all archives",
 }: CollectionsSectionProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!trackRef.current) return;
+    isDragging.current = true;
+    startX.current = e.clientX - trackRef.current.offsetLeft;
+    scrollLeft.current = trackRef.current.scrollLeft;
+    trackRef.current.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !trackRef.current) return;
+    e.preventDefault();
+    const x = e.clientX - trackRef.current.offsetLeft;
+    trackRef.current.scrollLeft = scrollLeft.current - (x - startX.current);
+  }, []);
+
+  const onPointerUp = useCallback(() => {
+    isDragging.current = false;
+  }, []);
   const isFallback = (cols?: PublicCollection[] | null) =>
     !!cols?.length && cols.every((c) => typeof c.id === "string" && c.id.startsWith("fallback-"));
 
@@ -127,7 +150,7 @@ export default function CollectionsSection({
     () => (initialCollections && initialCollections.length > 0 ? initialCollections : SHOP_COLLECTIONS_FALLBACK),
   );
 
-  const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
+  const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyProducts);
   const isStoreLoading = useStoreLoading();
 
   const list =
@@ -189,7 +212,14 @@ export default function CollectionsSection({
           </Link>
         </div>
 
-        <div className={styles.collectionsGrid}>
+        <div
+          ref={trackRef}
+          className={styles.collectionsGrid}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerUp}
+        >
           {isStoreLoading && isFallback(list) ? (
             <CollectionsSkeleton count={3} />
           ) : (

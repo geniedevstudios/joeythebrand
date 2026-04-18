@@ -13,7 +13,10 @@ import type {
 import { supabase } from "./supabase";
 import { DEFAULT_PAGE_HEROES, siteContentWithPageHeroes } from "./pageHeroes";
 
-/** Used before hydration and when the collections query fails or returns no rows. */
+/**
+ * In-repo collection stubs for SSR / empty Supabase — not product images.
+ * Keeps shop/collection UIs stable until live rows load (see isFallback in CollectionsSection).
+ */
 export const SHOP_COLLECTIONS_FALLBACK: PublicCollection[] = [
   {
     id: "fallback-1",
@@ -101,6 +104,7 @@ let storeInitializing = true;
 
 const mapProduct = (row: Record<string, unknown>): Product => ({
   id: row.id as string,
+  slug: (row.slug as string) || undefined,
   name: row.name as string,
   category: row.category as Product["category"],
   categoryName: row.category_name as string,

@@ -6,13 +6,15 @@ import styles from "./CheckoutClient.module.css";
 import { cartStore } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import CustomSelect from "@/components/CustomSelect";
 import { INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS, countryNameFromIso2 } from "@/lib/countrySelectOptions";
 import type { Order } from "@/lib/types";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
+import type { CartItem } from "@/store/cartStore";
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_ARRAY: CartItem[] = [];
 
 const regionOptions = [
   { value: "greater-accra", label: "Greater Accra" },
@@ -62,7 +64,6 @@ function buildShippingAddress(
 export default function CheckoutClient() {
   const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_ARRAY);
   const appliedPromo = useSyncExternalStore(cartStore.subscribe, cartStore.getAppliedPromo, () => null);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   const [shippingDestination, setShippingDestination] = useState<ShippingDestination>("ghana");
   const [formData, setFormData] = useState({
@@ -80,8 +81,12 @@ export default function CheckoutClient() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const checkoutHeroStyle = usePageHeroBackgroundStyle("checkout");
-  const checkoutHeroEmpty = usePageHeroEmpty("checkout");
+  const {
+    empty: checkoutHeroEmpty,
+    shellSpinner: checkoutHeroSpinner,
+    style: checkoutHeroStyle,
+    showImageLoader: checkoutHeroImageLoader,
+  } = usePageHeroShellRenderProps("checkout");
 
   useEffect(() => {
     const scriptId = "paystack-js";
@@ -106,8 +111,10 @@ export default function CheckoutClient() {
         <div
           className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
           data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
+          data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
           style={checkoutHeroStyle}
         >
+          {checkoutHeroImageLoader ? <PageHeroShellImageLoader /> : null}
           <div className="container">
             <span className="section-label">Checkout</span>
             <h1 className={styles.pageTitle}>Your Order</h1>
@@ -150,8 +157,9 @@ export default function CheckoutClient() {
       toast.error("Please select your region.");
       return;
     }
-    // @ts-ignore
-    if (!window.PaystackPop) {
+    const paystack = (window as Window & { PaystackPop?: { setup: (opts: Record<string, unknown>) => { openIframe: () => void } } })
+      .PaystackPop;
+    if (!paystack) {
       toast.error("Payment gateway is still loading. Please wait a moment.");
       return;
     }
@@ -201,8 +209,7 @@ export default function CheckoutClient() {
       const placed = await dataStore.placeOrder(order);
 
       // 2. Trigger Paystack
-      // @ts-ignore
-      const handler = window.PaystackPop.setup({
+      const handler = paystack.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
         email: formData.email,
         amount: Math.round(total * 100), // Ensure integer Kobo
@@ -217,7 +224,7 @@ export default function CheckoutClient() {
             },
           ],
         },
-        callback: function (paystackRes: any) {
+        callback: function (paystackRes: { reference?: string }) {
           // 3. Verify on backend
           // We wrap the async logic to keep the callback signature simple for Paystack's validator
           (async () => {
@@ -262,8 +269,10 @@ export default function CheckoutClient() {
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
         style={checkoutHeroStyle}
       >
+        {checkoutHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <span className="section-label">Checkout</span>
           <h1 className={styles.pageTitle}>Complete Your Order</h1>

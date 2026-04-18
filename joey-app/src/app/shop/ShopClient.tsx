@@ -8,7 +8,8 @@ import CollectionsSection from "@/components/home/CollectionsSection";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 
 
 type WearFilter = "all" | "mens" | "womens";
@@ -148,16 +149,22 @@ export default function ShopClient() {
   }, [products, selectedCollectionSlug, wearFilter]);
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
-  const shopHeroStyle = usePageHeroBackgroundStyle("shop");
-  const shopHeroEmpty = usePageHeroEmpty("shop");
+  const {
+    empty: shopHeroEmpty,
+    shellSpinner: shopHeroSpinner,
+    style: shopHeroStyle,
+    showImageLoader: shopHeroImageLoader,
+  } = usePageHeroShellRenderProps("shop");
 
   return (
     <div className={styles.page}>
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={shopHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={shopHeroSpinner ? "true" : "false"}
         style={shopHeroStyle}
       >
+        {shopHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <span className="section-label">The Shop</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Shop</h1>
@@ -244,7 +251,7 @@ export default function ShopClient() {
                             </span>
                           ) : (
                             <Link
-                              href={`/shop/${p.id}`}
+                              href={`/shop/${p.slug || p.id}`}
                               className={styles.pickMeBtn}
                               aria-label={`View ${p.name}`}
                             >
@@ -412,7 +419,7 @@ export default function ShopClient() {
                   <p><span>SKU:</span> {quickViewPiece.id}</p>
                   <p><span>Collection:</span> {quickViewPiece.categoryName}</p>
                 </div>
-                <Link href={`/shop/${quickViewPiece.id}`} className={styles.modalFullDetail}>
+                <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={styles.modalFullDetail}>
                   View Full Details →
                 </Link>
               </div>

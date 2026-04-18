@@ -5,14 +5,57 @@ import { createPortal } from "react-dom";
 import { dataStore } from "@/lib/dataStore";
 import { wishlistStore } from "@/store/wishlistStore";
 import { DEFAULT_SIZES } from "@/lib/dataStore";
+import { useStoreLoading } from "@/hooks/useStoreLoading";
+import type { Product } from "@/lib/types";
+import type { WishlistItem } from "@/store/wishlistStore";
 import styles from "./FeaturedSection.module.css";
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_PRODUCTS: Product[] = [];
+const EMPTY_WISHLIST: WishlistItem[] = [];
+
+function FeaturedSectionSkeleton() {
+  return (
+    <section className={`section ${styles.featured}`} id="featured" aria-busy="true">
+      <div className="container">
+        <div className={styles.header}>
+          <div>
+            <span className="section-label">Crafted with intention</span>
+            <h2 className={`t-heading ${styles.heading}`}>Pieces that speak first.</h2>
+          </div>
+          <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
+            Shop for more
+          </Link>
+        </div>
+        <div className={styles.grid}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <article key={i} className={styles.card}>
+              <div className={styles.imageWrapOuter}>
+                <div
+                  className="skeleton"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "inherit",
+                  }}
+                />
+              </div>
+              <div className={styles.info}>
+                <div className="skeleton" style={{ height: 12, width: "40%", marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 20, width: "75%" }} />
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function FeaturedSection() {
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_ARRAY);
-  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
-  const [quickViewPiece, setQuickViewPiece] = useState<any>(null);
+  const isStoreLoading = useStoreLoading();
+  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
+  const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
+  const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
@@ -34,18 +77,6 @@ export default function FeaturedSection() {
   // Filter for featured products (max 5 for the home grid)
   const featured = products.filter(p => p.featured).slice(0, 5);
 
-  const isInWishlist = (id: string) => wishlistItems.some((item: any) => item.id === id);
-  const toggleWishlist = (product: any) => {
-    wishlistStore.toggleItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      hoverImage: product.hoverImage,
-      category: product.categoryName,
-    });
-  };
-
   useEffect(() => {
     if (quickViewPiece) {
       document.body.style.overflow = "hidden";
@@ -59,11 +90,30 @@ export default function FeaturedSection() {
     return () => { document.body.style.overflow = ""; };
   }, [quickViewPiece]);
 
-  const getAvailableSizes = (prod: any) => {
+  if (isStoreLoading && featured.length === 0) {
+    return <FeaturedSectionSkeleton />;
+  }
+  if (!isStoreLoading && featured.length === 0) {
+    return null;
+  }
+
+  const isInWishlist = (id: string) => wishlistItems.some((item) => item.id === id);
+  const toggleWishlist = (product: Product) => {
+    wishlistStore.toggleItem({
+      id: product.id,
+      name: product.name,
+      price: String(product.price),
+      image: product.image,
+      hoverImage: product.hoverImage,
+      category: product.categoryName,
+    });
+  };
+
+  const getAvailableSizes = (prod: Product) => {
     if (!prod?.sizes || prod.sizes.length < 6) {
       return DEFAULT_SIZES.map((s) => s.name);
     }
-    return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
+    return prod.sizes.filter((s) => s.available).map((s) => s.name);
   };
 
   const handleAddToCart = () => {
@@ -87,8 +137,6 @@ export default function FeaturedSection() {
       });
     }, 400);
   };
-
-  if (featured.length === 0) return null;
 
   const modal =
     quickViewPiece && typeof document !== "undefined"
@@ -229,7 +277,7 @@ export default function FeaturedSection() {
                       {isInWishlist(quickViewPiece.id) ? "Saved to wishlist" : "Add to wishlist"}
                     </button>
 
-                    <Link href={`/shop/${quickViewPiece.id}`} className={styles.modalFullDetail}>
+                    <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={styles.modalFullDetail}>
                       View Full Details →
                     </Link>
                   </div>
@@ -324,7 +372,7 @@ export default function FeaturedSection() {
 
                   <div className={styles.ctaRow}>
                     <Link
-                      href={`/shop/${item.id}`}
+                      href={`/shop/${item.slug || item.id}`}
                       className={`btn btn-ghost btn-sm ${styles.quickView}`}
                       id={`featured-${item.id}`}
                     >

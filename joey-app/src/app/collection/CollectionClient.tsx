@@ -4,8 +4,11 @@ import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
 import styles from "./CollectionClient.module.css";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { CollectionBlobClipDefs, CollectionBlobViewer } from "@/components/collection/CollectionBlobViewer";
+import { SkeletonCrossfade } from "@/components/SkeletonCrossfade";
+import type { Product, PublicCollection } from "@/lib/types";
 
 
 /** Visual rhythm for section shells (gradients in CSS via data-theme). */
@@ -13,7 +16,7 @@ const SECTION_THEME_IDS = ["warm", "dark", "paper", "earth"] as const;
 
 function useReveal() {
   const [isVisible, setIsVisible] = useState(false);
-  const domRef = useRef<any>(null);
+  const domRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -34,40 +37,25 @@ function useReveal() {
 
 function CollectionEditorialSkeleton() {
   return (
-    <div>
+    <div className={styles.editorialSkeletonRoot}>
       {[0, 1, 2].map((i) => (
-        <section
-          key={i}
-          style={{
-            padding: "80px 0",
-            borderBottom: "1px solid var(--concerto)",
-          }}
-        >
+        <section key={i} className={styles.editorialSkeletonSection}>
           <div className="container">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "3rem",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div className="skeleton" style={{ height: 14, width: "60%" }} />
-                <div className="skeleton" style={{ height: 14, width: "85%" }} />
-                <div className="skeleton" style={{ height: 14, width: "70%" }} />
+            <div className={styles.editorialRow}>
+              <div className={styles.editorialText}>
+                <div className="skeleton" style={{ height: 14, width: "55%", marginBottom: 14 }} />
+                <div className="skeleton" style={{ height: 14, width: "92%", marginBottom: 10 }} />
+                <div className="skeleton" style={{ height: 14, width: "78%", marginBottom: 10 }} />
+                <div className="skeleton" style={{ height: 14, width: "64%" }} />
               </div>
-              <div>
-                <div className="skeleton" style={{ height: 36, width: "55%", marginBottom: 16 }} />
+              <div className={styles.editorialVisual}>
                 <div
-                  className="skeleton"
-                  style={{
-                    borderRadius: "50% 40% 55% 45% / 45% 55% 45% 55%",
-                    aspectRatio: "1/1",
-                    maxWidth: 340,
-                    margin: "0 auto",
-                  }}
+                  className={`skeleton ${styles.editorialSkeletonTitle}`}
+                  style={{ height: "clamp(1.5rem, 3.5vw, 2.75rem)", width: "min(55%, 260px)" }}
                 />
+                <div className={styles.editorialSkeletonBlob}>
+                  <div className={`skeleton ${styles.editorialSkeletonBlobFill}`} />
+                </div>
               </div>
             </div>
           </div>
@@ -79,11 +67,14 @@ function CollectionEditorialSkeleton() {
 
 
 
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_ARRAY: Product[] = [];
 const FALLBACK_FN = () => SHOP_COLLECTIONS_FALLBACK;
 const EMPTY_ARRAY_FN = () => EMPTY_ARRAY;
 const _getCollections = () => dataStore.getCollections();
 const _getProducts = () => dataStore.getProducts();
+
+type CollectionRowData = PublicCollection & { images: string[] };
+type ThemeToken = { text: string; sub: string };
 
 function CollectionRowSection({
   col,
@@ -91,9 +82,9 @@ function CollectionRowSection({
   themes,
   isLast,
 }: {
-  col: any;
+  col: CollectionRowData;
   idx: number;
-  themes: any[];
+  themes: readonly ThemeToken[];
   isLast: boolean;
 }) {
   const theme = themes[idx % themes.length];
@@ -162,8 +153,12 @@ export default function CollectionClient() {
   const collections = useSyncExternalStore(dataStore.subscribe, _getCollections, FALLBACK_FN);
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, EMPTY_ARRAY_FN);
   const isStoreLoading = useStoreLoading();
-  const collectionHeroStyle = usePageHeroBackgroundStyle("collection");
-  const collectionHeroEmpty = usePageHeroEmpty("collection");
+  const {
+    empty: collectionHeroEmpty,
+    shellSpinner: collectionHeroSpinner,
+    style: collectionHeroStyle,
+    showImageLoader: collectionHeroImageLoader,
+  } = usePageHeroShellRenderProps("collection");
 
   const list = collections?.length ? collections : SHOP_COLLECTIONS_FALLBACK;
 
@@ -193,8 +188,10 @@ export default function CollectionClient() {
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={collectionHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={collectionHeroSpinner ? "true" : "false"}
         style={collectionHeroStyle}
       >
+        {collectionHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <span className="section-label">THE ARCHIVE</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Collections</h1>
@@ -204,19 +201,22 @@ export default function CollectionClient() {
 
       {/* Collections Editorial List */}
       <div className={styles.editorialList}>
-        {isStoreLoading ? (
-          <CollectionEditorialSkeleton />
-        ) : (
-          collectionData.map((col, idx) => (
-            <CollectionRowSection
-              key={col.id}
-              col={col}
-              idx={idx}
-              themes={THEMES}
-              isLast={idx === collectionData.length - 1}
-            />
-          ))
-        )}
+        <SkeletonCrossfade
+          isLoading={isStoreLoading}
+          skeleton={<CollectionEditorialSkeleton />}
+        >
+          {!isStoreLoading
+            ? collectionData.map((col, idx) => (
+                <CollectionRowSection
+                  key={col.id}
+                  col={col}
+                  idx={idx}
+                  themes={THEMES}
+                  isLast={idx === collectionData.length - 1}
+                />
+              ))
+            : null}
+        </SkeletonCrossfade>
       </div>
     </div>
   );

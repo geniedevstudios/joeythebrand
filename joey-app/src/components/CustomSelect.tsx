@@ -86,7 +86,9 @@ export default function CustomSelect({
   }, []);
 
   useEffect(() => {
-    setHighlightedIndex(0);
+    queueMicrotask(() => {
+      setHighlightedIndex(0);
+    });
   }, [isOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

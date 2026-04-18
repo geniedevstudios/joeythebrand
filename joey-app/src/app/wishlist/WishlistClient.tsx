@@ -2,32 +2,25 @@
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { wishlistStore } from "@/store/wishlistStore";
+import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
 import { cartStore } from "@/store/cartStore";
 import styles from "./WishlistClient.module.css";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroBackgroundStyle, usePageHeroEmpty } from "@/hooks/usePageHero";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 
-const EMPTY_ARRAY: any[] = [];
-
-const tabs = [
-  { id: "all", label: "All Pieces" },
-  { id: "always-lit", label: "Always Lit" },
-  { id: "limited-edition", label: "Limited Edition" },
-  { id: "sample-sale", label: "Sample Sale" },
-];
+const EMPTY_ARRAY: WishlistItem[] = [];
 
 type AddStatus = "idle" | "adding" | "added";
 
 export default function WishlistClient() {
   const items = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
   const [addStatus, setAddStatus] = useState<Record<string, AddStatus>>({});
-  const wishlistHeroStyle = usePageHeroBackgroundStyle("wishlist");
-  const wishlistHeroEmpty = usePageHeroEmpty("wishlist");
-
-  const getCategoryLabel = (cat: string) => {
-    const tab = tabs.find(t => t.id === cat);
-    return tab ? tab.label : cat;
-  };
+  const {
+    empty: wishlistHeroEmpty,
+    shellSpinner: wishlistHeroSpinner,
+    style: wishlistHeroStyle,
+    showImageLoader: wishlistHeroImageLoader,
+  } = usePageHeroShellRenderProps("wishlist");
 
   const handleRemove = (id: string, name: string) => {
     wishlistStore.removeItem(id);
@@ -71,8 +64,10 @@ export default function WishlistClient() {
       <div
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={wishlistHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={wishlistHeroSpinner ? "true" : "false"}
         style={wishlistHeroStyle}
       >
+        {wishlistHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
           <span className="section-label">Saved For Later</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Wishlist</h1>

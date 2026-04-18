@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 export type EventCategory = "fashion_shows" | "clan_festival";
 export type EventStatus = "upcoming" | "past";
 
+type EventRow = Record<string, unknown>;
+
 export type PublicEvent = {
   id: string;
   slug: string;
@@ -51,7 +53,7 @@ export async function fetchPublicEvents(): Promise<PublicEvent[] | null> {
 
   if (error || !data) return null;
 
-  return (data as any[]).map((row) => ({
+  return (data as EventRow[]).map((row) => ({
     id: String(row.id),
     slug: String(row.slug),
     title: String(row.title),
@@ -64,11 +66,13 @@ export async function fetchPublicEvents(): Promise<PublicEvent[] | null> {
     flyerUrl: row.flyer_url ? String(row.flyer_url) : undefined,
     mainVideoUrl: row.main_video_url ? String(row.main_video_url) : undefined,
     mainVideoPosterUrl: row.main_video_poster_url ? String(row.main_video_poster_url) : undefined,
-    galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls.map((x: any) => String(x)).filter(Boolean) : [],
+    galleryUrls: Array.isArray(row.gallery_urls)
+      ? row.gallery_urls.map((x) => String(x)).filter(Boolean)
+      : [],
     recapYoutubeUrl: row.recap_youtube_url ? String(row.recap_youtube_url) : undefined,
     pixiesetUrl: row.pixieset_url ? String(row.pixieset_url) : undefined,
     collectionSlugs: Array.isArray(row.collection_slugs)
-      ? row.collection_slugs.map((s: any) => String(s)).filter(Boolean)
+      ? row.collection_slugs.map((s) => String(s)).filter(Boolean)
       : [],
     detailsReady: Boolean(row.details_ready),
     details: row.details ? String(row.details) : undefined,
@@ -95,7 +99,7 @@ export async function fetchPublicEventBySlug(slug: string): Promise<PublicEvent 
 
   if (error || !data) return null;
 
-  const row: any = data;
+  const row = data as EventRow;
   return {
     id: String(row.id),
     slug: String(row.slug),
@@ -109,11 +113,11 @@ export async function fetchPublicEventBySlug(slug: string): Promise<PublicEvent 
     flyerUrl: row.flyer_url ? String(row.flyer_url) : undefined,
     mainVideoUrl: row.main_video_url ? String(row.main_video_url) : undefined,
     mainVideoPosterUrl: row.main_video_poster_url ? String(row.main_video_poster_url) : undefined,
-    galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls.map((x: any) => String(x)).filter(Boolean) : [],
+    galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls.map((x) => String(x)).filter(Boolean) : [],
     recapYoutubeUrl: row.recap_youtube_url ? String(row.recap_youtube_url) : undefined,
     pixiesetUrl: row.pixieset_url ? String(row.pixieset_url) : undefined,
     collectionSlugs: Array.isArray(row.collection_slugs)
-      ? row.collection_slugs.map((x: any) => String(x)).filter(Boolean)
+      ? row.collection_slugs.map((x) => String(x)).filter(Boolean)
       : [],
     detailsReady: Boolean(row.details_ready),
     details: row.details ? String(row.details) : undefined,
