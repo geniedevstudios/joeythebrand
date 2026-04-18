@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import styles from "./story.module.css";
 import StoryHero from "./StoryHero";
+import FounderSection from "@/components/home/FounderSection";
+import { fetchSiteContentForHome } from "@/lib/fetchSiteContentServer";
+import { fetchCollectionsForHome } from "@/lib/fetchCollectionsServer";
+import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
 
 export const metadata: Metadata = {
   title: "Our Story — JOEY THE BRAND",
@@ -15,7 +19,10 @@ const values = [
   { title: "EXCELLENCE", body: "No compromise. No shortcuts. Only refined execution." },
 ];
 
-export default function StoryPage() {
+export default async function StoryPage() {
+  const initialSiteContent = (await fetchSiteContentForHome()) ?? DEFAULT_SITE_CONTENT;
+  const initialCollections = (await fetchCollectionsForHome()) ?? undefined;
+
   return (
     <div className={styles.page}>
       <StoryHero>
@@ -80,7 +87,14 @@ export default function StoryPage() {
         </div>
       </section>
 
-      {/* Founder */}
+      {/* Homepage Founder/Video Section */}
+      <FounderSection 
+        initialSiteContent={initialSiteContent}
+        initialCollections={initialCollections} 
+        hideContent={true}
+      />
+
+      {/* Founder Profile */}
       <section className={`section ${styles.founderSection}`}>
         <div className="container">
           <div className={styles.founderGrid}>

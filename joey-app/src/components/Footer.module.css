@@ -1,4 +1,6 @@
 .footer {
+  position: relative;
+  z-index: 10;
   background: var(--blue-athracite);
   color: var(--color-text-light);
   padding: var(--space-3xl) 0 var(--space-xl);

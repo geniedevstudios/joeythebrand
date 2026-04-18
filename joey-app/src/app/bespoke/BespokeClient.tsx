@@ -240,7 +240,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
         <div className="container">
           <div className={styles.headerInner}>
             <div className={styles.headerText}>
-              <span className="section-label" style={{ color: "var(--cinereous)" }}>Consultancy</span>
+              <span className={`section-label ${styles.headerKicker}`}>Consultancy</span>
               <h1 className={`t-display ${styles.title}`}>
                 Book A Slot —<br /><em>Bespoke or Styling</em>
               </h1>

@@ -124,6 +124,7 @@ main {
 /* Per-route hero: empty src → black bg; loader only while dataStore.init() is still running (see data-page-hero-loading). */
 .page-hero-shell {
   position: relative;
+  background-attachment: fixed !important;
 }
 
 .page-hero-shell[data-page-hero-empty="true"]::before {
@@ -186,6 +187,14 @@ main {
 }
 .page-hero-shell .container > *:nth-child(4) {
   animation-delay: 0.56s;
+}
+
+/* Ensure following sections slide over the sticky hero */
+.page-hero-shell ~ *,
+main > .reveal {
+  position: relative;
+  z-index: 10;
+  background-color: var(--color-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {

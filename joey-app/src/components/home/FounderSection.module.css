@@ -7,6 +7,10 @@
   overflow: hidden;
 }
 
+.founderVideoOnly {
+  min-height: max(90dvh, 45rem);
+}
+
 .media {
   position: absolute;
   inset: 0;

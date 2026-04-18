@@ -39,9 +39,11 @@ function CtaLink({
 export default function FounderSection({
   initialCollections,
   initialSiteContent,
+  hideContent = false,
 }: {
   initialCollections?: PublicCollection[];
   initialSiteContent: SiteContent;
+  hideContent?: boolean;
 }) {
   const isFallback = (cols?: PublicCollection[] | null) =>
     !!cols?.length && cols.every((c) => typeof c.id === "string" && c.id.startsWith("fallback-"));
@@ -95,8 +97,8 @@ export default function FounderSection({
 
   return (
     <section
-      className={styles.founder}
-      id="founder"
+      className={`${styles.founder} ${hideContent ? styles.founderVideoOnly : ""}`}
+      id={hideContent ? undefined : "founder"}
       aria-label="Behind the pattern"
       aria-busy={videoUrl && videoLoading ? true : undefined}
     >
@@ -154,34 +156,36 @@ export default function FounderSection({
         ) : null}
       </div>
 
-      <div className={styles.shell}>
-        <div className={styles.copy}>
-          <span className={styles.kicker}>{kicker}</span>
-          <h2 className={styles.headline}>{headline}</h2>
-          <CtaLink href={ctaHref} className={styles.cta}>
-            {ctaLabel}
-          </CtaLink>
-        </div>
+      {!hideContent && (
+        <div className={styles.shell}>
+          <div className={styles.copy}>
+            <span className={styles.kicker}>{kicker}</span>
+            <h2 className={styles.headline}>{headline}</h2>
+            <CtaLink href={ctaHref} className={styles.cta}>
+              {ctaLabel}
+            </CtaLink>
+          </div>
 
-        <div className="container">
-          <div className={styles.stats}>
-            <div className={styles.stat}>
-              <span className={styles.statNum}>{collectionCount}</span>
-              <span className={styles.statLabel}>Collections</span>
-            </div>
-            <div className={styles.statDivider} />
-            <div className={styles.stat}>
-              <span className={styles.statNum}>100+</span>
-              <span className={styles.statLabel}>Bespoke Clients</span>
-            </div>
-            <div className={styles.statDivider} />
-            <div className={styles.stat}>
-              <span className={styles.statNum}>GH</span>
-              <span className={styles.statLabel}>Accra, Ghana</span>
+          <div className="container">
+            <div className={styles.stats}>
+              <div className={styles.stat}>
+                <span className={styles.statNum}>{collectionCount}</span>
+                <span className={styles.statLabel}>Collections</span>
+              </div>
+              <div className={styles.statDivider} />
+              <div className={styles.stat}>
+                <span className={styles.statNum}>100+</span>
+                <span className={styles.statLabel}>Bespoke Clients</span>
+              </div>
+              <div className={styles.statDivider} />
+              <div className={styles.stat}>
+                <span className={styles.statNum}>GH</span>
+                <span className={styles.statLabel}>Accra, Ghana</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
