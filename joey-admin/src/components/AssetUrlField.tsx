@@ -29,6 +29,7 @@ export default function AssetUrlField({
   const [uploadErr, setUploadErr] = useState("");
   /** Blob URL while uploading (image or video) */
   const [localPreview, setLocalPreview] = useState<string>("");
+  const [localPreviewType, setLocalPreviewType] = useState<"image" | "video" | "">("");
 
   const isImage = useMemo(() => accept.includes("image"), [accept]);
   const isVideo = useMemo(() => accept.includes("video"), [accept]);
@@ -36,6 +37,9 @@ export default function AssetUrlField({
   const hideUrlField = isImage || (isVideo && !isImage);
 
   const previewSrc = localPreview || value;
+  const renderSrcAsVideo = localPreview
+    ? localPreviewType === "video"
+    : Boolean(previewSrc.match(/\.(mp4|webm|mov)$/i));
 
   useEffect(() => {
     return () => {
@@ -52,6 +56,7 @@ export default function AssetUrlField({
     let blobToRevoke = "";
     try {
       if (isImage || isVideo) {
+        setLocalPreviewType(file.type.startsWith("video/") ? "video" : "image");
         const blob = URL.createObjectURL(file);
         blobToRevoke = blob;
         setLocalPreview((prev) => {
@@ -68,6 +73,7 @@ export default function AssetUrlField({
       setUploading(false);
       if (blobToRevoke) URL.revokeObjectURL(blobToRevoke);
       setLocalPreview("");
+      setLocalPreviewType("");
     }
   };
 
@@ -94,8 +100,12 @@ export default function AssetUrlField({
               aria-label={previewSrc ? "Change image" : "Add image"}
             >
               {previewSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={previewSrc} alt="" className="h-full w-full object-cover" decoding="async" />
+                renderSrcAsVideo ? (
+                  <video src={previewSrc} className="h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata" />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={previewSrc} alt="" className="h-full w-full object-cover" decoding="async" />
+                )
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-2">
                   <span className="text-2xl font-light leading-none text-zinc-700">+</span>

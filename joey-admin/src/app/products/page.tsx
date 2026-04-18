@@ -581,11 +581,22 @@ export default function ProductsPage() {
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
                             {product.image?.trim() ? (
-                              <img
-                                className="h-10 w-10 rounded-md object-cover"
-                                src={product.image.trim()}
-                                alt=""
-                              />
+                              product.image.trim().match(/\.(mp4|webm)$/i) ? (
+                                <video
+                                  className="h-10 w-10 rounded-md object-cover"
+                                  src={product.image.trim()}
+                                  autoPlay
+                                  muted
+                                  loop
+                                  playsInline
+                                />
+                              ) : (
+                                <img
+                                  className="h-10 w-10 rounded-md object-cover"
+                                  src={product.image.trim()}
+                                  alt=""
+                                />
+                              )
                             ) : (
                               <div
                                 className="h-10 w-10 rounded-md bg-zinc-200"
@@ -762,7 +773,7 @@ export default function ProductsPage() {
                     value={mainImageUrl}
                     onChange={setMainImageUrl}
                     uploadFolder={productUploadFolder}
-                    accept="image/*"
+                    accept="image/*,video/mp4,video/webm"
                     placeholder="https://… or upload"
                   />
                   <p className="mt-1 text-xs text-zinc-700">
@@ -777,7 +788,7 @@ export default function ProductsPage() {
                     value={hoverImageUrl}
                     onChange={setHoverImageUrl}
                     uploadFolder={productUploadFolder}
-                    accept="image/*"
+                    accept="image/*,video/mp4,video/webm"
                     placeholder="Optional — shown when customers hover the product card"
                   />
                   <p className="mt-1 text-xs text-zinc-700">
@@ -805,7 +816,7 @@ export default function ProductsPage() {
                           });
                         }}
                         uploadFolder={productUploadFolder}
-                        accept="image/*"
+                        accept="image/*,video/mp4,video/webm"
                         placeholder="Optional — URL or upload"
                       />
                     ))}

@@ -10,6 +10,7 @@ import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
+import ProductMedia from "@/components/shop/ProductMedia";
 
 
 type WearFilter = "all" | "mens" | "womens";
@@ -213,11 +214,11 @@ export default function ShopClient() {
                     <div className={styles.imageWrap}>
                       {p.hoverImage ? (
                         <>
-                          <img src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
-                          <img src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
+                          <ProductMedia src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
+                          <ProductMedia src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden="true" />
                         </>
                       ) : (
-                        <img src={p.image} alt={p.name} className={styles.image} loading="lazy" />
+                        <ProductMedia src={p.image} alt={p.name} className={styles.image} loading="lazy" />
                       )}
 
                       <div className={styles.overlay}>
@@ -311,7 +312,7 @@ export default function ShopClient() {
             <div className={styles.modalGrid}>
               <div className={styles.modalGallery}>
                 <div className={styles.modalImageWrap}>
-                  <img src={activeImage || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
+                  <ProductMedia src={activeImage || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
                 </div>
                 {quickViewPiece.images && quickViewPiece.images.length > 1 && (
                   <div className={styles.modalThumbnails}>
@@ -322,7 +323,7 @@ export default function ShopClient() {
                         onClick={() => setActiveImage(img)}
                         aria-label={`View image ${idx + 1}`}
                       >
-                        <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                        <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
                       </button>
                     ))}
                   </div>

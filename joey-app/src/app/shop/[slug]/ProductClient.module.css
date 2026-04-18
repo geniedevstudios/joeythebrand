@@ -83,6 +83,8 @@
 .galleryCol {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .mainImageWrap {
@@ -90,13 +92,20 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--skintone);
-  aspect-ratio: 1/1;
+  /* Match garment photography proportions (and skeleton) */
+  aspect-ratio: 3/4;
 }
 
-.mainImage {
+/* Fill the ratio box — <video> ignores % height unless the box is explicitly filled */
+.mainImageWrap > :is(img, video),
+.mainImage:is(img, video) {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  max-width: 100%;
 }
 
 .badgeStack {
@@ -131,6 +140,7 @@
 }
 
 .thumb {
+  position: relative;
   width: calc(25% - 6px);
   aspect-ratio: 3/4;
   border-radius: var(--radius-sm);
@@ -143,7 +153,9 @@
   flex-shrink: 0;
 }
 
-.thumb img {
+.thumb :is(img, video) {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -151,7 +163,7 @@
   transition: transform 0.3s ease;
 }
 
-.thumb:hover img {
+.thumb:hover :is(img, video) {
   transform: scale(1.04);
 }
 
@@ -506,7 +518,7 @@
 
 .suggestionsGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-xl);
 }
 
@@ -516,6 +528,7 @@
   gap: var(--space-sm);
   text-decoration: none;
   cursor: pointer;
+  min-width: 0;
 }
 
 .suggestImgWrap {
@@ -526,7 +539,9 @@
   overflow: hidden;
 }
 
-.suggestImg {
+.suggestImg:is(img, video) {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -534,7 +549,7 @@
   transition: transform 0.5s ease;
 }
 
-.suggestCard:hover .suggestImg {
+.suggestCard:hover .suggestImg:is(img, video) {
   transform: scale(1.04);
 }
 
@@ -547,6 +562,13 @@
   object-fit: cover;
   display: block;
   transition: opacity 0.45s ease;
+}
+
+.suggestImgPrimary:is(video),
+.suggestImgHover:is(video) {
+  /* same layout rules as img; keeps MP4/WebM from expanding the card */
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .suggestImgPrimary { z-index: 0; }
@@ -787,6 +809,7 @@
 }
 
 .modalImageWrap {
+  position: relative;
   width: 100%;
   aspect-ratio: 3/4;
   max-height: 50vh;
@@ -795,11 +818,16 @@
   overflow: hidden;
 }
 
-.modalImage {
+.modalImageWrap > :is(img, video),
+.modalImage:is(img, video) {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
   background: var(--skintone);
+  display: block;
+  max-width: 100%;
 }
 
 .modalThumbnails {
@@ -814,6 +842,7 @@
 }
 
 .thumbBtn {
+  position: relative;
   width: 60px;
   height: 80px;
   flex-shrink: 0;
@@ -832,10 +861,14 @@
   border-color: var(--blue-athracite);
 }
 
-.thumbImage {
+.thumbBtn :is(img, video),
+.thumbImage:is(img, video) {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .modalInfo {
@@ -1028,7 +1061,7 @@
   }
 
   .suggestionsGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .modalContent {
@@ -1083,7 +1116,7 @@
   }
 
   .suggestionsGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-md);
   }
 
@@ -1176,7 +1209,7 @@
   }
 
   .suggestionsGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-sm);
   }
 

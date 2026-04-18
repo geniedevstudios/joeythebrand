@@ -7,6 +7,7 @@ import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroImageSrc, usePageHeroMedia, usePageHeroEmpty } from "@/hooks/usePageHero";
 import { resolveHeroLayout } from "@/lib/pageHeroes";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
+import ProductMedia from "@/components/shop/ProductMedia";
 import styles from "./ProductClient.module.css";
 
 const EMPTY_ARRAY: any[] = [];
@@ -173,7 +174,7 @@ export default function ProductClient({ slug }: { slug: string }) {
   }
 
   const handleAddToCart = () => {
-    if (!selectedSize && product.sizes.length > 0) {
+    if (!selectedSize && (product.sizes?.length ?? 0) > 0) {
       toast.error("Please pick a size before adding to cart.");
       return;
     }
@@ -239,7 +240,7 @@ export default function ProductClient({ slug }: { slug: string }) {
         <div className={styles.layout}>
           <div className={styles.galleryCol}>
             <div className={styles.mainImageWrap}>
-              <img 
+              <ProductMedia 
                 src={activeImage || galleryImages[0] || product.image} 
                 alt={product.name} 
                 className={styles.mainImage} 
@@ -269,7 +270,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                     onClick={() => setActiveImage(img)}
                     aria-label={`View image ${idx + 1}`}
                   >
-                    <img src={img} alt={`${product.name} view ${idx + 1}`} />
+                    <ProductMedia src={img} alt={`${product.name} view ${idx + 1}`} />
                   </button>
                 ))}
               </div>
@@ -352,7 +353,6 @@ export default function ProductClient({ slug }: { slug: string }) {
                 <div className={styles.actionBtns}>
                   <button 
                     className="btn btn-primary btn-lg" 
-                    style={{ justifyContent: "center", transition: "all 0.3s ease" }}
                     onClick={handleAddToCart}
                     disabled={addStatus !== "idle" || product.isOutOfStock}
                   >
@@ -420,11 +420,11 @@ export default function ProductClient({ slug }: { slug: string }) {
                   <div className={styles.suggestImgWrap}>
                     {item.hoverImage ? (
                       <>
-                        <img src={item.image} alt={item.name} className={styles.suggestImgPrimary} loading="lazy" />
-                        <img src={item.hoverImage} alt="" className={styles.suggestImgHover} loading="lazy" aria-hidden />
+                        <ProductMedia src={item.image} alt={item.name} className={styles.suggestImgPrimary} loading="lazy" />
+                        <ProductMedia src={item.hoverImage} alt="" className={styles.suggestImgHover} loading="lazy" aria-hidden="true" />
                       </>
                     ) : (
-                      <img src={item.image} alt={item.name} className={styles.suggestImg} loading="lazy" />
+                      <ProductMedia src={item.image} alt={item.name} className={styles.suggestImg} loading="lazy" />
                     )}
                     <div className={styles.suggestBadgeStack} aria-hidden="true">
                       {item.isOutOfStock ? (
@@ -507,7 +507,7 @@ export default function ProductClient({ slug }: { slug: string }) {
           <div className={styles.modalGrid}>
             <div className={styles.modalGallery}>
               <div className={styles.modalImageWrap}>
-                <img src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
+                <ProductMedia src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
               </div>
               {quickViewItem.images && 
                quickViewItem.images.filter((img: string) => img !== quickViewItem.hoverImage).length > 1 && (
@@ -521,7 +521,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                         aria-label={`Thumbnail ${idx + 1}`}
                         onClick={() => setQuickViewImage(img)}
                       >
-                        <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                        <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
                       </button>
                     ))}
                 </div>
@@ -612,7 +612,6 @@ export default function ProductClient({ slug }: { slug: string }) {
                       setQuickViewImage("");
                     });
                   }}
-                  style={{ transition: "all 0.3s ease" }}
                 >
                   Add To Cart
                 </button>
