@@ -9,6 +9,7 @@ import type { Order, OrderItem, ConsultationBooking } from "@/lib/types";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { openConsultationPrintWindow } from "@/lib/printConsultation";
 import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
+import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 import styles from "./account.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
@@ -373,7 +374,7 @@ function AccountDashboard({ userId }: { userId: string }) {
                               <span aria-hidden> · </span>
                               {c.customerEmail}
                               <span aria-hidden> · </span>
-                              {c.customerPhone}
+                              {formatPhoneDisplay(c.customerPhone)}
                             </p>
                             {pref ? <p>Preferred date: {pref}</p> : null}
                             {c.notes?.trim() ? (

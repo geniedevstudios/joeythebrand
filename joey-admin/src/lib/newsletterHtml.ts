@@ -321,7 +321,7 @@ export function parseNewsletterTemplateFromRequest(raw: unknown): ParseTemplateR
     sections.push({ imageUrl: "", imageLinkUrl: "", body: "" });
   }
 
-  let socialLinks: NewsletterSocialInput[] = [];
+  const socialLinks: NewsletterSocialInput[] = [];
   if (Array.isArray(t.socialLinks)) {
     for (const item of t.socialLinks.slice(0, 6)) {
       if (!item || typeof item !== "object") continue;

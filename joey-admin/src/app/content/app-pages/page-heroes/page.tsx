@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { dataStore } from "@/lib/dataStore";
 import type { PageHeroKey, PageHeroMedia, SiteContent } from "@/lib/types";
 import { PAGE_HERO_KEYS, PAGE_HERO_LABELS } from "@/lib/pageHeroes";
@@ -48,7 +50,7 @@ export default function PageHeroesIndexPage() {
     setHeroes((prev) => (prev ? { ...prev, [key]: { ...prev[key], ...p } } : prev));
   };
 
-  const save = async (e: React.FormEvent) => {
+  const save = async (e: FormEvent) => {
     e.preventDefault();
     if (!content || !heroes) return;
     setIsSaving(true);
@@ -93,17 +95,13 @@ export default function PageHeroesIndexPage() {
     <div className="w-full max-w-none space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <nav className="mb-2 text-sm text-zinc-800">
-            <Link href="/content" className="hover:text-zinc-900">
-              Site Content
-            </Link>
-            <span className="mx-2 text-zinc-300">/</span>
-            <Link href="/content/app-pages" className="hover:text-zinc-900">
-              App pages
-            </Link>
-            <span className="mx-2 text-zinc-300">/</span>
-            <span className="font-medium text-zinc-900">Page heroes</span>
-          </nav>
+          <Link 
+            href="/content/app-pages" 
+            className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to App pages
+          </Link>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Page hero backgrounds</h1>
           <p className="mt-1 text-sm text-zinc-900">
             Edit all non-home page heroes here, or open a single page for focus.

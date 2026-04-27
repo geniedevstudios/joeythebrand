@@ -69,7 +69,9 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    fetchCounts();
+    queueMicrotask(() => {
+      void fetchCounts();
+    });
     const unsubscribe = dataStore.subscribe(fetchCounts);
     return unsubscribe;
   }, []);
@@ -77,8 +79,8 @@ export function Sidebar() {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem("joeyAdmin.sidebar.contentExpanded");
-      if (raw === "0") setContentExpanded(false);
-      if (raw === "1") setContentExpanded(true);
+      if (raw === "0") queueMicrotask(() => setContentExpanded(false));
+      if (raw === "1") queueMicrotask(() => setContentExpanded(true));
     } catch {
       // ignore
     }

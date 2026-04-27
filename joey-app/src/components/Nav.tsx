@@ -32,6 +32,9 @@ export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeIcon, setActiveIcon] = useState<IconType>("cart");
   const [iconVisible, setIconVisible] = useState(true);
+  const [iconMenuOpen, setIconMenuOpen] = useState(false);
+  const [isTouchNav, setIsTouchNav] = useState(false);
+  const iconSlotRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_CART);
@@ -55,6 +58,35 @@ export default function Nav() {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
+
+  useEffect(() => {
+    const mq =
+      typeof window !== "undefined" ? window.matchMedia("(hover: none) and (pointer: coarse)") : null;
+    const apply = () => setIsTouchNav(Boolean(mq?.matches));
+    apply();
+    if (!mq) return;
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (!iconMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!iconSlotRef.current) return;
+      if (iconSlotRef.current.contains(t)) return;
+      setIconMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIconMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [iconMenuOpen]);
 
   // Rotate icons every 7 seconds
   useEffect(() => {
@@ -192,8 +224,20 @@ export default function Nav() {
                 {l.label}
               </Link>
             ))}
-            <div className={styles.iconSlot}>
-              <div className={styles.iconWrapper}>
+            <div
+              className={`${styles.iconSlot} ${iconMenuOpen ? styles.iconSlotOpen : ""}`}
+              ref={iconSlotRef}
+            >
+              <div
+                className={styles.iconWrapper}
+                onClickCapture={(e) => {
+                  const isMobileWidth = typeof window !== "undefined" && window.innerWidth <= 768;
+                  if (!isTouchNav && !isMobileWidth) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIconMenuOpen((o) => !o);
+                }}
+              >
                 {renderIcon()}
               </div>
               <div className={styles.iconDropdown}>

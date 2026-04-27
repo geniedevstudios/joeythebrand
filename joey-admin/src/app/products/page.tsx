@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { dataStore } from "@/lib/dataStore";
 import type { Product, ProductSize, Collection, WearTag } from "@/lib/types";
 import { Edit2, Plus, X, Trash2, Layers, Package } from "lucide-react";
@@ -84,6 +84,8 @@ export default function ProductsPage() {
   const [hoverImageUrl, setHoverImageUrl] = useState("");
   const [extraImageUrls, setExtraImageUrls] = useState<string[]>(["", "", ""]);
   const [newProductUploadKey, setNewProductUploadKey] = useState("");
+  const [detailsLines, setDetailsLines] = useState<string[]>([""]);
+  const detailInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const [productPendingDelete, setProductPendingDelete] = useState<Product | null>(null);
   const [collectionPendingDelete, setCollectionPendingDelete] = useState<Collection | null>(null);
@@ -112,10 +114,12 @@ export default function ProductsPage() {
         .slice(0, 3);
       setExtraImageUrls([0, 1, 2].map((i) => extras[i] ?? ""));
       setHoverImageUrl(editingProduct.hoverImage?.trim() || "");
+      setDetailsLines(editingProduct.details?.length ? editingProduct.details : [""]);
     } else {
       setMainImageUrl("");
       setHoverImageUrl("");
       setExtraImageUrls(["", "", ""]);
+      setDetailsLines([""]);
     }
   }, [isModalOpen, editingProduct]);
 
@@ -225,7 +229,6 @@ export default function ProductsPage() {
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const slug = (formData.get("slug") as string)?.trim() || undefined;
-    let categoryName = (formData.get("categoryName") as string)?.trim();
     const category = formData.get("category") as string;
     const price = Number(formData.get("price"));
     const primary = mainImageUrl.trim();
@@ -240,7 +243,7 @@ export default function ProductsPage() {
     const detailsRaw = (formData.get("details") as string) || "";
     const details = detailsRaw
       .split(/\n/)
-      .map((s) => s.trim())
+      .map((s) => s.replace(/^[•\-\u2022]\s*/, "").trim())
       .filter(Boolean);
     const isOutOfStock = formData.get("isOutOfStock") === "on";
     const isLimited = formData.get("isLimited") === "on";
@@ -252,7 +255,10 @@ export default function ProductsPage() {
     const quantity = Number(formData.get("quantity")) || 0;
 
     const col = collectionOptions.find((c) => c.slug === category);
-    if (!categoryName && col) categoryName = col.name;
+    const categoryName =
+      category === "none"
+        ? ""
+        : col?.name || editingProduct?.categoryName || category;
 
     const existingSizes = editingProduct?.sizes || DEFAULT_SIZES;
     const newSizes: ProductSize[] = existingSizes.map((s) => ({
@@ -265,7 +271,7 @@ export default function ProductsPage() {
         await dataStore.updateProduct(editingProduct.id, {
           slug,
           name,
-          categoryName: categoryName || editingProduct.categoryName,
+          categoryName,
           category,
           price,
           image: primary,
@@ -285,7 +291,7 @@ export default function ProductsPage() {
         await dataStore.addProduct({
           slug,
           name,
-          categoryName: categoryName || col?.name || category,
+          categoryName,
           category,
           price,
           image: primary,
@@ -610,7 +616,11 @@ export default function ProductsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">{product.categoryName}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">
+                        {product.category === "none"
+                          ? "—"
+                          : collections.find((c) => c.slug === product.category)?.name || product.categoryName}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         {product.isOutOfStock ? (
                           <span className="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">
@@ -710,17 +720,6 @@ export default function ProductsPage() {
                       value: col.slug,
                       label: `${col.name} (${col.slug})`,
                     }))}
-                  />
-                </div>
-
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-zinc-700">Category display name</label>
-                  <input
-                    type="text"
-                    name="categoryName"
-                    defaultValue={editingProduct?.categoryName}
-                    required
-                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
                   />
                 </div>
 
@@ -837,13 +836,75 @@ export default function ProductsPage() {
                   <label className="block text-sm font-medium text-zinc-700">
                     The Details <span className="font-normal text-zinc-700">(product page)</span>
                   </label>
-                  <textarea
-                    name="details"
-                    rows={5}
-                    defaultValue={editingProduct?.details?.length ? editingProduct.details.join("\n") : ""}
-                    placeholder={"One bullet per line, e.g.\nHand-woven kente\nRelaxed fit\nDry clean only"}
-                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                  />
+                  <div className="mt-2 space-y-2">
+                    {detailsLines.map((v, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="select-none text-zinc-400">•</span>
+                        <input
+                          ref={(el) => {
+                            detailInputRefs.current[idx] = el;
+                          }}
+                          type="text"
+                          value={v}
+                          placeholder={idx === 0 ? "Type a detail and press Enter…" : "Next detail…"}
+                          onChange={(e) => {
+                            const next = [...detailsLines];
+                            next[idx] = e.target.value;
+                            setDetailsLines(next);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== "Enter") return;
+                            e.preventDefault();
+                            const next = [...detailsLines];
+                            next.splice(idx + 1, 0, "");
+                            setDetailsLines(next);
+                            requestAnimationFrame(() => {
+                              detailInputRefs.current[idx + 1]?.focus();
+                            });
+                          }}
+                          className="block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                        />
+                        {detailsLines.length > 1 ? (
+                          <button
+                            type="button"
+                            className="rounded-md border border-zinc-200 px-2 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                            onClick={() => {
+                              const next = detailsLines.filter((_, i) => i !== idx);
+                              setDetailsLines(next.length ? next : [""]);
+                              requestAnimationFrame(() => {
+                                detailInputRefs.current[Math.max(0, idx - 1)]?.focus();
+                              });
+                            }}
+                            aria-label="Remove detail"
+                          >
+                            Remove
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                    <div>
+                      <button
+                        type="button"
+                        className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 hover:bg-zinc-50"
+                        onClick={() => {
+                          setDetailsLines((prev) => [...prev, ""]);
+                          requestAnimationFrame(() => {
+                            detailInputRefs.current[detailsLines.length]?.focus();
+                          });
+                        }}
+                      >
+                        + Add another line
+                      </button>
+                    </div>
+                    <textarea
+                      name="details"
+                      value={detailsLines.join("\n")}
+                      readOnly
+                      className="hidden"
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    />
+                  </div>
                   <p className="mt-1 text-xs text-zinc-700">
                     Shown in the &quot;The Details&quot; list on the product page (above Shipping &amp; Returns). Leave
                     empty to hide that block.

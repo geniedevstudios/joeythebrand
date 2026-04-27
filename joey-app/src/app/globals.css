@@ -2,8 +2,6 @@
    JOEY THE BRAND — Global Design System
    ============================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=Inter:wght@300;400;500;600&family=Bebas+Neue&display=swap');
-
 /* =============================================
    DESIGN TOKENS
    ============================================= */
@@ -67,6 +65,9 @@
   --transition-fast: 0.15s ease;
   --transition-base: 0.25s ease;
   --transition-slow: 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Shared hero/header sizing (Account is the reference) */
+  --page-header-height: clamp(260px, 38vh, 420px);
 }
 
 /* =============================================
@@ -132,6 +133,22 @@ main {
   opacity: 0 !important;
 }
 
+/* When the hero is empty but the store is still initializing, show the brand mark behind the ring spinner.
+   Use the element background (not ::before) so route-specific ::before overlays (e.g. Shop header) can't replace it. */
+.page-hero-shell[data-page-hero-empty="true"][data-page-hero-loading="true"] {
+  background-color: #000 !important;
+  background-image: url("/white%20logo.png") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: clamp(200px, 70vw, 320px) auto !important;
+  background-attachment: scroll !important;
+}
+
+/* If a route adds its own ::before scrim, keep it translucent enough for the brand mark to read during initial load. */
+.page-hero-shell[data-page-hero-empty="true"][data-page-hero-loading="true"]::before {
+  opacity: 0.55 !important;
+}
+
 .page-hero-shell[data-page-hero-empty="true"][data-page-hero-loading="true"]::after {
   content: "";
   position: absolute;
@@ -144,7 +161,7 @@ main {
   border: 2.5px solid rgba(255, 255, 255, 0.22);
   border-top-color: rgba(255, 255, 255, 0.95);
   animation: pageHeroShellSpin 0.85s linear infinite;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
 }
 

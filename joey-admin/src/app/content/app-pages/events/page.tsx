@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import AssetUrlField from "@/components/AssetUrlField";
@@ -50,7 +52,7 @@ type DraftEvent = {
   category: EventCategory;
   status: EventStatus;
   location: string;
-  startAt: string; // datetime-local
+  startAt: string; // local datetime (YYYY-MM-DDTHH:mm)
   dateLabel: string;
   description: string;
   detailsReady: boolean;
@@ -71,6 +73,308 @@ function sanitizeSlug(raw: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function slugFromTitle(title: string): string {
+  return sanitizeSlug(title || "");
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function toLocalInputValue(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(
+    d.getMinutes(),
+  )}`;
+}
+
+function parseLocalInputValue(value: string): Date | null {
+  const v = (value || "").trim();
+  if (!v) return null;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function formatPickerLabel(value: string): string {
+  const d = parseLocalInputValue(value);
+  if (!d) return "";
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function buildTimeOptions(stepMinutes = 15): string[] {
+  const out: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += stepMinutes) {
+      out.push(`${pad2(h)}:${pad2(m)}`);
+    }
+  }
+  return out;
+}
+
+function DateTimePicker({
+  value,
+  onChange,
+  id,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  id?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const parsed = parseLocalInputValue(value);
+  const [visibleMonth, setVisibleMonth] = useState<Date>(() => parsed ?? new Date());
+  const [step, setStep] = useState<1 | 2>(1);
+  const [draftDay, setDraftDay] = useState<Date | null>(null);
+  const [draftTime, setDraftTime] = useState<string>("12:00");
+
+  useEffect(() => {
+    if (!parsed) return;
+    queueMicrotask(() => setVisibleMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1)));
+  }, [parsed]); // derived from `value`
+
+  useEffect(() => {
+    if (!open) return;
+    // Initialize draft selection from current value (or defaults) whenever opened.
+    const base = parsed ?? new Date();
+    queueMicrotask(() => {
+      setStep(1);
+      setDraftDay(new Date(base.getFullYear(), base.getMonth(), base.getDate()));
+      setDraftTime(`${pad2(base.getHours())}:${pad2(base.getMinutes())}`);
+    });
+  }, [open, parsed]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!popoverRef.current) return;
+      if (popoverRef.current.contains(t)) return;
+      setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const timeOptions = useMemo(() => buildTimeOptions(15), []);
+
+  const monthStart = useMemo(() => new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1), [visibleMonth]);
+  const monthEnd = useMemo(() => new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0), [visibleMonth]);
+  const startWeekday = monthStart.getDay(); // 0=Sun
+  const daysInMonth = monthEnd.getDate();
+
+  const setDateAndTime = (d: Date, hhmm: string) => {
+    const [hh, mm] = hhmm.split(":").map((x) => Number(x));
+    const next = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh || 0, mm || 0, 0, 0);
+    onChange(toLocalInputValue(next));
+  };
+
+  const onPickDay = (day: number) => {
+    const d = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+    setDraftDay(d);
+  };
+
+  const label = formatPickerLabel(value);
+
+  return (
+    <div className="relative">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          id={id}
+          className="mt-1 inline-flex min-h-[40px] w-full items-center justify-between rounded-md border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-900 hover:bg-zinc-50"
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          <span className={label ? "" : "text-zinc-500"}>
+            {label || "Pick date & time"}
+          </span>
+          <span className="text-zinc-500">▾</span>
+        </button>
+
+        {value.trim() ? (
+          <button
+            type="button"
+            className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 hover:bg-zinc-50"
+            onClick={() => onChange("")}
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+
+      {open ? (
+        <>
+          {/* Scrim to prevent underlying modal text from competing visually. */}
+          <div className="fixed inset-0 z-[9998] bg-black/20" aria-hidden style={{ pointerEvents: "none" }} />
+          <div
+            role="dialog"
+            aria-label="Choose date and time"
+            ref={popoverRef}
+            className="absolute left-0 top-[calc(100%+8px)] z-[9999] isolate w-[320px] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-black p-4 text-white shadow-2xl"
+          >
+            {step === 1 ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm hover:bg-white/10"
+                    onClick={() => setVisibleMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                    aria-label="Previous month"
+                  >
+                    ←
+                  </button>
+                  <div className="text-sm font-semibold text-white">
+                    {monthStart.toLocaleString(undefined, { month: "long", year: "numeric" })}
+                  </div>
+                  <button
+                    type="button"
+                    className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm hover:bg-white/10"
+                    onClick={() => setVisibleMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                    aria-label="Next month"
+                  >
+                    →
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-7 gap-1 text-[11px] font-semibold text-white/60">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                    <div key={d} className="py-1 text-center">
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-1 grid grid-cols-7 gap-1">
+                  {Array.from({ length: startWeekday }).map((_, i) => (
+                    <div key={`pad-${i}`} />
+                  ))}
+                  {Array.from({ length: daysInMonth }).map((_, idx) => {
+                    const day = idx + 1;
+                    const d = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+                    const isSelected =
+                      draftDay &&
+                      d.getFullYear() === draftDay.getFullYear() &&
+                      d.getMonth() === draftDay.getMonth() &&
+                      d.getDate() === draftDay.getDate();
+                    const isToday = (() => {
+                      const t = new Date();
+                      return (
+                        d.getFullYear() === t.getFullYear() &&
+                        d.getMonth() === t.getMonth() &&
+                        d.getDate() === t.getDate()
+                      );
+                    })();
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        className={`h-9 rounded-md text-sm transition-colors ${
+                          isSelected
+                            ? "!bg-white !text-black font-semibold ring-2 ring-white/70 ring-offset-0"
+                            : "bg-white/10 text-white hover:bg-white/15"
+                        } ${isToday && !isSelected ? "border border-white/25" : "border border-transparent"}`}
+                        onClick={() => onPickDay(day)}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-4 text-xs text-white/70">
+                  Pick a date, then tap <strong>Next</strong> to choose a time.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-white">Pick a time</div>
+                  <div className="text-xs text-white/60">
+                    {draftDay
+                      ? draftDay.toLocaleDateString(undefined, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : ""}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-xs font-semibold text-white/70">Time</label>
+                  <select
+                    value={draftTime}
+                    size={10}
+                    onChange={(e) => setDraftTime(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-white/10 bg-white/5 p-2 text-sm text-white max-h-64 overflow-auto"
+                  >
+                    {timeOptions.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+          <div className="mt-4 flex justify-end gap-2">
+              {step === 2 ? (
+                <button
+                  type="button"
+                  className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
+                  onClick={() => setStep(1)}
+                >
+                  Back
+                </button>
+              ) : null}
+              {step === 1 ? (
+                <button
+                  type="button"
+                  className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-white/90 disabled:opacity-50"
+                  onClick={() => setStep(2)}
+                  disabled={!draftDay}
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-white/90 disabled:opacity-50"
+                  onClick={() => {
+                    if (!draftDay) return;
+                    setDateAndTime(draftDay, draftTime || "12:00");
+                    setOpen(false);
+                  }}
+                  disabled={!draftDay}
+                >
+                  Save
+                </button>
+              )}
+          </div>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 function parseCollectionSlugs(csv: string): string[] {
@@ -229,8 +533,8 @@ export default function EventsContentPage() {
       ...toDraft(null),
       status,
       category: "fashion_shows",
-      slug: "",
       title: "",
+      slug: "",
     });
     setUpdateKind(null);
     setUpdateStep(0);
@@ -245,9 +549,9 @@ export default function EventsContentPage() {
   };
 
   const saveEvent = async () => {
-    const slug = sanitizeSlug(draft.slug);
+    const slug = slugFromTitle(draft.title);
     if (!slug) {
-      toast.error("Add a slug (e.g. blah-blah-2025).");
+      toast.error("Add a title so we can generate a slug.");
       return;
     }
     if (!draft.title.trim()) {
@@ -343,17 +647,13 @@ export default function EventsContentPage() {
   return (
     <div className="w-full max-w-none space-y-8">
       <div>
-        <nav className="mb-2 text-sm text-zinc-800">
-          <Link href="/content" className="hover:text-zinc-900">
-            Site Content
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <Link href="/content/app-pages" className="hover:text-zinc-900">
-            App pages
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <span className="font-medium text-zinc-900">Events</span>
-        </nav>
+        <Link 
+          href="/content/app-pages" 
+          className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to App pages
+        </Link>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Events page</h1>
         <p className="mt-1 text-sm text-zinc-900">
           This content powers the public <code className="px-1.5 py-0.5 rounded bg-zinc-100">/events</code> page.
@@ -585,7 +885,7 @@ export default function EventsContentPage() {
           aria-modal="true"
         >
           <div
-            className="fixed inset-0 bg-black/55 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
             aria-hidden
             onClick={() => !eventsSaving && setEditorOpen(false)}
           />
@@ -813,21 +1113,20 @@ export default function EventsContentPage() {
                 <label className="block text-sm font-medium text-zinc-700">Title</label>
                 <input
                   value={draft.title}
-                  onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))}
+                  onChange={(e) => {
+                    const nextTitle = e.target.value;
+                    setDraft((p) => {
+                      // Auto-generate slug from title for new events (and when slug is still blank).
+                      const shouldAutofillSlug = !p.id && !p.slug.trim();
+                      return {
+                        ...p,
+                        title: nextTitle,
+                        slug: shouldAutofillSlug ? slugFromTitle(nextTitle) : p.slug,
+                      };
+                    });
+                  }}
                   className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700">Slug</label>
-                <input
-                  value={draft.slug}
-                  onChange={(e) => setDraft((p) => ({ ...p, slug: e.target.value }))}
-                  placeholder="blah-blah-2025"
-                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
-                />
-                <p className="mt-1 text-xs text-zinc-700">
-                  Used for <code>/events/[slug]</code>. Lowercase with dashes.
-                </p>
               </div>
 
               <div>
@@ -854,11 +1153,9 @@ export default function EventsContentPage() {
 
               <div>
                 <label className="block text-sm font-medium text-zinc-700">Start date/time (optional)</label>
-                <input
-                  type="datetime-local"
+                <DateTimePicker
                   value={draft.startAt}
-                  onChange={(e) => setDraft((p) => ({ ...p, startAt: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
+                  onChange={(next) => setDraft((p) => ({ ...p, startAt: next }))}
                 />
               </div>
 

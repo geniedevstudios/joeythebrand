@@ -1,5 +1,6 @@
 import type { ConsultationBooking } from "@/lib/types";
 import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
+import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 
 function escapeHtml(s: string): string {
   if (!s) return "";
@@ -36,7 +37,7 @@ export function openConsultationPrintWindow(b: ConsultationBooking): void {
   const pairs: { label: string; value: string; mono?: boolean }[] = [
     { label: "Customer name", value: b.customerName },
     { label: "Email", value: b.customerEmail },
-    { label: "Phone / WhatsApp", value: b.customerPhone },
+    { label: "Phone / WhatsApp", value: formatPhoneDisplay(b.customerPhone) },
     { label: "Service", value: b.service },
     { label: "Preferred date", value: formatDate(b.preferredDate) },
     { label: "Scheduled appointment", value: formatScheduled(b.scheduledAt) },

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import AssetUrlField from "@/components/AssetUrlField";
@@ -181,7 +182,7 @@ export default function NewsletterPage() {
         throw new Error("Your session expired. Sign in again.");
       }
 
-      let payload: Record<string, unknown> = {
+      const payload: Record<string, unknown> = {
         subject: subject.trim(),
         previewText: previewText.trim(),
         editorMode,
@@ -290,13 +291,13 @@ export default function NewsletterPage() {
   return (
     <div className="w-full max-w-none space-y-6 pb-12">
       <div>
-        <nav className="mb-2 text-sm text-zinc-800">
-          <Link href="/content" className="hover:text-zinc-900">
-            Site Content
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <span className="font-medium text-zinc-900">Newsletter</span>
-        </nav>
+        <Link 
+          href="/content" 
+          className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Site Content
+        </Link>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Send list update</h1>
       </div>
 
@@ -603,7 +604,6 @@ export default function NewsletterPage() {
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 shadow-inner">
             <div
               className="max-h-[min(80vh,900px)] overflow-auto bg-white"
-              // eslint-disable-next-line react/no-danger -- admin-only preview of authored content
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </div>

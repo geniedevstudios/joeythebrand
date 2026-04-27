@@ -1,13 +1,15 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroImageSrc, usePageHeroMedia, usePageHeroEmpty } from "@/hooks/usePageHero";
-import { resolveHeroLayout } from "@/lib/pageHeroes";
+import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import ProductMedia from "@/components/shop/ProductMedia";
+import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import styles from "./ProductClient.module.css";
 
 const EMPTY_ARRAY: any[] = [];
@@ -15,13 +17,9 @@ const _getEmptyArray = () => EMPTY_ARRAY;
 const _getProducts = () => dataStore.getProducts();
 const _getWishlistItems = () => wishlistStore.getItems();
 
-function ProductDetailSkeleton() {
+function ProductDetailSkeletonBody() {
   return (
-    <div className={styles.page}>
-      {/* Banner placeholder */}
-      <div className={styles.heroBanner}>
-        <div className={styles.heroBannerBg} style={{ background: "#e8e5e0" }} />
-      </div>
+    <>
       <div className="container" style={{ paddingTop: "2rem" }}>
         <div className={styles.layout}>
           {/* Gallery column */}
@@ -61,7 +59,7 @@ function ProductDetailSkeleton() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -87,6 +85,7 @@ function seededRandom(seed: string) {
 }
 
 export default function ProductClient({ slug }: { slug: string }) {
+  const router = useRouter();
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
@@ -96,9 +95,19 @@ export default function ProductClient({ slug }: { slug: string }) {
   const [quickViewImage, setQuickViewImage] = useState("");
 
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
+  const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => []);
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, _getWishlistItems, _getEmptyArray);
   const isStoreLoading = useStoreLoading();
   const isInWishlist = (itemId: string) => wishlistItems.some(item => item.id === itemId);
+
+  const getCollectionName = useMemo(() => {
+    return (p: any): string => {
+      const slug = String(p?.category || "").trim();
+      if (!slug || slug === "none") return "";
+      const match = (collections as any[]).find((c: any) => c?.slug === slug);
+      return match?.name ? String(match.name) : "";
+    };
+  }, [collections]);
 
   const toggleWishlist = (item: any) => {
     const wasInWishlist = isInWishlist(item.id);
@@ -148,10 +157,27 @@ export default function ProductClient({ slug }: { slug: string }) {
   };
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
-  const productHeroSrc = usePageHeroImageSrc("product");
-  const productHeroEmpty = usePageHeroEmpty("product");
-  const productHeroMedia = usePageHeroMedia("product");
-  const productHeroLayout = resolveHeroLayout(productHeroMedia);
+  const {
+    empty: productHeroEmpty,
+    shellSpinner: productHeroSpinner,
+    style: productHeroStyle,
+    showImageLoader: productHeroImageLoader,
+  } = usePageHeroShellRenderProps("product");
+
+  const productHeroBanner = (
+    <div className={styles.heroBanner}>
+      <div
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.heroBannerBg}`}
+        data-page-hero-empty={productHeroEmpty ? "true" : "false"}
+        data-page-hero-loading={productHeroSpinner ? "true" : "false"}
+        style={productHeroStyle}
+      >
+        {productHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+        {/* Keep route-specific scrim consistent with other headers. */}
+        {!productHeroEmpty ? <div className={styles.heroBannerOverlay} /> : null}
+      </div>
+    </div>
+  );
 
   if (!product) {
     // Show the skeleton while:
@@ -159,7 +185,14 @@ export default function ProductClient({ slug }: { slug: string }) {
     //  b) products are still empty (init() fired but notify() hasn't landed yet)
     // Only show "not found" once we have a loaded product list that doesn't
     // contain the requested id — i.e. the product genuinely doesn't exist.
-    if (isStoreLoading || products.length === 0) return <ProductDetailSkeleton />;
+    if (isStoreLoading || products.length === 0) {
+      return (
+        <div className={styles.page}>
+          {productHeroBanner}
+          <ProductDetailSkeletonBody />
+        </div>
+      );
+    }
     return (
       <div className={styles.page}>
         <div className="container" style={{ textAlign: "center", padding: "100px 0" }}>
@@ -205,34 +238,35 @@ export default function ProductClient({ slug }: { slug: string }) {
   return (
     <>
     <div className={styles.page}>
-      <div className={styles.heroBanner}>
-        <div
-          className={`${PAGE_HERO_SHELL_CLASS} ${styles.heroBannerBg}`}
-          data-page-hero-empty={productHeroEmpty ? "true" : "false"}
-          style={productHeroEmpty ? { background: "#000" } : undefined}
-        >
-          {!productHeroEmpty ? (
-            <img
-              src={productHeroSrc}
-              alt=""
-              className={styles.heroBannerImg}
-              style={{
-                objectFit: productHeroLayout.fit === "contain" ? "contain" : "cover",
-                objectPosition: productHeroLayout.position,
-              }}
-            />
-          ) : null}
-          {!productHeroEmpty ? <div className={styles.heroBannerOverlay} /> : null}
-        </div>
-      </div>
+      {productHeroBanner}
 
       <div className={styles.breadcrumbs}>
         <div className="container">
-          <Link href="/shop" className={styles.crumbLink}>Shop</Link>
-          <span className={styles.crumbSeparator}>/</span>
-          <span className={styles.crumbLink}>{product.categoryName}</span>
-          <span className={styles.crumbSeparator}>/</span>
-          <span className={styles.crumbCurrent}>{product.name}</span>
+          <button
+            type="button"
+            className={`${styles.crumbLink} ${styles.crumbBackBtn}`}
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/shop");
+              }
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={styles.crumbBackIcon}
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Back
+          </button>
         </div>
       </div>
 
@@ -279,7 +313,10 @@ export default function ProductClient({ slug }: { slug: string }) {
 
           <div className={styles.infoCol}>
             <div className={styles.infoSticky}>
-              <span className={styles.categoryLabel}>{product.categoryName}</span>
+              {(() => {
+                const colName = getCollectionName(product);
+                return colName ? <span className={styles.categoryLabel}>{colName}</span> : null;
+              })()}
               <h1 className={`t-display ${styles.productName}`}>{product.name}</h1>
               
               <div className={styles.priceRow}>
@@ -483,7 +520,10 @@ export default function ProductClient({ slug }: { slug: string }) {
                     </div>
                   </div>
                   <div className={styles.suggestInfo}>
-                    <p className={styles.suggestCategory}>{item.categoryName}</p>
+                    {(() => {
+                      const colName = getCollectionName(item);
+                      return colName ? <p className={styles.suggestCategory}>{colName}</p> : null;
+                    })()}
                     <p className={styles.suggestName}>{item.name}</p>
                     <p className={styles.suggestPrice}>{formatPrice(item.price)}</p>
                   </div>
@@ -536,9 +576,6 @@ export default function ProductClient({ slug }: { slug: string }) {
               </div>
               
               <p className={styles.modalDesc}>{quickViewItem.description}</p>
-              <p className={styles.modalDescNote}>
-                Authentic Hand Woven. Available on backorder.
-              </p>
               
               <div className={styles.modalSizeRow}>
                 <span className={styles.qtyLabel}>Size:</span>
@@ -627,8 +664,10 @@ export default function ProductClient({ slug }: { slug: string }) {
               </div>
 
               <div className={styles.modalMeta}>
-                <p><span>SKU:</span> {quickViewItem.id}</p>
-                <p><span>Categories:</span> {quickViewItem.categoryName}</p>
+                {(() => {
+                  const colName = getCollectionName(quickViewItem);
+                  return colName ? <p><span>Collection:</span> {colName}</p> : null;
+                })()}
               </div>
               <Link href={`/shop/${quickViewItem.slug || quickViewItem.id}`} className={styles.modalFullDetail} onClick={() => { setQuickViewItem(null); setQuickViewImage(""); }}>
                 View Full Details →

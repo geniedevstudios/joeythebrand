@@ -1,6 +1,5 @@
 "use client";
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { dataStore } from "@/lib/dataStore";
 import { subscribeShopPublicRealtime } from "@/lib/supabasePublicRealtime";
 
@@ -9,8 +8,6 @@ import { subscribeShopPublicRealtime } from "@/lib/supabasePublicRealtime";
  * `site_content` (hero images, copy) fresh on navigation and when returning to the tab.
  */
 export default function DataStoreInit() {
-  const pathname = usePathname();
-
   useEffect(() => {
     void dataStore.init();
   }, []);
@@ -18,11 +15,6 @@ export default function DataStoreInit() {
   useEffect(() => {
     return subscribeShopPublicRealtime();
   }, []);
-
-  useEffect(() => {
-    void dataStore.refreshSiteContent();
-    void dataStore.refreshCollections();
-  }, [pathname]);
 
   useEffect(() => {
     const onVisible = () => {

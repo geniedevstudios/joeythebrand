@@ -10,6 +10,8 @@ import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 
+const SITE_URL = "https://joeythebrand.com";
+
 const jost = Jost({
   subsets: ["latin"],
   variable: "--font-label",
@@ -27,14 +29,38 @@ const bodoni = Bodoni_Moda({
 });
 
 export const metadata: Metadata = {
-  title: "JOEY THE BRAND — Power. Precision. Presence.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "JOEY THE BRAND — Power. Precision. Presence.",
+    template: "%s — JOEY THE BRAND",
+  },
   description:
     "JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity. Based in Accra, Ghana.",
   keywords: ["JOEY THE BRAND", "African fashion", "luxury clothing", "bespoke tailoring", "Accra Ghana", "contemporary fashion"],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "JOEY THE BRAND — Power. Precision. Presence.",
     description: "Contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity.",
     type: "website",
+    url: SITE_URL,
+    siteName: "JOEY THE BRAND",
+    images: [
+      {
+        url: "/icon.png",
+        width: 512,
+        height: 512,
+        alt: "JOEY THE BRAND",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "JOEY THE BRAND — Power. Precision. Presence.",
+    description:
+      "JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity.",
+    images: ["/icon.png"],
   },
 };
 
@@ -44,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         <Script id="google-tag-manager" strategy="afterInteractive">
           {`

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import { useEffect, useMemo, useSyncExternalStore, useState } from "react";
 import { createPortal } from "react-dom";
@@ -12,6 +13,7 @@ import styles from "./FeaturedSection.module.css";
 
 const EMPTY_PRODUCTS: Product[] = [];
 const EMPTY_WISHLIST: WishlistItem[] = [];
+const EMPTY_COLLECTIONS: any[] = [];
 
 function FeaturedSectionSkeleton() {
   return (
@@ -54,12 +56,22 @@ function FeaturedSectionSkeleton() {
 export default function FeaturedSection() {
   const isStoreLoading = useStoreLoading();
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
+  const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => EMPTY_COLLECTIONS);
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
   const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+
+  const getCollectionName = useMemo(() => {
+    return (p: any): string => {
+      const slug = String(p?.category || "").trim();
+      if (!slug || slug === "none") return "";
+      const match = (collections as any[]).find((c: any) => c?.slug === slug);
+      return match?.name ? String(match.name) : "";
+    };
+  }, [collections]);
 
   const featuredLabel = useMemo(() => {
     const phrases = [
@@ -193,7 +205,10 @@ export default function FeaturedSection() {
                 </div>
 
                 <div className={styles.modalInfo}>
-                  <p className={styles.modalCategory}>{quickViewPiece.categoryName}</p>
+                  {(() => {
+                    const colName = getCollectionName(quickViewPiece);
+                    return colName ? <p className={styles.modalCategory}>{colName}</p> : null;
+                  })()}
                   <h3 id="featured-quickview-title" className={styles.modalTitle}>{quickViewPiece.name}</h3>
                   <p className={styles.modalPrice}>GHC {Number(quickViewPiece.price).toLocaleString()}</p>
 
@@ -394,7 +409,10 @@ export default function FeaturedSection() {
                 </div>
               </div>
               <div className={styles.info}>
-                <span className={styles.category}>{item.categoryName}</span>
+                {(() => {
+                  const colName = getCollectionName(item);
+                  return colName ? <span className={styles.category}>{colName}</span> : null;
+                })()}
                 <div className="flex justify-between items-baseline">
                   <h3 className={styles.name}>{item.name}</h3>
                   <span className="text-sm font-medium text-zinc-900">GHC {item.price.toLocaleString()}</span>

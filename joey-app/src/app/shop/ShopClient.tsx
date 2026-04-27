@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useSyncExternalStore, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -16,9 +17,12 @@ import ProductMedia from "@/components/shop/ProductMedia";
 type WearFilter = "all" | "mens" | "womens";
 
 const EMPTY_ARRAY: any[] = [];
+const EMPTY_COLLECTIONS: any[] = [];
 const _getEmptyArray = () => EMPTY_ARRAY;
 const _getProducts = () => dataStore.getProducts();
 const _getWishlistItems = () => wishlistStore.getItems();
+const _getCollections = () => dataStore.getCollections();
+const _getEmptyCollections = () => EMPTY_COLLECTIONS;
 
 function ShopProductsSkeleton({ count = 6 }: { count?: number }) {
   return (
@@ -54,9 +58,20 @@ export default function ShopClient() {
   const [selectedSize, setSelectedSize] = useState("");
   const searchParams = useSearchParams();
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
+  const collections = useSyncExternalStore(dataStore.subscribe, _getCollections, _getEmptyCollections);
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, _getWishlistItems, _getEmptyArray);
   const isStoreLoading = useStoreLoading();
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+
+  const getCollectionName = useCallback(
+    (p: any): string => {
+      const slug = String(p?.category || "").trim();
+      if (!slug || slug === "none") return "";
+      const match = (collections as any[]).find((c: any) => c?.slug === slug);
+      return match?.name ? String(match.name) : "";
+    },
+    [collections],
+  );
 
 
   const scrollToPieces = useCallback(() => {
@@ -283,7 +298,10 @@ export default function ShopClient() {
                   </div>
                   <div className={styles.info}>
                     <span className={styles.category}>
-                      {p.categoryName}
+                      {(() => {
+                        const colName = getCollectionName(p);
+                        return colName ? colName : null;
+                      })()}
                     </span>
                     <h2 className={styles.name}>{p.name}</h2>
                     <div className={styles.priceRow}>
@@ -338,9 +356,6 @@ export default function ShopClient() {
                 </div>
 
                 <p className={styles.modalDesc}>{quickViewPiece.description}</p>
-                <p className={styles.modalDescNote}>
-                  Authentic Hand Woven. Available on backorder.
-                </p>
 
                 <div className={styles.modalSizeRow}>
                   <span className={styles.qtyLabel}>Size:</span>
@@ -417,8 +432,10 @@ export default function ShopClient() {
                 </div>
 
                 <div className={styles.modalMeta}>
-                  <p><span>SKU:</span> {quickViewPiece.id}</p>
-                  <p><span>Collection:</span> {quickViewPiece.categoryName}</p>
+                  {(() => {
+                    const colName = getCollectionName(quickViewPiece);
+                    return colName ? <p><span>Collection:</span> {colName}</p> : null;
+                  })()}
                 </div>
                 <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={styles.modalFullDetail}>
                   View Full Details →

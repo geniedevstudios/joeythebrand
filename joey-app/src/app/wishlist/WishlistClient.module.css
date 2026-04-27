@@ -14,6 +14,11 @@
   padding-top: var(--nav-height);
   color: var(--color-text-light);
   padding-bottom: var(--space-lg);
+  height: var(--page-header-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
 }
 
 .pageHeader::before {
@@ -32,7 +37,13 @@
 .pageHeader > * {
   position: relative;
   z-index: 1;
-  padding-top: var(--space-3xl);
+}
+
+.pageHeader :global(.container) {
+  /* Ensure the content block sits at the bottom of the fixed-height header. */
+  margin-top: auto;
+  width: 100%;
+  text-align: left;
 }
 
 .pageHeader .section-label {

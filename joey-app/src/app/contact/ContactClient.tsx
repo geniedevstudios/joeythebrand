@@ -8,6 +8,7 @@ import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@
 import type { SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import { authStore } from "@/store/authStore";
+import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 
 type ContactFormState = {
   name: string;
@@ -156,7 +157,7 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>Phone</span>
                   <a href="tel:+233504148009" className={styles.infoValue}>
-                    +233 (0) 504 148 009
+                    {formatPhoneDisplay("+233 (0) 504 148 009")}
                   </a>
                 </div>
 

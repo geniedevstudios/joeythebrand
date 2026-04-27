@@ -8,6 +8,7 @@ import type {
   Collection,
   WearTag,
   ConsultationBooking,
+  ConsultationDayRule,
   ConsultationStatus,
   ConsultationSettings,
 } from "./types";
@@ -420,6 +421,29 @@ export const dataStore = {
     const { error } = await supabase
       .from("consultation_settings")
       .upsert({ id: 1, max_slots_per_day: n });
+    if (error) throw new Error(error.message);
+    dataStore.notify();
+  },
+
+  getConsultationDayRules: async (): Promise<ConsultationDayRule[]> => {
+    const { data, error } = await supabase
+      .from("consultation_day_rules")
+      .select("day,max_slots_per_day")
+      .order("day", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data || [])
+      .map((r) => ({
+        day: String((r as { day?: string }).day ?? ""),
+        maxSlotsPerDay: Number((r as { max_slots_per_day?: number }).max_slots_per_day ?? 5),
+      }))
+      .filter((r) => /^\d{4}-\d{2}-\d{2}$/.test(r.day));
+  },
+
+  upsertConsultationDayRule: async (day: string, maxSlotsPerDay: number): Promise<void> => {
+    const d = String(day || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error("Invalid day.");
+    const n = Math.min(50, Math.max(1, Math.floor(maxSlotsPerDay)));
+    const { error } = await supabase.from("consultation_day_rules").upsert({ day: d, max_slots_per_day: n });
     if (error) throw new Error(error.message);
     dataStore.notify();
   },

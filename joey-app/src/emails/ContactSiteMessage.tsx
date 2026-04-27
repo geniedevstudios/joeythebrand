@@ -13,6 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
+import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 
 export type ContactSiteMessageProps = {
   name: string;
@@ -165,7 +166,7 @@ export default function ContactSiteMessage({
   message,
 }: ContactSiteMessageProps) {
   const preview = `${subject} — ${name}`;
-  const phoneDisplay = phone.trim();
+  const phoneDisplay = formatPhoneDisplay(phone);
   const telHref = phoneDisplay.replace(/[^\d+]/g, "");
   const baseUrl = getBaseUrl();
   const logoUrl = baseUrl ? new URL("/white%20logo.png", baseUrl).toString() : "";

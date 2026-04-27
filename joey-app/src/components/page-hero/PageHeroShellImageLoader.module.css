@@ -1,20 +1,30 @@
 .overlay {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template: 1fr / 1fr;
+  place-items: center;
   pointer-events: none;
   background: #000000;
 }
 
+.logo {
+  grid-area: 1 / 1;
+  width: min(320px, 70vw);
+  height: auto;
+  opacity: 0.92;
+  z-index: 0;
+}
+
 .spinner {
+  grid-area: 1 / 1;
   width: 34px;
   height: 34px;
   border-radius: 50%;
   border: 2.5px solid rgba(255, 255, 255, 0.22);
   border-top-color: rgba(255, 255, 255, 0.95);
   animation: pageHeroShellImageLoaderSpin 0.85s linear infinite;
+  z-index: 1;
 }
 
 @keyframes pageHeroShellImageLoaderSpin {

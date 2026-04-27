@@ -9,6 +9,7 @@
  *   cd joey-admin && node scripts/upload-newsletter-social-icons.cjs
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs");
 const path = require("path");

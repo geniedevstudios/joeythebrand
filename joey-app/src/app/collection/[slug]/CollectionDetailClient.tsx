@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -73,6 +74,15 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
         p.category?.toLowerCase() === collection.slug?.replace(/-/g, " ").toLowerCase(),
     );
   }, [products, collection]);
+
+  const getCollectionName = useMemo(() => {
+    return (p: any): string => {
+      const slug = String(p?.category || "").trim();
+      if (!slug || slug === "none") return "";
+      const match = (collections as any[]).find((c: any) => c?.slug === slug);
+      return match?.name ? String(match.name) : "";
+    };
+  }, [collections]);
 
   const displayedProducts = useMemo(() => {
     let list = collectionProducts;
@@ -337,7 +347,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                     </div>
                   </div>
                   <div className={shopStyles.info}>
-                    <span className={shopStyles.category}>{p.categoryName}</span>
+                    <span className={shopStyles.category}>{getCollectionName(p)}</span>
                     <h2 className={shopStyles.name}>{p.name}</h2>
                     <div className={shopStyles.priceRow}>
                       <span className={shopStyles.price}>{formatPrice(p.price)}</span>
@@ -442,8 +452,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                 </div>
 
                 <div className={styles.modalMeta}>
-                  <p><span>SKU:</span> {quickViewPiece.id}</p>
-                  <p><span>Category:</span> {quickViewPiece.categoryName || quickViewPiece.category}</p>
+                  <p><span>Collection:</span> {getCollectionName(quickViewPiece)}</p>
                 </div>
                 <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={styles.modalFullDetail}>
                   View Full Details

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { dataStore } from "@/lib/dataStore";
 import type { SiteContent } from "@/lib/types";
 import AssetUrlField from "@/components/AssetUrlField";
@@ -73,17 +74,13 @@ export default function HomeFounderPage() {
   return (
     <div className="w-full max-w-none space-y-6">
       <div>
-        <nav className="mb-2 text-sm text-zinc-800">
-          <Link href="/content" className="hover:text-zinc-900">
-            Site Content
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <Link href="/content/app-pages" className="hover:text-zinc-900">
-            App pages
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <span className="font-medium text-zinc-900">Home — founder</span>
-        </nav>
+        <Link 
+          href="/content/app-pages" 
+          className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to App pages
+        </Link>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Home — founder section</h1>
         <p className="mt-2 text-sm text-zinc-900 max-w-2xl">
           Background video and copy for the “Behind the pattern” block on the homepage. Stats (collections,

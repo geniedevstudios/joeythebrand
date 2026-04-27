@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@supabase/supabase-js";
 
 export type EventCategory = "fashion_shows" | "clan_festival";
@@ -80,48 +81,101 @@ export async function fetchPublicEvents(): Promise<PublicEvent[] | null> {
   }));
 }
 
-export async function fetchPublicEventBySlug(slug: string): Promise<PublicEvent | null> {
+export async function fetchPublicEventBySlug(slug: string): Promise<PublicEvent | null | undefined> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
+  if (!url || !key) {
+    console.error("[fetchPublicEventBySlug] Missing Supabase environment variables.");
+    return undefined;
+  }
 
-  const s = String(slug || "").trim();
+  // Normalize slug: decode (for encoded URLs) and lowercase (matching sanitized DB slugs)
+  let s = "";
+  try {
+    s = decodeURIComponent(String(slug || "").trim()).toLowerCase();
+  } catch {
+    s = String(slug || "").trim().toLowerCase();
+  }
+
   if (!s) return null;
 
-  const supabase = createClient(url, key);
-  const { data, error } = await supabase
-    .from("events")
-    .select(
-      "id, slug, title, category, status, location, start_at, date_label, description, details_ready, details, main_video_url, main_video_poster_url, flyer_url, gallery_urls, recap_youtube_url, pixieset_url, collection_slugs, sort_order",
-    )
-    .eq("slug", s)
-    .maybeSingle();
+  // We'll use a shared fetch with a longer timeout for slow connections
+  const maxRetries = 5;
+  const timeoutMs = 15000; // 15 seconds per attempt
 
-  if (error || !data) return null;
+  let lastError: any = null;
 
-  const row = data as EventRow;
-  return {
-    id: String(row.id),
-    slug: String(row.slug),
-    title: String(row.title),
-    category: row.category === "clan_festival" ? "clan_festival" : "fashion_shows",
-    status: row.status === "past" ? "past" : "upcoming",
-    location: row.location ? String(row.location) : undefined,
-    startAt: row.start_at ? String(row.start_at) : undefined,
-    dateLabel: row.date_label ? String(row.date_label) : undefined,
-    description: row.description ? String(row.description) : undefined,
-    flyerUrl: row.flyer_url ? String(row.flyer_url) : undefined,
-    mainVideoUrl: row.main_video_url ? String(row.main_video_url) : undefined,
-    mainVideoPosterUrl: row.main_video_poster_url ? String(row.main_video_poster_url) : undefined,
-    galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls.map((x) => String(x)).filter(Boolean) : [],
-    recapYoutubeUrl: row.recap_youtube_url ? String(row.recap_youtube_url) : undefined,
-    pixiesetUrl: row.pixieset_url ? String(row.pixieset_url) : undefined,
-    collectionSlugs: Array.isArray(row.collection_slugs)
-      ? row.collection_slugs.map((x) => String(x)).filter(Boolean)
-      : [],
-    detailsReady: Boolean(row.details_ready),
-    details: row.details ? String(row.details) : undefined,
-    sortOrder: Number(row.sort_order ?? 0),
-  };
+  for (let i = 0; i < maxRetries; i++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const supabase = createClient(url, key, {
+        global: {
+          fetch: (url, options) => fetch(url, { ...options, signal: controller.signal }),
+        },
+      });
+
+      const { data, error } = await supabase
+        .from("events")
+        .select(
+          "id, slug, title, category, status, location, start_at, date_label, description, details_ready, details, main_video_url, main_video_poster_url, flyer_url, gallery_urls, recap_youtube_url, pixieset_url, collection_slugs, sort_order",
+        )
+        .eq("slug", s)
+        .maybeSingle();
+
+      clearTimeout(timeoutId);
+
+      if (error) {
+        lastError = error;
+        // If it's a network/timeout error, we retry.
+        if (i < maxRetries - 1) {
+          const delay = 1000 * (i + 1); // Progressive backoff: 1s, 2s, 3s, 4s...
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        break;
+      }
+
+      if (!data) return null; // Genuinely not found in DB
+
+      const row = data as EventRow;
+      return {
+        id: String(row.id),
+        slug: String(row.slug),
+        title: String(row.title),
+        category: row.category === "clan_festival" ? "clan_festival" : "fashion_shows",
+        status: row.status === "past" ? "past" : "upcoming",
+        location: row.location ? String(row.location) : undefined,
+        startAt: row.start_at ? String(row.start_at) : undefined,
+        dateLabel: row.date_label ? String(row.date_label) : undefined,
+        description: row.description ? String(row.description) : undefined,
+        flyerUrl: row.flyer_url ? String(row.flyer_url) : undefined,
+        mainVideoUrl: row.main_video_url ? String(row.main_video_url) : undefined,
+        mainVideoPosterUrl: row.main_video_poster_url ? String(row.main_video_poster_url) : undefined,
+        galleryUrls: Array.isArray(row.gallery_urls) ? row.gallery_urls.map((x) => String(x)).filter(Boolean) : [],
+        recapYoutubeUrl: row.recap_youtube_url ? String(row.recap_youtube_url) : undefined,
+        pixiesetUrl: row.pixieset_url ? String(row.pixieset_url) : undefined,
+        collectionSlugs: Array.isArray(row.collection_slugs)
+          ? row.collection_slugs.map((x) => String(x)).filter(Boolean)
+          : [],
+        detailsReady: Boolean(row.details_ready),
+        details: row.details ? String(row.details) : undefined,
+        sortOrder: Number(row.sort_order ?? 0),
+      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = err;
+      if (i < maxRetries - 1) {
+        const delay = 1000 * (i + 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+    }
+  }
+
+  // If we reach here, we failed after retries
+  console.error(`[fetchPublicEventBySlug] Failed to fetch event for slug "${s}" after ${maxRetries} attempts:`, lastError);
+  return undefined; // Indicates a system error, not necessarily "not found"
 }
 

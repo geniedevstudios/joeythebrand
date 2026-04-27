@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import FooterNewsletter from "./FooterNewsletter";
 import styles from "./Footer.module.css";
+import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 
 const footerLinks = [
   { label: "Collections", href: "/collection" },
@@ -49,7 +50,7 @@ export default function Footer() {
               joeythebrandonline@gmail.com
             </a>
             <a href="tel:+233504148009" className={styles.contactItem}>
-              +233 0504 148 009
+              {formatPhoneDisplay("+233 0504 148 009")}
             </a>
             <p className={styles.contactItem}>Accra, Ghana</p>
             {/* WhatsApp */}

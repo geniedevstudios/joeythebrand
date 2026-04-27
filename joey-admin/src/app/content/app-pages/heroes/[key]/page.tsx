@@ -1,7 +1,9 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useParams } from "next/navigation";
 import { dataStore } from "@/lib/dataStore";
 import type { PageHeroKey, PageHeroMedia, SiteContent } from "@/lib/types";
@@ -97,21 +99,13 @@ export default function SingleHeroPage() {
   return (
     <div className="w-full max-w-none space-y-6">
       <div>
-        <nav className="mb-2 text-sm text-zinc-800">
-          <Link href="/content" className="hover:text-zinc-900">
-            Site Content
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <Link href="/content/app-pages" className="hover:text-zinc-900">
-            App pages
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <Link href="/content/app-pages/page-heroes" className="hover:text-zinc-900">
-            Page heroes
-          </Link>
-          <span className="mx-2 text-zinc-300">/</span>
-          <span className="font-medium text-zinc-900">{PAGE_HERO_LABELS[heroKey]}</span>
-        </nav>
+        <Link 
+          href="/content/app-pages/page-heroes" 
+          className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Page heroes
+        </Link>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
           {PAGE_HERO_LABELS[heroKey]} — hero background
         </h1>

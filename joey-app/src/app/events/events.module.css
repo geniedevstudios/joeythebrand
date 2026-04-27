@@ -8,7 +8,9 @@
   margin-top: calc(-1 * var(--nav-height));
   padding: 0;
   background: #000;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 0;
   width: 100%;
   aspect-ratio: 16 / 9;
 }
@@ -105,18 +107,23 @@
 /* Heading + filters */
 .headingSection {
   padding: var(--space-2xl) 0 var(--space-2xl);
-  background: var(--color-bg);
+  background-color: var(--color-bg);
+  position: relative;
+  z-index: 10;
 }
 
 /* Event detail: same visual as listing cards — flyer image + gradient (see EventsClient card --card-bg) */
 .headingSectionWithFlyer {
   padding: var(--space-3xl) 0;
-  background:
+  background-color: var(--blue-athracite); /* Solid base for flyer/gradient */
+  background-image:
     linear-gradient(180deg, rgba(15, 18, 24, 0.55), rgba(15, 18, 24, 0.78)),
-    var(--detail-flyer, rgba(39, 43, 54, 0.92));
+    var(--detail-flyer, none);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  position: relative;
+  z-index: 10;
 }
 
 .kicker.kickerOnFlyer {
@@ -195,11 +202,24 @@
 
 .section {
   padding: var(--space-3xl) 0;
+  background-color: var(--color-bg);
+  position: relative;
+  z-index: 10;
 }
 
 .sectionAlt {
   padding: var(--space-3xl) 0;
+  background-color: var(--color-bg);
+  position: relative;
+  z-index: 10;
+}
+
+.sectionAlt::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: rgba(39, 43, 54, 0.03);
+  pointer-events: none;
 }
 
 .sectionHead {
@@ -306,10 +326,28 @@
   margin-left: 6px;
 }
 
+/* When date is shown in the top meta row (beside the badge), ensure it stays readable on dark cards. */
+.cardMeta .cardYear {
+  /* Match the look it had next to the event name (inherits from .cardTitle). */
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: 0;
+}
+
 .cardLocation {
   margin: 0;
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.82);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.locationIcon {
+  flex: 0 0 auto;
+  opacity: 0.9;
 }
 
 .cardDesc {
@@ -455,6 +493,9 @@
 /* iPad and below: make the hero video feel full-screen (taller than 16:9) */
 @media (max-width: 1024px) {
   .videoSection {
+    position: sticky;
+    top: 0;
+    z-index: 0;
     aspect-ratio: auto;
     height: 110vh;
   }
@@ -464,6 +505,9 @@
 @supports (height: 100svh) {
   @media (max-width: 1024px) {
     .videoSection {
+      position: sticky;
+      top: 0;
+      z-index: 0;
       height: 110svh;
     }
   }

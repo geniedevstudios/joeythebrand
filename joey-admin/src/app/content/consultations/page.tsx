@@ -5,7 +5,7 @@ import Link from "next/link";
 import { dataStore } from "@/lib/dataStore";
 import type { ConsultationBooking, ConsultationSource } from "@/lib/types";
 import { openConsultationPrintWindow } from "@/lib/printConsultation";
-import { CalendarRange } from "lucide-react";
+import { ArrowLeft, CalendarRange } from "lucide-react";
 import { toast } from "sonner";
 
 function formatDate(iso?: string) {
@@ -25,8 +25,11 @@ function formatScheduled(iso?: string) {
 export default function ConsultationsPage() {
   const [rows, setRows] = useState<ConsultationBooking[]>([]);
   const [tab, setTab] = useState<ConsultationSource>("shop");
-  const [maxSlotsDraft, setMaxSlotsDraft] = useState(5);
-  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [dayRuleOpen, setDayRuleOpen] = useState(false);
+  const [dayRuleDate, setDayRuleDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dayRuleMax, setDayRuleMax] = useState(7);
+  const [dayRuleSaving, setDayRuleSaving] = useState(false);
+  const [dayRuleError, setDayRuleError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ConsultationBooking | null>(null);
@@ -36,12 +39,10 @@ export default function ConsultationsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [bookings, settings] = await Promise.all([
+      const [bookings] = await Promise.all([
         dataStore.getConsultationBookings(),
-        dataStore.getConsultationSettings().catch(() => ({ maxSlotsPerDay: 5 })),
       ]);
       setRows(bookings);
-      setMaxSlotsDraft(settings.maxSlotsPerDay);
     } catch (err) {
       console.error("Failed to load consultations:", err);
     } finally {
@@ -63,18 +64,20 @@ export default function ConsultationsPage() {
     setModalError("");
   }, [confirmTarget]);
 
-  const saveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSettingsSaving(true);
+  const saveDayRule = async () => {
+    setDayRuleError("");
+    setDayRuleSaving(true);
     try {
-      await dataStore.updateConsultationSettings(maxSlotsDraft);
+      await dataStore.upsertConsultationDayRule(dayRuleDate, dayRuleMax);
       await load();
-      toast.success("Consultation calendar settings saved.");
+      setDayRuleOpen(false);
+      toast.success("Calendar rule saved.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Could not save settings.";
+      const msg = err instanceof Error ? err.message : "Could not save calendar rule.";
+      setDayRuleError(msg);
       toast.error(msg);
     } finally {
-      setSettingsSaving(false);
+      setDayRuleSaving(false);
     }
   };
 
@@ -233,15 +236,91 @@ export default function ConsultationsPage() {
         </div>
       ) : null}
 
+      {dayRuleOpen ? (
+        <div
+          className="fixed inset-0 z-[210] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="day-rule-title"
+        >
+          <div
+            className="fixed inset-0 bg-black/55 backdrop-blur-sm"
+            aria-hidden
+            onClick={() => !dayRuleSaving && setDayRuleOpen(false)}
+          />
+          <div
+            className="relative consultations-confirm-dialog w-full max-w-md overflow-hidden rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="day-rule-title" className="text-lg font-semibold text-zinc-900">
+              Calendar rule (single day)
+            </h2>
+            <p className="mt-1 text-sm text-zinc-800">
+              Pick a day and override how many confirmed consultations are allowed on that day.
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="day-rule-date" className="block text-xs font-semibold uppercase tracking-wide text-zinc-600">
+                  Day
+                </label>
+                <input
+                  id="day-rule-date"
+                  type="date"
+                  className="mt-1 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900"
+                  value={dayRuleDate}
+                  onChange={(e) => setDayRuleDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="day-rule-max" className="block text-xs font-semibold uppercase tracking-wide text-zinc-600">
+                  Max consultations per day
+                </label>
+                <input
+                  id="day-rule-max"
+                  type="number"
+                  min={1}
+                  max={50}
+                  className="mt-1 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900"
+                  value={dayRuleMax}
+                  onChange={(e) => setDayRuleMax(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            {dayRuleError ? <p className="mt-3 text-sm text-red-600">{dayRuleError}</p> : null}
+
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                onClick={() => setDayRuleOpen(false)}
+                disabled={dayRuleSaving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                onClick={() => void saveDayRule()}
+                disabled={dayRuleSaving}
+              >
+                {dayRuleSaving ? "Saving…" : "Save calendar rule"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <nav className="mb-2 text-sm text-zinc-800">
-            <Link href="/content" className="hover:text-zinc-900">
-              Site Content
-            </Link>
-            <span className="mx-2 text-zinc-300">/</span>
-            <span className="font-medium text-zinc-900">Consultations</span>
-          </nav>
+          <Link 
+            href="/content" 
+            className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Site Content
+          </Link>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Consultations</h1>
           <p className="mt-1 text-sm text-zinc-900">
             Shop (app) requests are tied to customer accounts. Portfolio site requests have no login — they use a
@@ -278,32 +357,23 @@ export default function ConsultationsPage() {
         })}
       </div>
 
-      <form
-        onSubmit={saveSettings}
-        className="flex flex-wrap items-end gap-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
-      >
-        <div>
-          <label htmlFor="max-slots" className="block text-xs font-semibold uppercase tracking-wide text-zinc-600">
-            Max consultations per day
-          </label>
-          <input
-            id="max-slots"
-            type="number"
-            min={1}
-            max={50}
-            className="mt-1 w-28 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900"
-            value={maxSlotsDraft}
-            onChange={(e) => setMaxSlotsDraft(Number(e.target.value))}
-          />
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="text-sm text-zinc-700">
+          Set the max number of consultation slots for a specific day.
         </div>
         <button
-          type="submit"
-          disabled={settingsSaving}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+          type="button"
+          className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+          onClick={() => {
+            setDayRuleError("");
+            setDayRuleDate(new Date().toISOString().slice(0, 10));
+            setDayRuleMax(7);
+            setDayRuleOpen(true);
+          }}
         >
-          {settingsSaving ? "Saving…" : "Save calendar rule"}
+          Add day rule…
         </button>
-      </form>
+      </div>
 
       <div className="overflow-hidden rounded-xl rounded-tl-none border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -418,12 +488,6 @@ export default function ConsultationsPage() {
                         >
                           {b.paymentStatus === "paid" ? "Paid" : "Unpaid"}
                         </span>
-                        {b.paymentRef ? (
-                          <div className="text-[10px] text-zinc-600 font-mono mt-1">Ref: {b.paymentRef}</div>
-                        ) : null}
-                        {b.priceGhs ? (
-                          <div className="text-xs text-zinc-800 text-center font-medium">₵{b.priceGhs.toLocaleString()}</div>
-                        ) : null}
 
                       </div>
                     </td>

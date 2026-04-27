@@ -117,6 +117,12 @@ export interface ConsultationSettings {
   maxSlotsPerDay: number;
 }
 
+export interface ConsultationDayRule {
+  /** UTC date bucket (YYYY-MM-DD). */
+  day: string;
+  maxSlotsPerDay: number;
+}
+
 export type PageHeroKey =
   | "home"
   | "shop"

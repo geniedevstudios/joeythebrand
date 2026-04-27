@@ -49,7 +49,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setHeroCopyReady(true);
+      requestAnimationFrame(() => setHeroCopyReady(true));
       return;
     }
     const id = requestAnimationFrame(() => setHeroCopyReady(true));

@@ -1,82 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import type { PageHeroAnchor, PageHeroFit } from "@/lib/types";
-import { AdminDropdownChevron } from "./AdminDropdownChevron";
-import {
-  adminDropdownTriggerClass,
-  adminDropdownPanelInlineClass,
-  adminDropdownOptionButtonClass,
-} from "./adminFormClasses";
+import AdminStyledSelect from "./AdminStyledSelect";
 
-function StyledDropdown<T extends string>({
+function LabeledAdminSelect<T extends string>({
   label,
   value,
   onChange,
   options,
+  name,
 }: {
   label: string;
   value: T;
   onChange: (v: T) => void;
   options: { value: T; label: string }[];
+  name: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  const selectedLabel = options.find((o) => o.value === value)?.label ?? value;
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, []);
-
+  const labelId = `${name}-label`;
   return (
-    <div className="relative" ref={rootRef}>
-      <span className="block text-xs font-semibold uppercase tracking-wide text-zinc-700">{label}</span>
-      <button
-        type="button"
-        className={`${adminDropdownTriggerClass} mt-1.5`}
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <span className="min-w-0 truncate">{selectedLabel}</span>
-        <AdminDropdownChevron open={open} />
-      </button>
-
-      {open && (
-        <ul role="listbox" className={adminDropdownPanelInlineClass}>
-          {options.map((opt) => {
-            const isActive = opt.value === value;
-            return (
-              <li key={opt.value} role="option" aria-selected={isActive}>
-                <button
-                  type="button"
-                  className={adminDropdownOptionButtonClass(isActive)}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                >
-                  {opt.label}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+    <div>
+      <span id={labelId} className="block text-xs font-semibold uppercase tracking-wide text-zinc-700">
+        {label}
+      </span>
+      <AdminStyledSelect
+        name={name}
+        labelledBy={labelId}
+        defaultValue={value}
+        options={options}
+        wrapperClassName="mt-1.5"
+        onValueChange={(v) => onChange(v as T)}
+      />
     </div>
   );
 }
@@ -111,8 +64,14 @@ export default function HeroFitSelectors({
 
   return (
     <div className={gridClass}>
-      <StyledDropdown label="Fill mode" value={fit} onChange={onFit} options={fitOptions} />
-      <StyledDropdown label="Focus (when cropping)" value={anchor} onChange={onAnchor} options={anchorOptions} />
+      <LabeledAdminSelect name="page-hero-fit" label="Fill mode" value={fit} onChange={onFit} options={fitOptions} />
+      <LabeledAdminSelect
+        name="page-hero-anchor"
+        label="Focus (when cropping)"
+        value={anchor}
+        onChange={onAnchor}
+        options={anchorOptions}
+      />
     </div>
   );
 }

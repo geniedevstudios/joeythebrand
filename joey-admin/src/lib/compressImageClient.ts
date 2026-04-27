@@ -12,7 +12,7 @@ export async function compressImageIfNeeded(file: File, maxSide = 1920, quality 
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      let { naturalWidth: w, naturalHeight: h } = img;
+      const { naturalWidth: w, naturalHeight: h } = img;
       if (!w || !h) {
         resolve(file);
         return;

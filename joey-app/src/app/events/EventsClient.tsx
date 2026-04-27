@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import styles from "./events.module.css";
+import { PAGE_HERO_SHELL_CLASS } from "@/hooks/usePageHero";
 import DetailsModal from "./DetailsModal";
 import type { PublicEvent } from "@/lib/fetchEventsServer";
 import { supabase } from "@/lib/supabase";
@@ -81,12 +82,32 @@ function EventGrid({
                 <span className={styles.badge}>
                   {e.category === "fashion_shows" ? "Fashion show" : "Clan festival"}
                 </span>
-                {e.dateLabel ? <span className={styles.meta}>{e.dateLabel}</span> : null}
+                {e.dateLabel ? <span className={styles.cardYear}>{e.dateLabel}</span> : null}
               </div>
               <h3 className={styles.cardTitle}>
-                {e.title} {e.year ? <span className={styles.cardYear}>{e.year}</span> : null}
+                {e.title}
               </h3>
-              {e.location ? <p className={styles.cardLocation}>{e.location}</p> : null}
+              {e.location ? (
+                <p className={styles.cardLocation}>
+                  <svg
+                    className={styles.locationIcon}
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  {e.location}
+                </p>
+              ) : null}
             </div>
 
             {e.description ? <p className={styles.cardDesc}>{e.description}</p> : null}
@@ -364,10 +385,10 @@ export default function EventsClient({
   };
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       {/* Top video section */}
       <section
-        className={styles.videoSection}
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.videoSection}`}
         aria-label="Events video"
         aria-busy={videoLoading ? true : undefined}
       >
@@ -511,7 +532,7 @@ export default function EventsClient({
       </section>
 
       <DetailsModal open={detailsOpen} onClose={() => setDetailsOpen(false)} event={detailsEvent} />
-    </main>
+    </div>
   );
 }
 

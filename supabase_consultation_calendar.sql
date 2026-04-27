@@ -17,6 +17,33 @@ ON CONFLICT (id) DO NOTHING;
 
 ALTER TABLE public.consultation_settings ENABLE ROW LEVEL SECURITY;
 
+-- 1b) Per-day overrides: max confirmed appointments for a specific UTC date bucket
+CREATE TABLE IF NOT EXISTS public.consultation_day_rules (
+  day date PRIMARY KEY,
+  max_slots_per_day int NOT NULL
+    CHECK (max_slots_per_day >= 1 AND max_slots_per_day <= 50),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.consultation_day_rules ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION public.consultation_day_rules_touch_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS consultation_day_rules_touch_updated_at ON public.consultation_day_rules;
+CREATE TRIGGER consultation_day_rules_touch_updated_at
+  BEFORE UPDATE ON public.consultation_day_rules
+  FOR EACH ROW
+  EXECUTE PROCEDURE public.consultation_day_rules_touch_updated_at();
+
 DROP POLICY IF EXISTS "consultation_settings_select_auth" ON public.consultation_settings;
 DROP POLICY IF EXISTS "consultation_settings_update_admin" ON public.consultation_settings;
 DROP POLICY IF EXISTS "consultation_settings_insert_admin" ON public.consultation_settings;
@@ -33,6 +60,40 @@ CREATE POLICY "consultation_settings_insert_admin" ON public.consultation_settin
   FOR INSERT
   TO authenticated
   WITH CHECK (public.is_admin_dashboard_user());
+
+DROP POLICY IF EXISTS "consultation_day_rules_select_auth" ON public.consultation_day_rules;
+DROP POLICY IF EXISTS "consultation_day_rules_insert_admin" ON public.consultation_day_rules;
+DROP POLICY IF EXISTS "consultation_day_rules_update_admin" ON public.consultation_day_rules;
+DROP POLICY IF EXISTS "consultation_day_rules_delete_admin" ON public.consultation_day_rules;
+
+CREATE POLICY "consultation_day_rules_select_auth" ON public.consultation_day_rules
+  FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY "consultation_day_rules_insert_admin" ON public.consultation_day_rules
+  FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin_dashboard_user());
+
+CREATE POLICY "consultation_day_rules_update_admin" ON public.consultation_day_rules
+  FOR UPDATE
+  USING (public.is_admin_dashboard_user());
+
+CREATE POLICY "consultation_day_rules_delete_admin" ON public.consultation_day_rules
+  FOR DELETE
+  USING (public.is_admin_dashboard_user());
+
+-- Helper: per-day override if present, else global setting.
+CREATE OR REPLACE FUNCTION public.consultation_effective_max_slots(p_day date)
+RETURNS int
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT COALESCE(
+    (SELECT r.max_slots_per_day FROM public.consultation_day_rules r WHERE r.day = p_day),
+    (SELECT s.max_slots_per_day FROM public.consultation_settings s WHERE s.id = 1),
+    5
+  );
+$$;
 
 -- 2) Actual appointment time (set when admin confirms)
 ALTER TABLE public.consultation_bookings
@@ -57,7 +118,7 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  SELECT COALESCE(max_slots_per_day, 5) INTO max_s FROM public.consultation_settings WHERE id = 1;
+  SELECT public.consultation_effective_max_slots(NEW.preferred_date) INTO max_s;
   IF max_s IS NULL THEN max_s := 5; END IF;
 
   SELECT COUNT(*) INTO cnt
@@ -129,7 +190,7 @@ BEGIN
         USING ERRCODE = 'check_violation';
     END IF;
 
-    SELECT COALESCE(max_slots_per_day, 5) INTO max_s FROM public.consultation_settings WHERE id = 1;
+    SELECT public.consultation_effective_max_slots((NEW.scheduled_at AT TIME ZONE 'UTC')::date) INTO max_s;
     IF max_s IS NULL THEN max_s := 5; END IF;
 
     SELECT COUNT(*) INTO cnt
@@ -207,7 +268,7 @@ BEGIN
           AND scheduled_at IS NOT NULL
           AND (scheduled_at AT TIME ZONE 'UTC')::date BETWEEN from_d AND to_d
         GROUP BY 1
-        HAVING COUNT(*) >= max_s
+        HAVING COUNT(*) >= public.consultation_effective_max_slots((scheduled_at AT TIME ZONE 'UTC')::date)
       ) c
     ), '[]'::jsonb)
   );

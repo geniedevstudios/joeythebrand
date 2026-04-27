@@ -17,7 +17,7 @@ export function formatOrderPlacedAt(iso: string): string {
   const year = d.getFullYear();
   const datePart = `${day}${ordinalSuffix(day)} ${month} ${year}`;
 
-  let h24 = d.getHours();
+  const h24 = d.getHours();
   const mins = d.getMinutes();
   const ampm = h24 >= 12 ? "pm" : "am";
   let h12 = h24 % 12;
