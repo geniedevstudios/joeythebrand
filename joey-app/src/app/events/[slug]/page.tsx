@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import type { Metadata } from "next";
 import Link from "next/link";
 import styles from "../events.module.css";
 import { fetchPublicEventBySlug } from "@/lib/fetchEventsServer";
@@ -7,42 +6,6 @@ import { PAGE_HERO_SHELL_CLASS } from "@/hooks/usePageHero";
 import EventVideo from "./EventVideo";
 
 export const dynamic = "force-dynamic";
-
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const event = await fetchPublicEventBySlug(slug);
-
-  if (!event) {
-    return {
-      title: "Event",
-      description: "Events, trunk shows, and private appointments from JOEY THE BRAND.",
-      alternates: { canonical: `/events/${encodeURIComponent(slug)}` },
-    };
-  }
-
-  const title = `${event.title} — Events`;
-  const description = (event.description ?? "").trim() || "Events, trunk shows, and private appointments from JOEY THE BRAND.";
-  const image = (event.flyerUrl ?? "").trim() || (event.mainVideoPosterUrl ?? "").trim() || undefined;
-
-  return {
-    title,
-    description,
-    alternates: { canonical: `/events/${encodeURIComponent(slug)}` },
-    openGraph: {
-      title: `${event.title} — Events — JOEY THE BRAND`,
-      description,
-      type: "article",
-      url: `/events/${encodeURIComponent(slug)}`,
-      images: image ? [{ url: image }] : undefined,
-    },
-    twitter: {
-      card: image ? "summary_large_image" : "summary",
-      title: `${event.title} — Events`,
-      description,
-      images: image ? [image] : undefined,
-    },
-  };
-}
 
 function formatWhen(startAt?: string, dateLabel?: string): string | null {
   const label = (dateLabel ?? "").trim();
@@ -64,8 +27,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
     // Instead of throwing a 500 error, we show a friendly "Connection Issue" UI.
     return (
       <div className={styles.page}>
-        <div 
-          className="container flex flex-col items-center justify-center text-center" 
+        <div
+          className="container flex flex-col items-center justify-center text-center"
           style={{ minHeight: "80vh", padding: "var(--space-xl)" }}
         >
           <span className={styles.kicker}>Connectivity</span>
@@ -73,9 +36,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             Connection issue
           </h1>
           <p className={styles.subtitle} style={{ marginBottom: "var(--space-xl)", maxWidth: "420px", marginLeft: "auto", marginRight: "auto" }}>
-            We&apos;re having trouble reaching the events database right now. This usually happens when the internet is slow.
+            We're having trouble showing you the event's update right now. This usually happens when your internet is slow.
           </p>
-          <Link 
+          <Link
             href={`/events/${slug}`}
             className={`${styles.actionBtn} ${styles.actionPrimary}`}
             style={{ minWidth: "180px" }}
