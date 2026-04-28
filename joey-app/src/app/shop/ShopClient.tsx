@@ -12,6 +12,7 @@ import { useStoreLoading } from "@/hooks/useStoreLoading";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import ProductMedia from "@/components/shop/ProductMedia";
+import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 
 
 type WearFilter = "all" | "mens" | "womens";
@@ -23,6 +24,13 @@ const _getProducts = () => dataStore.getProducts();
 const _getWishlistItems = () => wishlistStore.getItems();
 const _getCollections = () => dataStore.getCollections();
 const _getEmptyCollections = () => EMPTY_COLLECTIONS;
+
+function formatSizeLabel(raw: string): string {
+  const s = String(raw || "").trim();
+  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
+  if (m) return `UK ${m[1]} / US ${m[2]}`;
+  return s;
+}
 
 function ShopProductsSkeleton({ count = 6 }: { count?: number }) {
   return (
@@ -54,6 +62,7 @@ export default function ShopClient() {
   const [wearFilter, setWearFilter] = useState<WearFilter>("all");
   const [quickViewPiece, setQuickViewPiece] = useState<any>(null);
   const [activeImage, setActiveImage] = useState<string>("");
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const searchParams = useSearchParams();
@@ -62,6 +71,13 @@ export default function ShopClient() {
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, _getWishlistItems, _getEmptyArray);
   const isStoreLoading = useStoreLoading();
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+
+  const sizeGuideKind: SizeGuideKind = useMemo(() => {
+    const w = String(quickViewPiece?.wearTag ?? "").toLowerCase();
+    if (w === "mens") return "mens";
+    if (w === "womens") return "womens";
+    return "both";
+  }, [quickViewPiece]);
 
   const getCollectionName = useCallback(
     (p: any): string => {
@@ -366,11 +382,17 @@ export default function ShopClient() {
                         className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
                         onClick={() => setSelectedSize(prev => prev === sz ? "" : sz)}
                       >
-                        {sz}
+                        {formatSizeLabel(sz)}
                       </button>
                     ))}
                   </div>
-                  <button className={styles.sizeGuideBtn}>Size Guide</button>
+                  <button
+                    type="button"
+                    className={styles.sizeGuideBtn}
+                    onClick={() => setSizeGuideOpen(true)}
+                  >
+                    Size Guide
+                  </button>
                 </div>
                 {selectedSize === "Custom" && (
                   <p className={styles.customNotice}>
@@ -445,6 +467,8 @@ export default function ShopClient() {
           </div>
         </div>
       )}
+
+      <SizeGuideModal open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} kind={sizeGuideKind} />
     </div>
   );
 }

@@ -36,6 +36,20 @@ const FILTERS: { id: EventCategory; label: string }[] = [
   { id: "clan_festival", label: "Clan festival" },
 ];
 
+function normalizeCollectionSlugs(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((s) => String(s)).map((s) => s.trim()).filter(Boolean);
+  if (typeof v === "string") {
+    // Accept "a,b", "{a,b}", or "a, b"
+    const t = v.trim().replace(/^\{/, "").replace(/\}$/, "");
+    if (!t) return [];
+    return t
+      .split(",")
+      .map((s) => String(s).trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 function ActionButton({ a }: { a: PastAction }) {
   const cls = a.kind === "watch" ? styles.actionPrimary : styles.actionSecondary;
   if (a.kind === "gallery" || a.kind === "recap") {
@@ -252,9 +266,7 @@ export default function EventsClient({
             : [],
           recapYoutubeUrl: row.recap_youtube_url ? String(row.recap_youtube_url) : undefined,
           pixiesetUrl: row.pixieset_url ? String(row.pixieset_url) : undefined,
-          collectionSlugs: Array.isArray(row.collection_slugs)
-            ? row.collection_slugs.map((s) => String(s)).filter(Boolean)
-            : [],
+          collectionSlugs: normalizeCollectionSlugs(row.collection_slugs),
           detailsReady: Boolean(row.details_ready),
           details: row.details ? String(row.details) : undefined,
           sortOrder: Number(row.sort_order ?? 0),

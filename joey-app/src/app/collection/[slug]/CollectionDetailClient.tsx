@@ -3,11 +3,13 @@
 import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
 import shopStyles from "@/app/shop/ShopClient.module.css";
 import eventStyles from "@/app/events/events.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import EventVideo from "@/app/events/[slug]/EventVideo";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
@@ -33,6 +35,7 @@ const EMPTY_PRODUCTS: Product[] = [];
 const EMPTY_WISHLIST: WishlistItem[] = [];
 
 export default function CollectionDetailClient({ slug }: CollectionDetailClientProps) {
+  const router = useRouter();
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
   const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => SHOP_COLLECTIONS_FALLBACK);
   const isStoreLoading = useStoreLoading();
@@ -62,6 +65,20 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const collectionGallery = useMemo(
     () => (collection?.galleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
     [collection?.galleryUrls],
+  );
+
+  const detailWriteup = useMemo(() => {
+    const w = String(collection?.detailWriteup ?? "").trim();
+    if (w) return w;
+    const fallback = String(collection?.description ?? "").trim();
+    return fallback;
+  }, [collection?.detailWriteup, collection?.description]);
+
+  const detailVideoUrl = String(collection?.detailVideoUrl ?? "").trim();
+  const detailVideoPosterUrl = String(collection?.detailVideoPosterUrl ?? "").trim();
+  const detailGallery = useMemo(
+    () => (collection?.detailGalleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
+    [collection?.detailGalleryUrls],
   );
 
   const collectionProducts = useMemo(() => {
@@ -211,16 +228,85 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
         </div>
       </div>
 
+      <div className={styles.breadcrumbs}>
+        <div className="container">
+          <button
+            type="button"
+            className={`${styles.crumbLink} ${styles.crumbBackBtn}`}
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/collection");
+              }
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={styles.crumbBackIcon}
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Back
+          </button>
+        </div>
+      </div>
+
       {collectionGallery.length > 0 ? (
-        <section className={eventStyles.section}>
+        <section className={`${eventStyles.section} ${styles.collectionGallerySection}`}>
           <div className="container">
-            <div className={eventStyles.shotsSection}>
-              <h3 className={eventStyles.shotsTitle}>From the collection</h3>
-              <div className={eventStyles.shotsGrid} aria-label="Collection gallery">
+            <div className={`${eventStyles.shotsSection} ${styles.collectionShotsSection}`}>
+              <div className={`${eventStyles.shotsGrid} ${styles.collectionShotsGrid}`} aria-label="Collection gallery">
                 {collectionGallery.map((u, idx) => (
-                  <div key={`${u}-${idx}`} className={eventStyles.shotCard}>
+                  <div key={`${u}-${idx}`} className={`${eventStyles.shotCard} ${styles.collectionShotCard}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className={eventStyles.shotImg} src={u} alt="" loading="lazy" />
+                    <img className={`${eventStyles.shotImg} ${styles.collectionShotImg}`} src={u} alt="" loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {detailWriteup ? (
+        <section className={`${styles.collectionDetailEditorial} ${styles.collectionDetailCentered}`}>
+          <div className="container">
+            <div className={styles.collectionDetailEditorialRow}>
+              <div className={styles.collectionDetailProseCol}>
+                <h2 className={`t-display ${styles.collectionDetailTitle}`}>{collection.name}</h2>
+                <p className={styles.collectionDetailProse}>{detailWriteup}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {detailVideoUrl ? (
+        <section className={styles.collectionDetailVideoSection} aria-label="Collection video">
+          <div className="container">
+            <div className={eventStyles.videoSection} style={{ marginTop: 0, position: "relative", aspectRatio: "16 / 9" as any }}>
+              <EventVideo src={detailVideoUrl} posterUrl={detailVideoPosterUrl || undefined} />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {detailGallery.length > 0 ? (
+        <section className={`${eventStyles.section} ${styles.collectionGallerySection}`}>
+          <div className="container">
+            <div className={`${eventStyles.shotsSection} ${styles.collectionShotsSection}`}>
+              <div className={`${eventStyles.shotsGrid} ${styles.collectionShotsGrid}`} aria-label="More collection images">
+                {detailGallery.map((u, idx) => (
+                  <div key={`${u}-${idx}`} className={`${eventStyles.shotCard} ${styles.collectionShotCard}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className={`${eventStyles.shotImg} ${styles.collectionShotImg}`} src={u} alt="" loading="lazy" />
                   </div>
                 ))}
               </div>
@@ -281,11 +367,16 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                     <div className={shopStyles.imageWrap}>
                       {p.hoverImage ? (
                         <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
                         </>
                       ) : (
-                        <img src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
+                        </>
                       )}
 
                       <div className={shopStyles.overlay}>
@@ -376,7 +467,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
             <div className={styles.modalGrid}>
               <div className={styles.modalGallery}>
                 <div className={styles.modalImageWrap}>
-                  <img src={activeImage || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={activeImage || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
                 </div>
                 {quickViewPiece.images && quickViewPiece.images.length > 1 && (
                   <div className={styles.modalThumbnails}>
@@ -387,7 +479,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                         onClick={() => setActiveImage(img)}
                         aria-label={`View image ${idx + 1}`}
                       >
-                        <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
                       </button>
                     ))}
                   </div>

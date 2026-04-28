@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+/* eslint-disable @next/next/no-img-element */
 
 interface ProductMediaProps {
   src: string;
@@ -9,8 +10,6 @@ interface ProductMediaProps {
   loading?: "lazy" | "eager";
   "aria-hidden"?: boolean | "true" | "false";
   onClick?: () => void;
-  /** Automatically passes standard video attributes for looping without sound. */
-  isVideoHoverState?: boolean;
 }
 
 export default function ProductMedia({
@@ -20,7 +19,6 @@ export default function ProductMedia({
   loading,
   "aria-hidden": ariaHidden,
   onClick,
-  isVideoHoverState = false,
 }: ProductMediaProps) {
   const isVideo = src && /\.(mp4|webm)$/i.test(src.trim());
 

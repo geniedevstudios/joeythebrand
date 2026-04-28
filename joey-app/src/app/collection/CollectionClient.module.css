@@ -37,6 +37,103 @@
   font-weight: 300;
 }
 
+.breadcrumbs {
+  padding: var(--space-sm) 0 0;
+  border-bottom: none;
+  background: var(--color-bg);
+}
+
+.collectionGallerySection {
+  /* Reduce the default events section padding so the gallery sits closer to the Back button. */
+  padding-top: 0 !important;
+  padding-bottom: var(--space-3xl);
+}
+
+/* Collection gallery: remove shotsSection's own margin/padding so gallery sits tight under Back button. */
+.collectionShotsSection {
+  margin-top: 0 !important;
+  padding-top: var(--space-lg) !important;
+  border-top: none !important;
+}
+
+/* Make the collection gallery feel continuous (no extra “divider line”). */
+.collectionGallerySection :global(.shotCard) {
+  border: none;
+}
+
+/* Collection page: keep cards fixed + zoom image only. */
+.collectionShotCard:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+.collectionShotImg {
+  transform: scale(1.08);
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 720ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.collectionShotCard:hover .collectionShotImg {
+  transform: scale(1.16);
+}
+
+.collectionShotsGrid {
+  gap: var(--space-2xl) !important;
+  padding: var(--space-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collectionShotImg {
+    transition: none;
+  }
+}
+
+.crumbLink {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+  transition: color var(--transition-fast);
+}
+
+.crumbLink:hover {
+  color: var(--blue-athracite);
+}
+
+.crumbBackBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(39, 43, 54, 0.16);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(39, 43, 54, 0.08);
+  cursor: pointer;
+}
+
+.crumbBackBtn:hover {
+  border-color: rgba(39, 43, 54, 0.24);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.crumbBackBtn:active {
+  transform: translateY(0.5px);
+}
+
+.crumbBackIcon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-0.5px);
+  opacity: 0.9;
+}
+
 .pageSubtext {
   font-family: var(--font-display);
   font-style: italic;
@@ -49,6 +146,44 @@
 .collectionDetailEditorial {
   padding: var(--space-3xl) 0;
   background: var(--color-bg);
+}
+
+.collectionDetailCentered .collectionDetailEditorialRow {
+  justify-content: center;
+}
+
+.collectionDetailCentered .collectionDetailProseCol {
+  max-width: 760px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.collectionDetailCentered.collectionDetailEditorial {
+  padding-top: var(--space-2xl);
+}
+
+.collectionDetailCentered .collectionDetailTitle {
+  text-align: center;
+}
+
+.collectionDetailCentered .collectionDetailProse {
+  text-align: center;
+}
+
+.collectionDetailTitle {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--blue-athracite);
+  font-weight: 300;
+}
+
+.collectionDetailCentered .collectionDetailTitle {
+  font-size: clamp(1.7rem, 3.2vw, 2.35rem);
+  margin-bottom: var(--space-sm);
+}
+
+.collectionDetailVideoSection {
+  background: var(--color-bg);
+  padding: 0 0 var(--space-3xl);
 }
 
 .collectionDetailEditorialRow {

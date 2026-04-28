@@ -4,18 +4,27 @@ import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Clock } from "lucide-react";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import ProductMedia from "@/components/shop/ProductMedia";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import styles from "./ProductClient.module.css";
 
 const EMPTY_ARRAY: any[] = [];
 const _getEmptyArray = () => EMPTY_ARRAY;
 const _getProducts = () => dataStore.getProducts();
 const _getWishlistItems = () => wishlistStore.getItems();
+
+function formatSizeLabel(raw: string): string {
+  const s = String(raw || "").trim();
+  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
+  if (m) return `UK ${m[1]} / US ${m[2]}`;
+  return s;
+}
 
 function ProductDetailSkeletonBody() {
   return (
@@ -93,6 +102,7 @@ export default function ProductClient({ slug }: { slug: string }) {
   const [quickViewItem, setQuickViewItem] = useState<any>(null);
   const [quickViewSize, setQuickViewSize] = useState("");
   const [quickViewImage, setQuickViewImage] = useState("");
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
   const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => []);
@@ -124,10 +134,19 @@ export default function ProductClient({ slug }: { slug: string }) {
   
   const product = products.find((p: any) => p.slug === slug || p.id === slug);
 
+  const sizeGuideKind: SizeGuideKind = useMemo(() => {
+    const w = String((quickViewItem ?? product)?.wearTag ?? "").toLowerCase();
+    if (w === "mens") return "mens";
+    if (w === "womens") return "womens";
+    return "both";
+  }, [product, quickViewItem]);
+
+  // Escape handling is inside SizeGuideModal.
+
   const galleryImages = useMemo(() => {
     if (!product || !product.images) return EMPTY_ARRAY;
     return product.images.filter((img: string) => img !== product.hoverImage);
-  }, [product?.images, product?.hoverImage]);
+  }, [product]);
 
   useEffect(() => {
     if (galleryImages.length > 0) {
@@ -147,7 +166,7 @@ export default function ProductClient({ slug }: { slug: string }) {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     return { suggestedProducts: pool.slice(0, 5), suggestionPhrase: phrase };
-  }, [product?.id, products]);
+  }, [product, products]);
 
   const getAvailableSizes = (prod: any) => {
     if (!prod?.sizes || prod.sizes.length < 6) {
@@ -333,7 +352,13 @@ export default function ProductClient({ slug }: { slug: string }) {
               <div className={styles.sizeSection}>
                 <div className={styles.sizeHeader}>
                   <span className={styles.sizeLabel}>Size</span>
-                  <button className={styles.sizeGuideBtn}>Size Guide</button>
+                  <button
+                    type="button"
+                    className={styles.sizeGuideBtn}
+                    onClick={() => setSizeGuideOpen(true)}
+                  >
+                    Size Guide
+                  </button>
                 </div>
                 <div className={styles.sizeGrid}>
                   {getAvailableSizes(product).map((size: string) => (
@@ -343,7 +368,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                       className={`${styles.sizeBtn} ${selectedSize === size ? styles.sizeBtnActive : ""}`}
                       aria-pressed={selectedSize === size}
                     >
-                      {size}
+                      {formatSizeLabel(size)}
                     </button>
                   ))}
                 </div>
@@ -363,9 +388,6 @@ export default function ProductClient({ slug }: { slug: string }) {
               <div className={styles.qtySection}>
                 <div className={styles.qtyHeader}>
                   <span className={styles.qtyLabel}>Quantity</span>
-                  {product.quantity > 0 && product.quantity < 6 && (
-                    <span className={styles.lowStockWarning}>Only {product.quantity} left</span>
-                  )}
                 </div>
                 <div className={styles.qtyControl}>
                   <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
@@ -405,6 +427,19 @@ export default function ProductClient({ slug }: { slug: string }) {
                     {isInWishlist(product.id) ? "Saved" : "Wishlist"}
                   </button>
                 </div>
+
+                {typeof product.quantity === "number" &&
+                product.quantity > 0 &&
+                product.quantity <= 5 &&
+                !product.isOutOfStock ? (
+                  <div className={styles.lowStockNotice} role="status" aria-live="polite">
+                    <Clock className={styles.lowStockIcon} aria-hidden />
+                    <span>
+                      Only {product.quantity} left in stock. Order soon.
+                    </span>
+                  </div>
+                ) : null}
+
                 <div className={styles.supportLinks}>
                   <p>Questions about this piece?</p>
                   <Link
@@ -419,7 +454,7 @@ export default function ProductClient({ slug }: { slug: string }) {
               <div className={styles.detailsList}>
                 {(product.details ?? []).filter((d: string) => d?.trim()).length > 0 ? (
                   <div className={styles.detailBlock}>
-                    <h3 className={styles.detailHeading}>The Details</h3>
+                    <h3 className={styles.detailHeading}>Care Guide</h3>
                     <ul className={styles.detailUl}>
                       {(product.details ?? [])
                         .filter((d: string) => d?.trim())
@@ -586,11 +621,17 @@ export default function ProductClient({ slug }: { slug: string }) {
                       className={`${styles.sizeBtn} ${quickViewSize === sz ? styles.sizeBtnActive : ""}`}
                       onClick={() => setQuickViewSize(prev => prev === sz ? "" : sz)}
                     >
-                      {sz}
+                      {formatSizeLabel(sz)}
                     </button>
                   ))}
                 </div>
-                <button className={styles.sizeGuideBtn}>Size Guide</button>
+                <button
+                  type="button"
+                  className={styles.sizeGuideBtn}
+                  onClick={() => setSizeGuideOpen(true)}
+                >
+                  Size Guide
+                </button>
               </div>
               {quickViewSize === "Custom" && (
                 <p className={styles.customNotice}>
@@ -677,6 +718,12 @@ export default function ProductClient({ slug }: { slug: string }) {
         </div>
       </div>
     )}
+
+      <SizeGuideModal
+        open={sizeGuideOpen}
+        onClose={() => setSizeGuideOpen(false)}
+        kind={sizeGuideKind}
+      />
   </>
   );
 }

@@ -4,6 +4,7 @@ import styles from "../events.module.css";
 import { fetchPublicEventBySlug } from "@/lib/fetchEventsServer";
 import { PAGE_HERO_SHELL_CLASS } from "@/hooks/usePageHero";
 import EventVideo from "./EventVideo";
+import BackButton from "./BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             Connection issue
           </h1>
           <p className={styles.subtitle} style={{ marginBottom: "var(--space-xl)", maxWidth: "420px", marginLeft: "auto", marginRight: "auto" }}>
-            We're having trouble showing you the event's update right now. This usually happens when your internet is slow.
+            We&apos;re having trouble showing you the event&apos;s update right now. This usually happens when your internet is slow.
           </p>
           <Link
             href={`/events/${slug}`}
@@ -98,7 +99,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
       <section className={styles.section}>
         <div className="container">
           <div className={styles.sectionHead}>
-            <h2 className={styles.sectionTitle}>Event update</h2>
+            <div className={styles.sectionHeadLeft}>
+              <BackButton />
+              <h2 className={styles.sectionTitle}>Event update</h2>
+            </div>
           </div>
 
           <article className={styles.card}>

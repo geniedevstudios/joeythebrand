@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -7,12 +8,14 @@ import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageL
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { cartStore, type CartItem } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
+import { authStore } from "@/store/authStore";
 
 const EMPTY_ARRAY: CartItem[] = [];
 
 export default function CartClient() {
   const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_ARRAY);
   const appliedPromo = useSyncExternalStore(cartStore.subscribe, cartStore.getAppliedPromo, () => null);
+  const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const [promoInput, setPromoInput] = useState("");
   const [promoError, setPromoError] = useState("");
   const [promoSuccess, setPromoSuccess] = useState("");
@@ -261,6 +264,11 @@ export default function CartClient() {
                 if (!agreedToTerms) {
                   e.preventDefault();
                   toast.error("Please agree to the terms of sale before proceeding to checkout.");
+                } else if (!user) {
+                  toast.error("Sign in or create an account to proceed to checkout.", {
+                    description: "Head to your account page to sign in or sign up.",
+                    action: { label: "Account", onClick: () => { window.location.href = "/account"; } },
+                  });
                 } else {
                   window.location.href = "/checkout";
                 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { X, ExternalLink, ShoppingBag, CalendarDays } from "lucide-react";
+import { X, ShoppingBag, CalendarDays } from "lucide-react";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
 import type { Order, ConsultationBooking } from "@/lib/types";
 

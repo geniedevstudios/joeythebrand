@@ -6,6 +6,20 @@ export type EventStatus = "upcoming" | "past";
 
 type EventRow = Record<string, unknown>;
 
+function normalizeCollectionSlugs(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((s) => String(s)).map((s) => s.trim()).filter(Boolean);
+  if (typeof v === "string") {
+    // Accept "a,b", "{a,b}", or "a, b" (some older setups can serialize arrays as strings)
+    const t = v.trim().replace(/^\{/, "").replace(/\}$/, "");
+    if (!t) return [];
+    return t
+      .split(",")
+      .map((s) => String(s).trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 export type PublicEvent = {
   id: string;
   slug: string;
@@ -72,9 +86,7 @@ export async function fetchPublicEvents(): Promise<PublicEvent[] | null> {
       : [],
     recapYoutubeUrl: row.recap_youtube_url ? String(row.recap_youtube_url) : undefined,
     pixiesetUrl: row.pixieset_url ? String(row.pixieset_url) : undefined,
-    collectionSlugs: Array.isArray(row.collection_slugs)
-      ? row.collection_slugs.map((s) => String(s)).filter(Boolean)
-      : [],
+    collectionSlugs: normalizeCollectionSlugs(row.collection_slugs),
     detailsReady: Boolean(row.details_ready),
     details: row.details ? String(row.details) : undefined,
     sortOrder: Number(row.sort_order ?? 0),

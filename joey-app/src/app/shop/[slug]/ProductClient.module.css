@@ -447,6 +447,24 @@
   color: var(--alaska-gray);
 }
 
+.lowStockNotice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  font-size: 0.95rem;
+  color: rgba(20, 20, 20, 0.78);
+}
+
+.lowStockIcon {
+  flex: 0 0 auto;
+  opacity: 0.85;
+  width: 18px;
+  height: 18px;
+}
+
 .waLink {
   color: var(--wood);
   font-weight: 500;

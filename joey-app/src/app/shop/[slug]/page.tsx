@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (data?.description) productDesc = String(data.description || "");
     if (data?.image) productImage = String(data.image || "");
     if (data?.category_name) categoryName = String(data.category_name || "");
-  } catch (e) {
+  } catch {
     // fallback to slug
   }
 

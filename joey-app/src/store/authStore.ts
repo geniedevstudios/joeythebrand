@@ -12,18 +12,23 @@ let subscribers: (() => void)[] = [];
 const notify = () => subscribers.forEach((fn) => fn());
 
 // Initialise from existing Supabase session on load
+// Uses getUser() (server-validated) rather than getSession() (local JWT only)
+// so deleted users are caught immediately on page load.
 if (typeof window !== "undefined") {
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (session?.user) {
+  supabase.auth.getUser().then(({ data: { user: u }, error }) => {
+    if (u && !error) {
       user = {
-        id: session.user.id,
+        id: u.id,
         name:
-          (session.user.user_metadata?.full_name as string) ||
-          session.user.email?.split("@")[0] ||
+          (u.user_metadata?.full_name as string) ||
+          u.email?.split("@")[0] ||
           "Member",
-        email: session.user.email || "",
+        email: u.email || "",
       };
       notify();
+    } else if (error) {
+      // User no longer exists or token is invalid — clear any stale session
+      void supabase.auth.signOut();
     }
   });
 
@@ -42,6 +47,20 @@ if (typeof window !== "undefined") {
       user = null;
     }
     notify();
+  });
+
+  // Validate session server-side every time the tab regains focus.
+  // getUser() hits the Supabase server — if the user was deleted, it returns
+  // an error and we sign them out immediately rather than waiting for JWT expiry.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    supabase.auth.getUser().then(({ error }) => {
+      if (error && user) {
+        user = null;
+        notify();
+        void supabase.auth.signOut();
+      }
+    });
   });
 }
 
@@ -139,5 +158,30 @@ export const authStore = {
 
   signOut: async (): Promise<void> => {
     await supabase.auth.signOut();
+  },
+
+  /** Step 1 – send a 6-digit OTP to the user's email for password reset. */
+  sendResetOTP: async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: undefined, // we use OTP, not magic-link redirect
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  /** Step 2 – exchange the OTP for a session (type = "recovery"). */
+  verifyResetOTP: async (email: string, token: string): Promise<void> => {
+    const trimmed = token.replace(/\s/g, "");
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: trimmed,
+      type: "recovery",
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  /** Step 3 – set the new password (must be called while a recovery session is active). */
+  updatePassword: async (newPassword: string): Promise<void> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
   },
 };

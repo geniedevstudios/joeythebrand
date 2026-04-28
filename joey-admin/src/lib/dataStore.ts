@@ -106,6 +106,12 @@ const mapCollection = (row: Record<string, unknown>): Collection => ({
   galleryUrls: Array.isArray(row.gallery_urls)
     ? (row.gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
     : [],
+  detailWriteup: row.detail_writeup != null ? String(row.detail_writeup) : "",
+  detailVideoUrl: row.detail_video_url != null ? String(row.detail_video_url) : "",
+  detailVideoPosterUrl: row.detail_video_poster_url != null ? String(row.detail_video_poster_url) : "",
+  detailGalleryUrls: Array.isArray(row.detail_gallery_urls)
+    ? (row.detail_gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
+    : [],
   sortOrder: Number(row.sort_order ?? 0),
   createdAt: row.created_at as string,
 });
@@ -179,6 +185,10 @@ export const dataStore = {
       image: c.image || null,
       hover_image: c.hoverImage || null,
       gallery_urls: (c.galleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
+      detail_writeup: String(c.detailWriteup ?? "").trim(),
+      detail_video_url: String(c.detailVideoUrl ?? "").trim(),
+      detail_video_poster_url: String(c.detailVideoPosterUrl ?? "").trim(),
+      detail_gallery_urls: (c.detailGalleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
       sort_order: c.sortOrder,
     });
     if (error) throw new Error(error.message);
@@ -190,7 +200,17 @@ export const dataStore = {
     updates: Partial<
       Pick<
         Collection,
-        "name" | "briefDescription" | "description" | "sortOrder" | "image" | "hoverImage" | "galleryUrls"
+        | "name"
+        | "briefDescription"
+        | "description"
+        | "sortOrder"
+        | "image"
+        | "hoverImage"
+        | "galleryUrls"
+        | "detailWriteup"
+        | "detailVideoUrl"
+        | "detailVideoPosterUrl"
+        | "detailGalleryUrls"
       >
     >,
   ): Promise<void> => {
@@ -203,6 +223,14 @@ export const dataStore = {
     if (updates.hoverImage !== undefined) payload.hover_image = updates.hoverImage || null;
     if (updates.galleryUrls !== undefined) {
       payload.gallery_urls = updates.galleryUrls.map((u) => String(u || "").trim()).filter(Boolean);
+    }
+    if (updates.detailWriteup !== undefined) payload.detail_writeup = String(updates.detailWriteup ?? "").trim();
+    if (updates.detailVideoUrl !== undefined) payload.detail_video_url = String(updates.detailVideoUrl ?? "").trim();
+    if (updates.detailVideoPosterUrl !== undefined) {
+      payload.detail_video_poster_url = String(updates.detailVideoPosterUrl ?? "").trim();
+    }
+    if (updates.detailGalleryUrls !== undefined) {
+      payload.detail_gallery_urls = updates.detailGalleryUrls.map((u) => String(u || "").trim()).filter(Boolean);
     }
 
     const { error } = await supabase.from("collections").update(payload).eq("id", id);

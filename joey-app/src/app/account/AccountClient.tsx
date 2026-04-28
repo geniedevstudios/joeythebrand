@@ -1,5 +1,85 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import { useState, useSyncExternalStore, useEffect, useRef, useCallback } from "react";
+
+// ── Rotating flavour text ────────────────────────────────────────────────────
+const FORGOT_PHRASES = [
+  "mmm you're a clumsy one.",
+  "happens to the best of us.",
+  "we all forget sometimes.",
+  "no judgement here, seriously.",
+  "your secret's safe with us.",
+];
+const OTP_PHRASES = [
+  "check your inbox — it's in there.",
+  "we just slid into your inbox.",
+  "quick, before it expires.",
+  "your email's got something for you.",
+  "one code, one chance, let's go.",
+];
+const NEW_PASS_PHRASES = [
+  "make it a good one this time.",
+  "something you'll actually remember.",
+  "no 'password123' please.",
+  "strong and memorable — you've got this.",
+  "this one's on you now.",
+];
+const SUCCESS_PHRASES = [
+  "all set, don't forget this one too.",
+  "locked and loaded. we believe in you.",
+  "saved. now remember it this time.",
+  "you're back. don't make this a habit.",
+  "password updated. legendary.",
+];
+function randomPhrase(phrases: string[]) {
+  return phrases[Math.floor(Math.random() * phrases.length)];
+}
+
+// ── OTP digit input ──────────────────────────────────────────────────────────
+const RESET_DIGITS = 6;
+function ResetOTPInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  useEffect(() => { refs.current[0]?.focus(); }, []);
+  const setAt = useCallback((i: number, ch: string) => {
+    if (!/^\d?$/.test(ch)) return;
+    const next = [...value]; next[i] = ch; onChange(next);
+    if (ch && i < RESET_DIGITS - 1) refs.current[i + 1]?.focus();
+  }, [value, onChange]);
+  const handleChange = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    if (v.length > 1) {
+      const only = v.replace(/\D/g, "").slice(0, RESET_DIGITS);
+      if (only.length === RESET_DIGITS) { onChange(only.split("")); refs.current[RESET_DIGITS - 1]?.focus(); }
+      return;
+    }
+    setAt(i, v);
+  };
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !value[i] && i > 0) refs.current[i - 1]?.focus();
+  };
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, RESET_DIGITS);
+    if (!text) return;
+    const next = Array(RESET_DIGITS).fill("");
+    for (let i = 0; i < RESET_DIGITS; i++) next[i] = text[i] ?? "";
+    onChange(next);
+    const last = Math.min(text.length, RESET_DIGITS) - 1;
+    if (last >= 0) refs.current[last]?.focus();
+  };
+  return (
+    <div className={styles.otpDigits} onPaste={handlePaste}>
+      {value.map((d, i) => (
+        <input key={i} ref={(el) => { refs.current[i] = el; }}
+          type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={1}
+          className={styles.otpDigit} value={d}
+          onChange={(e) => handleChange(i, e)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          aria-label={`Digit ${i + 1}`} />
+      ))}
+    </div>
+  );
+}
 import Link from "next/link";
 import { toast } from "sonner";
 import { authStore } from "@/store/authStore";
@@ -15,7 +95,7 @@ import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageL
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { SignupOTPDialog } from "./SignupOTPDialog";
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "forgot" | "otp" | "newpass" | "success";
 
 function statusLabel(status: Order["status"]) {
   const map: Record<Order["status"], string> = {
@@ -467,8 +547,260 @@ export default function AccountClient() {
   /** After sign-up, if Supabase requires email confirmation, collect OTP here. */
   const [pendingSignupEmail, setPendingSignupEmail] = useState<string | null>(null);
 
-  if (user) {
+  // ── Password-reset state ──
+  const [resetEmail, setResetEmail] = useState("");
+  const [sendingOTP, setSendingOTP] = useState(false);
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(RESET_DIGITS).fill(""));
+  const [verifyingOTP, setVerifyingOTP] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [savingPass, setSavingPass] = useState(false);
+  const [resetError, setResetError] = useState("");
+
+  // Phrases — picked once when the component mounts (i.e. each time user enters the step)
+  const forgotPhrase  = useState(() => randomPhrase(FORGOT_PHRASES))[0];
+  const otpPhrase     = useState(() => randomPhrase(OTP_PHRASES))[0];
+  const newPassPhrase = useState(() => randomPhrase(NEW_PASS_PHRASES))[0];
+  const successPhrase = useState(() => randomPhrase(SUCCESS_PHRASES))[0];
+
+  // Resend cooldown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  // Reset ALL form state when the user signs out, so they always land on a
+  // clean sign-in screen — no stale credentials, no leftover OTP digits, etc.
+  useEffect(() => {
+    if (user) return; // user just signed in or is still signed in — do nothing
+    setMode("signin");
+    setName("");
+    setEmail("");
+    setPassword("");
+    setShowPassword(false);
+    setError("");
+    setPendingSignupEmail(null);
+    setResetEmail("");
+    setOtpDigits(Array(RESET_DIGITS).fill(""));
+    setNewPass("");
+    setConfirmPass("");
+    setShowNewPass(false);
+    setShowConfirmPass(false);
+    setResetError("");
+    setResendCooldown(0);
+  }, [user]);
+
+  const goToSignIn = () => {
+    setMode("signin"); setResetEmail(""); setOtpDigits(Array(RESET_DIGITS).fill(""));
+    setNewPass(""); setConfirmPass(""); setResetError("");
+  };
+
+  const handleSendOTP = async (e: React.FormEvent) => {
+    e.preventDefault(); setResetError("");
+    if (!resetEmail) return;
+    try {
+      setSendingOTP(true);
+      await authStore.sendResetOTP(resetEmail.trim());
+      setResendCooldown(60); setMode("otp");
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Could not send code.");
+    } finally { setSendingOTP(false); }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault(); setResetError("");
+    const code = otpDigits.join("");
+    if (code.length !== RESET_DIGITS) { setResetError(`Enter the ${RESET_DIGITS}-digit code.`); return; }
+    try {
+      setVerifyingOTP(true);
+      await authStore.verifyResetOTP(resetEmail.trim(), code);
+      setMode("newpass");
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Invalid code. Try again.");
+    } finally { setVerifyingOTP(false); }
+  };
+
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0) return;
+    try { await authStore.sendResetOTP(resetEmail.trim()); setResendCooldown(60); } catch { /* silent */ }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault(); setResetError("");
+    if (newPass.length < 8) { setResetError("Password must be at least 8 characters."); return; }
+    if (newPass !== confirmPass) { setResetError("Passwords don't match."); return; }
+    try {
+      setSavingPass(true);
+      await authStore.updatePassword(newPass);
+      await authStore.signOut();
+      setMode("success");
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Could not update password.");
+    } finally { setSavingPass(false); }
+  };
+
+  if (user && (mode === "signin" || mode === "signup")) {
     return <AccountDashboard userId={user.id} />;
+  }
+
+  // ── Password-reset flow (full-page early return) ──────────────────────────
+  // IMPORTANT: must come before the `if (user)` check — verifyResetOTP creates
+  // an active session, so `user` becomes non-null mid-flow.
+  if (mode === "forgot" || mode === "otp" || mode === "newpass" || mode === "success") {
+    return (
+      <div className={styles.page}>
+        <div
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+          data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
+          data-page-hero-loading={accountHeroSpinner ? "true" : "false"}
+          style={accountHeroStyle}
+        >
+          {accountHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+          <div className="container">
+            <span className="section-label">Your Account</span>
+            <h1 className={styles.pageTitle}>
+              {mode === "forgot" ? "Password Reset"
+                : mode === "otp" ? "Enter Code"
+                : mode === "newpass" ? "New Password"
+                : "All Set"}
+            </h1>
+          </div>
+        </div>
+
+        <div className="container">
+          <div className={styles.authWrap}>
+
+            {/* FORGOT — send OTP */}
+            {mode === "forgot" && (
+              <div className={styles.resetStep}>
+                <p className={styles.resetPhrase}>{forgotPhrase}</p>
+                <p className={styles.resetSub}>Tap the button below to receive a one-time code to reset your password.</p>
+                <form onSubmit={handleSendOTP} className={styles.authForm}>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="reset-email">Email Address</label>
+                    <input id="reset-email" type="email" className="form-input" placeholder="your@email.com"
+                      value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
+                  </div>
+                  {resetError && <p className={styles.resetError}>{resetError}</p>}
+                  <button type="submit" className="btn btn-primary btn-lg"
+                    style={{ width: "100%", justifyContent: "center", marginTop: "var(--space-md)" }}
+                    disabled={sendingOTP || !resetEmail}>
+                    {sendingOTP ? "Sending…" : "Send Reset Code"}
+                  </button>
+                </form>
+                <button type="button" className={styles.otpBack} onClick={goToSignIn}>← Back to Sign in</button>
+              </div>
+            )}
+
+            {/* OTP — enter code */}
+            {mode === "otp" && (
+              <div className={styles.resetStep}>
+                <p className={styles.resetPhrase}>{otpPhrase}</p>
+                <p className={styles.otpLead}>
+                  We sent a <strong>{RESET_DIGITS}-digit code</strong> to{" "}
+                  <span className={styles.otpEmail}>{resetEmail}</span>.
+                </p>
+                <form onSubmit={handleVerifyOTP} className={styles.otpForm}>
+                  <ResetOTPInput value={otpDigits} onChange={setOtpDigits} />
+                  {resetError && <p className={styles.resetError}>{resetError}</p>}
+                  <button type="submit" className="btn btn-primary btn-lg"
+                    style={{ width: "100%", justifyContent: "center", marginTop: "var(--space-md)" }}
+                    disabled={verifyingOTP || otpDigits.join("").length !== RESET_DIGITS}>
+                    {verifyingOTP ? "Verifying…" : "Verify Code"}
+                  </button>
+                </form>
+                <p className={styles.otpResend}>
+                  Didn&apos;t get it?{" "}
+                  <button type="button" className={styles.otpResendBtn} onClick={handleResendOTP} disabled={resendCooldown > 0}>
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                  </button>
+                </p>
+                <button type="button" className={styles.otpBack} onClick={() => setMode("forgot")}>← Back</button>
+              </div>
+            )}
+
+            {/* NEW PASSWORD */}
+            {mode === "newpass" && (
+              <div className={styles.resetStep}>
+                <p className={styles.resetPhrase}>{newPassPhrase}</p>
+                <form onSubmit={handleUpdatePassword} className={styles.authForm}>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="new-password">New Password</label>
+                    <div className={styles.passwordField}>
+                      <input id="new-password" type={showNewPass ? "text" : "password"} className="form-input"
+                        placeholder="New password" value={newPass}
+                        onChange={(e) => setNewPass(e.target.value)} autoComplete="new-password" required />
+                      <button type="button" className={styles.passwordToggle}
+                        onClick={() => setShowNewPass((v) => !v)}
+                        aria-label={showNewPass ? "Hide password" : "Show password"}>
+                        {showNewPass ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="confirm-password">Confirm Password</label>
+                    <div className={styles.passwordField}>
+                      <input id="confirm-password" type={showConfirmPass ? "text" : "password"} className="form-input"
+                        placeholder="Confirm password" value={confirmPass}
+                        onChange={(e) => setConfirmPass(e.target.value)} autoComplete="new-password" required />
+                      <button type="button" className={styles.passwordToggle}
+                        onClick={() => setShowConfirmPass((v) => !v)}
+                        aria-label={showConfirmPass ? "Hide password" : "Show password"}>
+                        {showConfirmPass ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  {resetError && <p className={styles.resetError}>{resetError}</p>}
+                  <button type="submit" className="btn btn-primary btn-lg"
+                    style={{ width: "100%", justifyContent: "center", marginTop: "var(--space-md)" }}
+                    disabled={savingPass || !newPass || !confirmPass}>
+                    {savingPass ? "Saving…" : "Save Password"}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* SUCCESS */}
+            {mode === "success" && (
+              <div className={styles.resetStep} style={{ textAlign: "center" }}>
+                <div className={styles.successIcon}>✓</div>
+                <p className={styles.resetPhrase}>{successPhrase}</p>
+                <button type="button" className="btn btn-primary btn-lg"
+                  style={{ width: "100%", justifyContent: "center", marginTop: "var(--space-lg)" }}
+                  onClick={goToSignIn}>
+                  Sign in
+                </button>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -612,6 +944,14 @@ export default function AccountClient() {
                     ? mode === "signin" ? "Signing in..." : "Creating account..."
                     : mode === "signin" ? "Sign In" : "Create Account"}
                 </button>
+                {mode === "signin" && (
+                  <div style={{ textAlign: "center" }}>
+                    <button type="button" className={styles.forgotLink}
+                      onClick={() => { setResetEmail(email); setMode("forgot"); }}>
+                      Forgot your password?
+                    </button>
+                  </div>
+                )}
                 {mode === "signup" && (
                   <p className={styles.signupPrivacy}>
                     Read our{" "}

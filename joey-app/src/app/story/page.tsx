@@ -6,6 +6,7 @@ import FounderSection from "@/components/home/FounderSection";
 import { fetchSiteContentForHome } from "@/lib/fetchSiteContentServer";
 import { fetchCollectionsForHome } from "@/lib/fetchCollectionsServer";
 import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
+/* eslint-disable @next/next/no-img-element */
 
 export const metadata: Metadata = {
   title: "Our Story — JOEY THE BRAND",

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { dataStore } from "@/lib/dataStore";
@@ -18,6 +19,31 @@ const DEFAULT_SIZES: ProductSize[] = [
   { name: "XL", available: true },
   { name: "Custom", available: true },
 ];
+
+const UK_US_SIZES: ProductSize[] = [
+  { name: "UK8/US4", available: true },
+  { name: "UK10/US6", available: true },
+  { name: "UK12/US8", available: true },
+  { name: "UK14/US10", available: true },
+  { name: "UK16/US12", available: true },
+  { name: "UK18/US14", available: true },
+  { name: "UK20/US16", available: true },
+  { name: "UK22/US18", available: true },
+  { name: "UK24/US20", available: true },
+  { name: "Custom", available: true },
+];
+
+type SizeButtonsMode = "standard" | "ukus";
+
+function isUkUsSizeName(name: string): boolean {
+  const n = String(name || "").trim().toUpperCase();
+  return n.startsWith("UK") && n.includes("/US");
+}
+
+function inferSizeButtonsMode(sizes?: ProductSize[] | null): SizeButtonsMode {
+  if (!sizes || sizes.length === 0) return "standard";
+  return sizes.some((s) => isUkUsSizeName(s.name)) ? "ukus" : "standard";
+}
 
 const FALLBACK_COLLECTIONS: Collection[] = [
   {
@@ -86,6 +112,7 @@ export default function ProductsPage() {
   const [newProductUploadKey, setNewProductUploadKey] = useState("");
   const [detailsLines, setDetailsLines] = useState<string[]>([""]);
   const detailInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [sizeButtonsMode, setSizeButtonsMode] = useState<SizeButtonsMode>("standard");
 
   const [productPendingDelete, setProductPendingDelete] = useState<Product | null>(null);
   const [collectionPendingDelete, setCollectionPendingDelete] = useState<Collection | null>(null);
@@ -93,6 +120,10 @@ export default function ProductsPage() {
   const [colMainImageUrl, setColMainImageUrl] = useState("");
   const [colHoverImageUrl, setColHoverImageUrl] = useState("");
   const [colGalleryUrls, setColGalleryUrls] = useState<string[]>([]);
+  const [colDetailWriteup, setColDetailWriteup] = useState("");
+  const [colDetailVideoUrl, setColDetailVideoUrl] = useState("");
+  const [colDetailVideoPosterUrl, setColDetailVideoPosterUrl] = useState("");
+  const [colDetailGalleryUrls, setColDetailGalleryUrls] = useState<string[]>([]);
   const [pendingColSlug, setPendingColSlug] = useState("");
 
   const productUploadFolder = editingProduct?.id
@@ -115,13 +146,25 @@ export default function ProductsPage() {
       setExtraImageUrls([0, 1, 2].map((i) => extras[i] ?? ""));
       setHoverImageUrl(editingProduct.hoverImage?.trim() || "");
       setDetailsLines(editingProduct.details?.length ? editingProduct.details : [""]);
+      setSizeButtonsMode(inferSizeButtonsMode(editingProduct.sizes));
     } else {
       setMainImageUrl("");
       setHoverImageUrl("");
       setExtraImageUrls(["", "", ""]);
       setDetailsLines([""]);
+      setSizeButtonsMode("standard");
     }
   }, [isModalOpen, editingProduct]);
+
+  const sizesForEditor = useMemo(() => {
+    const base = sizeButtonsMode === "ukus" ? UK_US_SIZES : DEFAULT_SIZES;
+    const existing = editingProduct?.sizes ?? [];
+    const map = new Map(existing.map((s) => [s.name, Boolean(s.available)]));
+    return base.map((s) => ({
+      ...s,
+      available: map.has(s.name) ? Boolean(map.get(s.name)) : Boolean(s.available),
+    }));
+  }, [editingProduct, sizeButtonsMode]);
 
   const load = useCallback(async () => {
     try {
@@ -260,8 +303,7 @@ export default function ProductsPage() {
         ? ""
         : col?.name || editingProduct?.categoryName || category;
 
-    const existingSizes = editingProduct?.sizes || DEFAULT_SIZES;
-    const newSizes: ProductSize[] = existingSizes.map((s) => ({
+    const newSizes: ProductSize[] = sizesForEditor.map((s) => ({
       ...s,
       available: formData.get(`size-${s.name}`) === "on",
     }));
@@ -326,6 +368,10 @@ export default function ProductsPage() {
     setColMainImageUrl("");
     setColHoverImageUrl("");
     setColGalleryUrls([]);
+    setColDetailWriteup("");
+    setColDetailVideoUrl("");
+    setColDetailVideoPosterUrl("");
+    setColDetailGalleryUrls([]);
     setPendingColSlug("");
     setCollectionModalOpen(true);
   };
@@ -336,6 +382,10 @@ export default function ProductsPage() {
     setColMainImageUrl(c.image?.trim() || "");
     setColHoverImageUrl(c.hoverImage || "");
     setColGalleryUrls(c.galleryUrls ?? []);
+    setColDetailWriteup(String(c.detailWriteup ?? c.description ?? ""));
+    setColDetailVideoUrl(String(c.detailVideoUrl ?? ""));
+    setColDetailVideoPosterUrl(String(c.detailVideoPosterUrl ?? ""));
+    setColDetailGalleryUrls((c.detailGalleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean));
     setPendingColSlug("");
     setCollectionModalOpen(true);
   };
@@ -356,10 +406,14 @@ export default function ProductsPage() {
     const name = (form.querySelector('[name="col-name"]') as HTMLInputElement).value.trim();
     const briefDescription = (form.querySelector('[name="col-brief-description"]') as HTMLTextAreaElement).value.trim();
     const description = (form.querySelector('[name="col-detailed-description"]') as HTMLTextAreaElement).value.trim();
+    const detailWriteup = colDetailWriteup.trim();
+    const detailVideoUrl = colDetailVideoUrl.trim();
+    const detailVideoPosterUrl = colDetailVideoPosterUrl.trim();
     const sortOrder = Number((form.querySelector('[name="col-sort"]') as HTMLInputElement).value) || 0;
 
     try {
       const galleryUrls = colGalleryUrls.map((u) => String(u || "").trim()).filter(Boolean);
+      const detailGalleryUrls = colDetailGalleryUrls.map((u) => String(u || "").trim()).filter(Boolean);
       if (editingCollection) {
         await dataStore.updateCollection(editingCollection.id, {
           name,
@@ -369,6 +423,10 @@ export default function ProductsPage() {
           image: colMainImageUrl,
           hoverImage: colHoverImageUrl,
           galleryUrls,
+          detailWriteup,
+          detailVideoUrl,
+          detailVideoPosterUrl,
+          detailGalleryUrls,
         });
       } else {
         const slug = (form.querySelector('[name="col-slug"]') as HTMLInputElement).value.trim().toLowerCase();
@@ -389,6 +447,10 @@ export default function ProductsPage() {
           image: colMainImageUrl,
           hoverImage: colHoverImageUrl,
           galleryUrls,
+          detailWriteup,
+          detailVideoUrl,
+          detailVideoPosterUrl,
+          detailGalleryUrls,
         });
       }
       toast.success(editingCollection ? "Collection updated." : "Collection created.");
@@ -834,7 +896,7 @@ export default function ProductsPage() {
 
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-zinc-700">
-                    The Details <span className="font-normal text-zinc-700">(product page)</span>
+                    Care Guide <span className="font-normal text-zinc-700">(product page)</span>
                   </label>
                   <div className="mt-2 space-y-2">
                     {detailsLines.map((v, idx) => (
@@ -906,7 +968,7 @@ export default function ProductsPage() {
                     />
                   </div>
                   <p className="mt-1 text-xs text-zinc-700">
-                    Shown in the &quot;The Details&quot; list on the product page (above Shipping &amp; Returns). Leave
+                    Shown in the &quot;Care Guide&quot; list on the product page (above Shipping &amp; Returns). Leave
                     empty to hide that block.
                   </p>
                 </div>
@@ -955,8 +1017,25 @@ export default function ProductsPage() {
 
                 <div className="col-span-2">
                   <label className="mb-2 block text-sm font-medium text-zinc-700">Sizes</label>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                    {(editingProduct?.sizes || DEFAULT_SIZES).map((size) => (
+                  <div className="mb-3 flex flex-wrap items-center gap-3">
+                    <span className="text-xs font-medium text-zinc-600">Size buttons</span>
+                    <AdminStyledSelect
+                      name="sizeButtonsMode"
+                      defaultValue={sizeButtonsMode}
+                      onValueChange={(v) => setSizeButtonsMode(v === "ukus" ? "ukus" : "standard")}
+                      options={[
+                        { value: "standard", label: "Standard (XS–Custom)" },
+                        { value: "ukus", label: "UK/US (UK8/US4–UK24/US20)" },
+                      ]}
+                      wrapperClassName="min-w-[280px]"
+                    />
+                    <span className="text-xs text-zinc-600">
+                      Choose which size buttons shoppers will see.
+                    </span>
+                  </div>
+
+                  <div key={sizeButtonsMode} className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                    {sizesForEditor.map((size) => (
                       <label
                         key={size.name}
                         className="flex cursor-pointer items-center space-x-2 rounded border bg-white p-2 hover:bg-zinc-100"
@@ -1107,6 +1186,55 @@ export default function ProductsPage() {
               />
               <p className="-mt-1 text-xs text-zinc-700">
                 Shown on the collection page above the shop filter (same grid as event galleries).
+              </p>
+
+              <div className="pt-2">
+                <label className="block text-sm font-medium text-zinc-700">Detail write-up (optional)</label>
+                <p className="mt-0.5 text-xs text-zinc-700">
+                  Shown below the first gallery on <code>/collection/[slug]</code>. Leave empty to reuse the detailed description above.
+                </p>
+                <textarea
+                  rows={6}
+                  value={colDetailWriteup}
+                  onChange={(e) => setColDetailWriteup(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                  placeholder="Write-up shown below the gallery…"
+                />
+              </div>
+
+              <div className="pt-2">
+                <AssetUrlField
+                  id="col-detail-video"
+                  label="Detail video (optional)"
+                  value={colDetailVideoUrl}
+                  onChange={setColDetailVideoUrl}
+                  uploadFolder="collections"
+                  accept="video/*"
+                  placeholder="https://… or upload"
+                />
+              </div>
+
+              <div>
+                <AssetUrlField
+                  id="col-detail-video-poster"
+                  label="Detail video poster (optional)"
+                  value={colDetailVideoPosterUrl}
+                  onChange={setColDetailVideoPosterUrl}
+                  uploadFolder="collections"
+                  accept="image/*"
+                  placeholder="Still image shown until video plays"
+                />
+              </div>
+
+              <AssetGalleryField
+                label="More images (after video)"
+                value={colDetailGalleryUrls}
+                onChange={setColDetailGalleryUrls}
+                uploadFolder={`collections/${sanitizeCollectionSlug(pendingColSlug || editingCollection?.slug || "draft")}/detail-gallery`}
+                accept="image/*"
+              />
+              <p className="-mt-1 text-xs text-zinc-700">
+                Optional second gallery shown after the video on the collection detail page.
               </p>
               {collectionFormError && (
                 <p className="text-sm text-red-600">{collectionFormError}</p>

@@ -16,6 +16,14 @@ export interface Collection {
   hoverImage?: string;
   /** Shown on /collection/[slug] above the wear filter (same layout as event galleries). */
   galleryUrls: string[];
+  /** Optional write-up shown after the first gallery on /collection/[slug]. */
+  detailWriteup?: string;
+  /** Optional MP4/WebM URL shown after the write-up on /collection/[slug]. */
+  detailVideoUrl?: string;
+  /** Optional poster URL used while the video loads. */
+  detailVideoPosterUrl?: string;
+  /** Optional second gallery shown after the video. */
+  detailGalleryUrls?: string[];
   sortOrder: number;
   createdAt: string;
 }

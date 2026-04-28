@@ -10,9 +10,18 @@ type Props = {
   onChange: (urls: string[]) => void;
   uploadFolder: string;
   accept: string;
+  /** Render only first N thumbnails until expanded (helps prevent UI freezes on huge galleries). */
+  initialVisibleCount?: number;
 };
 
-export default function AssetGalleryField({ label, value, onChange, uploadFolder, accept }: Props) {
+export default function AssetGalleryField({
+  label,
+  value,
+  onChange,
+  uploadFolder,
+  accept,
+  initialVisibleCount = 12,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -22,6 +31,7 @@ export default function AssetGalleryField({ label, value, onChange, uploadFolder
   const [stagedBlobUrls, setStagedBlobUrls] = useState<string[]>([]);
   /** Blob URL over a row while replacing */
   const [replaceBlob, setReplaceBlob] = useState<{ idx: number; url: string } | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const urls = useMemo(
     () => (Array.isArray(value) ? value.map((u) => String(u || "").trim()).filter(Boolean) : []),
@@ -82,6 +92,12 @@ export default function AssetGalleryField({ label, value, onChange, uploadFolder
     onChange(urls.filter((_, i) => i !== idx));
   };
 
+  const entries = useMemo(() => urls.map((u, idx) => ({ u, idx })), [urls]);
+  const visibleEntries = useMemo(() => {
+    if (expanded) return entries;
+    return entries.slice(0, Math.max(0, initialVisibleCount));
+  }, [entries, expanded, initialVisibleCount]);
+
   return (
     <div>
       <label className="block text-sm font-medium text-zinc-700">{label}</label>
@@ -99,7 +115,7 @@ export default function AssetGalleryField({ label, value, onChange, uploadFolder
       {err ? <p className="mt-2 text-xs text-red-600">{err}</p> : null}
 
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {urls.map((u, idx) => (
+        {visibleEntries.map(({ u, idx }) => (
           <div
             key={`${u}-${idx}`}
             className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm"
@@ -137,6 +153,21 @@ export default function AssetGalleryField({ label, value, onChange, uploadFolder
             ) : null}
           </div>
         ))}
+
+        {!expanded && urls.length > initialVisibleCount ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wide">
+              Show all
+            </span>
+            <span className="text-sm font-semibold text-zinc-900">
+              {urls.length}
+            </span>
+          </button>
+        ) : null}
 
         {stagedBlobUrls.map((b, i) => (
           <div

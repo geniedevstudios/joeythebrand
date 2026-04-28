@@ -1,0 +1,124 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(39, 43, 54, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 260;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.content {
+  width: 100%;
+  max-width: 980px;
+  max-height: 88vh;
+  overflow: hidden;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  position: relative;
+  box-shadow: 0 22px 70px rgba(0,0,0,0.18);
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: rgba(20, 20, 20, 0.65);
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: rgba(20, 20, 20, 0.9);
+}
+
+.header {
+  padding: 26px 72px 18px 34px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 1.65rem;
+  color: var(--blue-athracite);
+}
+
+.body {
+  padding: 18px 26px 26px;
+  overflow: auto;
+  max-height: calc(88vh - 84px);
+}
+
+.block + .block {
+  margin-top: 18px;
+}
+
+.subhead {
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(20, 20, 20, 0.55);
+  margin: 0 0 10px 0;
+}
+
+.tableWrap {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  overflow: auto;
+  background: #fff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-bottom: 2px solid rgba(0,0,0,0.22);
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(20, 20, 20, 0.7);
+  text-align: left;
+  padding: 14px 18px;
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 16px 18px;
+  font-size: 0.95rem;
+  color: rgba(20, 20, 20, 0.72);
+  border-top: 1px solid rgba(0,0,0,0.06);
+  white-space: nowrap;
+}
+
+.table tbody tr:nth-child(odd) td {
+  background: rgba(0,0,0,0.03);
+}
+

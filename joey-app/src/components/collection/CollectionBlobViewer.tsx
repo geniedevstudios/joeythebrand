@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "@/app/collection/CollectionClient.module.css";

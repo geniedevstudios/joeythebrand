@@ -64,6 +64,12 @@ export function mapPublicCollectionFromSupabaseRow(row: Record<string, unknown>)
     galleryUrls: Array.isArray(row.gallery_urls)
       ? (row.gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
       : undefined,
+    detailWriteup: row.detail_writeup != null ? String(row.detail_writeup) : undefined,
+    detailVideoUrl: row.detail_video_url != null ? String(row.detail_video_url) : undefined,
+    detailVideoPosterUrl: row.detail_video_poster_url != null ? String(row.detail_video_poster_url) : undefined,
+    detailGalleryUrls: Array.isArray(row.detail_gallery_urls)
+      ? (row.detail_gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
+      : undefined,
     sortOrder: Number(row.sort_order ?? 0),
   };
 }

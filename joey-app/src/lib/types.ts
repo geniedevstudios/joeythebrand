@@ -44,6 +44,14 @@ export interface PublicCollection {
   hoverImage?: string;
   /** Images above the wear filter on /collection/[slug] (same layout as event galleries). */
   galleryUrls?: string[];
+  /** Optional write-up shown after the first gallery. */
+  detailWriteup?: string;
+  /** Optional MP4/WebM URL shown after the write-up. */
+  detailVideoUrl?: string;
+  /** Optional poster image URL for the video. */
+  detailVideoPosterUrl?: string;
+  /** Optional second gallery shown after the video. */
+  detailGalleryUrls?: string[];
   sortOrder: number;
 }
 

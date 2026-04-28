@@ -44,14 +44,6 @@ type DashboardStat = {
   badge?: number;
 };
 
-function startOfTodayLabel(): string {
-  const d = new Date();
-  const day = d.toLocaleDateString(undefined, { day: "2-digit" });
-  const weekday = d.toLocaleDateString(undefined, { weekday: "short" });
-  const month = d.toLocaleDateString(undefined, { month: "long" });
-  return `${day} · ${weekday} · ${month}`;
-}
-
 function todayParts(): { day: string; weekday: string; month: string } {
   const d = new Date();
   return {

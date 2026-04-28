@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { dataStore } from "@/lib/dataStore";
+import type { Collection } from "@/lib/types";
+import AdminStyledSelect from "@/components/AdminStyledSelect";
 import { toast } from "sonner";
 import AssetUrlField from "@/components/AssetUrlField";
 import AssetGalleryField from "@/components/AssetGalleryField";
@@ -130,7 +133,7 @@ function DateTimePicker({
 }) {
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement | null>(null);
-  const parsed = parseLocalInputValue(value);
+  const parsed = useMemo(() => parseLocalInputValue(value), [value]);
   const [visibleMonth, setVisibleMonth] = useState<Date>(() => parsed ?? new Date());
   const [step, setStep] = useState<1 | 2>(1);
   const [draftDay, setDraftDay] = useState<Date | null>(null);
@@ -384,6 +387,10 @@ function parseCollectionSlugs(csv: string): string[] {
     .filter(Boolean);
 }
 
+function formatCollectionSlugsCsv(slugs: string[]): string {
+  return (slugs ?? []).map((s) => sanitizeSlug(s)).filter(Boolean).join(", ");
+}
+
 function toDraft(row?: EventRow | null): DraftEvent {
   return {
     id: row?.id,
@@ -422,12 +429,15 @@ export default function EventsContentPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsSaving, setEventsSaving] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [activeTab, setActiveTab] = useState<"main" | "upcoming" | "update">("main");
   const [editorOpen, setEditorOpen] = useState(false);
   const [draft, setDraft] = useState<DraftEvent>(() => toDraft(null));
+  const [draftLoading, setDraftLoading] = useState(false);
   const [nowTick, setNowTick] = useState(0);
   const [updateKind, setUpdateKind] = useState<null | "video" | "youtube" | "pixieset" | "collections">(null);
   const [updateStep, setUpdateStep] = useState<0 | 1>(0);
+  const [pendingCollectionSlug, setPendingCollectionSlug] = useState<string>("");
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -488,7 +498,14 @@ export default function EventsContentPage() {
   useEffect(() => {
     void load();
     void loadEvents();
-  }, [load]);
+  }, [load, loadEvents]);
+
+  useEffect(() => {
+    dataStore
+      .getCollections()
+      .then((cols) => setCollections(cols))
+      .catch(() => setCollections([]));
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setNowTick((x) => x + 1), 30_000);
@@ -529,6 +546,7 @@ export default function EventsContentPage() {
   };
 
   const openNew = (status: EventStatus) => {
+    setDraftLoading(false);
     setDraft({
       ...toDraft(null),
       status,
@@ -542,10 +560,14 @@ export default function EventsContentPage() {
   };
 
   const openEdit = (row: EventRow) => {
-    setDraft(toDraft(row));
+    setDraftLoading(true);
     setUpdateKind(null);
     setUpdateStep(0);
     setEditorOpen(true);
+    requestAnimationFrame(() => {
+      setDraft(toDraft(row));
+      setDraftLoading(false);
+    });
   };
 
   const saveEvent = async () => {
@@ -635,14 +657,15 @@ export default function EventsContentPage() {
     return draft.status === "past";
   }, [draft.startAt, draft.status]);
 
-  const upcomingRows = useMemo(
-    () => events.filter((e) => effectiveStatus(e) === "upcoming"),
-    [effectiveStatus, events, nowTick],
-  );
-  const pastRows = useMemo(
-    () => events.filter((e) => effectiveStatus(e) === "past"),
-    [effectiveStatus, events, nowTick],
-  );
+  const upcomingRows = useMemo(() => {
+    void nowTick; // re-evaluate time-based status every tick
+    return events.filter((e) => effectiveStatus(e) === "upcoming");
+  }, [effectiveStatus, events, nowTick]);
+
+  const pastRows = useMemo(() => {
+    void nowTick; // re-evaluate time-based status every tick
+    return events.filter((e) => effectiveStatus(e) === "past");
+  }, [effectiveStatus, events, nowTick]);
 
   return (
     <div className="w-full max-w-none space-y-8">
@@ -820,13 +843,6 @@ export default function EventsContentPage() {
                 Update videos, galleries, Pixieset/YouTube links, and collections after the event.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => openNew("past")}
-              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
-            >
-              + Add past event
-            </button>
           </div>
 
           <div className="p-6">
@@ -914,7 +930,11 @@ export default function EventsContentPage() {
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-5">
-                {isDraftPast ? (
+                {draftLoading ? (
+                  <div className="flex items-center justify-center py-16 text-sm font-semibold text-zinc-900">
+                    Loading event…
+                  </div>
+                ) : isDraftPast ? (
                   <div className="space-y-5">
                     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
                       <div className="text-sm font-semibold text-zinc-900">
@@ -1030,6 +1050,7 @@ export default function EventsContentPage() {
                                   onChange={(urls) => setDraft((p) => ({ ...p, galleryUrls: urls }))}
                                   uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/gallery`}
                                   accept="image/*"
+                                  initialVisibleCount={12}
                                 />
                               </div>
                             </>
@@ -1060,19 +1081,62 @@ export default function EventsContentPage() {
                           ) : null}
 
                           {updateKind === "collections" ? (
-                            <div className="sm:col-span-2">
-                              <label className="block text-sm font-medium text-zinc-700">
-                                Collection slugs (comma-separated)
-                              </label>
-                              <input
-                                value={draft.collectionSlugsCsv}
-                                onChange={(e) => setDraft((p) => ({ ...p, collectionSlugsCsv: e.target.value }))}
-                                placeholder="always-lit, limited-edition"
-                                className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
-                              />
-                              <p className="mt-1 text-xs text-zinc-700">
-                                These should match <code>/collection/[slug]</code>.
-                              </p>
+                            <div className="sm:col-span-2 space-y-3">
+                              <div>
+                                <label className="block text-sm font-medium text-zinc-700">
+                                  Collection (shown on the card)
+                                </label>
+                                <p className="mt-1 text-xs text-zinc-700">
+                                  Pick a single collection for the “View collection” button.
+                                </p>
+                              </div>
+
+                              <div className="flex flex-wrap items-end gap-2">
+                                <div className="min-w-[240px] flex-1">
+                                  <AdminStyledSelect
+                                    name="event-collections-pick"
+                                    defaultValue={pendingCollectionSlug}
+                                    onValueChange={(picked) => {
+                                      const next = sanitizeSlug(picked);
+                                      setPendingCollectionSlug(next);
+                                      setDraft((p) => ({
+                                        ...p,
+                                        collectionSlugsCsv: next ? formatCollectionSlugsCsv([next]) : "",
+                                      }));
+                                      // Reset the dropdown after selection.
+                                      setPendingCollectionSlug("");
+                                    }}
+                                    options={[
+                                      { value: "", label: "Select a collection…" },
+                                      ...collections
+                                        .filter((c) => c.slug && c.slug !== "none")
+                                        .map((c) => ({
+                                          value: c.slug,
+                                          label: `${c.name} (${c.slug})`,
+                                        })),
+                                    ]}
+                                  />
+                                </div>
+                              </div>
+
+                              {parseCollectionSlugs(draft.collectionSlugsCsv).length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    key={parseCollectionSlugs(draft.collectionSlugsCsv)[0]}
+                                    type="button"
+                                    className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-zinc-50"
+                                    onClick={() => setDraft((p) => ({ ...p, collectionSlugsCsv: "" }))}
+                                    aria-label={`Remove ${parseCollectionSlugs(draft.collectionSlugsCsv)[0]}`}
+                                  >
+                                    <span className="font-semibold">{parseCollectionSlugs(draft.collectionSlugsCsv)[0]}</span>
+                                    <span className="text-zinc-500">×</span>
+                                  </button>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-zinc-700">
+                                  No collections selected yet.
+                                </p>
+                              )}
                             </div>
                           ) : null}
 
