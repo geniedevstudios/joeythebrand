@@ -435,7 +435,9 @@ export default function EventsContentPage() {
   const [draft, setDraft] = useState<DraftEvent>(() => toDraft(null));
   const [draftLoading, setDraftLoading] = useState(false);
   const [nowTick, setNowTick] = useState(0);
-  const [updateKind, setUpdateKind] = useState<null | "video" | "youtube" | "pixieset" | "collections">(null);
+  const [updateKind, setUpdateKind] = useState<
+    null | "details" | "video" | "youtube" | "pixieset" | "collections"
+  >(null);
   const [updateStep, setUpdateStep] = useState<0 | 1>(0);
   const [pendingCollectionSlug, setPendingCollectionSlug] = useState<string>("");
 
@@ -840,7 +842,8 @@ export default function EventsContentPage() {
             <div>
               <h3 className="text-base font-semibold leading-6 text-zinc-900">Event update</h3>
               <p className="mt-1 text-sm text-zinc-900">
-                Update videos, galleries, Pixieset/YouTube links, and collections after the event.
+                Update flyer, location, time, descriptions, videos, galleries, Pixieset/YouTube links, and collections
+                after the event.
               </p>
             </div>
           </div>
@@ -957,6 +960,11 @@ export default function EventsContentPage() {
                           {(
                             [
                               {
+                                id: "details" as const,
+                                title: "Details",
+                                desc: "Edit flyer, location, date & descriptions (same fields as upcoming event).",
+                              },
+                              {
                                 id: "video" as const,
                                 title: "Video",
                                 desc: "Upload MP4 so the card gets “Watch show”.",
@@ -1011,6 +1019,111 @@ export default function EventsContentPage() {
                     ) : (
                       <>
                         <div className="grid gap-4 sm:grid-cols-2">
+                          {updateKind === "details" ? (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-zinc-700">Title</label>
+                                <input
+                                  value={draft.title}
+                                  onChange={(e) => {
+                                    const nextTitle = e.target.value;
+                                    setDraft((p) => {
+                                      const shouldAutofillSlug = !p.id && !p.slug.trim();
+                                      return {
+                                        ...p,
+                                        title: nextTitle,
+                                        slug: shouldAutofillSlug ? slugFromTitle(nextTitle) : p.slug,
+                                      };
+                                    });
+                                  }}
+                                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-zinc-700">Category</label>
+                                <select
+                                  value={draft.category}
+                                  onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value as EventCategory }))}
+                                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
+                                >
+                                  <option value="fashion_shows">Fashion shows</option>
+                                  <option value="clan_festival">Clan festival</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-zinc-700">Date label</label>
+                                <input
+                                  value={draft.dateLabel}
+                                  onChange={(e) => setDraft((p) => ({ ...p, dateLabel: e.target.value }))}
+                                  placeholder="2025 / June 2026"
+                                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-zinc-700">Start date/time (optional)</label>
+                                <DateTimePicker
+                                  value={draft.startAt}
+                                  onChange={(next) => setDraft((p) => ({ ...p, startAt: next }))}
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <label className="block text-sm font-medium text-zinc-700">Location (optional)</label>
+                                <input
+                                  value={draft.location}
+                                  onChange={(e) => setDraft((p) => ({ ...p, location: e.target.value }))}
+                                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <label className="block text-sm font-medium text-zinc-700">Short description</label>
+                                <textarea
+                                  value={draft.description}
+                                  onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
+                                  rows={3}
+                                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <label className="flex items-center gap-3 text-sm font-medium text-zinc-700">
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.detailsReady}
+                                    onChange={(e) => setDraft((p) => ({ ...p, detailsReady: e.target.checked }))}
+                                  />
+                                  Details ready (Details popup shows details instead of newsletter)
+                                </label>
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <label className="block text-sm font-medium text-zinc-700">Details (popup content)</label>
+                                <textarea
+                                  value={draft.details}
+                                  onChange={(e) => setDraft((p) => ({ ...p, details: e.target.value }))}
+                                  rows={5}
+                                  className="mt-1 w-full rounded-md border border-zinc-300 p-2 text-sm"
+                                  placeholder="Add the confirmed time/date, address, RSVP instructions, etc."
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <AssetUrlField
+                                  label="Flyer image (card background)"
+                                  value={draft.flyerUrl}
+                                  onChange={(url) => setDraft((p) => ({ ...p, flyerUrl: url }))}
+                                  uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/flyer`}
+                                  accept="image/*"
+                                  placeholder="Upload image or paste URL"
+                                />
+                              </div>
+                            </>
+                          ) : null}
+
                           {updateKind === "video" ? (
                             <>
                               <div className="sm:col-span-2">

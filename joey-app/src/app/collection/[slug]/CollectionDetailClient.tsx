@@ -291,7 +291,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       {detailVideoUrl ? (
         <section className={styles.collectionDetailVideoSection} aria-label="Collection video">
           <div className="container">
-            <div className={eventStyles.videoSection} style={{ marginTop: 0, position: "relative", aspectRatio: "16 / 9" as any }}>
+            <div className={styles.collectionDetailVideoFrame}>
               <EventVideo src={detailVideoUrl} posterUrl={detailVideoPosterUrl || undefined} />
             </div>
           </div>

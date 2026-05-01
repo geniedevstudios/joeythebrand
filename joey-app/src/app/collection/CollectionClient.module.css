@@ -82,6 +82,20 @@
 .collectionShotsGrid {
   gap: var(--space-2xl) !important;
   padding: var(--space-lg);
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 1024px) {
+  .collectionShotsGrid {
+    gap: var(--space-lg) !important;
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 640px) {
+  .collectionShotsGrid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -184,6 +198,17 @@
 .collectionDetailVideoSection {
   background: var(--color-bg);
   padding: 0 0 var(--space-3xl);
+}
+
+.collectionDetailVideoFrame {
+  margin-top: 0;
+  position: relative;
+  width: 100%;
+  background: #000;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-lg, 18px);
+  max-height: min(56.25vw, 70vh); /* keep it landscape; prevent extra-tall mobile */
 }
 
 .collectionDetailEditorialRow {

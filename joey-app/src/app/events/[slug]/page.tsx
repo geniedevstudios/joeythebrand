@@ -8,6 +8,15 @@ import BackButton from "./BackButton";
 
 export const dynamic = "force-dynamic";
 
+const SITE_URL = "https://joeythebrand.com";
+
+function toAbsoluteUrl(url: string): string {
+  const u = String(url || "").trim();
+  if (!u) return "";
+  if (/^https?:\/\//i.test(u)) return u;
+  return `${SITE_URL}${u.startsWith("/") ? "" : "/"}${u}`;
+}
+
 function formatWhen(startAt?: string, dateLabel?: string): string | null {
   const label = (dateLabel ?? "").trim();
   if (startAt) {
@@ -79,8 +88,46 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
       ? { "--detail-flyer": `url("${flyer.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")` }
       : undefined;
 
+  const canonical = `/events/${encodeURIComponent(event.slug)}`;
+  const url = `${SITE_URL}${canonical}`;
+  const startDate = event.startAt ? new Date(event.startAt) : null;
+  const startIso = startDate && !Number.isNaN(startDate.getTime()) ? startDate.toISOString() : undefined;
+  const endIso =
+    startDate && !Number.isNaN(startDate.getTime()) ? new Date(startDate.getTime() + 2 * 60 * 60 * 1000).toISOString() : undefined;
+  const eventStatus = event.status === "past" ? "https://schema.org/EventCompleted" : "https://schema.org/EventScheduled";
+
+  const eventImage = flyer ? toAbsoluteUrl(flyer) : "";
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description: String(event.description || "").trim() || undefined,
+    startDate: startIso,
+    endDate: endIso,
+    eventStatus,
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    url,
+    image: eventImage ? [eventImage] : undefined,
+    location: event.location
+      ? {
+          "@type": "Place",
+          name: event.location,
+          address: event.location,
+        }
+      : undefined,
+    organizer: {
+      "@type": "Organization",
+      name: "JOEY THE BRAND",
+      url: SITE_URL,
+    },
+  };
+
   return (
     <div className={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
       <section className={`${PAGE_HERO_SHELL_CLASS} ${styles.videoSection}`} aria-label="Event video">
         <EventVideo src={event.mainVideoUrl} posterUrl={event.mainVideoPosterUrl ?? event.flyerUrl} />
       </section>

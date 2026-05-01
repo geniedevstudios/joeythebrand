@@ -11,6 +11,7 @@ import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 
 const SITE_URL = "https://joeythebrand.com";
+const BRAND_NAME = "JOEY THE BRAND";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -37,8 +38,22 @@ export const metadata: Metadata = {
   description:
     "JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity. Based in Accra, Ghana.",
   keywords: ["JOEY THE BRAND", "African fashion", "luxury clothing", "bespoke tailoring", "Accra Ghana", "contemporary fashion"],
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  },
   alternates: {
     canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   openGraph: {
     title: "JOEY THE BRAND — Power. Precision. Presence.",
@@ -80,6 +95,19 @@ export default function RootLayout({
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
             })(window,document,'script','dataLayer','GTM-WGFJSVJM');
           `}
+        </Script>
+        <Script id="org-jsonld" type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: BRAND_NAME,
+            url: SITE_URL,
+            logo: `${SITE_URL}/icon.png`,
+            sameAs: [
+              "https://www.instagram.com/joeythebrand/",
+              "https://www.tiktok.com/@joeythebrand",
+            ],
+          })}
         </Script>
       </head>
       <body className={`${jost.variable} ${playfair.variable} ${bodoni.variable} antialiased`}>
