@@ -11,6 +11,8 @@ import { Analytics } from "@vercel/analytics/next";
 import RealtimeSync from "@/components/RealtimeSync";
 import ScrollToTop from "@/components/ScrollToTop";
 
+const SITE_URL = "https://consultwithurtailorstailor.joeythebrand.com";
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-body",
@@ -33,8 +35,48 @@ const bodoni = Bodoni_Moda({
 });
 
 export const metadata: Metadata = {
-  title: "URTAILORSTAILOR — Portfolio",
-  description: "Tailoring portfolio",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "URTAILORSTAILOR — Portfolio",
+    template: "%s — URTAILORSTAILOR",
+  },
+  description:
+    "Looking for bespoke consultations for fashion brands and creatives — strategy, design and production guidance tailored for impact.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "URTAILORSTAILOR — Portfolio",
+    description:
+      "Looking for bespoke consultations for fashion brands and creatives — strategy, design and production guidance tailored for impact.",
+    type: "website",
+    url: SITE_URL,
+    siteName: "URTAILORSTAILOR",
+    images: [
+      {
+        url: "/icon.png",
+        width: 512,
+        height: 512,
+        alt: "URTAILORSTAILOR",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "URTAILORSTAILOR — Portfolio",
+    description:
+      "Looking for bespoke consultations for fashion brands and creatives — strategy, design and production guidance tailored for impact.",
+    images: ["/icon.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({
