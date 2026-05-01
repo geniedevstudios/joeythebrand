@@ -12,7 +12,7 @@ import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Dressing"];
+const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Styling"];
 const serviceOptions = services.map((s) => ({ value: s, label: s }));
 
 export default function BespokeClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {

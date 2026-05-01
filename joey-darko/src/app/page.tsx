@@ -29,7 +29,7 @@ export default function HomePage() {
         />
         <div className={styles.heroJoeyWrap} aria-hidden>
           <Image
-            src="/joey-hero-image-Photoroom.png"
+            src="/firstimage.png"
             alt=""
             fill
             sizes="(max-width: 768px) 85vw, 420px"

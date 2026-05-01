@@ -100,7 +100,7 @@ export default async function StoryPage() {
         <div className="container">
           <div className={styles.founderGrid}>
             <div className={styles.founderImageWrap}>
-              <img src="/founder.png" alt="Joey — Founder" className={styles.founderImage} />
+              <img src="/joeyfounder.jpg" alt="Joey — Founder" className={styles.founderImage} />
             </div>
             <div className={styles.founderText}>
               <span className="section-label">About The Founder</span>
