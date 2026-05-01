@@ -3,6 +3,7 @@ import Image from "next/image";
 import FooterNewsletter from "./FooterNewsletter";
 import styles from "./Footer.module.css";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import CuratedPill from "./CuratedPill";
 
 const footerLinks = [
   { label: "Collections", href: "/collection" },
@@ -16,6 +17,7 @@ const footerLinks = [
 ];
 
 export default function Footer() {
+  const devHref = (process.env.NEXT_PUBLIC_DEV_PORTFOLIO_URL || "").trim() || null;
   return (
     <footer className={styles.footer}>
       <div className={`container ${styles.inner}`}>
@@ -114,6 +116,7 @@ export default function Footer() {
             © {new Date().getFullYear()} JOEY THE BRAND. All rights reserved.
           </p>
           <p className={styles.copy}>Power worn well.</p>
+          <CuratedPill devHref={devHref} />
         </div>
       </div>
     </footer>

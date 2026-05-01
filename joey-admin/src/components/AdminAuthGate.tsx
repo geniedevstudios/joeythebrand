@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
+import CuratedPill from "./CuratedPill";
+import Image from "next/image";
 
 export default function AdminAuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null | "loading">("loading");
@@ -25,10 +27,20 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
 
   if (session === "loading") {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#fafaf9" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0b0d10" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ width: 32, height: 32, border: "3px solid #e4e4e7", borderTopColor: "#09090b", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-          <p style={{ fontSize: "0.875rem", color: "#71717a" }}>Loading...</p>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              border: "3px solid rgba(255,255,255,0.18)",
+              borderTopColor: "#fff",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
+              margin: "0 auto 12px",
+            }}
+          />
+          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.72)" }}>Loading...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -36,15 +48,49 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
   }
 
   if (!session) {
+    const devHref = (process.env.NEXT_PUBLIC_DEV_PORTFOLIO_URL || "").trim() || null;
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafaf9", padding: "1rem" }}>
-        <div style={{ width: "100%", maxWidth: 400, background: "white", borderRadius: 16, border: "1px solid #e4e4e7", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", padding: "2.5rem" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0b0d10",
+          padding: "2rem 1rem",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: 440, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div
+            style={{
+              width: "100%",
+              background: "rgba(255, 255, 255, 0.04)",
+              borderRadius: 18,
+              border: "1px solid rgba(255, 255, 255, 0.10)",
+              boxShadow: "0 18px 60px rgba(0,0,0,0.45)",
+              padding: "2.5rem",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+            }}
+          >
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-            <div style={{ fontFamily: "var(--font-geist-mono, monospace)", fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.05em", marginBottom: 4 }}>
-              JTB ADMIN
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 10 }}>
+              <Image
+                src="/white-logo.png"
+                alt="JOEY THE BRAND"
+                width={560}
+                height={112}
+                className="h-10 w-auto max-w-[12rem] object-contain opacity-95"
+                priority
+                sizes="12rem"
+              />
+              <div style={{ textAlign: "left" }}>
+                <div className="truncate text-sm font-semibold tracking-wide text-white">ADMIN</div>
+                <div className="truncate text-[11px] font-medium text-white/55">Management portal</div>
+              </div>
             </div>
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#09090b", margin: 0 }}>Sign In</h1>
-            <p style={{ fontSize: "0.875rem", color: "#71717a", marginTop: 6 }}>Management Portal Access</p>
+            <h1 style={{ fontSize: "1.6rem", fontWeight: 650, color: "#fff", margin: 0 }}>Sign In</h1>
+            <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.65)", marginTop: 8 }}>Management Portal Access</p>
           </div>
 
           <form onSubmit={async (e) => {
@@ -58,7 +104,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
             setIsLoading(false);
           }}>
             <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: 6 }}>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 550, color: "rgba(255,255,255,0.80)", marginBottom: 6 }}>
                 Email
               </label>
               <input
@@ -67,12 +113,22 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@joeythebrand.com"
                 required
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: "0.875rem", outline: "none", boxSizing: "border-box" }}
+                style={{
+                  width: "100%",
+                  padding: "11px 12px",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  borderRadius: 10,
+                  fontSize: "0.9rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  background: "rgba(0,0,0,0.38)",
+                  color: "#fff",
+                }}
               />
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: 6 }}>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 550, color: "rgba(255,255,255,0.80)", marginBottom: 6 }}>
                 Password
               </label>
               <div style={{ position: "relative" }}>
@@ -86,11 +142,13 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                   style={{
                     width: "100%",
                     padding: "10px 44px 10px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 8,
-                    fontSize: "0.875rem",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    borderRadius: 10,
+                    fontSize: "0.9rem",
                     outline: "none",
                     boxSizing: "border-box",
+                    background: "rgba(0,0,0,0.38)",
+                    color: "#fff",
                   }}
                 />
                 <button
@@ -111,7 +169,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                     background: "transparent",
                     borderRadius: 6,
                     cursor: "pointer",
-                    color: "#71717a",
+                    color: "rgba(255,255,255,0.65)",
                   }}
                 >
                   {showPassword ? (
@@ -130,7 +188,17 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
             </div>
 
             {error && (
-              <p style={{ color: "#dc2626", fontSize: "0.8rem", marginBottom: "1rem", background: "#fef2f2", padding: "8px 12px", borderRadius: 6, border: "1px solid #fecaca" }}>
+              <p
+                style={{
+                  color: "#fecaca",
+                  fontSize: "0.85rem",
+                  marginBottom: "1rem",
+                  background: "rgba(220, 38, 38, 0.12)",
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(220, 38, 38, 0.35)",
+                }}
+              >
                 {error}
               </p>
             )}
@@ -138,12 +206,28 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
             <button
               type="submit"
               disabled={isLoading}
-              style={{ width: "100%", background: isLoading ? "#52525b" : "#09090b", color: "white", border: "none", borderRadius: 8, padding: "11px 0", fontWeight: 600, fontSize: "0.875rem", cursor: isLoading ? "not-allowed" : "pointer", transition: "background 0.2s" }}
+              style={{
+                width: "100%",
+                background: isLoading ? "rgba(255,255,255,0.18)" : "#fff",
+                color: "#0b0d10",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: 9999,
+                padding: "12px 0",
+                fontWeight: 700,
+                fontSize: "0.9rem",
+                cursor: isLoading ? "not-allowed" : "pointer",
+                transition: "transform 0.2s, opacity 0.2s",
+              }}
             >
               {isLoading ? "Signing in..." : "Sign In"}
             </button>
           </form>
         </div>
+
+        <div style={{ marginTop: "1.25rem", display: "flex", justifyContent: "center" }}>
+          <CuratedPill devHref={devHref} />
+        </div>
+      </div>
       </div>
     );
   }

@@ -6,6 +6,7 @@
   z-index: 100;
   height: var(--nav-height);
   transition: background var(--transition-slow), box-shadow var(--transition-base);
+  isolation: isolate;
 }
 
 /* Light nav colors when transparent (over dark hero) */
@@ -28,7 +29,7 @@
 .nav.scrolled .cartBtn,
 .nav.scrolled .iconBtn,
 .nav.scrolled .hamburger {
-  color: var(--blue-athracite);
+  color: #0b0d10;
 }
 
 .nav.scrolled .navLink::after {
@@ -36,10 +37,56 @@
 }
 
 .nav.scrolled {
-  background: rgba(245, 241, 236, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 1px 0 var(--color-border);
+  /* Glassy translucent nav with rounded ends lives on ::before. */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  border-bottom: none;
+}
+
+.nav.scrolled::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.34) 100%
+  );
+  /* "Lens" feel: boost contrast/brightness on the backdrop */
+  backdrop-filter: blur(22px) saturate(175%) contrast(1.18) brightness(1.06);
+  -webkit-backdrop-filter: blur(22px) saturate(175%) contrast(1.18) brightness(1.06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 -1px 0 rgba(39, 43, 54, 0.06) inset,
+    0 0 0 1px rgba(39, 43, 54, 0.08) inset,
+    0 12px 34px rgba(0, 0, 0, 0.10);
+  border: 1px solid rgba(39, 43, 54, 0.10);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Add a subtle specular highlight so it reads like a lens. */
+.nav.scrolled::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(120% 90% at 18% 10%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 32%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(120% 90% at 82% 90%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 55%);
+  mix-blend-mode: screen;
+  opacity: 0.55;
 }
 
 .inner {
