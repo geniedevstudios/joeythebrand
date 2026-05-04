@@ -193,7 +193,7 @@ export default function CollectionClient() {
       >
         {collectionHeroImageLoader ? <PageHeroShellImageLoader /> : null}
         <div className="container">
-          <span className="section-label">THE ARCHIVE</span>
+          <span className="section-label">THE GALLERY</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Collections</h1>
           <p className={styles.pageSubtext}>Explore the curated statement pieces from Joey The brand.</p>
         </div>

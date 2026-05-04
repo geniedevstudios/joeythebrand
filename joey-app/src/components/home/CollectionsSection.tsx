@@ -117,7 +117,7 @@ export default function CollectionsSection({
   initialCollections,
   headingId = "home-collections-heading",
   viewAllId = "home-collections-view-all",
-  ctaLabel = "Explore all archives",
+  ctaLabel = "Explore our gallery",
 }: CollectionsSectionProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -218,7 +218,7 @@ export default function CollectionsSection({
       <div className="container">
         <div className={styles.headerRow}>
           <div>
-            <span className="section-label">Archive</span>
+            <span className="section-label">Gallery</span>
             <h2 id={headingId} className={styles.collectionsHeading}>
               Curated statement pieces from Joey The brand.
             </h2>
