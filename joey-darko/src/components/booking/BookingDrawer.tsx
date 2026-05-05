@@ -17,6 +17,27 @@ const PLANS = [
   { id: "8h", title: "Full Immersion", duration: "Full Day", price: 5000 },
 ];
 
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function toTimeLabel(h24: number, m: number): string {
+  const hour12 = ((h24 + 11) % 12) + 1;
+  const ampm = h24 >= 12 ? "PM" : "AM";
+  return `${hour12}:${pad2(m)} ${ampm}`;
+}
+
+const timeOptions = (() => {
+  const out: { value: string; label: string }[] = [];
+  for (let h = 8; h <= 15; h++) {
+    for (const m of [0, 30] as const) {
+      if (h === 15 && m === 30) continue; // end at 3:00pm
+      out.push({ value: `${pad2(h)}:${pad2(m)}`, label: toTimeLabel(h, m) });
+    }
+  }
+  return out;
+})();
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -37,8 +58,10 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
     phone: "",
     service: "",
     date: "",
+    time: "",
     notes: "",
   });
+  const [slotStep, setSlotStep] = useState<"date" | "time">("date");
   const [lastToken, setLastToken] = useState("");
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[number] | null>(null);
   const [status, setStatus] = useState<"idle" | "payment" | "sending" | "sent" | "error">("idle");
@@ -82,8 +105,10 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
       phone: "", 
       service: initialService || "", 
       date: "", 
+      time: "",
       notes: "" 
     });
+    setSlotStep("date");
     setSelectedPlan(null);
     setStatus("idle");
     setSubmitError("");
@@ -152,7 +177,7 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
   useEffect(() => {
     if (status === "sent") {
       const timer = setTimeout(() => {
-        setForm({ name: "", email: "", phone: "", service: "", date: "", notes: "" });
+        setForm({ name: "", email: "", phone: "", service: "", date: "", time: "", notes: "" });
         setStatus("idle");
         setLastToken("");
         setTab("request");
@@ -181,6 +206,10 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
     }
     if (!form.date?.trim()) {
       setSubmitError("Choose a preferred date.");
+      return;
+    }
+    if (!form.time?.trim()) {
+      setSubmitError("Choose a preferred time (8:00am–3:00pm).");
       return;
     }
     if (!selectedPlan) {
@@ -217,6 +246,7 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
           customerPhone: form.phone,
           service: form.service,
           preferredDate: form.date.trim(),
+          preferredTime: form.time.trim(),
           notes: form.notes || undefined,
           durationHours: selectedPlan.id === "1h" ? 1 : selectedPlan.id === "3h" ? 3 : 8,
           priceGhs: selectedPlan.price,
@@ -408,7 +438,7 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
               <button 
                 className={styles.printBtn} 
                 onClick={() => {
-                  setForm({ name: "", email: "", phone: "", service: "", date: "", notes: "" });
+                  setForm({ name: "", email: "", phone: "", service: "", date: "", time: "", notes: "" });
                   setStatus("idle");
                   setLastToken("");
                   setTab("bookings");
@@ -465,16 +495,67 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
                   />
                 </div>
                 <div className={styles.field}>
-                  <span className={styles.label}>Preferred date</span>
+                  <span className={styles.label}>Preferred slot</span>
                   {calendarLoadError ? <p className={styles.warn}>{calendarLoadError}</p> : null}
-                  <BookingDatePicker
-                    id="pb-date"
-                    name="date"
-                    value={form.date}
-                    onChange={handleDateChange}
-                    min={minDate}
-                    disabledDates={disabledDates}
-                  />
+                  {slotStep === "date" ? (
+                    <BookingDatePicker
+                      id="pb-date"
+                      name="date"
+                      value={form.date}
+                      onChange={handleDateChange}
+                      min={minDate}
+                      disabledDates={disabledDates}
+                      closeOnSelect={false}
+                      nextLabel="Next: pick time"
+                      nextDisabled={!form.date.trim()}
+                      onNext={() => {
+                        if (!form.date.trim()) return;
+                        setSlotStep("time");
+                        setSubmitError("");
+                      }}
+                    />
+                  ) : (
+                    <div style={{ display: "grid", gap: "10px" }}>
+                      <div style={{ fontSize: "0.85rem", color: "rgba(245, 241, 236, 0.75)" }}>
+                        Date: <strong>{form.date || "—"}</strong>
+                      </div>
+                      <label htmlFor="pb-time" className={styles.label}>
+                        Preferred time
+                      </label>
+                      <select
+                        id="pb-time"
+                        name="time"
+                        className={styles.input}
+                        value={form.time}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select a time (8:00am–3:00pm)</option>
+                        {timeOptions.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          className={styles.tabBtn}
+                          onClick={() => setSlotStep("date")}
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.submit}
+                          disabled={!form.time.trim()}
+                          onClick={() => setSlotStep("date")}
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="pb-service" className={styles.label}>

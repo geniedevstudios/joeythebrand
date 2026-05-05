@@ -13,6 +13,15 @@ function isValidDateYmd(s: string): boolean {
   return !Number.isNaN(d.getTime());
 }
 
+function isValidTimeHm(s: string): boolean {
+  if (!/^\d{2}:\d{2}$/.test(s)) return false;
+  const [hh, mm] = s.split(":").map((n) => Number(n));
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return false;
+  if (hh < 0 || hh > 23) return false;
+  if (mm !== 0 && mm !== 30) return false;
+  return true;
+}
+
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -31,6 +40,7 @@ export async function POST(request: Request) {
   const customerPhone = typeof o.customerPhone === "string" ? o.customerPhone.trim() : "";
   const service = typeof o.service === "string" ? o.service.trim() : "";
   const preferredDate = typeof o.preferredDate === "string" ? o.preferredDate.trim().slice(0, 10) : "";
+  const preferredTime = typeof o.preferredTime === "string" ? o.preferredTime.trim() : "";
   const notes = typeof o.notes === "string" ? o.notes.trim() : "";
   const durationHours = typeof o.durationHours === "number" ? o.durationHours : null;
   const priceGhs = typeof o.priceGhs === "number" ? o.priceGhs : null;
@@ -50,6 +60,14 @@ export async function POST(request: Request) {
   }
   if (!preferredDate || !isValidDateYmd(preferredDate)) {
     return NextResponse.json({ error: "Please choose a preferred date." }, { status: 400 });
+  }
+  if (!preferredTime || !isValidTimeHm(preferredTime)) {
+    return NextResponse.json({ error: "Please choose a preferred time." }, { status: 400 });
+  }
+
+  // Window: 08:00 through 15:00 inclusive.
+  if (preferredTime < "08:00" || preferredTime > "15:00") {
+    return NextResponse.json({ error: "Preferred time must be between 8:00am and 3:00pm." }, { status: 400 });
   }
 
   const today = new Date();
@@ -75,6 +93,7 @@ export async function POST(request: Request) {
       customer_phone: customerPhone,
       service,
       preferred_date: preferredDate,
+      preferred_time: preferredTime,
       notes: notes || null,
       status: "pending",
       duration_hours: durationHours,

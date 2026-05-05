@@ -292,6 +292,7 @@ const mapConsultationBooking = (row: Record<string, unknown>): ConsultationBooki
   customerPhone: row.customer_phone as string,
   service: row.service as string,
   preferredDate: (row.preferred_date as string) || undefined,
+  preferredTime: row.preferred_time != null ? String(row.preferred_time).trim() || undefined : undefined,
   notes: (row.notes as string) || undefined,
   status: row.status as ConsultationStatus,
   bookingCode: row.booking_code
@@ -570,12 +571,15 @@ export const dataStore = {
     customerPhone: string;
     service: string;
     preferredDate?: string;
+    preferredTime?: string;
     notes?: string;
   }): Promise<ConsultationBooking> => {
     const preferred =
       input.preferredDate && input.preferredDate.trim() !== ""
         ? input.preferredDate.trim().slice(0, 10)
         : null;
+    const preferredTime =
+      input.preferredTime && input.preferredTime.trim() !== "" ? input.preferredTime.trim() : null;
 
     // Downpayment flow (Paystack): the booking is created in "pending" status, but
     // only becomes calendar-blocking once payment_status is marked "paid"
@@ -591,6 +595,7 @@ export const dataStore = {
         customer_phone: input.customerPhone.trim(),
         service: input.service.trim(),
         preferred_date: preferred,
+        preferred_time: preferredTime,
         notes: input.notes?.trim() ? input.notes.trim() : null,
         status: "pending" satisfies ConsultationStatus,
         price_ghs: BESPOKE_DOWNPAYMENT_GHS,

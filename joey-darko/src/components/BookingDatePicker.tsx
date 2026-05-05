@@ -10,6 +10,12 @@ type BookingDatePickerProps = {
   min?: string;
   disabledDates?: readonly string[];
   disableWeekends?: boolean;
+  /** Optional footer CTA shown inside the calendar panel (e.g. Next: pick time). */
+  nextLabel?: string;
+  onNext?: () => void;
+  nextDisabled?: boolean;
+  /** When false, selecting a date keeps the panel open until the user taps Next. */
+  closeOnSelect?: boolean;
 };
 
 export default function BookingDatePicker({
@@ -20,6 +26,10 @@ export default function BookingDatePicker({
   min,
   disabledDates,
   disableWeekends = true,
+  nextLabel,
+  onNext,
+  nextDisabled = false,
+  closeOnSelect = true,
 }: BookingDatePickerProps) {
   const blocked = new Set(disabledDates ?? []);
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +71,7 @@ export default function BookingDatePicker({
     }
 
     onChange({ target: { name, value: dateString } });
-    setIsOpen(false);
+    if (closeOnSelect && !onNext) setIsOpen(false);
   };
 
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -261,6 +271,34 @@ export default function BookingDatePicker({
               );
             })}
           </div>
+
+          {onNext ? (
+            <div style={{ marginTop: "12px", display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                disabled={nextDisabled}
+                onClick={() => {
+                  if (nextDisabled) return;
+                  setIsOpen(false);
+                  onNext();
+                }}
+                style={{
+                  padding: "0.6rem 1rem",
+                  borderRadius: "999px",
+                  border: "1px solid var(--color-border)",
+                  background: nextDisabled ? "rgba(39, 43, 54, 0.08)" : "var(--blue-athracite)",
+                  color: nextDisabled ? "var(--alaska-gray)" : "#fff",
+                  fontFamily: "var(--font-label), system-ui, sans-serif",
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  cursor: nextDisabled ? "not-allowed" : "pointer",
+                }}
+              >
+                {nextLabel || "Next"}
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

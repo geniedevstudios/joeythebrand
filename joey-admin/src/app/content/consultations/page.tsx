@@ -8,11 +8,21 @@ import { openConsultationPrintWindow } from "@/lib/printConsultation";
 import { ArrowLeft, CalendarRange } from "lucide-react";
 import { toast } from "sonner";
 
-function formatDate(iso?: string) {
-  if (!iso || !iso.trim()) return "—";
-  const d = new Date(iso + (iso.length === 10 ? "T12:00:00" : ""));
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+function formatPreferred(dateIso?: string, time24?: string) {
+  if (!dateIso?.trim()) return "—";
+  const d = new Date(dateIso.length === 10 ? `${dateIso}T12:00:00` : dateIso);
+  const dateLabel = Number.isNaN(d.getTime())
+    ? dateIso
+    : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  if (!time24?.trim()) return dateLabel;
+  const time = time24.trim();
+  const m = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!m) return `${dateLabel} • ${time}`;
+  const h = Number(m[1]);
+  const mm = m[2];
+  const hour12 = ((h + 11) % 12) + 1;
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${dateLabel} • ${hour12}:${mm} ${ampm}`;
 }
 
 function formatScheduled(iso?: string) {
@@ -441,7 +451,7 @@ export default function ConsultationsPage() {
                     </td>
                     <td className="px-5 py-4 text-sm text-zinc-800 max-w-[180px]">{b.service}</td>
                     <td className="px-5 py-4 text-sm text-zinc-800 whitespace-nowrap">
-                      {formatDate(b.preferredDate)}
+                      {formatPreferred(b.preferredDate, b.preferredTime)}
                     </td>
                     <td className="px-5 py-4 text-sm text-zinc-800 whitespace-nowrap">
                       {formatScheduled(b.scheduledAt)}

@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS public.consultation_bookings (
   customer_phone text NOT NULL,
   service text NOT NULL,
   preferred_date date,
+  /** Optional time slot chosen by customer (e.g. "09:30"). */
+  preferred_time text,
   notes text,
   status text NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'confirmed', 'declined')),
@@ -72,6 +74,10 @@ CREATE TRIGGER consultation_bookings_before_write
   EXECUTE PROCEDURE public.consultation_bookings_before_write();
 
 ALTER TABLE public.consultation_bookings ENABLE ROW LEVEL SECURITY;
+
+-- Safe to run on existing DBs: add time column if missing.
+ALTER TABLE public.consultation_bookings
+  ADD COLUMN IF NOT EXISTS preferred_time text;
 
 DROP POLICY IF EXISTS "consultation_bookings_insert_own" ON public.consultation_bookings;
 DROP POLICY IF EXISTS "consultation_bookings_select_own" ON public.consultation_bookings;

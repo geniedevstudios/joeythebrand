@@ -109,6 +109,7 @@ export interface ConsultationBooking {
   customerPhone: string;
   service: string;
   preferredDate?: string;
+  preferredTime?: string;
   notes?: string;
   status: ConsultationStatus;
   bookingCode?: string;

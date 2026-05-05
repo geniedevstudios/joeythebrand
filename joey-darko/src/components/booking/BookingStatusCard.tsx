@@ -14,6 +14,18 @@ function formatDateShort(iso?: string) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+function formatPreferredSlot(dateIso?: string, time24?: string) {
+  const date = formatDateShort(dateIso);
+  if (!time24?.trim() || date === "—") return date;
+  const m = /^(\d{2}):(\d{2})$/.exec(time24.trim());
+  if (!m) return `${date} • ${time24.trim()}`;
+  const h = Number(m[1]);
+  const mm = m[2];
+  const hour12 = ((h + 11) % 12) + 1;
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${date} • ${hour12}:${mm} ${ampm}`;
+}
+
 export default function BookingStatusCard({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -73,7 +85,7 @@ export default function BookingStatusCard({ token }: { token: string }) {
           <span className={styles.serviceTag}>{slip.service}</span>
         </div>
         <p className={styles.statusLead}>
-          Request for <strong>{formatDateShort(slip.preferredDate)}</strong> is pending review.
+          Request for <strong>{formatPreferredSlot(slip.preferredDate, slip.preferredTime)}</strong> is pending review.
         </p>
         <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
           <span className={styles.serviceTag}>{slip.durationHours ? `${slip.durationHours}h Session` : "—"}</span>

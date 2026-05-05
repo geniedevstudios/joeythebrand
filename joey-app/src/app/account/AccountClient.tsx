@@ -117,11 +117,21 @@ function consultationStatusLabel(status: ConsultationBooking["status"]) {
   return map[status];
 }
 
-function formatPreferredDate(iso?: string) {
-  if (!iso?.trim()) return null;
-  const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+function formatPreferredSlot(dateIso?: string, time24?: string) {
+  if (!dateIso?.trim()) return null;
+  const d = new Date(dateIso.length === 10 ? `${dateIso}T12:00:00` : dateIso);
+  const dateLabel = Number.isNaN(d.getTime())
+    ? dateIso
+    : d.toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+  if (!time24?.trim()) return dateLabel;
+  const time = time24.trim();
+  const m = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!m) return `${dateLabel} • ${time}`;
+  const h = Number(m[1]);
+  const mm = m[2];
+  const hour12 = ((h + 11) % 12) + 1;
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${dateLabel} • ${hour12}:${mm} ${ampm}`;
 }
 
 function OrderLineRow({ line }: { line: OrderItem }) {
@@ -425,7 +435,7 @@ function AccountDashboard({ userId }: { userId: string }) {
                 <div className={styles.panelScroll}>
                   <ul className={styles.consultationsList}>
                     {consultations.map((c) => {
-                      const pref = formatPreferredDate(c.preferredDate);
+                      const pref = formatPreferredSlot(c.preferredDate, c.preferredTime);
                       return (
                         <li key={c.id} className={styles.orderCard}>
                           <div className={styles.orderCardTop}>
@@ -450,7 +460,7 @@ function AccountDashboard({ userId }: { userId: string }) {
                               <span aria-hidden> · </span>
                               {formatPhoneDisplay(c.customerPhone)}
                             </p>
-                            {pref ? <p>Preferred date: {pref}</p> : null}
+                            {pref ? <p>Preferred slot: {pref}</p> : null}
                             {c.notes?.trim() ? (
                               <p>
                                 <span style={{ color: "var(--cinereous)" }}>Your note: </span>

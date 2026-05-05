@@ -9,6 +9,7 @@ export type SlipPayload = {
   customerPhone: string;
   service: string;
   preferredDate?: string;
+  preferredTime?: string;
   notes?: string;
   bookingCode?: string;
   scheduledAt?: string;
@@ -27,11 +28,21 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function formatDate(iso?: string) {
-  if (!iso?.trim()) return "—";
-  const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+function formatPreferred(dateIso?: string, time24?: string) {
+  if (!dateIso?.trim()) return "—";
+  const d = new Date(dateIso.length === 10 ? `${dateIso}T12:00:00` : dateIso);
+  const dateLabel = Number.isNaN(d.getTime())
+    ? dateIso
+    : d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  if (!time24?.trim()) return dateLabel;
+  const time = time24.trim();
+  const m = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!m) return `${dateLabel} • ${time}`;
+  const h = Number(m[1]);
+  const mm = m[2];
+  const hour12 = ((h + 11) % 12) + 1;
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${dateLabel} • ${hour12}:${mm} ${ampm}`;
 }
 
 function formatScheduled(iso?: string) {
@@ -48,7 +59,7 @@ export function openConsultationPrintWindow(b: SlipPayload): void {
     { label: "Email", value: b.customerEmail },
     { label: "Phone / WhatsApp", value: b.customerPhone },
     { label: "Service", value: b.service },
-    { label: "Preferred date", value: formatDate(b.preferredDate) },
+    { label: "Preferred slot", value: formatPreferred(b.preferredDate, b.preferredTime) },
     { label: "Duration", value: b.durationHours ? `${b.durationHours} Hours` : "—" },
     { label: "Price", value: b.priceGhs ? `₵${b.priceGhs.toLocaleString()}` : "—" },
     { label: "Payment Status", value: b.paymentStatus === "paid" ? "Paid" : "Unpaid" },

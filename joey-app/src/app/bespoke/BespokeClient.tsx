@@ -15,16 +15,41 @@ import { toast } from "sonner";
 const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Styling"];
 const serviceOptions = services.map((s) => ({ value: s, label: s }));
 
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function toTimeLabel(h24: number, m: number): string {
+  const hour12 = ((h24 + 11) % 12) + 1;
+  const ampm = h24 >= 12 ? "PM" : "AM";
+  const mm = m === 0 ? "00" : String(m);
+  return `${hour12}:${mm} ${ampm}`;
+}
+
+const timeOptions = (() => {
+  const out: { value: string; label: string }[] = [];
+  for (let h = 8; h <= 15; h++) {
+    for (const m of [0, 30] as const) {
+      if (h === 15 && m === 30) continue; // end at 3:00pm
+      const value = `${pad2(h)}:${pad2(m)}`;
+      out.push({ value, label: toTimeLabel(h, m) });
+    }
+  }
+  return out;
+})();
+
 export default function BespokeClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const [, setBookingIdForPayment] = useState<string | null>(null);
   const [payConfirmOpen, setPayConfirmOpen] = useState(false);
+  const [slotStep, setSlotStep] = useState<"date" | "time">("date");
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     service: "",
     date: "",
+    time: "",
     notes: "",
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -135,6 +160,10 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
       setSubmitError("Please choose a preferred date.");
       return;
     }
+    if (!form.time?.trim()) {
+      setSubmitError("Please choose a preferred time (8:00am–3:00pm).");
+      return;
+    }
     if (!form.service?.trim()) {
       setSubmitError("Please select a service type.");
       return;
@@ -160,6 +189,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
         customerPhone: form.phone,
         service: form.service,
         preferredDate: form.date.trim(),
+        preferredTime: form.time.trim(),
         notes: form.notes || undefined,
       });
       setBookingIdForPayment(booking.id);
@@ -366,14 +396,61 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
                     {calendarLoadError ? (
                       <p className={styles.calendarWarn}>{calendarLoadError}</p>
                     ) : null}
-                    <CustomDatePicker
-                      id="date"
-                      name="date"
-                      value={form.date}
-                      onChange={handleChange as (e: { target: { name: string; value: string } }) => void}
-                      min={new Date().toISOString().split("T")[0]}
-                      disabledDates={disabledDates}
-                    />
+                    {slotStep === "date" ? (
+                      <div style={{ display: "grid", gap: "10px" }}>
+                        <CustomDatePicker
+                          id="date"
+                          name="date"
+                          value={form.date}
+                          onChange={handleChange as (e: { target: { name: string; value: string } }) => void}
+                          min={new Date().toISOString().split("T")[0]}
+                          disabledDates={disabledDates}
+                          closeOnSelect={false}
+                          nextLabel="Next: pick time"
+                          nextDisabled={!form.date.trim()}
+                          onNext={() => {
+                            if (!form.date.trim()) return;
+                            setSlotStep("time");
+                            setSubmitError("");
+                          }}
+                        />
+                        {form.date.trim() && form.time.trim() ? (
+                          <span style={{ alignSelf: "center", fontSize: "0.9rem", color: "var(--alaska-gray)" }}>
+                            Selected: <strong>{form.date}</strong> at{" "}
+                            <strong>{timeOptions.find((t) => t.value === form.time)?.label ?? form.time}</strong>
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gap: "10px" }}>
+                        <div style={{ fontSize: "0.9rem", color: "var(--alaska-gray)" }}>
+                          Date: <strong>{form.date || "—"}</strong>
+                        </div>
+                        <label className="form-label" id="time-label">Preferred Time *</label>
+                        <CustomSelect
+                          id="time"
+                          name="time"
+                          value={form.time}
+                          onChange={handleChange}
+                          options={timeOptions}
+                          placeholder="Select a time (8:00am–3:00pm)"
+                          required
+                        />
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                          <button type="button" className="btn btn-outline" onClick={() => setSlotStep("date")}>
+                            Back
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={!form.time.trim()}
+                            onClick={() => setSlotStep("date")}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

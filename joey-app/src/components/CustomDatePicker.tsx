@@ -11,6 +11,12 @@ type CustomDatePickerProps = {
   disabledDates?: readonly string[];
   /** When true, Saturday & Sunday are crossed out and not selectable. Default true. */
   disableWeekends?: boolean;
+  /** Optional footer CTA shown inside the calendar panel (e.g. Bespoke → Next: pick time). */
+  nextLabel?: string;
+  onNext?: () => void;
+  nextDisabled?: boolean;
+  /** When false, selecting a date keeps the panel open (useful when a Next button is present). */
+  closeOnSelect?: boolean;
 };
 
 export default function CustomDatePicker({
@@ -21,6 +27,10 @@ export default function CustomDatePicker({
   min,
   disabledDates,
   disableWeekends = true,
+  nextLabel,
+  onNext,
+  nextDisabled = false,
+  closeOnSelect = true,
 }: CustomDatePickerProps) {
   const blocked = new Set(disabledDates ?? []);
   const [isOpen, setIsOpen] = useState(false);
@@ -62,7 +72,9 @@ export default function CustomDatePicker({
     }
 
     onChange({ target: { name, value: dateString } });
-    setIsOpen(false);
+    // If a Next CTA is present (e.g. pick time), keep the calendar open
+    // so the user can confirm via the footer action.
+    if (closeOnSelect && !onNext) setIsOpen(false);
   };
 
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -188,6 +200,41 @@ export default function CustomDatePicker({
               );
             })}
           </div>
+
+          {onNext ? (
+            <div
+              style={{
+                marginTop: "12px",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button
+                type="button"
+                disabled={nextDisabled}
+                onClick={() => {
+                  if (nextDisabled) return;
+                  setIsOpen(false);
+                  onNext();
+                }}
+                style={{
+                  padding: "0.6rem 1rem",
+                  borderRadius: "999px",
+                  border: "1px solid var(--color-border)",
+                  background: nextDisabled ? "rgba(39, 43, 54, 0.08)" : "var(--blue-athracite)",
+                  color: nextDisabled ? "var(--cloudy-sky)" : "#fff",
+                  fontFamily: "var(--font-label)",
+                  fontSize: "0.82rem",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  cursor: nextDisabled ? "not-allowed" : "pointer",
+                }}
+              >
+                {nextLabel || "Next"}
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

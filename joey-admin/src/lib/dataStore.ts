@@ -66,6 +66,7 @@ const mapConsultationBooking = (row: Record<string, unknown>): ConsultationBooki
   customerPhone: row.customer_phone as string,
   service: row.service as string,
   preferredDate: (row.preferred_date as string) || undefined,
+  preferredTime: row.preferred_time != null ? String(row.preferred_time).trim() || undefined : undefined,
   notes: (row.notes as string) || undefined,
   status: row.status as ConsultationStatus,
   bookingCode: row.booking_code

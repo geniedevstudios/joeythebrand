@@ -112,6 +112,8 @@ export interface ConsultationBooking {
   service: string;
   /** ISO date string (YYYY-MM-DD) or undefined if not chosen */
   preferredDate?: string;
+  /** Optional time slot (HH:mm), chosen by customer */
+  preferredTime?: string;
   notes?: string;
   status: ConsultationStatus;
   /** Present when admin has confirmed (e.g. BSP-000042). */
