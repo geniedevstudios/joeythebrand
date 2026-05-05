@@ -12,6 +12,7 @@ const footerLinks = [
   { label: "Events", href: "/events" },
   { label: "Bespoke", href: "/bespoke" },
   { label: "Contact", href: "/contact" },
+  { label: "News & Blog", href: "/news" },
   { label: "Shipping Policy", href: "/shipping" },
   { label: "Privacy Policy", href: "/privacy" },
 ];

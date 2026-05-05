@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AccountClient from "./AccountClient";
 
 export const metadata: Metadata = {
-  title: "Your Account — JOEY THE BRAND",
+  title: "Account",
   description: "Manage your JOEY THE BRAND orders and bespoke appointments.",
 };
 

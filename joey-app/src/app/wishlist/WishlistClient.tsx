@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -8,6 +7,7 @@ import { cartStore } from "@/store/cartStore";
 import styles from "./WishlistClient.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
+import ProductMedia from "@/components/shop/ProductMedia";
 
 const EMPTY_ARRAY: WishlistItem[] = [];
 
@@ -90,11 +90,11 @@ export default function WishlistClient() {
                 <div className={styles.imageWrap}>
                   {item.hoverImage ? (
                     <>
-                      <img src={item.image} alt={item.name} className={styles.imagePrimary} loading="lazy" />
-                      <img src={item.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
+                      <ProductMedia src={item.image} alt={item.name} className={styles.imagePrimary} loading="lazy" />
+                      <ProductMedia src={item.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden />
                     </>
                   ) : (
-                    <img src={item.image} alt={item.name} className={styles.image} loading="lazy" />
+                    <ProductMedia src={item.image} alt={item.name} className={styles.image} loading="lazy" />
                   )}
                   <div className={styles.overlay}>
                     <div className={styles.actionButtons}>

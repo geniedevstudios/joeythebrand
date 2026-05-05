@@ -8,6 +8,7 @@ const cards = [
   { id: "homeHero", label: "Home — hero background", href: "/content/app-pages/home-hero" },
   { id: "homeFounder", label: "Home — founder section", href: "/content/app-pages/home-founder" },
   { id: "events", label: "Events page", href: "/content/app-pages/events" },
+  { id: "newsBlog", label: "News & Blog", href: "/content/app-pages/news-blog" },
 ];
 
 export default function AppPagesContent() {

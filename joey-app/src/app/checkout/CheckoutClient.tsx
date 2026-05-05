@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -14,6 +13,7 @@ import { INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS, countryNameFromIso2 } from "@/l
 import type { Order } from "@/lib/types";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import type { CartItem } from "@/store/cartStore";
+import ProductMedia from "@/components/shop/ProductMedia";
 
 const EMPTY_ARRAY: CartItem[] = [];
 
@@ -449,7 +449,7 @@ export default function CheckoutClient() {
             {items.map((item) => (
               <div key={`${item.id}-${item.size}`} className={styles.summaryItem}>
                 <div className={styles.itemImgWrap}>
-                  <img src={item.image} alt={item.name} className={styles.itemImg} />
+                  <ProductMedia src={item.image} alt={item.name} className={styles.itemImg} />
                   <span className={styles.itemQty}>{item.quantity}</span>
                 </div>
                 <div className={styles.itemInfo}>

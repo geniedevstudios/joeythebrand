@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import type { OrderItem } from "@/lib/types";
+import { isVideoUrl } from "@/lib/isVideoUrl";
 
 type Props = {
   open: boolean;
@@ -58,7 +59,18 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
           <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
             <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
               <div className="flex aspect-[3/4] w-full items-center justify-center p-4">
-                <img src={item.image} alt={item.name} className="h-full w-full object-contain" />
+                {isVideoUrl(item.image) ? (
+                  <video
+                    src={item.image}
+                    className="max-h-full w-full object-contain"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label={item.name}
+                  />
+                ) : (
+                  <img src={item.image} alt={item.name} className="h-full w-full object-contain" />
+                )}
               </div>
             </div>
 

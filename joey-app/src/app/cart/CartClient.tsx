@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/useP
 import { cartStore, type CartItem } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 import { authStore } from "@/store/authStore";
+import ProductMedia from "@/components/shop/ProductMedia";
 
 const EMPTY_ARRAY: CartItem[] = [];
 
@@ -145,7 +145,7 @@ export default function CartClient() {
                 <div key={`${item.id}-${item.size}`} className={styles.cartRow}>
                   <div className={`${styles.cell} ${styles.colProduct}`}>
                     <div className={styles.itemImgBox}>
-                      <img src={item.image} alt={item.name} className={styles.itemImg} />
+                      <ProductMedia src={item.image} alt={item.name} className={styles.itemImg} />
                     </div>
                     <div className={styles.itemDetails}>
                       <Link href={`/shop/${item.productId}`} className={styles.itemName}>{item.name}</Link>

@@ -4,7 +4,7 @@ import { fetchSiteContentForHome } from "@/lib/fetchSiteContentServer";
 import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
 
 export const metadata: Metadata = {
-  title: "Book a Slot — JOEY THE BRAND Bespoke",
+  title: "Bespoke",
   description: "Book a bespoke or styling consultation with JOEY THE BRAND. By appointment only. Custom tailoring crafted around your presence.",
 };
 

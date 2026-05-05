@@ -4,7 +4,7 @@ import ShopClient from "./ShopClient";
 import styles from "./ShopClient.module.css";
 
 export const metadata: Metadata = {
-  title: "Shop The Collection — JOEY THE BRAND",
+  title: "Shop",
   description: "Browse JOEY THE BRAND collections: Always Lit, Limited-Edition, and Sample Sale. Architectural tailoring with cultural depth.",
 };
 

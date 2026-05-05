@@ -37,7 +37,10 @@ export default function AdminStyledSelect({
 }: AdminStyledSelectProps) {
   const [value, setValue] = useState(defaultValue);
   const [open, setOpen] = useState(false);
+  /** Panel opens downward (default) or upward when there is more room above. */
+  const [placement, setPlacement] = useState<"below" | "above">("below");
   const [menuTop, setMenuTop] = useState(0);
+  const [menuBottom, setMenuBottom] = useState(0);
   const [menuLeft, setMenuLeft] = useState(0);
   const [menuWidth, setMenuWidth] = useState(0);
   const [menuMaxH, setMenuMaxH] = useState(320);
@@ -58,11 +61,26 @@ export default function AdminStyledSelect({
     if (!el) return;
     const r = el.getBoundingClientRect();
     const gap = 6;
-    setMenuTop(r.bottom + gap);
+    const margin = 16;
+    const maxPreferred = 320;
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+
+    const spaceBelow = vh - r.bottom - gap - margin;
+    const spaceAbove = r.top - gap - margin;
+
     setMenuLeft(r.left);
     setMenuWidth(r.width);
-    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-    setMenuMaxH(Math.max(120, Math.min(320, vh - r.bottom - gap - 16)));
+
+    const openBelow = spaceBelow >= spaceAbove;
+    if (openBelow) {
+      setPlacement("below");
+      setMenuTop(r.bottom + gap);
+      setMenuMaxH(Math.max(120, Math.min(maxPreferred, spaceBelow)));
+    } else {
+      setPlacement("above");
+      setMenuBottom(vh - r.top + gap);
+      setMenuMaxH(Math.max(120, Math.min(maxPreferred, spaceAbove)));
+    }
   }, []);
 
   useLayoutEffect(() => {
@@ -111,11 +129,13 @@ export default function AdminStyledSelect({
         role="listbox"
         className={`${adminDropdownPanelBaseClass} fixed z-[300]`}
         style={{
-          top: menuTop,
           left: menuLeft,
           width: menuWidth,
           maxHeight: menuMaxH,
           overflowY: "auto",
+          ...(placement === "above"
+            ? { bottom: menuBottom, top: "auto" as const }
+            : { top: menuTop, bottom: "auto" as const }),
         }}
       >
         {options.map((opt) => {

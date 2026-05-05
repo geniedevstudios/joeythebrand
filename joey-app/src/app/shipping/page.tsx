@@ -4,7 +4,7 @@ import styles from "./shipping.module.css";
 import ShippingHero from "./ShippingHero";
 
 export const metadata: Metadata = {
-  title: "Shipping & Returns Policy — JOEY THE BRAND",
+  title: "Shipping & Returns Policy",
   description: "Information on domestic (Ghana) and international shipping, delivery times, and our return policy.",
 };
 

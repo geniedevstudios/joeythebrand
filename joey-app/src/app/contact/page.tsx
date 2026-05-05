@@ -5,7 +5,7 @@ import { fetchSiteContentForHome } from "@/lib/fetchSiteContentServer";
 import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
 
 export const metadata: Metadata = {
-  title: "Contact — JOEY THE BRAND",
+  title: "Contact",
   description: "Reach out to JOEY THE BRAND for custom orders, press inquiries, collaborations, or consulting. Based in Accra, Ghana.",
 };
 

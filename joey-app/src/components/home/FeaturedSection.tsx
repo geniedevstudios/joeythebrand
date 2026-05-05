@@ -1,6 +1,5 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { useEffect, useMemo, useSyncExternalStore, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,6 +9,7 @@ import { DEFAULT_SIZES } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { Product } from "@/lib/types";
 import type { WishlistItem } from "@/store/wishlistStore";
+import ProductMedia from "@/components/shop/ProductMedia";
 import styles from "./FeaturedSection.module.css";
 
 const EMPTY_PRODUCTS: Product[] = [];
@@ -181,7 +181,7 @@ export default function FeaturedSection() {
               <div className={styles.modalGrid}>
                 <div className={styles.modalGallery}>
                   <div className={styles.modalImageWrap}>
-                    <img
+                    <ProductMedia
                       src={activeImage || quickViewPiece.image}
                       alt={quickViewPiece.name}
                       className={styles.modalImage}
@@ -198,7 +198,7 @@ export default function FeaturedSection() {
                           aria-label={`View image ${idx + 1}`}
                           type="button"
                         >
-                          <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                          <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
                         </button>
                       ))}
                     </div>
@@ -325,13 +325,13 @@ export default function FeaturedSection() {
                 <div className={styles.imageWrap}>
                   {item.hoverImage ? (
                     <>
-                      <img
+                      <ProductMedia
                         src={item.image}
                         alt={item.name}
                         className={styles.imagePrimary}
                         loading="lazy"
                       />
-                      <img
+                      <ProductMedia
                         src={item.hoverImage}
                         alt=""
                         className={styles.imageHover}
@@ -340,7 +340,7 @@ export default function FeaturedSection() {
                       />
                     </>
                   ) : (
-                    <img
+                    <ProductMedia
                       src={item.image}
                       alt={item.name}
                       className={styles.image}

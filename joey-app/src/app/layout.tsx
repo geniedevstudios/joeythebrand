@@ -6,6 +6,9 @@ import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
 import DataStoreInit from "@/components/DataStoreInit";
+import PromotionPopup from "@/components/PromotionPopup";
+import { fetchSiteContent } from "@/lib/fetchSiteContentServer";
+import { DEFAULT_PROMOTION_POPUP } from "@/lib/types";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
@@ -33,7 +36,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: "JOEY THE BRAND — Power. Precision. Presence.",
-    template: "%s — JOEY THE BRAND",
+    template: "%s - JOEY THE BRAND",
   },
   description:
     "JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity. Based in Accra, Ghana.",
@@ -79,11 +82,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteContentRow = await fetchSiteContent();
+  const initialPromotionPopup = siteContentRow?.promotionPopup ?? DEFAULT_PROMOTION_POPUP;
+
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <head>
@@ -124,6 +130,7 @@ export default function RootLayout({
         <main>{children}</main>
         <Footer />
         <CartDrawer />
+        <PromotionPopup initialPromotionPopup={initialPromotionPopup} />
         <ScrollToTop />
         <Toaster position="top-center" richColors />
         <Analytics />

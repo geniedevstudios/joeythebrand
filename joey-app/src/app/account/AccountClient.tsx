@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useState, useSyncExternalStore, useEffect, useRef, useCallback } from "react";
+import ProductMedia from "@/components/shop/ProductMedia";
 
 // ── Rotating flavour text ────────────────────────────────────────────────────
 const FORGOT_PHRASES = [
@@ -133,13 +133,7 @@ function OrderLineRow({ line }: { line: OrderItem }) {
   return (
     <li className={styles.orderLine}>
       <Link href={href} className={styles.orderLineLink}>
-        <img
-          src={line.image}
-          alt=""
-          className={styles.orderLineImg}
-          width={48}
-          height={62}
-        />
+        <ProductMedia src={line.image} alt="" className={styles.orderLineImg} />
         <span className={styles.orderLineBody}>
           <span className={styles.orderLineName}>{line.name || "Product"}</span>
           <span className={styles.orderLineMeta}>

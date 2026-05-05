@@ -7,6 +7,7 @@ import { dataStore } from "@/lib/dataStore";
 import type { Order, OrderItem, OrderStatus } from "@/lib/types";
 import { PackageOpen } from "lucide-react";
 import AdminStyledSelect from "@/components/AdminStyledSelect";
+import { isVideoUrl } from "@/lib/isVideoUrl";
 import OrderItemDetailModal from "@/components/OrderItemDetailModal";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
@@ -171,7 +172,20 @@ export default function OrdersPage() {
                               aria-label={`Details for ${item.name}, size ${item.size}, quantity ${item.quantity}`}
                             >
                               <span className="relative h-11 w-9 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 shadow-sm">
-                                <img src={item.image} alt="" className="h-full w-full object-cover" />
+                                {isVideoUrl(item.image) ? (
+                                  <video
+                                    src={item.image}
+                                    className="h-full w-full object-cover"
+                                    muted
+                                    playsInline
+                                    loop
+                                    autoPlay
+                                    preload="metadata"
+                                    aria-hidden
+                                  />
+                                ) : (
+                                  <img src={item.image} alt="" className="h-full w-full object-cover" />
+                                )}
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="line-clamp-2 text-sm font-medium text-zinc-900">

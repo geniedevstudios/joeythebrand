@@ -51,7 +51,7 @@ export default function FooterNewsletter() {
   }
 
   return (
-    <section className={styles.newsletter} aria-labelledby="footer-newsletter-heading">
+    <section id="footer-newsletter" className={styles.newsletter} aria-labelledby="footer-newsletter-heading">
       <h3 id="footer-newsletter-heading" className={styles.newsletterTitle}>
         Join the clan
       </h3>

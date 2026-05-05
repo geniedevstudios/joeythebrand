@@ -84,6 +84,13 @@ alter table public.site_content add column if not exists founder_headline text n
 alter table public.site_content add column if not exists founder_cta_label text not null default 'DISCOVER THE STORY';
 alter table public.site_content add column if not exists founder_cta_href text not null default '/story';
 
+alter table public.site_content add column if not exists news_spotlights jsonb not null default '[]'::jsonb;
+
+alter table public.site_content add column if not exists promotion_popup jsonb not null default '{}'::jsonb;
+
+-- Full row in realtime UPDATE payloads (news_spotlights JSON, page_heroes, etc.)
+alter table public.site_content replica identity full;
+
 -- 5. EVENTS PAGE (single row, always id = 1)
 create table if not exists public.events_page (
   id integer primary key default 1 check (id = 1),

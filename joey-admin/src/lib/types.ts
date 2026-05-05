@@ -145,7 +145,8 @@ export type PageHeroKey =
   | "shipping"
   | "privacy"
   | "login"
-  | "product";
+  | "product"
+  | "news";
 
 export type PageHeroFit = "cover" | "contain";
 
@@ -154,6 +155,31 @@ export type PageHeroAnchor = "top" | "center" | "bottom";
 export type PageHeroMedia =
   | { kind: "image"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor }
   | { kind: "video"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor };
+
+export type PromotionPopupAction = "newsletter" | "product" | "news";
+
+export type PromotionPopupMediaKind = "image" | "video";
+
+export interface PromotionPopupConfig {
+  enabled: boolean;
+  mediaKind: PromotionPopupMediaKind;
+  mediaUrl: string;
+  posterUrl: string;
+  headline: string;
+  body: string;
+  buttonLabel: string;
+  action: PromotionPopupAction;
+  productSlugOrId: string;
+}
+
+export interface NewsSpotlightItem {
+  id: string;
+  snapshotUrl: string;
+  snapshotKind: "image" | "video";
+  destinationUrl: string;
+  description: string;
+  buttonLabel: string;
+}
 
 export interface SiteContent {
   heroImage: string;
@@ -169,4 +195,6 @@ export interface SiteContent {
   founderHeadline: string;
   founderCtaLabel: string;
   founderCtaHref: string;
+  newsSpotlights: NewsSpotlightItem[];
+  promotionPopup: PromotionPopupConfig;
 }

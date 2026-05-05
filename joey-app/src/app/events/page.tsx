@@ -3,7 +3,7 @@ import { fetchEventsPageContent } from "@/lib/fetchEventsPageServer";
 import { fetchPublicEvents } from "@/lib/fetchEventsServer";
 
 export const metadata = {
-  title: "Events — JOEY THE BRAND",
+  title: "Events",
   description:
     "Events, trunk shows, and private appointments from JOEY THE BRAND.",
 };

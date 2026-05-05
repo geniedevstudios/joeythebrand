@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import HeroSection from "@/components/home/HeroSection";
 import CollectionsSection from "@/components/home/CollectionsSection";
 import AboutSection from "@/components/home/AboutSection";
@@ -12,6 +13,10 @@ import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
 
 /** Fresh hero from Supabase on each request so admin edits show without a stale shell. */
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Home",
+};
 
 export default async function HomePage() {
   const initialSiteContent = (await fetchSiteContentForHome()) ?? DEFAULT_SITE_CONTENT;

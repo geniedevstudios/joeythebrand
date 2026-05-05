@@ -4,7 +4,7 @@ import styles from "../shipping/shipping.module.css";
 import PrivacyHero from "./PrivacyHero";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — JOEY THE BRAND",
+  title: "Privacy Policy",
   description:
     "How JOEY THE BRAND collects, uses, and protects your personal information when you shop or contact us.",
 };

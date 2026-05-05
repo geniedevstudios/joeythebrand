@@ -15,6 +15,7 @@ import { useStoreLoading } from "@/hooks/useStoreLoading";
 import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
 import type { Product } from "@/lib/types";
 import { ShopProductGridSkeleton } from "@/components/shop/ShopProductGridSkeleton";
+import ProductMedia from "@/components/shop/ProductMedia";
 
 
 const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
@@ -367,16 +368,11 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                     <div className={shopStyles.imageWrap}>
                       {p.hoverImage ? (
                         <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
+                          <ProductMedia src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
+                          <ProductMedia src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
                         </>
                       ) : (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
-                        </>
+                        <ProductMedia src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
                       )}
 
                       <div className={shopStyles.overlay}>
@@ -467,8 +463,11 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
             <div className={styles.modalGrid}>
               <div className={styles.modalGallery}>
                 <div className={styles.modalImageWrap}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={activeImage || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
+                  <ProductMedia
+                    src={activeImage || quickViewPiece.image}
+                    alt={quickViewPiece.name}
+                    className={styles.modalImage}
+                  />
                 </div>
                 {quickViewPiece.images && quickViewPiece.images.length > 1 && (
                   <div className={styles.modalThumbnails}>
@@ -479,8 +478,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                         onClick={() => setActiveImage(img)}
                         aria-label={`View image ${idx + 1}`}
                       >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                      <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
                       </button>
                     ))}
                   </div>

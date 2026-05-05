@@ -141,7 +141,8 @@ export type PageHeroKey =
   | "shipping"
   | "privacy"
   | "login"
-  | "product";
+  | "product"
+  | "news";
 
 /** How the hero fills the banner: cover = fill area (may crop); contain = full image visible (may letterbox). */
 export type PageHeroFit = "cover" | "contain";
@@ -153,6 +154,52 @@ export type PageHeroAnchor = "top" | "center" | "bottom";
 export type PageHeroMedia =
   | { kind: "image"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor }
   | { kind: "video"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor };
+
+/** CTA for the optional full-screen promotion modal (admin → Promotions → Popup). */
+export type PromotionPopupAction = "newsletter" | "product" | "news";
+
+export type PromotionPopupMediaKind = "image" | "video";
+
+export interface PromotionPopupConfig {
+  enabled: boolean;
+  /** Left panel: still or autoplaying muted loop video. */
+  mediaKind: PromotionPopupMediaKind;
+  /** Image URL or video URL (reads legacy `imageUrl` / `image_url` from DB). */
+  mediaUrl: string;
+  /** Optional still shown before video plays (poster attribute). */
+  posterUrl: string;
+  headline: string;
+  body: string;
+  buttonLabel: string;
+  action: PromotionPopupAction;
+  /** When action is `product`, slug or product id for `/shop/[slug]` */
+  productSlugOrId: string;
+}
+
+export const DEFAULT_PROMOTION_POPUP: PromotionPopupConfig = {
+  enabled: false,
+  mediaKind: "image",
+  mediaUrl: "",
+  posterUrl: "",
+  headline: "",
+  body: "",
+  buttonLabel: "Learn more",
+  action: "news",
+  productSlugOrId: "",
+};
+
+/** Teaser row on /news (YouTube, podcast, etc.). Admin-managed in App pages editors. */
+export interface NewsSpotlightItem {
+  id: string;
+  /** Still or motion teaser shown on the left */
+  snapshotUrl: string;
+  snapshotKind: "image" | "video";
+  /** Opens in a new tab — full episode, watch page, listen link */
+  destinationUrl: string;
+  description: string;
+  /** Shown on the CTA under the description */
+  buttonLabel: string;
+}
 
 export interface SiteContent {
   heroImage: string;
@@ -170,4 +217,8 @@ export interface SiteContent {
   founderHeadline: string;
   founderCtaLabel: string;
   founderCtaHref: string;
+  /** News & Blog page teasers */
+  newsSpotlights: NewsSpotlightItem[];
+  /** Optional promo modal on load / refresh */
+  promotionPopup: PromotionPopupConfig;
 }

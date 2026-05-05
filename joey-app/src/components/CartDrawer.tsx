@@ -1,8 +1,8 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import ProductMedia from "@/components/shop/ProductMedia";
 import { cartStore, type CartItem } from "@/store/cartStore";
 import { authStore } from "@/store/authStore";
 import { dataStore } from "@/lib/dataStore";
@@ -136,7 +136,7 @@ export default function CartDrawer() {
               {items.map((item) => (
                 <div key={item.id} className={styles.cartItem}>
                   <div className={styles.itemImageWrap}>
-                    <img src={item.image} alt={item.name} className={styles.itemImage} />
+                    <ProductMedia src={item.image} alt={item.name} className={styles.itemImage} />
                   </div>
                   
                   <div className={styles.itemDetails}>

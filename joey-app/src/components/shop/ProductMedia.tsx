@@ -20,7 +20,10 @@ export default function ProductMedia({
   "aria-hidden": ariaHidden,
   onClick,
 }: ProductMediaProps) {
-  const isVideo = src && /\.(mp4|webm)$/i.test(src.trim());
+  /** Strip query/hash so URLs like `file.mp4?token=x` still detect as video */
+  const pathForExt = src.trim().split(/[?#]/)[0] ?? "";
+  const isVideo =
+    pathForExt.length > 0 && /\.(mp4|webm|mov|m4v|ogg)$/i.test(pathForExt);
 
   if (isVideo) {
     return (

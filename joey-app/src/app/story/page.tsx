@@ -9,7 +9,7 @@ import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
 /* eslint-disable @next/next/no-img-element */
 
 export const metadata: Metadata = {
-  title: "Our Story — JOEY THE BRAND",
+  title: "Our Story",
   description: "The story behind JOEY THE BRAND — a contemporary fashion house born in Accra, Ghana, built on power, craftsmanship, identity and excellence.",
 };
 

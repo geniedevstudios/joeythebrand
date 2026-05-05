@@ -11,6 +11,9 @@ import type {
   ConsultationDayRule,
   ConsultationStatus,
   ConsultationSettings,
+  NewsSpotlightItem,
+  PromotionPopupConfig,
+  PromotionPopupAction,
 } from "./types";
 import { supabase } from "./supabase";
 import { siteContentWithPageHeroes } from "./pageHeroes";
@@ -123,6 +126,114 @@ const FD = {
   ctaHref: "/story",
 };
 
+const DEFAULT_PROMOTION_POPUP_ADMIN: PromotionPopupConfig = {
+  enabled: false,
+  mediaKind: "image",
+  mediaUrl: "",
+  posterUrl: "",
+  headline: "",
+  body: "",
+  buttonLabel: "Learn more",
+  action: "news",
+  productSlugOrId: "",
+};
+
+function inferPromotionPopupMediaKind(url: string, explicit: unknown): PromotionPopupConfig["mediaKind"] {
+  if (explicit === "video" || explicit === "image") return explicit;
+  const u = url.toLowerCase();
+  if (/\.(mp4|webm|mov)(\?|$)/i.test(u)) return "video";
+  return "image";
+}
+
+function mapPromotionPopupFromRow(raw: unknown): PromotionPopupConfig {
+  const base: PromotionPopupConfig = { ...DEFAULT_PROMOTION_POPUP_ADMIN };
+  if (!raw || typeof raw !== "object") return base;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.enabled === "boolean") base.enabled = r.enabled;
+  const mediaUrlRaw =
+    typeof r.mediaUrl === "string"
+      ? r.mediaUrl.trim()
+      : typeof r.media_url === "string"
+        ? r.media_url.trim()
+        : typeof r.imageUrl === "string"
+          ? r.imageUrl.trim()
+          : typeof r.image_url === "string"
+            ? r.image_url.trim()
+            : "";
+  if (mediaUrlRaw) base.mediaUrl = mediaUrlRaw;
+  const posterRaw =
+    typeof r.posterUrl === "string"
+      ? r.posterUrl.trim()
+      : typeof r.poster_url === "string"
+        ? String(r.poster_url).trim()
+        : "";
+  if (posterRaw) base.posterUrl = posterRaw;
+  base.mediaKind = inferPromotionPopupMediaKind(base.mediaUrl, r.mediaKind ?? r.media_kind);
+  const headline =
+    typeof r.headline === "string"
+      ? r.headline.trim()
+      : typeof r.title === "string"
+        ? r.title.trim()
+        : "";
+  if (headline) base.headline = headline;
+  if (typeof r.body === "string") base.body = r.body;
+  const buttonLabelRaw =
+    typeof r.buttonLabel === "string"
+      ? r.buttonLabel.trim()
+      : typeof r.button_label === "string"
+        ? String(r.button_label).trim()
+        : "";
+  if (buttonLabelRaw) base.buttonLabel = buttonLabelRaw;
+  const act = r.action;
+  const action: PromotionPopupAction =
+    act === "newsletter" || act === "product" || act === "news" ? act : base.action;
+  base.action = action;
+  const slug =
+    typeof r.productSlugOrId === "string"
+      ? r.productSlugOrId.trim()
+      : typeof r.product_slug_or_id === "string"
+        ? String(r.product_slug_or_id).trim()
+        : "";
+  if (slug) base.productSlugOrId = slug;
+  return base;
+}
+
+function mapNewsSpotlightsFromRow(raw: unknown): NewsSpotlightItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: NewsSpotlightItem[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const o = raw[i];
+    if (!o || typeof o !== "object") continue;
+    const r = o as Record<string, unknown>;
+    const id = typeof r.id === "string" && r.id.trim() ? r.id.trim() : `news-${i}`;
+    const snapshotUrl =
+      typeof r.snapshotUrl === "string"
+        ? r.snapshotUrl.trim()
+        : typeof r.snapshot_url === "string"
+          ? r.snapshot_url.trim()
+          : "";
+    const snapshotKind: "image" | "video" =
+      r.snapshotKind === "video" || r.snapshot_kind === "video" ? "video" : "image";
+    const destinationUrl =
+      typeof r.destinationUrl === "string"
+        ? r.destinationUrl.trim()
+        : typeof r.destination_url === "string"
+          ? r.destination_url.trim()
+          : "";
+    const description = typeof r.description === "string" ? r.description : "";
+    const buttonLabelRaw =
+      typeof r.buttonLabel === "string"
+        ? r.buttonLabel.trim()
+        : typeof r.button_label === "string"
+          ? String(r.button_label).trim()
+          : "";
+    const buttonLabel = buttonLabelRaw || "Watch full video";
+    if (!snapshotUrl || !destinationUrl) continue;
+    out.push({ id, snapshotUrl, snapshotKind, destinationUrl, description, buttonLabel });
+  }
+  return out;
+}
+
 const mapSiteContent = (row: Record<string, unknown>): SiteContent => {
   const { pageHeroes, heroImage } = siteContentWithPageHeroes(row);
   return {
@@ -151,6 +262,8 @@ const mapSiteContent = (row: Record<string, unknown>): SiteContent => {
       row.founder_cta_href != null && String(row.founder_cta_href).trim()
         ? String(row.founder_cta_href).trim()
         : FD.ctaHref,
+    newsSpotlights: mapNewsSpotlightsFromRow(row.news_spotlights),
+    promotionPopup: mapPromotionPopupFromRow(row.promotion_popup),
   };
 };
 
@@ -417,6 +530,8 @@ export const dataStore = {
     if (updates.founderHeadline !== undefined) payload.founder_headline = updates.founderHeadline;
     if (updates.founderCtaLabel !== undefined) payload.founder_cta_label = updates.founderCtaLabel;
     if (updates.founderCtaHref !== undefined) payload.founder_cta_href = updates.founderCtaHref;
+    if (updates.newsSpotlights !== undefined) payload.news_spotlights = updates.newsSpotlights;
+    if (updates.promotionPopup !== undefined) payload.promotion_popup = updates.promotionPopup;
 
     const { error } = await supabase.from("site_content").upsert(payload);
     if (error) throw new Error(error.message);

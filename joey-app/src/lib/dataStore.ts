@@ -1,14 +1,18 @@
-import type {
-  Product,
-  PromotionCode,
-  Order,
-  SiteContent,
-  ProductSize,
-  OrderStatus,
-  PublicCollection,
-  WearTag,
-  ConsultationBooking,
-  ConsultationStatus,
+import {
+  type Product,
+  type PromotionCode,
+  type Order,
+  type SiteContent,
+  type ProductSize,
+  type OrderStatus,
+  type PublicCollection,
+  type WearTag,
+  type ConsultationBooking,
+  type ConsultationStatus,
+  type NewsSpotlightItem,
+  type PromotionPopupConfig,
+  type PromotionPopupAction,
+  DEFAULT_PROMOTION_POPUP,
 } from "./types";
 import { supabase } from "./supabase";
 import { DEFAULT_PAGE_HEROES, siteContentWithPageHeroes } from "./pageHeroes";
@@ -99,7 +103,105 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   founderHeadline: "An intimate look at the craft behind every design.",
   founderCtaLabel: "DISCOVER THE STORY",
   founderCtaHref: "/story",
+  newsSpotlights: [],
+  promotionPopup: DEFAULT_PROMOTION_POPUP,
 };
+
+function inferPromotionPopupMediaKind(url: string, explicit: unknown): PromotionPopupConfig["mediaKind"] {
+  if (explicit === "video" || explicit === "image") return explicit;
+  const u = url.toLowerCase();
+  if (/\.(mp4|webm|mov)(\?|$)/i.test(u)) return "video";
+  return "image";
+}
+
+function mapPromotionPopupFromRow(raw: unknown): PromotionPopupConfig {
+  const base: PromotionPopupConfig = { ...DEFAULT_PROMOTION_POPUP };
+  if (!raw || typeof raw !== "object") return base;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.enabled === "boolean") base.enabled = r.enabled;
+  const mediaUrlRaw =
+    typeof r.mediaUrl === "string"
+      ? r.mediaUrl.trim()
+      : typeof r.media_url === "string"
+        ? r.media_url.trim()
+        : typeof r.imageUrl === "string"
+          ? r.imageUrl.trim()
+          : typeof r.image_url === "string"
+            ? r.image_url.trim()
+            : "";
+  if (mediaUrlRaw) base.mediaUrl = mediaUrlRaw;
+  const posterRaw =
+    typeof r.posterUrl === "string"
+      ? r.posterUrl.trim()
+      : typeof r.poster_url === "string"
+        ? String(r.poster_url).trim()
+        : "";
+  if (posterRaw) base.posterUrl = posterRaw;
+  base.mediaKind = inferPromotionPopupMediaKind(base.mediaUrl, r.mediaKind ?? r.media_kind);
+  const headline =
+    typeof r.headline === "string"
+      ? r.headline.trim()
+      : typeof r.title === "string"
+        ? r.title.trim()
+        : "";
+  if (headline) base.headline = headline;
+  if (typeof r.body === "string") base.body = r.body;
+  const buttonLabelRaw =
+    typeof r.buttonLabel === "string"
+      ? r.buttonLabel.trim()
+      : typeof r.button_label === "string"
+        ? String(r.button_label).trim()
+        : "";
+  if (buttonLabelRaw) base.buttonLabel = buttonLabelRaw;
+  const act = r.action;
+  const action: PromotionPopupAction =
+    act === "newsletter" || act === "product" || act === "news" ? act : base.action;
+  base.action = action;
+  const slug =
+    typeof r.productSlugOrId === "string"
+      ? r.productSlugOrId.trim()
+      : typeof r.product_slug_or_id === "string"
+        ? String(r.product_slug_or_id).trim()
+        : "";
+  if (slug) base.productSlugOrId = slug;
+  return base;
+}
+
+function mapNewsSpotlightsFromRow(raw: unknown): NewsSpotlightItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: NewsSpotlightItem[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const o = raw[i];
+    if (!o || typeof o !== "object") continue;
+    const r = o as Record<string, unknown>;
+    const id = typeof r.id === "string" && r.id.trim() ? r.id.trim() : `news-${i}`;
+    const snapshotUrl =
+      typeof r.snapshotUrl === "string"
+        ? r.snapshotUrl.trim()
+        : typeof r.snapshot_url === "string"
+          ? r.snapshot_url.trim()
+          : "";
+    const snapshotKind: "image" | "video" =
+      r.snapshotKind === "video" || r.snapshot_kind === "video" ? "video" : "image";
+    const destinationUrl =
+      typeof r.destinationUrl === "string"
+        ? r.destinationUrl.trim()
+        : typeof r.destination_url === "string"
+          ? r.destination_url.trim()
+          : "";
+    const description = typeof r.description === "string" ? r.description : "";
+    const buttonLabelRaw =
+      typeof r.buttonLabel === "string"
+        ? r.buttonLabel.trim()
+        : typeof r.button_label === "string"
+          ? String(r.button_label).trim()
+          : "";
+    const buttonLabel = buttonLabelRaw || "Watch full video";
+    if (!snapshotUrl || !destinationUrl) continue;
+    out.push({ id, snapshotUrl, snapshotKind, destinationUrl, description, buttonLabel });
+  }
+  return out;
+}
 
 /** True after the first `site_content` fetch attempt in `init()` finishes (success or fail). */
 let siteContentRemoteResolved = false;
@@ -174,6 +276,8 @@ export function mapSiteContentFromSupabaseRow(row: Record<string, unknown>): Sit
       row.founder_cta_href != null && String(row.founder_cta_href).trim()
         ? String(row.founder_cta_href).trim()
         : DEFAULT_SITE_CONTENT.founderCtaHref,
+    newsSpotlights: mapNewsSpotlightsFromRow(row.news_spotlights),
+    promotionPopup: mapPromotionPopupFromRow(row.promotion_popup),
   };
 }
 
@@ -274,12 +378,12 @@ export const dataStore = {
     await dataStore.refreshCollections();
 
     try {
-      const { data: sc } = await supabase
+      const { data: sc, error: scErr } = await supabase
         .from("site_content")
         .select("*")
-        .single();
+        .maybeSingle();
 
-      if (sc) {
+      if (!scErr && sc) {
         siteContent = mapSiteContent(sc as Record<string, unknown>);
         siteContentAppliedFromRemote = true;
       }
@@ -295,12 +399,12 @@ export const dataStore = {
   /** Re-fetch site content from Supabase (heroes, copy, etc.). Call after admin edits or on navigation so the cache stays fresh. */
   refreshSiteContent: async () => {
     try {
-      const { data: sc } = await supabase
+      const { data: sc, error: scErr } = await supabase
         .from("site_content")
         .select("*")
-        .single();
+        .maybeSingle();
 
-      if (sc) {
+      if (!scErr && sc) {
         siteContent = mapSiteContent(sc as Record<string, unknown>);
         siteContentAppliedFromRemote = true;
         dataStore.notify();

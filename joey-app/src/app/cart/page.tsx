@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CartClient from "./CartClient";
 
 export const metadata: Metadata = {
-  title: "Your Cart — JOEY THE BRAND",
+  title: "Cart",
   description: "Review and manage your selected items from JOEY THE BRAND.",
 };
 
