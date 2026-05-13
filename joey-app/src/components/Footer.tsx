@@ -1,9 +1,12 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
 import FooterNewsletter from "./FooterNewsletter";
 import styles from "./Footer.module.css";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 import CuratedPill from "./CuratedPill";
+import { useState } from "react";
+import CopyrightModal from "./CopyrightModal";
 
 const footerLinks = [
   { label: "Collections", href: "/collection" },
@@ -19,6 +22,7 @@ const footerLinks = [
 ];
 
 export default function Footer() {
+  const [copyOpen, setCopyOpen] = useState(false);
   const devHref = (process.env.NEXT_PUBLIC_DEV_PORTFOLIO_URL || "").trim() || null;
   return (
     <footer className={styles.footer}>
@@ -102,13 +106,18 @@ export default function Footer() {
 
         {/* Bottom — copyright */}
         <div className={styles.bottom}>
-          <p className={styles.copy}>
+          <button 
+            type="button" 
+            className={styles.copyBtn} 
+            onClick={() => setCopyOpen(true)}
+          >
             © {new Date().getFullYear()} JOEY THE BRAND. All rights reserved.
-          </p>
+          </button>
           <p className={styles.copy}>Power worn well.</p>
           <CuratedPill devHref={devHref} />
         </div>
       </div>
+      <CopyrightModal open={copyOpen} onClose={() => setCopyOpen(false)} />
     </footer>
   );
 }

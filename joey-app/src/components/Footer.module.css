@@ -237,6 +237,8 @@
   margin-bottom: var(--space-xs);
 }
 
+
+
 .contactItem {
   font-size: 0.875rem;
   color: var(--cloudy-sky);
@@ -314,10 +316,23 @@ a.contactItem:hover { color: #fff; }
   align-items: center;
 }
 
-.copy {
+.copy, .copyBtn {
   font-size: 0.8rem;
   color: var(--alaska-gray);
   font-family: var(--font-body);
+  margin: 0;
+}
+
+.copyBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.copyBtn:hover {
+  color: #fff;
 }
 
 @media (max-width: 768px) {
