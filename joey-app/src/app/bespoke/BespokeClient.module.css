@@ -23,9 +23,9 @@
   z-index: 0;
 }
 
-.header > * {
+.header :global(.container) {
   position: relative;
-  z-index: 1;
+  z-index: 5;
 }
 
 .headerInner {

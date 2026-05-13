@@ -7,7 +7,7 @@
 
 .header {
   position: relative;
-  background: var(--blue-athracite);
+  background-color: #0d0e12; /* Deep base color */
   background-size: cover;
   background-position: center 30%;
   padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-2xl);
@@ -21,16 +21,16 @@
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(39, 43, 54, 0.78) 0%,
-    rgba(39, 43, 54, 0.5) 50%,
-    rgba(145, 126, 113, 0.35) 100%
+    rgba(13, 14, 18, 0.82) 0%,
+    rgba(13, 14, 18, 0.6) 50%,
+    rgba(13, 14, 18, 0.45) 100%
   );
   z-index: 0;
 }
 
-.header > * {
+.header :global(.container) {
   position: relative;
-  z-index: 1;
+  z-index: 5;
 }
 
 .title {
@@ -173,4 +173,20 @@
   .body {
     padding-top: 0;
   }
+}
+
+.skeletonItem {
+  composes: card;
+  pointer-events: none;
+}
+
+.skeletonMedia {
+  composes: media;
+  background: var(--blue-athracite);
+  opacity: 0.6;
+}
+
+.skeletonText {
+  background: rgba(39, 43, 54, 0.08);
+  border-radius: 4px;
 }

@@ -3,6 +3,7 @@
 import { useMemo, useRef, useSyncExternalStore } from "react";
 import type { NewsSpotlightItem, SiteContent } from "@/lib/types";
 import { dataStore } from "@/lib/dataStore";
+import { useStoreLoading } from "@/hooks/useStoreLoading";
 import NewsHero from "./NewsHero";
 import styles from "./news.module.css";
 
@@ -26,10 +27,14 @@ export default function NewsClient({
     () => serverSnap,
   );
 
+  const isStoreLoading = useStoreLoading();
+
   /** After Realtime/init applies site_content, use store; until then keep SSR list (no flash). */
   const displayItems = dataStore.hasAppliedSiteContentFromRemote()
     ? newsItems
     : serverItemsRef.current;
+
+  const showSkeleton = isStoreLoading && displayItems.length === 0;
 
   return (
     <div className={styles.page}>
@@ -47,7 +52,19 @@ export default function NewsClient({
 
       <section className={styles.list} aria-label="News and media">
         <div className="container">
-          {displayItems.length === 0 ? (
+          {showSkeleton ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className={styles.skeletonItem}>
+                <div className={`${styles.skeletonMedia} skeleton`} />
+                <div className={styles.body}>
+                  <div className={`${styles.skeletonText} skeleton`} style={{ height: 28, width: "80%" }} />
+                  <div className={`${styles.skeletonText} skeleton`} style={{ height: 16, width: "100%" }} />
+                  <div className={`${styles.skeletonText} skeleton`} style={{ height: 16, width: "90%" }} />
+                  <div className={`${styles.skeletonText} skeleton`} style={{ height: 40, width: 140, marginTop: 12 }} />
+                </div>
+              </div>
+            ))
+          ) : displayItems.length === 0 ? (
             <p className={styles.empty}>New stories are on the way. Check back soon.</p>
           ) : (
             displayItems.map((item) => <SpotlightCard key={item.id} item={item} />)
