@@ -193,6 +193,7 @@ export const DEFAULT_PROMOTION_POPUP: PromotionPopupConfig = {
 /** Teaser row on /news (YouTube, podcast, etc.). Admin-managed in App pages editors. */
 export interface NewsSpotlightItem {
   id: string;
+  title?: string;
   /** Still or motion teaser shown on the left */
   snapshotUrl: string;
   snapshotKind: "image" | "video";

@@ -90,8 +90,11 @@ function SpotlightCard({ item }: { item: NewsSpotlightItem }) {
         </div>
       </a>
       <div className={styles.body}>
+        {(item.title || "").trim() ? (
+          <h2 className={styles.itemTitle}>{item.title!.trim()}</h2>
+        ) : null}
         {item.description.trim() ? <p className={styles.description}>{item.description.trim()}</p> : null}
-        <a href={href} target="_blank" rel="noopener noreferrer" className={styles.cta}>
+        <a href={href} target="_blank" rel="noopener noreferrer" className={`btn btn-outline ${styles.cta}`}>
           {label}
         </a>
       </div>

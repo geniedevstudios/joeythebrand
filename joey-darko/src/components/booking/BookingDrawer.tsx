@@ -513,6 +513,7 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
                         setSlotStep("time");
                         setSubmitError("");
                       }}
+                      displayTime={form.time ? timeOptions.find(t => t.value === form.time)?.label : undefined}
                     />
                   ) : (
                     <div style={{ display: "grid", gap: "10px" }}>

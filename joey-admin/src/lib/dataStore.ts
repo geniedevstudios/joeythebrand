@@ -221,6 +221,12 @@ function mapNewsSpotlightsFromRow(raw: unknown): NewsSpotlightItem[] {
         : typeof r.destination_url === "string"
           ? r.destination_url.trim()
           : "";
+    const title =
+      typeof r.title === "string"
+        ? r.title.trim()
+        : typeof r.headline === "string"
+          ? r.headline.trim()
+          : "";
     const description = typeof r.description === "string" ? r.description : "";
     const buttonLabelRaw =
       typeof r.buttonLabel === "string"
@@ -230,7 +236,7 @@ function mapNewsSpotlightsFromRow(raw: unknown): NewsSpotlightItem[] {
           : "";
     const buttonLabel = buttonLabelRaw || "Watch full video";
     if (!snapshotUrl || !destinationUrl) continue;
-    out.push({ id, snapshotUrl, snapshotKind, destinationUrl, description, buttonLabel });
+    out.push({ id, title: title || undefined, snapshotUrl, snapshotKind, destinationUrl, description, buttonLabel });
   }
   return out;
 }

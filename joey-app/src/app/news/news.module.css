@@ -131,6 +131,15 @@
   padding-top: var(--space-xs);
 }
 
+.itemTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  font-weight: 400;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  margin: 0 0 calc(var(--space-md) * -0.5) 0; /* Pull description slightly closer */
+}
+
 .description {
   font-size: 1rem;
   line-height: 1.65;
@@ -140,29 +149,12 @@
 }
 
 .cta {
-  display: inline-flex;
   align-self: flex-start;
-  font-family: var(--font-ui);
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   padding: 0.65rem 1.25rem;
-  border: 1px solid var(--blue-athracite);
-  color: var(--blue-athracite);
-  text-decoration: none;
-  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.cta:hover {
-  background: var(--blue-athracite);
-  color: #fff;
-}
 
-.cta:focus-visible {
-  outline: 2px solid var(--cinereous);
-  outline-offset: 4px;
-}
 
 @media (max-width: 768px) {
   .card {

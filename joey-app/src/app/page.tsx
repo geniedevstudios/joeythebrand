@@ -15,7 +15,7 @@ import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: "Home - JOEY THE BRAND",
 };
 
 export default async function HomePage() {

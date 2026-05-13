@@ -16,6 +16,7 @@ function newId(): string {
 function emptyDraft(): NewsSpotlightItem {
   return {
     id: newId(),
+    title: "",
     snapshotUrl: "",
     snapshotKind: "image",
     destinationUrl: "",
@@ -68,6 +69,7 @@ export default function NewsSpotlightsEditor() {
     const cleaned = next
       .map((r) => ({
         ...r,
+        title: r.title?.trim() || "",
         snapshotUrl: r.snapshotUrl.trim(),
         destinationUrl: r.destinationUrl.trim(),
         description: r.description.trim(),
@@ -108,6 +110,7 @@ export default function NewsSpotlightsEditor() {
     try {
       const normalized: NewsSpotlightItem = {
         ...draft,
+        title: draft.title?.trim() || "",
         snapshotUrl,
         destinationUrl,
         description: draft.description.trim(),
@@ -179,6 +182,7 @@ export default function NewsSpotlightsEditor() {
             <div className="space-y-3">
               {items.map((row) => {
                 const summary =
+                  row.title?.trim() ||
                   row.description.trim() ||
                   row.buttonLabel.trim() ||
                   "Teaser";
@@ -320,6 +324,17 @@ export default function NewsSpotlightsEditor() {
                     value={draft.destinationUrl}
                     onChange={(e) => setDraft((d) => ({ ...d, destinationUrl: e.target.value }))}
                     placeholder="https://…"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-zinc-900">Title (Optional)</span>
+                  <input
+                    type="text"
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
+                    value={draft.title || ""}
+                    onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                    placeholder="Headline for this spotlight"
                   />
                 </label>
 

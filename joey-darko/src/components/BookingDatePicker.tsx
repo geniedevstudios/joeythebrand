@@ -16,6 +16,7 @@ type BookingDatePickerProps = {
   nextDisabled?: boolean;
   /** When false, selecting a date keeps the panel open until the user taps Next. */
   closeOnSelect?: boolean;
+  displayTime?: string;
 };
 
 export default function BookingDatePicker({
@@ -30,6 +31,7 @@ export default function BookingDatePicker({
   onNext,
   nextDisabled = false,
   closeOnSelect = true,
+  displayTime,
 }: BookingDatePickerProps) {
   const blocked = new Set(disabledDates ?? []);
   const [isOpen, setIsOpen] = useState(false);
@@ -114,7 +116,15 @@ export default function BookingDatePicker({
           transition: "border-color var(--transition-fast), background var(--transition-fast)",
         }}
       >
-        <span>{formatDisplayDate(value)}</span>
+        <span style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          {formatDisplayDate(value)}
+          {displayTime && value && (
+            <>
+              <span style={{ opacity: 0.5 }}>•</span>
+              <span style={{ fontWeight: 500, color: "var(--wood, #c4a180)" }}>{displayTime}</span>
+            </>
+          )}
+        </span>
         <svg
           width="16"
           height="16"

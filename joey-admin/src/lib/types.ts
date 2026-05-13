@@ -175,6 +175,7 @@ export interface PromotionPopupConfig {
 
 export interface NewsSpotlightItem {
   id: string;
+  title?: string;
   snapshotUrl: string;
   snapshotKind: "image" | "video";
   destinationUrl: string;
