@@ -206,7 +206,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
         email: form.email,
         amount,
         currency: "GHS",
-        ref: "BSP-" + Date.now() + "-" + booking.id.slice(0, 8),
+        ref: `BSP-${booking.service.replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "-")}-${booking.id.slice(-8)}`,
         metadata: {
           custom_fields: [
             {

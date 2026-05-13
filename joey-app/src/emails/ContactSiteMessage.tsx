@@ -31,7 +31,7 @@ function getBaseUrl(): string {
   const vercel = process.env.VERCEL_URL?.trim();
   if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
 
-  return "";
+  return "https://joeythebrand.com";
 }
 
 const main = {
@@ -187,21 +187,11 @@ export default function ContactSiteMessage({
             <Section style={headerBand}>
               <Row>
                 <Column style={{ width: "92px", verticalAlign: "middle", paddingRight: "24px" }}>
-                  {logoUrl ? (
-                    <Img
-                      src={logoUrl}
-                      alt="JOEY THE BRAND"
-                      width={240}
-                      height={64}
-                      style={logoMark}
-                    />
-                  ) : (
-                    <Text style={{ margin: 0, color: "#ffffff", fontWeight: 600 }}>JOEY</Text>
-                  )}
+                  <Text style={{ margin: 0, color: "#ffffff", fontWeight: 600 }}>JOEY</Text>
                 </Column>
                 <Column style={topCopyCol}>
                   <Text style={brandLine}>JOEY The brand</Text>
-                  <Text style={subLine}>Website contact — reply to this email to reach the sender.</Text>
+                  <Text style={subLine}>Website contact form inquiry.</Text>
                 </Column>
               </Row>
             </Section>
@@ -243,8 +233,7 @@ export default function ContactSiteMessage({
           </Section>
           <Hr style={hr} />
           <Text style={footer}>
-            This message was sent from the contact form on your site. Reply-To is set to the sender&apos;s email
-            address.
+            This message was sent from the contact form on JOEY The brand.
           </Text>
         </Container>
       </Body>

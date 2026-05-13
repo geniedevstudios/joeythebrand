@@ -234,7 +234,8 @@ export default function BookingDrawer({ open, onClose, initialService }: Props) 
     setStatus("sending");
 
     try {
-      const paymentRef = "JOEY-" + new Date().getTime();
+      const sanitizedService = form.service.replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "-");
+      const paymentRef = `JOEY-${sanitizedService}-${Math.random().toString(36).slice(-6)}`;
 
       // 1) Save the booking first as 'unpaid'
       const res = await fetch("/api/booking", {

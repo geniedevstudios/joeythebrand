@@ -219,7 +219,7 @@ export default function CheckoutClient() {
         email: formData.email,
         amount: Math.round(total * 100), // Ensure integer Kobo
         currency: "GHS",
-        ref: "ORDER-" + Date.now() + "-" + placed.id.slice(0, 8),
+        ref: `ORDER-${items[0]?.name.replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "-")}-${placed.id.slice(-8)}`,
         metadata: {
           custom_fields: [
             {
