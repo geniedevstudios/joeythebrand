@@ -369,8 +369,9 @@ function AccountDashboard({ userId }: { userId: string }) {
                     {orders.map((o) => (
                       <li key={o.id} className={styles.orderCard}>
                         <div className={styles.orderCardTop}>
-                          <div>
+                          <div className={styles.orderInfo}>
                             <span className={styles.orderRef}>Order {formatOrderNumber(o)}</span>
+                            <span className={styles.orderSeparator} aria-hidden>·</span>
                             <span className={styles.orderPlacedDate}>
                               {new Date(o.createdAt).toLocaleDateString(undefined, {
                                 year: "numeric",
@@ -378,15 +379,11 @@ function AccountDashboard({ userId }: { userId: string }) {
                                 day: "numeric",
                               })}
                             </span>
-                            <p className={styles.orderTotal}>GHC {o.total.toLocaleString()}</p>
-                            <p className={styles.orderMeta}>
-                              {o.items.length} line{o.items.length !== 1 ? "s" : ""}
-                              {o.discount > 0 && o.promotionCode
-                                ? ` · −GHC ${o.discount.toLocaleString()} (${o.promotionCode})`
-                                : ""}
-                            </p>
                           </div>
-                          <span className={styles.orderStatus}>{statusLabel(o.status)}</span>
+                          <div className={styles.orderStats}>
+                            <span className={styles.orderTotal}>GHC {o.total.toLocaleString()}</span>
+                            <span className={styles.orderStatus}>{statusLabel(o.status)}</span>
+                          </div>
                         </div>
                         {o.items && o.items.length > 0 ? (
                           <ul className={styles.orderLines}>
@@ -446,8 +443,9 @@ function AccountDashboard({ userId }: { userId: string }) {
                       return (
                         <li key={c.id} className={styles.orderCard}>
                           <div className={styles.orderCardTop}>
-                            <div>
+                            <div className={styles.orderInfo}>
                               <span className={styles.orderRef}>{c.service}</span>
+                              <span className={styles.orderSeparator} aria-hidden>·</span>
                               <span className={styles.orderPlacedDate}>
                                 Requested{" "}
                                 {new Date(c.createdAt).toLocaleDateString(undefined, {

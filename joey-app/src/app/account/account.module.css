@@ -379,43 +379,43 @@
   font-weight: 600;
 }
 
+.orderInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.orderSeparator {
+  color: var(--cinereous);
+  opacity: 0.5;
+}
+
 .orderPlacedDate {
-  display: block;
-  margin-top: 6px;
   font-size: 0.82rem;
   color: var(--cinereous);
 }
 
-.orderDate {
-  font-family: var(--font-label);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--cinereous);
+.orderStats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 .orderTotal {
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: var(--blue-athracite);
-  margin: 6px 0 0;
-}
-
-.orderMeta {
-  font-size: 0.8rem;
-  color: var(--alaska-gray);
-  margin: 4px 0 0;
 }
 
 .orderStatus {
-  font-size: 0.75rem;
-  text-transform: capitalize;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--color-border);
-  color: var(--blue-athracite);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--blue-athracite);
+  color: #fff;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
   flex-shrink: 0;
 }
 
