@@ -87,6 +87,8 @@ export interface OrderItem {
   productId: string;
   name: string;
   size: string;
+  fit?: string;
+  wearTag?: string;
   price: number;
   quantity: number;
   image: string;

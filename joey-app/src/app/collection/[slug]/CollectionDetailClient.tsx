@@ -4,7 +4,7 @@ import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { dataStore, SHOP_COLLECTIONS_FALLBACK, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
 import shopStyles from "@/app/shop/ShopClient.module.css";
 import eventStyles from "@/app/events/events.module.css";
@@ -19,6 +19,24 @@ import ProductMedia from "@/components/shop/ProductMedia";
 
 
 const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
+
+function formatSizeLabel(raw: string, fit?: string, wearTag?: string): string {
+  const s = String(raw || "").trim();
+  
+  // For women's Standard fit, map alpha sizes to UK/US numeric labels
+  if (fit === "Standard" && wearTag === "womens") {
+    if (s === "XS") return "UK 6 / US 2";
+    if (s === "S") return "UK 8 / US 4";
+    if (s === "M") return "UK 10 / US 6";
+    if (s === "L") return "UK 12 / US 8";
+    if (s === "XL") return "UK 14 / US 10";
+    if (s === "XXL") return "UK 16 / US 12";
+  }
+
+  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
+  if (m) return `UK ${m[1]} / US ${m[2]}`;
+  return s;
+}
 
 type WearFilter = "all" | "mens" | "womens";
 
@@ -47,6 +65,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
+  const [quickViewFit, setQuickViewFit] = useState("Standard");
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
   const [wearFilter, setWearFilter] = useState<WearFilter>("all");
 
@@ -117,6 +136,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       document.body.style.overflow = "hidden";
       setQty(1);
       setSelectedSize("");
+      setQuickViewFit("Standard");
     } else {
       document.body.style.overflow = "";
       setActiveImage("");
@@ -151,6 +171,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
           size: selectedSize || "Standard",
+          fit: quickViewPiece.wearTag === "womens" ? quickViewFit : undefined,
+          wearTag: quickViewPiece.wearTag,
           price: quickViewPiece.price,
           image: quickViewPiece.image,
           quantity: qty,
@@ -161,7 +183,20 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       });
     }, 400);
   };
+  const getAvailableSizes = (prod: any, fit?: string) => {
+    // For women's apparel, the range depends on the fit.
+    if (prod?.wearTag === "womens") {
+      if (fit === "Thick") {
+        return ["S", "M", "L", "XL", "Custom"];
+      }
+      return WOMENS_DEFAULT_SIZES.map(s => s.name);
+    }
 
+    if (!prod?.sizes || prod.sizes.length === 0) {
+      return DEFAULT_SIZES.map(s => s.name);
+    }
+    return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
+  };
   if (!collection) {
     if (isStoreLoading) {
       return (
@@ -496,16 +531,33 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                   Authentic Hand Woven. Available on backorder.
                 </p>
 
+                {quickViewPiece.wearTag === "womens" && (
+                  <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
+                    <span className={styles.qtyLabel}>Fit:</span>
+                    <div className={styles.modalFitSelector}>
+                      {["Standard", "Thick"].map((fit) => (
+                        <button
+                          key={fit}
+                          className={`${styles.fitBtn} ${quickViewFit === fit ? styles.fitBtnActive : ""}`}
+                          onClick={() => setQuickViewFit(fit)}
+                        >
+                          {fit}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className={styles.modalSizeRow}>
                   <span className={styles.qtyLabel}>Size:</span>
                   <div className={styles.sizeGrid}>
-                    {["XS", "S", "M", "L", "XL", "Custom"].map((sz) => (
+                    {getAvailableSizes(quickViewPiece, quickViewFit).map((sz: string) => (
                       <button
                         key={sz}
                         className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
                         onClick={() => setSelectedSize(prev => prev === sz ? "" : sz)}
                       >
-                        {sz}
+                        {formatSizeLabel(sz, quickViewFit, quickViewPiece.wearTag)}
                       </button>
                     ))}
                   </div>

@@ -6,25 +6,19 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Clock } from "lucide-react";
 import { wishlistStore } from "@/store/wishlistStore";
-import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import ProductMedia from "@/components/shop/ProductMedia";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import styles from "./ProductClient.module.css";
 
 const EMPTY_ARRAY: any[] = [];
 const _getEmptyArray = () => EMPTY_ARRAY;
 const _getProducts = () => dataStore.getProducts();
 const _getWishlistItems = () => wishlistStore.getItems();
-
-function formatSizeLabel(raw: string): string {
-  const s = String(raw || "").trim();
-  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
-  if (m) return `UK ${m[1]} / US ${m[2]}`;
-  return s;
-}
 
 function ProductDetailSkeletonBody() {
   return (
@@ -96,11 +90,13 @@ function seededRandom(seed: string) {
 export default function ProductClient({ slug }: { slug: string }) {
   const router = useRouter();
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [selectedFit, setSelectedFit] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
   const [activeImage, setActiveImage] = useState<string>("");
   const [quickViewItem, setQuickViewItem] = useState<any>(null);
   const [quickViewSize, setQuickViewSize] = useState("");
+  const [quickViewFit, setQuickViewFit] = useState("");
   const [quickViewImage, setQuickViewImage] = useState("");
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
@@ -109,6 +105,21 @@ export default function ProductClient({ slug }: { slug: string }) {
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, _getWishlistItems, _getEmptyArray);
   const isStoreLoading = useStoreLoading();
   const isInWishlist = (itemId: string) => wishlistItems.some(item => item.id === itemId);
+
+  const product = products.find((p: any) => p.slug === slug || p.id === slug);
+
+  // Set default fit when product loads
+  useEffect(() => {
+    if (product?.wearTag === "womens") {
+      setSelectedFit("Standard");
+    }
+  }, [product]);
+
+  useEffect(() => {
+    if (quickViewItem?.wearTag === "womens") {
+      setQuickViewFit("Standard");
+    }
+  }, [quickViewItem]);
 
   const getCollectionName = useMemo(() => {
     return (p: any): string => {
@@ -131,8 +142,6 @@ export default function ProductClient({ slug }: { slug: string }) {
     });
     toast.success(wasInWishlist ? `${item.name} removed from wishlist` : `${item.name} added to wishlist`);
   };
-  
-  const product = products.find((p: any) => p.slug === slug || p.id === slug);
 
   const sizeGuideKind: SizeGuideKind = useMemo(() => {
     const w = String((quickViewItem ?? product)?.wearTag ?? "").toLowerCase();
@@ -168,8 +177,16 @@ export default function ProductClient({ slug }: { slug: string }) {
     return { suggestedProducts: pool.slice(0, 5), suggestionPhrase: phrase };
   }, [product, products]);
 
-  const getAvailableSizes = (prod: any) => {
-    if (!prod?.sizes || prod.sizes.length < 6) {
+  const getAvailableSizes = (prod: any, fit?: string) => {
+    // For women's apparel, the range depends on the fit.
+    if (prod?.wearTag === "womens") {
+      if (fit === "Thick") {
+        return ["S", "M", "L", "XL", "Custom"];
+      }
+      return WOMENS_DEFAULT_SIZES.map(s => s.name);
+    }
+
+    if (!prod?.sizes || prod.sizes.length === 0) {
       return DEFAULT_SIZES.map(s => s.name);
     }
     return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
@@ -199,11 +216,6 @@ export default function ProductClient({ slug }: { slug: string }) {
   );
 
   if (!product) {
-    // Show the skeleton while:
-    //  a) the store is explicitly initializing, OR
-    //  b) products are still empty (init() fired but notify() hasn't landed yet)
-    // Only show "not found" once we have a loaded product list that doesn't
-    // contain the requested id — i.e. the product genuinely doesn't exist.
     if (isStoreLoading || products.length === 0) {
       return (
         <div className={styles.page}>
@@ -239,10 +251,12 @@ export default function ProductClient({ slug }: { slug: string }) {
           productId: product.id,
           name: product.name,
           size: selectedSize || "Standard",
+          fit: product.wearTag === "womens" ? selectedFit : undefined,
+          wearTag: product.wearTag,
           price: product.price,
           image: product.image,
           quantity: qty,
-          maxStock: product.quantity,
+          maxStock: product.quantity
         });
         
         setAddStatus("added");
@@ -349,6 +363,27 @@ export default function ProductClient({ slug }: { slug: string }) {
                 <p>{product.description}</p>
               </div>
 
+              {product.wearTag === "womens" && (
+                <div className={styles.sizeSection} style={{ marginBottom: "1.5rem" }}>
+                  <div className={styles.sizeHeader}>
+                    <span className={styles.sizeLabel}>Fit</span>
+                  </div>
+                  <div className={styles.sizeGrid}>
+                    {["Standard", "Thick"].map((fit) => (
+                      <button
+                        key={fit}
+                        onClick={() => setSelectedFit(fit)}
+                        className={`${styles.sizeBtn} ${selectedFit === fit ? styles.sizeBtnActive : ""}`}
+                        aria-pressed={selectedFit === fit}
+                        style={{ flex: 1 }}
+                      >
+                        {fit} Fit
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className={styles.sizeSection}>
                 <div className={styles.sizeHeader}>
                   <span className={styles.sizeLabel}>Size</span>
@@ -361,14 +396,14 @@ export default function ProductClient({ slug }: { slug: string }) {
                   </button>
                 </div>
                 <div className={styles.sizeGrid}>
-                  {getAvailableSizes(product).map((size: string) => (
+                  {getAvailableSizes(product, selectedFit).map((size: string) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(prev => prev === size ? "" : size)}
                       className={`${styles.sizeBtn} ${selectedSize === size ? styles.sizeBtnActive : ""}`}
                       aria-pressed={selectedSize === size}
                     >
-                      {formatSizeLabel(size)}
+                      {formatSizeLabel(size, selectedFit, product.wearTag)}
                     </button>
                   ))}
                 </div>
@@ -612,6 +647,24 @@ export default function ProductClient({ slug }: { slug: string }) {
               
               <p className={styles.modalDesc}>{quickViewItem.description}</p>
               
+              {quickViewItem.wearTag === "womens" && (
+                <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
+                  <span className={styles.qtyLabel}>Fit:</span>
+                  <div className={styles.sizeGrid} style={{ flex: 1 }}>
+                    {["Standard", "Thick"].map((fit) => (
+                      <button 
+                        key={fit} 
+                        className={`${styles.sizeBtn} ${quickViewFit === fit ? styles.sizeBtnActive : ""}`}
+                        onClick={() => setQuickViewFit(fit)}
+                        style={{ flex: 1 }}
+                      >
+                        {fit}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className={styles.modalSizeRow}>
                 <span className={styles.qtyLabel}>Size:</span>
                 <div className={styles.sizeGrid}>
@@ -621,7 +674,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                       className={`${styles.sizeBtn} ${quickViewSize === sz ? styles.sizeBtnActive : ""}`}
                       onClick={() => setQuickViewSize(prev => prev === sz ? "" : sz)}
                     >
-                      {formatSizeLabel(sz)}
+                      {formatSizeLabel(sz, quickViewFit, quickViewItem.wearTag)}
                     </button>
                   ))}
                 </div>
@@ -680,6 +733,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                         productId: quickViewItem.id,
                         name: quickViewItem.name,
                         size: quickViewSize || "Standard",
+                        fit: quickViewItem.wearTag === "womens" ? quickViewFit : undefined,
+                        wearTag: quickViewItem.wearTag,
                         price: quickViewItem.price,
                         image: quickViewItem.image,
                         quantity: qty,

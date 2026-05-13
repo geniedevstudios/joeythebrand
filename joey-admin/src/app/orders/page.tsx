@@ -11,6 +11,7 @@ import { isVideoUrl } from "@/lib/isVideoUrl";
 import OrderItemDetailModal from "@/components/OrderItemDetailModal";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { toast } from "sonner";
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
@@ -193,7 +194,13 @@ export default function OrdersPage() {
                                 </span>
                                 <span className="mt-0.5 block text-xs text-zinc-800">
                                   Size{" "}
-                                  <span className="font-semibold text-zinc-700">{item.size}</span>
+                                  <span className="font-semibold text-zinc-700">{formatSizeLabel(item.size, item.fit, item.wearTag)}</span>
+                                  {item.fit && (
+                                    <>
+                                      <span className="mx-1 text-zinc-300">·</span>
+                                      <span className="font-semibold text-zinc-700">{item.fit} Fit</span>
+                                    </>
+                                  )}
                                   <span className="mx-1 text-zinc-300">·</span>
                                   Qty{" "}
                                   <span className="font-semibold text-zinc-700">{item.quantity}</span>

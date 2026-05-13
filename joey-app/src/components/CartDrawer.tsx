@@ -6,6 +6,7 @@ import ProductMedia from "@/components/shop/ProductMedia";
 import { cartStore, type CartItem } from "@/store/cartStore";
 import { authStore } from "@/store/authStore";
 import { dataStore } from "@/lib/dataStore";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import styles from "./CartDrawer.module.css";
 
 export const toggleCart = (state?: boolean) => {
@@ -142,7 +143,9 @@ export default function CartDrawer() {
                   <div className={styles.itemDetails}>
                     <h3 className={styles.itemName}>{item.name.toUpperCase()}</h3>
                     <p className={styles.itemUnit}>GHC {item.price}</p>
-                    <p className={styles.itemSize}>{item.size}</p>
+                    <p className={styles.itemSize}>
+                      {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
+                    </p>
                   </div>
                   
                   <div className={styles.itemControls}>

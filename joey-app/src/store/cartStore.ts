@@ -3,6 +3,8 @@ export type CartItem = {
   productId: string;
   name: string;
   size: string;
+  fit?: string;
+  wearTag?: string;
   price: number;
   image: string;
   quantity: number;
@@ -81,7 +83,7 @@ export const cartStore = {
   },
 
   addItem: (item: Omit<CartItem, "id">) => {
-    const id = `${item.productId}-${item.size}`;
+    const id = `${item.productId}-${item.size}${item.fit ? `-${item.fit}` : ""}`;
     const existingIndex = cart.findIndex((i) => i.id === id);
     if (existingIndex > -1) {
       const updatedCart = [...cart];

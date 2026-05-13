@@ -4,8 +4,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
-import type { OrderItem } from "@/lib/types";
+import { OrderItem } from "@/lib/types";
 import { isVideoUrl } from "@/lib/isVideoUrl";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 
 type Props = {
   open: boolean;
@@ -75,11 +76,17 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${item.fit ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
                   <p className="text-xs font-semibold text-zinc-700">Size</p>
-                  <p className="mt-2 text-xl font-bold text-zinc-900">{item.size}</p>
+                  <p className="mt-2 text-xl font-bold text-zinc-900">{formatSizeLabel(item.size, item.fit, item.wearTag)}</p>
                 </div>
+                {item.fit && (
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                    <p className="text-xs font-semibold text-zinc-700">Fit</p>
+                    <p className="mt-2 text-xl font-bold text-zinc-900">{item.fit}</p>
+                  </div>
+                )}
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
                   <p className="text-xs font-semibold text-zinc-700">Quantity</p>
                   <p className="mt-2 text-xl font-bold text-zinc-900">{item.quantity}</p>

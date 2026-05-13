@@ -5,7 +5,7 @@ import { useEffect, useMemo, useSyncExternalStore, useState } from "react";
 import { createPortal } from "react-dom";
 import { dataStore } from "@/lib/dataStore";
 import { wishlistStore } from "@/store/wishlistStore";
-import { DEFAULT_SIZES } from "@/lib/dataStore";
+import { DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { Product } from "@/lib/types";
 import type { WishlistItem } from "@/store/wishlistStore";
@@ -15,6 +15,24 @@ import styles from "./FeaturedSection.module.css";
 const EMPTY_PRODUCTS: Product[] = [];
 const EMPTY_WISHLIST: WishlistItem[] = [];
 const EMPTY_COLLECTIONS: any[] = [];
+
+function formatSizeLabel(raw: string, fit?: string, wearTag?: string): string {
+  const s = String(raw || "").trim();
+  
+  // For women's Standard fit, map alpha sizes to UK/US numeric labels
+  if (fit === "Standard" && wearTag === "womens") {
+    if (s === "XS") return "UK 6 / US 2";
+    if (s === "S") return "UK 8 / US 4";
+    if (s === "M") return "UK 10 / US 6";
+    if (s === "L") return "UK 12 / US 8";
+    if (s === "XL") return "UK 14 / US 10";
+    if (s === "XXL") return "UK 16 / US 12";
+  }
+
+  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
+  if (m) return `UK ${m[1]} / US ${m[2]}`;
+  return s;
+}
 
 function FeaturedSectionSkeleton() {
   return (
@@ -63,6 +81,7 @@ export default function FeaturedSection() {
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedFit, setSelectedFit] = useState("Standard");
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
 
   const getCollectionName = useMemo(() => {
@@ -96,6 +115,7 @@ export default function FeaturedSection() {
       setActiveImage("");
       setQty(1);
       setSelectedSize("");
+      setSelectedFit("Standard");
       setAddStatus("idle");
     } else {
       document.body.style.overflow = "";
@@ -122,8 +142,16 @@ export default function FeaturedSection() {
     });
   };
 
-  const getAvailableSizes = (prod: Product) => {
-    if (!prod?.sizes || prod.sizes.length < 6) {
+  const getAvailableSizes = (prod: Product, fit?: string) => {
+    // For women's apparel, the range depends on the fit.
+    if (prod?.wearTag === "womens") {
+      if (fit === "Thick") {
+        return ["S", "M", "L", "XL", "Custom"];
+      }
+      return WOMENS_DEFAULT_SIZES.map(s => s.name);
+    }
+
+    if (!prod?.sizes || prod.sizes.length === 0) {
       return DEFAULT_SIZES.map((s) => s.name);
     }
     return prod.sizes.filter((s) => s.available).map((s) => s.name);
@@ -140,6 +168,8 @@ export default function FeaturedSection() {
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
           size: selectedSize || "Standard",
+          fit: quickViewPiece.wearTag === "womens" ? selectedFit : undefined,
+          wearTag: quickViewPiece.wearTag,
           price: quickViewPiece.price,
           image: quickViewPiece.image,
           quantity: qty,
@@ -217,17 +247,35 @@ export default function FeaturedSection() {
                     <p className={styles.modalDesc}>{quickViewPiece.description}</p>
                   ) : null}
 
+                  {quickViewPiece.wearTag === "womens" && (
+                    <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
+                      <span className={styles.qtyLabel}>Fit:</span>
+                      <div className={styles.modalFitSelector}>
+                        {["Standard", "Thick"].map((fit) => (
+                          <button
+                            key={fit}
+                            type="button"
+                            className={`${styles.fitBtn} ${selectedFit === fit ? styles.fitBtnActive : ""}`}
+                            onClick={() => setSelectedFit(fit)}
+                          >
+                            {fit}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className={styles.modalSizeRow}>
                     <span className={styles.qtyLabel}>Size:</span>
                     <div className={styles.sizeGrid}>
-                      {getAvailableSizes(quickViewPiece).map((sz: string) => (
+                      {getAvailableSizes(quickViewPiece, selectedFit).map((sz: string) => (
                         <button
                           key={sz}
                           type="button"
                           className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
                           onClick={() => setSelectedSize((prev) => (prev === sz ? "" : sz))}
                         >
-                          {sz}
+                          {formatSizeLabel(sz, selectedFit, quickViewPiece.wearTag)}
                         </button>
                       ))}
                     </div>

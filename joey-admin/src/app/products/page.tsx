@@ -12,37 +12,37 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 
 const DEFAULT_SIZES: ProductSize[] = [
-  { name: "XS", available: true },
   { name: "S", available: true },
   { name: "M", available: true },
   { name: "L", available: true },
   { name: "XL", available: true },
+  { name: "XXL", available: true },
   { name: "Custom", available: true },
 ];
 
-const UK_US_SIZES: ProductSize[] = [
-  { name: "UK8/US4", available: true },
-  { name: "UK10/US6", available: true },
-  { name: "UK12/US8", available: true },
-  { name: "UK14/US10", available: true },
-  { name: "UK16/US12", available: true },
-  { name: "UK18/US14", available: true },
-  { name: "UK20/US16", available: true },
-  { name: "UK22/US18", available: true },
-  { name: "UK24/US20", available: true },
+const UK_SIZES: ProductSize[] = [
+  { name: "UK 6", available: true },
+  { name: "UK 8", available: true },
+  { name: "UK 10", available: true },
+  { name: "UK 12", available: true },
+  { name: "UK 14", available: true },
+  { name: "UK 16", available: true },
+  { name: "UK 18", available: true },
+  { name: "UK 20", available: true },
+  { name: "UK 22", available: true },
   { name: "Custom", available: true },
 ];
 
-type SizeButtonsMode = "standard" | "ukus";
+type SizeButtonsMode = "standard" | "uk";
 
-function isUkUsSizeName(name: string): boolean {
+function isUkSizeName(name: string): boolean {
   const n = String(name || "").trim().toUpperCase();
-  return n.startsWith("UK") && n.includes("/US");
+  return n.startsWith("UK");
 }
 
 function inferSizeButtonsMode(sizes?: ProductSize[] | null): SizeButtonsMode {
   if (!sizes || sizes.length === 0) return "standard";
-  return sizes.some((s) => isUkUsSizeName(s.name)) ? "ukus" : "standard";
+  return sizes.some((s) => isUkSizeName(s.name)) ? "uk" : "standard";
 }
 
 const FALLBACK_COLLECTIONS: Collection[] = [
@@ -157,7 +157,7 @@ export default function ProductsPage() {
   }, [isModalOpen, editingProduct]);
 
   const sizesForEditor = useMemo(() => {
-    const base = sizeButtonsMode === "ukus" ? UK_US_SIZES : DEFAULT_SIZES;
+    const base = sizeButtonsMode === "uk" ? UK_SIZES : DEFAULT_SIZES;
     const existing = editingProduct?.sizes ?? [];
     const map = new Map(existing.map((s) => [s.name, Boolean(s.available)]));
     return base.map((s) => ({
@@ -1022,10 +1022,10 @@ export default function ProductsPage() {
                     <AdminStyledSelect
                       name="sizeButtonsMode"
                       defaultValue={sizeButtonsMode}
-                      onValueChange={(v) => setSizeButtonsMode(v === "ukus" ? "ukus" : "standard")}
+                      onValueChange={(v) => setSizeButtonsMode(v === "uk" ? "uk" : "standard")}
                       options={[
                         { value: "standard", label: "Standard (XS–Custom)" },
-                        { value: "ukus", label: "UK/US (UK8/US4–UK24/US20)" },
+                        { value: "uk", label: "UK (UK 6–UK 22)" },
                       ]}
                       wrapperClassName="min-w-[280px]"
                     />

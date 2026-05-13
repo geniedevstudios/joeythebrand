@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { wishlistStore } from "@/store/wishlistStore";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { toast } from "sonner";
 import styles from "./CheckoutClient.module.css";
 import { cartStore } from "@/store/cartStore";
@@ -194,6 +196,8 @@ export default function CheckoutClient() {
           productId: item.productId,
           name: item.name,
           size: item.size,
+          fit: item.fit,
+          wearTag: item.wearTag,
           price: item.price,
           quantity: item.quantity,
           image: item.image,
@@ -454,7 +458,9 @@ export default function CheckoutClient() {
                 </div>
                 <div className={styles.itemInfo}>
                   <span className={styles.itemName}>{item.name}</span>
-                  <span className={styles.itemSize}>{item.size}</span>
+                  <span className={styles.itemSize}>
+                    {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
+                  </span>
                 </div>
                 <span className={styles.itemPrice}>GHC {(item.price * item.quantity).toLocaleString()}</span>
               </div>

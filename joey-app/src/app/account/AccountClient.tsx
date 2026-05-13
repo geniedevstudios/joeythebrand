@@ -90,6 +90,7 @@ import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { openConsultationPrintWindow } from "@/lib/printConsultation";
 import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import styles from "./account.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
@@ -147,7 +148,13 @@ function OrderLineRow({ line }: { line: OrderItem }) {
         <span className={styles.orderLineBody}>
           <span className={styles.orderLineName}>{line.name || "Product"}</span>
           <span className={styles.orderLineMeta}>
-            Size <strong>{size}</strong>
+            Size <strong>{formatSizeLabel(size, line.fit, line.wearTag)}</strong>
+            {line.fit && (
+              <>
+                <span aria-hidden> · </span>
+                Fit <strong>{line.fit}</strong>
+              </>
+            )}
             <span aria-hidden> · </span>
             Qty <strong>{qty}</strong>
             <span aria-hidden> · </span>

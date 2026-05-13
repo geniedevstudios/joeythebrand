@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import styles from "./ShopClient.module.css";
 import CollectionsSection from "@/components/home/CollectionsSection";
 import { wishlistStore } from "@/store/wishlistStore";
-import { dataStore, DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
@@ -24,13 +25,6 @@ const _getProducts = () => dataStore.getProducts();
 const _getWishlistItems = () => wishlistStore.getItems();
 const _getCollections = () => dataStore.getCollections();
 const _getEmptyCollections = () => EMPTY_COLLECTIONS;
-
-function formatSizeLabel(raw: string): string {
-  const s = String(raw || "").trim();
-  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
-  if (m) return `UK ${m[1]} / US ${m[2]}`;
-  return s;
-}
 
 function ShopProductsSkeleton({ count = 6 }: { count?: number }) {
   return (
@@ -65,6 +59,7 @@ export default function ShopClient() {
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
+  const [quickViewFit, setQuickViewFit] = useState("Standard");
   const searchParams = useSearchParams();
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
   const collections = useSyncExternalStore(dataStore.subscribe, _getCollections, _getEmptyCollections);
@@ -111,6 +106,7 @@ export default function ShopClient() {
       document.body.style.overflow = "hidden";
       setQty(1);
       setSelectedSize("");
+      setQuickViewFit("Standard");
     } else {
       document.body.style.overflow = "";
       setActiveImage("");
@@ -148,10 +144,12 @@ export default function ShopClient() {
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
           size: selectedSize || "Standard",
+          fit: quickViewPiece.wearTag === "womens" ? quickViewFit : undefined,
+          wearTag: quickViewPiece.wearTag,
           price: quickViewPiece.price,
           image: quickViewPiece.image,
           quantity: qty,
-          maxStock: quickViewPiece.quantity,
+          maxStock: quickViewPiece.quantity ?? 99,
         });
 
         setAddStatus("added");
@@ -160,8 +158,16 @@ export default function ShopClient() {
     }, 400);
   };
 
-  const getAvailableSizes = (prod: any) => {
-    if (!prod?.sizes || prod.sizes.length < 6) {
+  const getAvailableSizes = (prod: any, fit?: string) => {
+    // For women's apparel, the range depends on the fit.
+    if (prod?.wearTag === "womens") {
+      if (fit === "Thick") {
+        return ["S", "M", "L", "XL", "Custom"];
+      }
+      return WOMENS_DEFAULT_SIZES.map(s => s.name);
+    }
+
+    if (!prod?.sizes || prod.sizes.length === 0) {
       return DEFAULT_SIZES.map(s => s.name);
     }
     return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
@@ -373,16 +379,33 @@ export default function ShopClient() {
 
                 <p className={styles.modalDesc}>{quickViewPiece.description}</p>
 
+                {quickViewPiece.wearTag === "womens" && (
+                  <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
+                    <span className={styles.qtyLabel}>Fit:</span>
+                    <div className={styles.modalFitSelector}>
+                      {["Standard", "Thick"].map((fit) => (
+                        <button
+                          key={fit}
+                          className={`${styles.fitBtn} ${quickViewFit === fit ? styles.fitBtnActive : ""}`}
+                          onClick={() => setQuickViewFit(fit)}
+                        >
+                          {fit}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className={styles.modalSizeRow}>
                   <span className={styles.qtyLabel}>Size:</span>
                   <div className={styles.sizeGrid}>
-                    {getAvailableSizes(quickViewPiece).map((sz: string) => (
+                    {getAvailableSizes(quickViewPiece, quickViewFit).map((sz: string) => (
                       <button
                         key={sz}
                         className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
                         onClick={() => setSelectedSize(prev => prev === sz ? "" : sz)}
                       >
-                        {formatSizeLabel(sz)}
+                        {formatSizeLabel(sz, quickViewFit, quickViewPiece.wearTag)}
                       </button>
                     ))}
                   </div>

@@ -81,11 +81,24 @@ export function mapPublicCollectionFromSupabaseRow(row: Record<string, unknown>)
 const mapPublicCollection = mapPublicCollectionFromSupabaseRow;
 
 export const DEFAULT_SIZES: ProductSize[] = [
+  { name: "S", available: true },
+  { name: "M", available: true },
+  { name: "L", available: true },
+  { name: "XL", available: true },
+  { name: "XXL", available: true },
+  { name: "Custom", available: true },
+];
+
+export const WOMENS_DEFAULT_SIZES: ProductSize[] = [
   { name: "XS", available: true },
   { name: "S", available: true },
   { name: "M", available: true },
   { name: "L", available: true },
   { name: "XL", available: true },
+  { name: "XXL", available: true },
+  { name: "3XL", available: true },
+  { name: "4XL", available: true },
+  { name: "5XL", available: true },
   { name: "Custom", available: true },
 ];
 

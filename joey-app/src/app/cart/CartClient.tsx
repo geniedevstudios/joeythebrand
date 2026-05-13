@@ -9,6 +9,7 @@ import { cartStore, type CartItem } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 import { authStore } from "@/store/authStore";
 import ProductMedia from "@/components/shop/ProductMedia";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 
 const EMPTY_ARRAY: CartItem[] = [];
 
@@ -149,7 +150,9 @@ export default function CartClient() {
                     </div>
                     <div className={styles.itemDetails}>
                       <Link href={`/shop/${item.productId}`} className={styles.itemName}>{item.name}</Link>
-                      <p className={styles.itemSize}>{item.size}</p>
+                      <p className={styles.itemSize}>
+                        {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
+                      </p>
                     </div>
                   </div>
 

@@ -592,6 +592,32 @@
   border-color: var(--alaska-gray);
 }
 
+.modalFitSelector {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+.fitBtn {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--alaska-gray);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.fitBtnActive {
+  border-color: var(--blue-athracite);
+  background: var(--blue-athracite);
+  color: #fff;
+}
+
 .sizeGuideBtn {
   font-family: var(--font-label);
   font-size: 0.65rem;

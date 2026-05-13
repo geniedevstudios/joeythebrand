@@ -122,3 +122,49 @@
   background: rgba(0,0,0,0.03);
 }
 
+.unitNotice {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: rgba(20, 20, 20, 0.45);
+  margin-top: 4px;
+}
+
+.sizeCell {
+  font-weight: 600;
+  color: var(--blue-athracite) !important;
+}
+
+.womensHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.fitSelector {
+  display: flex;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.fitBtn {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(20, 20, 20, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fitBtnActive {
+  background: #fff;
+  color: var(--blue-athracite);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
