@@ -163,6 +163,7 @@ export type PromotionPopupAction = "newsletter" | "product" | "news";
 export type PromotionPopupMediaKind = "image" | "video";
 
 export interface PromotionPopupConfig {
+  id: string;
   enabled: boolean;
   /** Left panel: still or autoplaying muted loop video. */
   mediaKind: PromotionPopupMediaKind;
@@ -179,6 +180,7 @@ export interface PromotionPopupConfig {
 }
 
 export const DEFAULT_PROMOTION_POPUP: PromotionPopupConfig = {
+  id: "",
   enabled: false,
   mediaKind: "image",
   mediaUrl: "",
@@ -223,5 +225,5 @@ export interface SiteContent {
   /** News & Blog page teasers */
   newsSpotlights: NewsSpotlightItem[];
   /** Optional promo modal on load / refresh */
-  promotionPopup: PromotionPopupConfig;
+  promotionPopups: PromotionPopupConfig[];
 }

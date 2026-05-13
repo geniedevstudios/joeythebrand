@@ -162,6 +162,7 @@ export type PromotionPopupAction = "newsletter" | "product" | "news";
 export type PromotionPopupMediaKind = "image" | "video";
 
 export interface PromotionPopupConfig {
+  id: string;
   enabled: boolean;
   mediaKind: PromotionPopupMediaKind;
   mediaUrl: string;
@@ -198,5 +199,5 @@ export interface SiteContent {
   founderCtaLabel: string;
   founderCtaHref: string;
   newsSpotlights: NewsSpotlightItem[];
-  promotionPopup: PromotionPopupConfig;
+  promotionPopups: PromotionPopupConfig[];
 }

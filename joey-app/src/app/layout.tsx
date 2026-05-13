@@ -8,7 +8,6 @@ import ScrollToTop from "@/components/ScrollToTop";
 import DataStoreInit from "@/components/DataStoreInit";
 import PromotionPopup from "@/components/PromotionPopup";
 import { fetchSiteContent } from "@/lib/fetchSiteContentServer";
-import { DEFAULT_PROMOTION_POPUP } from "@/lib/types";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
@@ -88,7 +87,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const siteContentRow = await fetchSiteContent();
-  const initialPromotionPopup = siteContentRow?.promotionPopup ?? DEFAULT_PROMOTION_POPUP;
+  const initialPromotionPopups = siteContentRow?.promotionPopups ?? [];
 
   return (
     <html lang="en" data-scroll-behavior="smooth">
@@ -130,7 +129,7 @@ export default async function RootLayout({
         <main>{children}</main>
         <Footer />
         <CartDrawer />
-        <PromotionPopup initialPromotionPopup={initialPromotionPopup} />
+        <PromotionPopup initialPromotionPopups={initialPromotionPopups} />
         <ScrollToTop />
         <Toaster position="top-center" richColors />
         <Analytics />

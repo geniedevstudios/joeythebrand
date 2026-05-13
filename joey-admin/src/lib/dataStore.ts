@@ -128,6 +128,7 @@ const FD = {
 };
 
 const DEFAULT_PROMOTION_POPUP_ADMIN: PromotionPopupConfig = {
+  id: "",
   enabled: false,
   mediaKind: "image",
   mediaUrl: "",
@@ -196,7 +197,26 @@ function mapPromotionPopupFromRow(raw: unknown): PromotionPopupConfig {
         ? String(r.product_slug_or_id).trim()
         : "";
   if (slug) base.productSlugOrId = slug;
+  
+  if (typeof r.id === "string" && r.id.trim()) {
+    base.id = r.id.trim();
+  } else {
+    // Generate an ID if it's a legacy object missing one
+    base.id = `popup-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+  
   return base;
+}
+
+function mapPromotionPopupsFromRow(raw: unknown): PromotionPopupConfig[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.map(mapPromotionPopupFromRow).filter(Boolean);
+  }
+  const single = mapPromotionPopupFromRow(raw);
+  // If it's a legacy empty object, don't show it
+  if (!single.mediaUrl && !single.headline) return [];
+  return [single];
 }
 
 function mapNewsSpotlightsFromRow(raw: unknown): NewsSpotlightItem[] {
@@ -270,7 +290,7 @@ const mapSiteContent = (row: Record<string, unknown>): SiteContent => {
         ? String(row.founder_cta_href).trim()
         : FD.ctaHref,
     newsSpotlights: mapNewsSpotlightsFromRow(row.news_spotlights),
-    promotionPopup: mapPromotionPopupFromRow(row.promotion_popup),
+    promotionPopups: mapPromotionPopupsFromRow(row.promotion_popup),
   };
 };
 
@@ -538,7 +558,7 @@ export const dataStore = {
     if (updates.founderCtaLabel !== undefined) payload.founder_cta_label = updates.founderCtaLabel;
     if (updates.founderCtaHref !== undefined) payload.founder_cta_href = updates.founderCtaHref;
     if (updates.newsSpotlights !== undefined) payload.news_spotlights = updates.newsSpotlights;
-    if (updates.promotionPopup !== undefined) payload.promotion_popup = updates.promotionPopup;
+    if (updates.promotionPopups !== undefined) payload.promotion_popup = updates.promotionPopups;
 
     const { error } = await supabase.from("site_content").upsert(payload);
     if (error) throw new Error(error.message);

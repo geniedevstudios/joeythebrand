@@ -7,6 +7,7 @@ import type { ConsultationBooking, ConsultationSource } from "@/lib/types";
 import { openConsultationPrintWindow } from "@/lib/printConsultation";
 import { ArrowLeft, CalendarRange } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 function formatPreferred(dateIso?: string, time24?: string) {
   if (!dateIso?.trim()) return "—";
@@ -43,6 +44,7 @@ export default function ConsultationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ConsultationBooking | null>(null);
+  const [declineTarget, setDeclineTarget] = useState<ConsultationBooking | null>(null);
   const [modalDate, setModalDate] = useState("");
   const [modalTime, setModalTime] = useState("10:00");
   const [modalError, setModalError] = useState("");
@@ -117,13 +119,6 @@ export default function ConsultationsPage() {
   };
 
   const onDecline = async (b: ConsultationBooking) => {
-    const msg =
-      b.status === "confirmed"
-        ? "Revoke this confirmed appointment? The customer will lose their booking code and time."
-        : b.source === "portfolio"
-          ? "Decline this request? Their private portfolio booking link will show Declined."
-          : "Decline this request? The customer will see Declined on their shop account.";
-    if (!window.confirm(msg)) return;
     setUpdatingId(b.id);
     try {
       await dataStore.declineConsultation(b.id);
@@ -137,6 +132,7 @@ export default function ConsultationsPage() {
       console.error(err);
     } finally {
       setUpdatingId(null);
+      setDeclineTarget(null);
     }
   };
 
@@ -517,7 +513,7 @@ export default function ConsultationsPage() {
                               type="button"
                               className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
                               disabled={updatingId === b.id}
-                              onClick={() => void onDecline(b)}
+                              onClick={() => setDeclineTarget(b)}
                             >
                               Decline
                             </button>
@@ -556,6 +552,26 @@ export default function ConsultationsPage() {
           })()}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={declineTarget !== null}
+        title={declineTarget?.status === "confirmed" ? "Revoke appointment?" : "Decline request?"}
+        description={
+          declineTarget ? (
+            declineTarget.status === "confirmed"
+              ? "Revoke this confirmed appointment? The customer will lose their booking code and time. This cannot be undone."
+              : declineTarget.source === "portfolio"
+                ? "Decline this request? Their private portfolio booking link will show Declined. This cannot be undone."
+                : "Decline this request? The customer will see Declined on their shop account. This cannot be undone."
+          ) : undefined
+        }
+        confirmLabel="Decline"
+        variant="danger"
+        onCancel={() => setDeclineTarget(null)}
+        onConfirm={async () => {
+          if (declineTarget) await onDecline(declineTarget);
+        }}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { dataStore } from "@/lib/dataStore";
 import type { NewsSpotlightItem } from "@/lib/types";
 import AssetUrlField from "@/components/AssetUrlField";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 
 function newId(): string {
@@ -44,6 +45,7 @@ export default function NewsSpotlightsEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [draft, setDraft] = useState<NewsSpotlightItem>(() => emptyDraft());
   /** True when editing an item that already exists in `items` */
   const [editingExisting, setEditingExisting] = useState(false);
@@ -136,7 +138,6 @@ export default function NewsSpotlightsEditor() {
   };
 
   const deleteItem = async (id: string) => {
-    if (!window.confirm("Remove this teaser from the site?")) return;
     setSaving(true);
     try {
       const next = items.filter((r) => r.id !== id);
@@ -147,6 +148,7 @@ export default function NewsSpotlightsEditor() {
       console.error(err);
     } finally {
       setSaving(false);
+      setPendingDeleteId(null);
     }
   };
 
@@ -243,7 +245,7 @@ export default function NewsSpotlightsEditor() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void deleteItem(row.id)}
+                        onClick={() => setPendingDeleteId(row.id)}
                         className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
                         disabled={saving}
                       >
@@ -381,6 +383,18 @@ export default function NewsSpotlightsEditor() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Delete this teaser?"
+        description="This teaser will be removed permanently. This cannot be undone."
+        confirmLabel="Delete teaser"
+        variant="danger"
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={async () => {
+          if (pendingDeleteId) await deleteItem(pendingDeleteId);
+        }}
+      />
     </>
   );
 }

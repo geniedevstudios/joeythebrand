@@ -24,6 +24,7 @@ import Link from "next/link";
 import RevenueModal from "@/components/RevenueModal";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { isPrimaryAdminEmail } from "@/lib/adminPrimary";
 
 /** Ghana cedi (₵) — Lucide has no cedi glyph */
@@ -75,6 +76,7 @@ export default function Dashboard() {
   const [teamLoading, setTeamLoading] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
+  const [pendingDeleteEmail, setPendingDeleteEmail] = useState<string | null>(null);
 
   const isPrimaryAdmin = isPrimaryAdminEmail(sessionEmail);
 
@@ -145,6 +147,35 @@ export default function Dashboard() {
       setTeamLoading(false);
     }
   }, []);
+
+  const handleDeleteAdmin = async (email: string) => {
+    setDeletingEmail(email);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Not signed in.");
+
+      const res = await fetch("/api/admin/team", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+      const out = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(out.error || "Failed to remove");
+
+      toast.success("Admin removed.");
+      await loadTeam();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove.");
+      throw err;
+    } finally {
+      setDeletingEmail(null);
+      setPendingDeleteEmail(null);
+    }
+  };
 
   const orderRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const consultationRevenue = consultations
@@ -721,39 +752,7 @@ export default function Dashboard() {
                         <button
                           type="button"
                           disabled={deletingEmail === m.email}
-                          onClick={async () => {
-                            if (
-                              !window.confirm(
-                                `Remove ${m.email} from dashboard access? Their login will be deleted if an account exists.`,
-                              )
-                            ) {
-                              return;
-                            }
-                            setDeletingEmail(m.email);
-                            try {
-                              const { data: sess } = await supabase.auth.getSession();
-                              const token = sess.session?.access_token;
-                              if (!token) throw new Error("Not signed in.");
-
-                              const res = await fetch("/api/admin/team", {
-                                method: "DELETE",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${token}`,
-                                },
-                                body: JSON.stringify({ email: m.email }),
-                              });
-                              const out = (await res.json()) as { error?: string };
-                              if (!res.ok) throw new Error(out.error || "Failed to remove");
-
-                              toast.success("Admin removed.");
-                              await loadTeam();
-                            } catch (err) {
-                              toast.error(err instanceof Error ? err.message : "Failed to remove.");
-                            } finally {
-                              setDeletingEmail(null);
-                            }
-                          }}
+                          onClick={() => setPendingDeleteEmail(m.email)}
                           className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-50"
                         >
                           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -788,6 +787,24 @@ export default function Dashboard() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={pendingDeleteEmail !== null}
+        title="Remove admin?"
+        description={
+          pendingDeleteEmail ? (
+            <>
+              Remove <span className="font-medium text-zinc-900">{pendingDeleteEmail}</span> from dashboard access? Their login will be deleted if an account exists. This cannot be undone.
+            </>
+          ) : undefined
+        }
+        confirmLabel="Remove admin"
+        variant="danger"
+        onCancel={() => setPendingDeleteEmail(null)}
+        onConfirm={async () => {
+          if (pendingDeleteEmail) await handleDeleteAdmin(pendingDeleteEmail);
+        }}
+      />
     </div>
   );
 }

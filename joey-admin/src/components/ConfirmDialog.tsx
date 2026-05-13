@@ -51,7 +51,7 @@ export default function ConfirmDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-[2px]">
       <div
         role="dialog"
         aria-modal="true"
@@ -66,7 +66,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="-mr-1 -mt-1 shrink-0 rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+            className="-mr-1 -mt-1 shrink-0 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50"
             aria-label="Close"
           >
             <X className="h-5 w-5" strokeWidth={2} />
@@ -74,7 +74,11 @@ export default function ConfirmDialog({
         </div>
         {description && (
           <div className="mt-4 px-6">
-            <div className="rounded-xl border border-zinc-100 bg-gradient-to-b from-stone-50 to-zinc-50/80 px-4 py-4 text-sm leading-relaxed text-zinc-700 shadow-inner shadow-zinc-100/50">
+            <div className={`rounded-xl border px-4 py-4 text-sm leading-relaxed shadow-inner ${
+              variant === "danger" 
+                ? "border-red-200/60 bg-red-50 text-red-800 shadow-red-100/50" 
+                : "border-zinc-100 bg-gradient-to-b from-stone-50 to-zinc-50/80 text-zinc-700 shadow-zinc-100/50"
+            }`}>
               {description}
             </div>
           </div>
@@ -89,7 +93,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded-lg border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-medium text-white/85 shadow-sm transition-colors hover:bg-white/[0.1] hover:border-white/25 disabled:opacity-50"
+            className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50"
           >
             {cancelLabel}
           </button>

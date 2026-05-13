@@ -128,10 +128,7 @@ main {
   background-attachment: fixed !important;
 }
 
-.page-hero-shell[data-page-hero-empty="true"]::before {
-  background: transparent !important;
-  opacity: 0 !important;
-}
+
 
 /* When the hero is empty but the store is still initializing, show the brand mark behind the ring spinner.
    Use the element background (not ::before) so route-specific ::before overlays (e.g. Shop header) can't replace it. */

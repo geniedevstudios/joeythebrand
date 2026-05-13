@@ -9,6 +9,7 @@ import { dataStore } from "@/lib/dataStore";
 import type { Collection } from "@/lib/types";
 import AdminStyledSelect from "@/components/AdminStyledSelect";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import AssetUrlField from "@/components/AssetUrlField";
 import AssetGalleryField from "@/components/AssetGalleryField";
 
@@ -440,6 +441,7 @@ export default function EventsContentPage() {
   >(null);
   const [updateStep, setUpdateStep] = useState<0 | 1>(0);
   const [pendingCollectionSlug, setPendingCollectionSlug] = useState<string>("");
+  const [pendingDeleteTarget, setPendingDeleteTarget] = useState<EventRow | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -628,7 +630,6 @@ export default function EventsContentPage() {
   };
 
   const deleteEvent = async (row: EventRow) => {
-    if (!window.confirm(`Delete "${row.title}"? This cannot be undone.`)) return;
     setEventsSaving(true);
     try {
       const { error } = await supabase.from("events").delete().eq("id", row.id);
@@ -640,6 +641,7 @@ export default function EventsContentPage() {
       toast.error(err?.message || "Could not delete event.");
     } finally {
       setEventsSaving(false);
+      setPendingDeleteTarget(null);
     }
   };
 
@@ -820,7 +822,7 @@ export default function EventsContentPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => deleteEvent(e)}
+                      onClick={() => setPendingDeleteTarget(e)}
                       className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
                       disabled={eventsSaving}
                     >
@@ -881,7 +883,7 @@ export default function EventsContentPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => deleteEvent(e)}
+                        onClick={() => setPendingDeleteTarget(e)}
                         className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
                         disabled={eventsSaving}
                       >
@@ -1482,6 +1484,24 @@ export default function EventsContentPage() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={pendingDeleteTarget !== null}
+        title="Delete event?"
+        description={
+          pendingDeleteTarget ? (
+            <>
+              Delete <span className="font-medium text-zinc-900">&quot;{pendingDeleteTarget.title}&quot;</span>? This cannot be undone.
+            </>
+          ) : undefined
+        }
+        confirmLabel="Delete event"
+        variant="danger"
+        onCancel={() => setPendingDeleteTarget(null)}
+        onConfirm={async () => {
+          if (pendingDeleteTarget) await deleteEvent(pendingDeleteTarget);
+        }}
+      />
     </div>
   );
 }
