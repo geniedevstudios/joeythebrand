@@ -19,6 +19,7 @@ export const PAGE_HERO_KEYS: PageHeroKey[] = [
   "login",
   "product",
   "news",
+  "report_issue",
 ];
 
 export const PAGE_HERO_LABELS: Record<PageHeroKey, string> = {
@@ -37,6 +38,7 @@ export const PAGE_HERO_LABELS: Record<PageHeroKey, string> = {
   login: "Login",
   product: "Product (detail)",
   news: "News & Blog",
+  report_issue: "Report an Issue",
 };
 
 export const DEFAULT_PAGE_HEROES: Record<PageHeroKey, PageHeroMedia> = {
@@ -55,6 +57,7 @@ export const DEFAULT_PAGE_HEROES: Record<PageHeroKey, PageHeroMedia> = {
   login: EMPTY_PAGE_HERO,
   product: EMPTY_PAGE_HERO,
   news: EMPTY_PAGE_HERO,
+  report_issue: EMPTY_PAGE_HERO,
 };
 
 function parseFit(o: Record<string, unknown>): PageHeroFit {

@@ -484,7 +484,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
                     {submitError
                       ? submitError
                       : status === "error"
-                        ? "Could not save your request. Confirm the consultations SQL (including calendar) is applied in Supabase, or WhatsApp us at +233 504 148 009."
+                        ? "Could not save your request. Please try again or report the issue if it persists."
                         : null}
                   </p>
                 )}
@@ -498,15 +498,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
                   >
                     {status === "sending" ? "Submitting…" : "Request My Slot"}
                   </button>
-                  <a
-                    href="https://wa.me/233504148009"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline btn-lg"
-                    id="bespoke-wa"
-                  >
-                    Or WhatsApp Us
-                  </a>
+
                 </div>
               </form>
             )}

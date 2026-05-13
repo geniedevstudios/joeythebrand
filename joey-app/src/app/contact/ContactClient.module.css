@@ -103,36 +103,26 @@ a.infoValue:hover { color: var(--wood); }
   background: var(--color-border);
 }
 
-/* WhatsApp card */
-.whatsappCard {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
-  color: #25D366;
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+.issueLinkWrap {
+  margin-bottom: var(--space-xl);
+  margin-top: var(--space-md);
 }
 
-.whatsappCard:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-
-.waTitle {
-  font-family: var(--font-label);
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
-  color: var(--blue-athracite);
-  text-transform: uppercase;
-}
-
-.waSub {
-  font-size: 0.8rem;
+.issueText {
+  font-size: 0.9rem;
   color: var(--alaska-gray);
-  margin-top: 2px;
+  margin: 0;
+}
+
+.issueLink {
+  color: var(--blue-athracite);
+  text-decoration: underline;
+  font-weight: 500;
+  transition: opacity var(--transition-fast);
+}
+
+.issueLink:hover {
+  opacity: 0.7;
 }
 
 /* Quote */

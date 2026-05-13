@@ -149,7 +149,8 @@ export type PageHeroKey =
   | "privacy"
   | "login"
   | "product"
-  | "news";
+  | "news"
+  | "report_issue";
 
 export type PageHeroFit = "cover" | "contain";
 

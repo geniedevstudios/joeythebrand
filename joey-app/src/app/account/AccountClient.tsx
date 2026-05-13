@@ -307,7 +307,7 @@ function AccountDashboard({ userId }: { userId: string }) {
             {avatarMenuOpen && (
               <div className={styles.avatarDropdown} role="menu">
                 <Link
-                  href="/contact"
+                  href="/report-issue"
                   className={styles.dropdownItem}
                   role="menuitem"
                   onClick={() => setAvatarMenuOpen(false)}
