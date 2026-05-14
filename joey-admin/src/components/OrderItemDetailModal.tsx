@@ -64,7 +64,9 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
                   <video
                     src={item.image}
                     className="max-h-full w-full object-contain"
-                    controls
+                    autoPlay
+                    muted
+                    loop
                     playsInline
                     preload="metadata"
                     aria-label={item.name}

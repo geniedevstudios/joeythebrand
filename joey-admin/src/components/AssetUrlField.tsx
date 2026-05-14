@@ -157,7 +157,9 @@ export default function AssetUrlField({
                 <video
                   src={previewSrc}
                   className="h-full w-full object-cover"
+                  autoPlay
                   muted
+                  loop
                   playsInline
                   preload="metadata"
                 />

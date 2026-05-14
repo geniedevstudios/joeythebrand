@@ -136,7 +136,13 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       document.body.style.overflow = "hidden";
       setQty(1);
       setSelectedSize("");
-      setQuickViewFit("Standard");
+      if (quickViewPiece.wearTag === "womens") {
+        setQuickViewFit("Standard");
+      } else if (quickViewPiece.wearTag === "unisex") {
+        setQuickViewFit("Men");
+      } else {
+        setQuickViewFit("Standard");
+      }
     } else {
       document.body.style.overflow = "";
       setActiveImage("");
@@ -171,7 +177,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
           size: selectedSize || "Standard",
-          fit: quickViewPiece.wearTag === "womens" ? quickViewFit : undefined,
+          fit: (quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") ? quickViewFit : undefined,
           wearTag: quickViewPiece.wearTag,
           price: quickViewPiece.price,
           image: quickViewPiece.image,
@@ -190,6 +196,14 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
         return ["S", "M", "L", "XL", "Custom"];
       }
       return WOMENS_DEFAULT_SIZES.map(s => s.name);
+    }
+
+    if (prod?.wearTag === "unisex") {
+      if (fit === "Women") {
+        return ["S", "M", "L", "XL", "Custom"];
+      }
+      // Men's or default
+      return ["S", "M", "L", "XL", "XXL", "Custom"];
     }
 
     if (!prod?.sizes || prod.sizes.length === 0) {
@@ -531,15 +545,15 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                   Authentic Hand Woven. Available on backorder.
                 </p>
 
-                {quickViewPiece.wearTag === "womens" && (
+                {(quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") && (
                   <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
-                    <span className={styles.qtyLabel}>Fit:</span>
+                    <span className={styles.qtyLabel}>{quickViewPiece.wearTag === "unisex" ? "Gender:" : "Fit:"}</span>
                     <div className={styles.modalFitSelector}>
-                      {["Standard", "Thick"].map((fit) => (
+                      {(quickViewPiece.wearTag === "unisex" ? ["Men", "Women"] : ["Standard", "Thick"]).map((fit) => (
                         <button
                           key={fit}
                           className={`${styles.fitBtn} ${quickViewFit === fit ? styles.fitBtnActive : ""}`}
-                          onClick={() => setQuickViewFit(fit)}
+                          onClick={() => { setQuickViewFit(fit); setSelectedSize(""); }}
                         >
                           {fit}
                         </button>

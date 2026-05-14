@@ -112,12 +112,16 @@ export default function ProductClient({ slug }: { slug: string }) {
   useEffect(() => {
     if (product?.wearTag === "womens") {
       setSelectedFit("Standard");
+    } else if (product?.wearTag === "unisex") {
+      setSelectedFit("Men");
     }
   }, [product]);
 
   useEffect(() => {
     if (quickViewItem?.wearTag === "womens") {
       setQuickViewFit("Standard");
+    } else if (quickViewItem?.wearTag === "unisex") {
+      setQuickViewFit("Men");
     }
   }, [quickViewItem]);
 
@@ -147,6 +151,7 @@ export default function ProductClient({ slug }: { slug: string }) {
     const w = String((quickViewItem ?? product)?.wearTag ?? "").toLowerCase();
     if (w === "mens") return "mens";
     if (w === "womens") return "womens";
+    if (w === "unisex") return "unisex";
     return "both";
   }, [product, quickViewItem]);
 
@@ -184,6 +189,14 @@ export default function ProductClient({ slug }: { slug: string }) {
         return ["S", "M", "L", "XL", "Custom"];
       }
       return WOMENS_DEFAULT_SIZES.map(s => s.name);
+    }
+
+    if (prod?.wearTag === "unisex") {
+      if (fit === "Women") {
+        return ["S", "M", "L", "XL", "Custom"];
+      }
+      // Men's or default
+      return ["S", "M", "L", "XL", "XXL", "Custom"];
     }
 
     if (!prod?.sizes || prod.sizes.length === 0) {
@@ -251,7 +264,7 @@ export default function ProductClient({ slug }: { slug: string }) {
           productId: product.id,
           name: product.name,
           size: selectedSize || "Standard",
-          fit: product.wearTag === "womens" ? selectedFit : undefined,
+          fit: (product.wearTag === "womens" || product.wearTag === "unisex") ? selectedFit : undefined,
           wearTag: product.wearTag,
           price: product.price,
           image: product.image,
@@ -372,12 +385,33 @@ export default function ProductClient({ slug }: { slug: string }) {
                     {["Standard", "Thick"].map((fit) => (
                       <button
                         key={fit}
-                        onClick={() => setSelectedFit(fit)}
+                        onClick={() => { setSelectedFit(fit); setSelectedSize(""); }}
                         className={`${styles.sizeBtn} ${selectedFit === fit ? styles.sizeBtnActive : ""}`}
                         aria-pressed={selectedFit === fit}
                         style={{ flex: 1 }}
                       >
                         {fit} Fit
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {product.wearTag === "unisex" && (
+                <div className={styles.sizeSection} style={{ marginBottom: "1.5rem" }}>
+                  <div className={styles.sizeHeader}>
+                    <span className={styles.sizeLabel}>Gender / Fit</span>
+                  </div>
+                  <div className={styles.sizeGrid}>
+                    {["Men", "Women"].map((fit) => (
+                      <button
+                        key={fit}
+                        onClick={() => { setSelectedFit(fit); setSelectedSize(""); }}
+                        className={`${styles.sizeBtn} ${selectedFit === fit ? styles.sizeBtnActive : ""}`}
+                        aria-pressed={selectedFit === fit}
+                        style={{ flex: 1 }}
+                      >
+                        {fit}
                       </button>
                     ))}
                   </div>
@@ -647,15 +681,15 @@ export default function ProductClient({ slug }: { slug: string }) {
               
               <p className={styles.modalDesc}>{quickViewItem.description}</p>
               
-              {quickViewItem.wearTag === "womens" && (
+              {(quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") && (
                 <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
-                  <span className={styles.qtyLabel}>Fit:</span>
+                  <span className={styles.qtyLabel}>{quickViewItem.wearTag === "unisex" ? "Gender:" : "Fit:"}</span>
                   <div className={styles.sizeGrid} style={{ flex: 1 }}>
-                    {["Standard", "Thick"].map((fit) => (
+                    {(quickViewItem.wearTag === "unisex" ? ["Men", "Women"] : ["Standard", "Thick"]).map((fit) => (
                       <button 
                         key={fit} 
                         className={`${styles.sizeBtn} ${quickViewFit === fit ? styles.sizeBtnActive : ""}`}
-                        onClick={() => setQuickViewFit(fit)}
+                        onClick={() => { setQuickViewFit(fit); setQuickViewSize(""); }}
                         style={{ flex: 1 }}
                       >
                         {fit}
@@ -668,7 +702,7 @@ export default function ProductClient({ slug }: { slug: string }) {
               <div className={styles.modalSizeRow}>
                 <span className={styles.qtyLabel}>Size:</span>
                 <div className={styles.sizeGrid}>
-                  {getAvailableSizes(quickViewItem).map((sz: string) => (
+                  {getAvailableSizes(quickViewItem, quickViewFit).map((sz: string) => (
                     <button 
                       key={sz} 
                       className={`${styles.sizeBtn} ${quickViewSize === sz ? styles.sizeBtnActive : ""}`}
@@ -733,7 +767,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                         productId: quickViewItem.id,
                         name: quickViewItem.name,
                         size: quickViewSize || "Standard",
-                        fit: quickViewItem.wearTag === "womens" ? quickViewFit : undefined,
+                        fit: (quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") ? quickViewFit : undefined,
                         wearTag: quickViewItem.wearTag,
                         price: quickViewItem.price,
                         image: quickViewItem.image,

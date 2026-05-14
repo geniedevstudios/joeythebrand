@@ -682,9 +682,6 @@ export default function EventsContentPage() {
           Back to App pages
         </Link>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Events page</h1>
-        <p className="mt-1 text-sm text-zinc-900">
-          This content powers the public <code className="px-1.5 py-0.5 rounded bg-zinc-100">/events</code> page.
-        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -721,10 +718,6 @@ export default function EventsContentPage() {
             <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
               <div className="border-b border-zinc-200 px-6 py-5 bg-white">
                 <h3 className="text-base font-semibold leading-6 text-zinc-900">Main page video</h3>
-                <p className="mt-1 text-sm text-zinc-900">
-                  Upload/paste the MP4 URL for the full-bleed video at the top of <code>/events</code>. Add a poster
-                  image so it shows while the video loads.
-                </p>
               </div>
               <div className="p-6 space-y-3">
                 <AssetUrlField

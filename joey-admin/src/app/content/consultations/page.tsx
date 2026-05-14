@@ -328,10 +328,6 @@ export default function ConsultationsPage() {
             Back to Site Content
           </Link>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Consultations</h1>
-          <p className="mt-1 text-sm text-zinc-900">
-            Shop (app) requests are tied to customer accounts. Portfolio site requests have no login — they use a
-            private link to see status, booking code, and print after you confirm.
-          </p>
         </div>
         <span className="text-sm text-zinc-800">{rows.length} total</span>
       </div>

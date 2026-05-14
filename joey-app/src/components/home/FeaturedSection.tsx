@@ -115,7 +115,13 @@ export default function FeaturedSection() {
       setActiveImage("");
       setQty(1);
       setSelectedSize("");
-      setSelectedFit("Standard");
+      if (quickViewPiece.wearTag === "womens") {
+        setSelectedFit("Standard");
+      } else if (quickViewPiece.wearTag === "unisex") {
+        setSelectedFit("Men");
+      } else {
+        setSelectedFit("Standard");
+      }
       setAddStatus("idle");
     } else {
       document.body.style.overflow = "";
@@ -151,6 +157,14 @@ export default function FeaturedSection() {
       return WOMENS_DEFAULT_SIZES.map(s => s.name);
     }
 
+    if (prod?.wearTag === "unisex") {
+      if (fit === "Women") {
+        return ["S", "M", "L", "XL", "Custom"];
+      }
+      // Men's or default
+      return ["S", "M", "L", "XL", "XXL", "Custom"];
+    }
+
     if (!prod?.sizes || prod.sizes.length === 0) {
       return DEFAULT_SIZES.map((s) => s.name);
     }
@@ -168,7 +182,7 @@ export default function FeaturedSection() {
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
           size: selectedSize || "Standard",
-          fit: quickViewPiece.wearTag === "womens" ? selectedFit : undefined,
+          fit: (quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") ? selectedFit : undefined,
           wearTag: quickViewPiece.wearTag,
           price: quickViewPiece.price,
           image: quickViewPiece.image,
@@ -247,16 +261,16 @@ export default function FeaturedSection() {
                     <p className={styles.modalDesc}>{quickViewPiece.description}</p>
                   ) : null}
 
-                  {quickViewPiece.wearTag === "womens" && (
+                  {(quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") && (
                     <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
-                      <span className={styles.qtyLabel}>Fit:</span>
+                      <span className={styles.qtyLabel}>{quickViewPiece.wearTag === "unisex" ? "Gender:" : "Fit:"}</span>
                       <div className={styles.modalFitSelector}>
-                        {["Standard", "Thick"].map((fit) => (
+                        {(quickViewPiece.wearTag === "unisex" ? ["Men", "Women"] : ["Standard", "Thick"]).map((fit) => (
                           <button
                             key={fit}
                             type="button"
                             className={`${styles.fitBtn} ${selectedFit === fit ? styles.fitBtnActive : ""}`}
-                            onClick={() => setSelectedFit(fit)}
+                            onClick={() => { setSelectedFit(fit); setSelectedSize(""); }}
                           >
                             {fit}
                           </button>

@@ -99,9 +99,6 @@ export default function HomeHeroPage() {
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-visible">
           <div className="border-b border-zinc-200 px-6 py-5 bg-white">
             <h3 className="text-base font-semibold leading-6 text-zinc-900">Media</h3>
-            <p className="mt-1 text-sm text-zinc-900">
-              Image or short video (MP4/WebM). Poster is used while the video loads.
-            </p>
           </div>
           <div className="p-6 space-y-4">
             <div className="flex flex-wrap gap-4">

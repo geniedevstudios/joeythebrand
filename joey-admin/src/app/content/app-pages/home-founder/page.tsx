@@ -82,20 +82,12 @@ export default function HomeFounderPage() {
           Back to App pages
         </Link>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Home — founder section</h1>
-        <p className="mt-2 text-sm text-zinc-900 max-w-2xl">
-          Background video and copy for the “Behind the pattern” block on the homepage. Stats (collections,
-          bespoke clients, location) stay in the storefront.
-        </p>
       </div>
 
       <form onSubmit={save} className="space-y-8">
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-visible">
           <div className="border-b border-zinc-200 px-6 py-5 bg-white">
             <h3 className="text-base font-semibold leading-6 text-zinc-900">Background media</h3>
-            <p className="mt-1 text-sm text-zinc-900">
-              Add a video (MP4/WebM), a poster image, or both. If you only upload a poster, the homepage shows that
-              still image behind the section; with a video, the poster appears until the first frames play.
-            </p>
           </div>
           <div className="p-6 space-y-4">
             <AssetUrlField

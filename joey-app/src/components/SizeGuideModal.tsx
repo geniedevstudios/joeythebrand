@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "./SizeGuideModal.module.css";
 
-export type SizeGuideKind = "mens" | "womens" | "both";
+export type SizeGuideKind = "mens" | "womens" | "both" | "unisex";
 
 const MENS_ROWS: Array<{ size: string; chest: string; back: string; arm: string; sleeve: string; length: string; neck: string }> = [
   { size: "S", chest: "42–44", back: "17", arm: "15.5", sleeve: "9 / 18", length: "32", neck: "16" },
@@ -44,6 +44,12 @@ export default function SizeGuideModal({
   const [womensFit, setWomensFit] = useState<"standard" | "thick">("standard");
 
   useEffect(() => {
+    if (kind === "unisex") {
+      setWomensFit("thick");
+    }
+  }, [kind]);
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -73,9 +79,9 @@ export default function SizeGuideModal({
         </div>
 
         <div className={styles.body}>
-          {kind === "mens" || kind === "both" ? (
+          {kind === "mens" || kind === "both" || kind === "unisex" ? (
             <div className={styles.block}>
-              {kind === "both" ? <p className={styles.subhead}>Men&apos;s wear</p> : null}
+              {kind === "both" || kind === "unisex" ? <p className={styles.subhead}>Men&apos;s wear</p> : null}
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead>
@@ -107,24 +113,26 @@ export default function SizeGuideModal({
             </div>
           ) : null}
 
-          {kind === "womens" || kind === "both" ? (
+          {kind === "womens" || kind === "both" || kind === "unisex" ? (
             <div className={styles.block}>
               <div className={styles.womensHeader}>
-                {kind === "both" ? <p className={styles.subhead}>Women&apos;s wear</p> : <div />}
-                <div className={styles.fitSelector}>
-                  <button
-                    className={`${styles.fitBtn} ${womensFit === "standard" ? styles.fitBtnActive : ""}`}
-                    onClick={() => setWomensFit("standard")}
-                  >
-                    Standard Fit
-                  </button>
-                  <button
-                    className={`${styles.fitBtn} ${womensFit === "thick" ? styles.fitBtnActive : ""}`}
-                    onClick={() => setWomensFit("thick")}
-                  >
-                    Thick Fit
-                  </button>
-                </div>
+                {kind === "both" || kind === "unisex" ? <p className={styles.subhead}>Women&apos;s wear</p> : <div />}
+                {kind !== "unisex" && (
+                  <div className={styles.fitSelector}>
+                    <button
+                      className={`${styles.fitBtn} ${womensFit === "standard" ? styles.fitBtnActive : ""}`}
+                      onClick={() => setWomensFit("standard")}
+                    >
+                      Standard Fit
+                    </button>
+                    <button
+                      className={`${styles.fitBtn} ${womensFit === "thick" ? styles.fitBtnActive : ""}`}
+                      onClick={() => setWomensFit("thick")}
+                    >
+                      Thick Fit
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className={styles.tableWrap}>
