@@ -124,7 +124,7 @@
 
 /* Values Section */
 .valuesSection {
-  background: var(--blue-athracite);
+  background: #3a4659;
 }
 
 .valuesHeading {
@@ -151,7 +151,7 @@
   font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 300;
-  color: var(--dark-wood);
+  color: var(--skintone);
   line-height: 1;
 }
 
@@ -166,7 +166,7 @@
   font-size: 0.9rem;
   font-weight: 300;
   line-height: 1.7;
-  color: var(--alaska-gray);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Founder Section */

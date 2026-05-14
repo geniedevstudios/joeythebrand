@@ -68,7 +68,7 @@ function CollectionEditorialSkeleton() {
 
 
 const EMPTY_ARRAY: Product[] = [];
-const FALLBACK_FN = () => SHOP_COLLECTIONS_FALLBACK;
+const FALLBACK_FN = () => [];
 const EMPTY_ARRAY_FN = () => EMPTY_ARRAY;
 const _getCollections = () => dataStore.getCollections();
 const _getProducts = () => dataStore.getProducts();
@@ -160,7 +160,7 @@ export default function CollectionClient() {
     showImageLoader: collectionHeroImageLoader,
   } = usePageHeroShellRenderProps("collection");
 
-  const list = collections?.length ? collections : SHOP_COLLECTIONS_FALLBACK;
+  const list = collections;
 
 
   const collectionData = list.map((col) => {
@@ -205,8 +205,9 @@ export default function CollectionClient() {
           isLoading={isStoreLoading}
           skeleton={<CollectionEditorialSkeleton />}
         >
-          {!isStoreLoading
-            ? collectionData.map((col, idx) => (
+          {!isStoreLoading ? (
+            collectionData.length > 0 ? (
+              collectionData.map((col, idx) => (
                 <CollectionRowSection
                   key={col.id}
                   col={col}
@@ -215,7 +216,14 @@ export default function CollectionClient() {
                   isLast={idx === collectionData.length - 1}
                 />
               ))
-            : null}
+            ) : (
+              <div className="container" style={{ padding: "8rem 2rem", textAlign: "center" }}>
+                <p className="t-body" style={{ color: "var(--alaska-gray)", fontStyle: "italic" }}>
+                  No collections are currently available. Please check back soon.
+                </p>
+              </div>
+            )
+          ) : null}
         </SkeletonCrossfade>
       </div>
     </div>

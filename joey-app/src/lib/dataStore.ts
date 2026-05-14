@@ -364,7 +364,7 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
 // ─── Local cache + subscriber pattern (for useSyncExternalStore consumers) ───
 
 let products: Product[] = [];
-let collectionsList: PublicCollection[] = SHOP_COLLECTIONS_FALLBACK;
+let collectionsList: PublicCollection[] = [];
 let siteContent: SiteContent = DEFAULT_SITE_CONTENT;
 let subscribers: (() => void)[] = [];
 
@@ -472,15 +472,16 @@ export const dataStore = {
   /** Re-fetch collections for the shop showcase. */
   refreshCollections: async () => {
     try {
-      const { data: colRows } = await supabase
+      const { data: colRows, error } = await supabase
         .from("collections")
         .select("*")
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
 
-      if (colRows && colRows.length > 0) {
+      if (!error && colRows) {
         collectionsList = colRows.map((r) => mapPublicCollection(r as Record<string, unknown>));
       } else {
+        // Fall back only on error or if table fetch failed entirely
         collectionsList = SHOP_COLLECTIONS_FALLBACK;
       }
       dataStore.notify();

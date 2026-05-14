@@ -106,18 +106,13 @@ export default function CollectionsSection({
   const collections = useSyncExternalStore(
     dataStore.subscribe,
     _getCollections,
-    () => (initialCollections && initialCollections.length > 0 ? initialCollections : SHOP_COLLECTIONS_FALLBACK),
+    () => (initialCollections ?? SHOP_COLLECTIONS_FALLBACK),
   );
 
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyProducts);
   const isStoreLoading = useStoreLoading();
 
-  const list =
-    collections?.length && !isFallback(collections)
-      ? collections
-      : initialCollections && initialCollections.length > 0
-        ? initialCollections
-        : SHOP_COLLECTIONS_FALLBACK;
+  const list = collections;
 
   if (!list || list.length === 0) return null;
 

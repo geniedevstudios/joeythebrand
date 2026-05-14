@@ -256,7 +256,11 @@ export default function ShopClient() {
             <ShopProductsSkeleton count={6} />
           ) : filtered.length === 0 ? (
             <div className={styles.empty}>
-              <p>No pieces match these filters yet. Try another collection or wear filter.</p>
+              {products.length === 0 ? (
+                <p>Our shop is currently being updated. Please check back soon for new pieces.</p>
+              ) : (
+                <p>No pieces match these filters yet. Try another collection or wear filter.</p>
+              )}
             </div>
           ) : (
             <div className={styles.grid}>

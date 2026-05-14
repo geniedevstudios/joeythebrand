@@ -397,7 +397,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
         <div className="container">
           {collectionProducts.length === 0 ? (
             <div className={shopStyles.empty}>
-              <p>No pieces found in this collection yet.</p>
+              <p>This collection is currently being updated. Please check back soon.</p>
               <Link href="/collection" className="btn btn-outline mt-4">
                 Browse All Collections
               </Link>

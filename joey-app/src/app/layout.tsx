@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Jost, Playfair_Display, Bodoni_Moda } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
@@ -79,6 +79,12 @@ export const metadata: Metadata = {
       "JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity.",
     images: ["/icon.png"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default async function RootLayout({
