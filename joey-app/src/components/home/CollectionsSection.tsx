@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { useSyncExternalStore, useState, useEffect } from "react";
-import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { dataStore } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { Product, PublicCollection } from "@/lib/types";
 import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
@@ -59,6 +59,7 @@ type CollectionsSectionProps = {
 };
 
 const EMPTY_PRODUCTS: Product[] = [];
+const EMPTY_COLLECTIONS: PublicCollection[] = [];
 const _getEmptyProducts = () => EMPTY_PRODUCTS;
 const _getCollections = () => dataStore.getCollections();
 const _getProducts = () => dataStore.getProducts();
@@ -100,13 +101,10 @@ export default function CollectionsSection({
   viewAllId = "home-collections-view-all",
   ctaLabel = "Explore our gallery",
 }: CollectionsSectionProps) {
-  const isFallback = (cols?: PublicCollection[] | null) =>
-    !!cols?.length && cols.every((c) => typeof c.id === "string" && c.id.startsWith("fallback-"));
-
   const collections = useSyncExternalStore(
     dataStore.subscribe,
     _getCollections,
-    () => (initialCollections ?? SHOP_COLLECTIONS_FALLBACK),
+    () => (initialCollections ?? EMPTY_COLLECTIONS),
   );
 
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyProducts);
@@ -153,7 +151,7 @@ export default function CollectionsSection({
         </div>
 
         <div className={styles.collectionsGrid}>
-          {isStoreLoading && isFallback(list) ? (
+          {isStoreLoading ? (
             <CollectionsSkeleton count={6} />
           ) : (
             collectionData.map((col, idx) => {

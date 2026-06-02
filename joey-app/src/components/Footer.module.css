@@ -142,7 +142,7 @@
 
 .top {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1.5fr;
+  grid-template-columns: 1.2fr 1.6fr 1fr;
   gap: var(--space-2xl);
   align-items: start;
 }
@@ -179,11 +179,27 @@
   line-height: 1.6;
 }
 
-/* Links */
-.links {
+/* Links block */
+.linksBlock {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  align-items: center;
+}
+
+.linksLabel {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+  margin-bottom: var(--space-md);
+}
+
+.links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--space-2xl);
+  row-gap: var(--space-sm);
 }
 
 .link {
@@ -343,6 +359,11 @@ a.contactItem:hover { color: #fff; }
   .top {
     grid-template-columns: 1fr;
     gap: var(--space-xl);
+  }
+
+  .contact {
+    align-items: center;
+    text-align: center;
   }
 
   .bottom {

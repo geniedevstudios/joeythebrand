@@ -9,7 +9,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { dataStore } from "@/lib/dataStore";
 import type { PublicCollection, SiteContent } from "@/lib/types";
 import styles from "./FounderSection.module.css";
 
@@ -46,13 +46,10 @@ export default function FounderSection({
   initialSiteContent: SiteContent;
   hideContent?: boolean;
 }) {
-  const isFallback = (cols?: PublicCollection[] | null) =>
-    !!cols?.length && cols.every((c) => typeof c.id === "string" && c.id.startsWith("fallback-"));
-
   const collections = useSyncExternalStore(
     dataStore.subscribe,
     dataStore.getCollections,
-    () => (initialCollections && initialCollections.length > 0 ? initialCollections : SHOP_COLLECTIONS_FALLBACK),
+    () => (initialCollections && initialCollections.length > 0 ? initialCollections : []),
   );
 
   const site = useSyncExternalStore(
@@ -62,11 +59,11 @@ export default function FounderSection({
   );
 
   const collectionCount =
-    collections?.length && !isFallback(collections)
+    collections?.length
       ? collections.length
       : initialCollections && initialCollections.length > 0
         ? initialCollections.length
-        : SHOP_COLLECTIONS_FALLBACK.length;
+        : 0;
 
   const videoUrl = site.founderVideoUrl?.trim() ?? "";
   const posterRaw = site.founderVideoPosterUrl?.trim() ?? "";

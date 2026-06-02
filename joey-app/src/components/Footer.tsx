@@ -44,13 +44,16 @@ export default function Footer() {
             <FooterNewsletter />
           </div>
 
-          <nav className={styles.links} aria-label="Footer navigation">
-            {footerLinks.map((l) => (
-              <Link key={l.href} href={l.href} className={styles.link}>
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+          <div className={styles.linksBlock}>
+            <p className={styles.linksLabel}>Company</p>
+            <nav className={styles.links} aria-label="Footer navigation">
+              {footerLinks.map((l) => (
+                <Link key={l.href} href={l.href} className={styles.link}>
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
 
           <div className={styles.contact}>
             <p className={styles.contactLabel}>Get In Touch</p>

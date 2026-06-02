@@ -4,7 +4,7 @@ import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { dataStore, SHOP_COLLECTIONS_FALLBACK, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
 import shopStyles from "@/app/shop/ShopClient.module.css";
 import eventStyles from "@/app/events/events.module.css";
@@ -51,12 +51,13 @@ type CollectionDetailClientProps = {
 };
 
 const EMPTY_PRODUCTS: Product[] = [];
+const EMPTY_COLLECTIONS: PublicCollection[] = [];
 const EMPTY_WISHLIST: WishlistItem[] = [];
 
 export default function CollectionDetailClient({ slug }: CollectionDetailClientProps) {
   const router = useRouter();
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
-  const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => SHOP_COLLECTIONS_FALLBACK);
+  const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => EMPTY_COLLECTIONS);
   const isStoreLoading = useStoreLoading();
 
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
@@ -77,8 +78,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   } = usePageHeroShellRenderProps("collection");
 
   // Find the specific collection - flexible case comparison
-  const collection = collections.find(c => c.slug?.toLowerCase() === slug?.toLowerCase()) || 
-                     SHOP_COLLECTIONS_FALLBACK.find(c => c.slug?.toLowerCase() === slug?.toLowerCase());
+  const collection = collections.find(c => c.slug?.toLowerCase() === slug?.toLowerCase());
 
   const briefHero = (collection?.briefDescription ?? "").trim();
 

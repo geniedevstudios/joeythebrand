@@ -81,6 +81,9 @@ export interface Order {
   /** Set when the customer was signed in at checkout (Supabase auth.users id). */
   userId?: string;
   notes?: string;
+  dhlTrackingNumber?: string;
+  dhlLabelUrl?: string;
+  dhlStatus?: string;
   createdAt: string;
   updatedAt: string;
 }

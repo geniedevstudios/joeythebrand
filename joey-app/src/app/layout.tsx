@@ -7,6 +7,7 @@ import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
 import DataStoreInit from "@/components/DataStoreInit";
 import PromotionPopup from "@/components/PromotionPopup";
+import SplashLoader from "@/components/SplashLoader";
 import { fetchSiteContent } from "@/lib/fetchSiteContentServer";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
@@ -130,6 +131,7 @@ export default async function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           ></iframe>
         </noscript>
+        <SplashLoader />
         <DataStoreInit />
         <Nav />
         <main>{children}</main>

@@ -17,36 +17,7 @@ import {
 import { supabase } from "./supabase";
 import { DEFAULT_PAGE_HEROES, siteContentWithPageHeroes } from "./pageHeroes";
 
-/**
- * In-repo collection stubs for SSR / empty Supabase — not product images.
- * Keeps shop/collection UIs stable until live rows load (see isFallback in CollectionsSection).
- */
-export const SHOP_COLLECTIONS_FALLBACK: PublicCollection[] = [
-  {
-    id: "fallback-1",
-    slug: "always-lit",
-    name: "Always Lit",
-    briefDescription: "Available every season",
-    description: "Available every season — signature pieces you can wear year round.",
-    sortOrder: 1,
-  },
-  {
-    id: "fallback-2",
-    slug: "limited-edition",
-    name: "Limited Edition",
-    briefDescription: "Limited runs and archive pieces",
-    description: "Small-batch drops and archive silhouettes. When they are gone, they are gone.",
-    sortOrder: 2,
-  },
-  {
-    id: "fallback-3",
-    slug: "sample-sale",
-    name: "Sample Sale",
-    briefDescription: "Samples and specials",
-    description: "One-off samples, experiments, and special pricing while supplies last.",
-    sortOrder: 3,
-  },
-];
+
 
 function normalizeWearTag(v: unknown): WearTag {
   if (v === "mens" || v === "womens" || v === "unisex") return v;
@@ -481,12 +452,11 @@ export const dataStore = {
       if (!error && colRows) {
         collectionsList = colRows.map((r) => mapPublicCollection(r as Record<string, unknown>));
       } else {
-        // Fall back only on error or if table fetch failed entirely
-        collectionsList = SHOP_COLLECTIONS_FALLBACK;
+        // On error keep whatever we already have (empty on first load)
       }
       dataStore.notify();
     } catch {
-      collectionsList = SHOP_COLLECTIONS_FALLBACK;
+      // keep existing cache (empty on first load)
       dataStore.notify();
     }
   },

@@ -1,6 +1,6 @@
 "use client";
 import { useSyncExternalStore, useState, useEffect, useRef } from "react";
-import { dataStore, SHOP_COLLECTIONS_FALLBACK } from "@/lib/dataStore";
+import { dataStore } from "@/lib/dataStore";
 import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
 import styles from "./CollectionClient.module.css";
 import { useStoreLoading } from "@/hooks/useStoreLoading";

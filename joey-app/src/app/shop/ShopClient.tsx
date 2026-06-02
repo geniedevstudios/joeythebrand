@@ -1,7 +1,8 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useSyncExternalStore, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./ShopClient.module.css";
@@ -14,6 +15,8 @@ import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageL
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import ProductMedia from "@/components/shop/ProductMedia";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
+
+const MAX_SEARCH_RESULTS = 6;
 
 
 type WearFilter = "all" | "mens" | "womens";
@@ -52,8 +55,12 @@ const wearFilters: { id: WearFilter; label: string }[] = [
 ];
 
 export default function ShopClient() {
+  const router = useRouter();
   const [selectedCollectionSlug, setSelectedCollectionSlug] = useState<string | null>(null);
   const [wearFilter, setWearFilter] = useState<WearFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
   const [quickViewPiece, setQuickViewPiece] = useState<any>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
@@ -85,6 +92,32 @@ export default function ShopClient() {
     [collections],
   );
 
+  // Close search dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
+        setSearchFocused(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Search results (dropdown only — does NOT filter the grid)
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return products
+      .filter((p: any) => {
+        const colName = getCollectionName(p).toLowerCase();
+        return (
+          p.name?.toLowerCase().includes(q) ||
+          p.categoryName?.toLowerCase().includes(q) ||
+          colName.includes(q)
+        );
+      })
+      .slice(0, MAX_SEARCH_RESULTS);
+  }, [products, searchQuery, getCollectionName]);
 
   const scrollToPieces = useCallback(() => {
     document.getElementById("shop-pieces")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -224,6 +257,96 @@ export default function ShopClient() {
           <p className={styles.pageSubtext}>
             Every piece crafted with intention.
           </p>
+
+          {/* Glassy search bar */}
+          <div className={styles.searchBarWrap} ref={searchWrapRef}>
+            <div className={styles.searchBar}>
+              <svg
+                className={styles.searchIcon}
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                id="shop-search"
+                type="text"
+                className={styles.searchInput}
+                placeholder="Find your signature look..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setSearchFocused(false);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className={styles.searchClear}
+                  onClick={() => { setSearchQuery(""); setSearchFocused(false); }}
+                  aria-label="Clear search"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Search Results Dropdown */}
+            {searchFocused && searchQuery.trim() && (
+              <div className={styles.searchDropdown}>
+                {searchResults.length > 0 ? (
+                  searchResults.map((p: any) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={styles.searchResultItem}
+                      onClick={() => {
+                        setSearchFocused(false);
+                        setSearchQuery("");
+                        router.push(`/shop/${p.slug || p.id}`);
+                      }}
+                    >
+                      <div className={styles.searchResultImageWrap}>
+                        <ProductMedia
+                          src={p.image}
+                          alt={p.name}
+                          className={styles.searchResultImage}
+                        />
+                      </div>
+                      <div className={styles.searchResultInfo}>
+                        <span className={styles.searchResultName}>{p.name}</span>
+                        <span className={styles.searchResultMeta}>
+                          {getCollectionName(p) || p.categoryName || ""}
+                          {p.price ? ` · GHC ${p.price.toLocaleString()}` : ""}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className={styles.searchNoResults}>
+                    <span>No pieces found for &ldquo;{searchQuery.trim()}&rdquo;</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

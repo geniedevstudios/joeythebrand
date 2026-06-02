@@ -79,6 +79,9 @@ export interface Order {
   status: OrderStatus;
   userId?: string;
   notes?: string;
+  dhlTrackingNumber?: string;
+  dhlLabelUrl?: string;
+  dhlStatus?: string;
   createdAt: string;
   updatedAt: string;
 }
