@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import { compressImageIfNeeded } from "@/lib/compressImageClient";
@@ -61,6 +62,8 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
   });
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
+  const [profilePassword, setProfilePassword] = useState("");
+  const [showProfilePassword, setShowProfilePassword] = useState(false);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string>("");
   const [profileUploading, setProfileUploading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -131,6 +134,8 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
   useEffect(() => {
     if (!profileOpen) return;
     setProfileName(userLabel?.name || "");
+    setProfilePassword("");
+    setShowProfilePassword(false);
     setProfileAvatarUrl(userLabel?.avatarUrl || "");
   }, [profileOpen, userLabel?.avatarUrl, userLabel?.name]);
 
@@ -323,26 +328,27 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
               {menuOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
             </button>
 
+            <div className="hidden text-right sm:block">
+              {userLabel ? (
+                <>
+                  <div className="text-sm font-semibold text-white">{userLabel.name}</div>
+                  <div className="text-[11px] font-medium text-white/55">{userLabel.email}</div>
+                </>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="h-4 w-28 rounded bg-white/10" />
+                  <div className="h-3 w-40 rounded bg-white/7" />
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
-              className="group inline-flex items-center gap-3 rounded-full px-2 py-1.5 transition hover:bg-white/5"
+              className="group inline-flex items-center justify-center rounded-full p-1 transition hover:bg-white/5"
               aria-label="Open profile settings"
               aria-busy={userLabel ? undefined : true}
             >
-              <div className="hidden text-right sm:block">
-                {userLabel ? (
-                  <>
-                    <div className="text-sm font-semibold text-white">{userLabel.name}</div>
-                    <div className="text-[11px] font-medium text-white/55">{userLabel.email}</div>
-                  </>
-                ) : (
-                  <div className="space-y-1.5">
-                    <div className="h-4 w-28 rounded bg-white/10" />
-                    <div className="h-3 w-40 rounded bg-white/7" />
-                  </div>
-                )}
-              </div>
               <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/10 text-xs font-bold text-white ring-1 ring-white/10">
                 {userLabel?.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -491,23 +497,29 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                   }}
                 />
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     disabled={profileUploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.06] disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.06] disabled:opacity-60"
                   >
-                    {profileUploading ? "Uploading…" : "Change photo"}
+                    {profileUploading ? "Uploading…" : (
+                      <>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </>
+                    )}
                   </button>
                   {profileAvatarUrl ? (
                     <button
                       type="button"
                       disabled={profileUploading}
                       onClick={() => setProfileAvatarUrl("")}
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06] disabled:opacity-60"
+                      aria-label="Remove photo"
+                      className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-2.5 text-white/70 transition hover:bg-white/[0.06] hover:text-red-400 disabled:opacity-60"
                     >
-                      Remove
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   ) : null}
                 </div>
@@ -522,7 +534,28 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                   placeholder="Your name"
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90 placeholder:text-white/40 outline-none focus:border-[#d6ff2a]/50 focus:ring-2 focus:ring-[#d6ff2a]/20"
                 />
-                <p className="mt-2 text-xs text-white/50">{userLabel?.email || ""}</p>
+                
+                <label className="mt-4 block text-sm font-semibold text-white/80">Change Password</label>
+                <div className="relative mt-2">
+                  <input
+                    type={showProfilePassword ? "text" : "password"}
+                    value={profilePassword}
+                    onChange={(e) => setProfilePassword(e.target.value)}
+                    placeholder="Leave blank to keep current password"
+                    autoComplete="new-password"
+                    className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-4 pr-12 text-sm text-white/90 placeholder:text-white/40 outline-none focus:border-[#d6ff2a]/50 focus:ring-2 focus:ring-[#d6ff2a]/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowProfilePassword((v) => !v)}
+                    aria-label={showProfilePassword ? "Hide password" : "Show password"}
+                    className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-white/55 transition hover:bg-white/[0.06] hover:text-white/90"
+                  >
+                    {showProfilePassword ? <EyeOff className="h-5 w-5" strokeWidth={2} /> : <Eye className="h-5 w-5" strokeWidth={2} />}
+                  </button>
+                </div>
+                
+                <p className="mt-4 text-xs text-white/50">{userLabel?.email || ""}</p>
                 <button
                   type="button"
                   aria-label="Sign out of admin"
@@ -569,13 +602,32 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                   try {
                     const name = profileName.trim();
                     const avatar_url = profileAvatarUrl.trim();
-                    const { error } = await supabase.auth.updateUser({
+                    
+                    const updates: any = {
                       data: {
                         full_name: name,
                         avatar_url,
                       },
-                    });
+                    };
+                    
+                    if (profilePassword) {
+                      if (profilePassword.length < 8) {
+                        toast.error("Password must be at least 8 characters.");
+                        setProfileSaving(false);
+                        return;
+                      }
+                      updates.password = profilePassword;
+                    }
+                    
+                    const { error } = await supabase.auth.updateUser(updates);
                     if (error) throw error;
+                    
+                    if (profilePassword) {
+                      toast.success("Profile and password updated.");
+                    } else {
+                      toast.success("Profile updated.");
+                    }
+                    
                     setProfileOpen(false);
 
                     const { data } = await supabase.auth.getUser();
@@ -596,6 +648,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                     setUserLabel({ name: finalName, email, initials, avatarUrl: nextAvatar });
                   } catch (err) {
                     console.error(err);
+                    toast.error(err instanceof Error ? err.message : "Failed to update profile.");
                   } finally {
                     setProfileSaving(false);
                   }
