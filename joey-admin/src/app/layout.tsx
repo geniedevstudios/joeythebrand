@@ -23,13 +23,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Admin | Joey The Brand",
     description: "Management Portal for Joey The Brand",
-    images: ["/white-logo.png"],
+    images: ["/icon.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Admin | Joey The Brand",
     description: "Management Portal for Joey The Brand",
-    images: ["/white-logo.png"],
+    images: ["/icon.png"],
   },
 };
 
