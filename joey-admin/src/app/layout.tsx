@@ -20,6 +20,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Admin | Joey The Brand",
   description: "Management Portal for Joey The Brand",
+  openGraph: {
+    title: "Admin | Joey The Brand",
+    description: "Management Portal for Joey The Brand",
+    images: ["/white-logo.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Admin | Joey The Brand",
+    description: "Management Portal for Joey The Brand",
+    images: ["/white-logo.png"],
+  },
 };
 
 export const viewport: Viewport = {
