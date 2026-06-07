@@ -3,36 +3,23 @@
 import Link from "next/link";
 import { useEffect, useMemo, useSyncExternalStore, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import { dataStore } from "@/lib/dataStore";
 import { wishlistStore } from "@/store/wishlistStore";
 import { DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { Product } from "@/lib/types";
 import type { WishlistItem } from "@/store/wishlistStore";
 import ProductMedia from "@/components/shop/ProductMedia";
+import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import styles from "./FeaturedSection.module.css";
 
 const EMPTY_PRODUCTS: Product[] = [];
 const EMPTY_WISHLIST: WishlistItem[] = [];
 const EMPTY_COLLECTIONS: any[] = [];
 
-function formatSizeLabel(raw: string, fit?: string, wearTag?: string): string {
-  const s = String(raw || "").trim();
-  
-  // For women's Standard fit, map alpha sizes to UK/US numeric labels
-  if (fit === "Standard" && wearTag === "womens") {
-    if (s === "XS") return "UK 6 / US 2";
-    if (s === "S") return "UK 8 / US 4";
-    if (s === "M") return "UK 10 / US 6";
-    if (s === "L") return "UK 12 / US 8";
-    if (s === "XL") return "UK 14 / US 10";
-    if (s === "XXL") return "UK 16 / US 12";
-  }
 
-  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
-  if (m) return `UK ${m[1]} / US ${m[2]}`;
-  return s;
-}
 
 function FeaturedSectionSkeleton() {
   return (
@@ -79,10 +66,19 @@ export default function FeaturedSection() {
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
   const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
   const [activeImage, setActiveImage] = useState<string>("");
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedFit, setSelectedFit] = useState("Standard");
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+
+  const sizeGuideKind: SizeGuideKind = useMemo(() => {
+    const w = String(quickViewPiece?.wearTag ?? "").toLowerCase();
+    if (w === "mens") return "mens";
+    if (w === "womens") return "womens";
+    if (w === "unisex") return "unisex";
+    return "both";
+  }, [quickViewPiece]);
 
   const getCollectionName = useMemo(() => {
     return (p: any): string => {
@@ -106,8 +102,8 @@ export default function FeaturedSection() {
     return phrases[Math.floor(Math.random() * phrases.length)];
   }, []);
   
-  // Filter for featured products (max 5 for the home grid)
-  const featured = products.filter(p => p.featured).slice(0, 5);
+  // Filter for featured products (no limit)
+  const featured = products.filter(p => p.featured);
 
   useEffect(() => {
     if (quickViewPiece) {
@@ -138,6 +134,7 @@ export default function FeaturedSection() {
 
   const isInWishlist = (id: string) => wishlistItems.some((item) => item.id === id);
   const toggleWishlist = (product: Product) => {
+    const wasInWishlist = isInWishlist(product.id);
     wishlistStore.toggleItem({
       id: product.id,
       name: product.name,
@@ -146,6 +143,7 @@ export default function FeaturedSection() {
       hoverImage: product.hoverImage,
       category: product.categoryName,
     });
+    toast.success(wasInWishlist ? `${product.name} removed from wishlist` : `${product.name} added to wishlist`);
   };
 
   const getAvailableSizes = (prod: Product, fit?: string) => {
@@ -173,7 +171,10 @@ export default function FeaturedSection() {
 
   const handleAddToCart = () => {
     if (!quickViewPiece) return;
-    if (!selectedSize) return;
+    if (!selectedSize) {
+      toast.error("Please pick a size before adding to cart.");
+      return;
+    }
 
     setAddStatus("adding");
     setTimeout(() => {
@@ -187,13 +188,15 @@ export default function FeaturedSection() {
           price: quickViewPiece.price,
           image: quickViewPiece.image,
           quantity: qty,
-          maxStock: quickViewPiece.quantity,
+          maxStock: quickViewPiece.quantity ?? 99,
         });
         setAddStatus("added");
         setTimeout(() => setAddStatus("idle"), 2000);
       });
     }, 400);
   };
+
+  const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
 
   const modal =
     quickViewPiece && typeof document !== "undefined"
@@ -216,7 +219,7 @@ export default function FeaturedSection() {
                 onClick={() => setQuickViewPiece(null)}
                 aria-label="Close modal"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -250,16 +253,13 @@ export default function FeaturedSection() {
                 </div>
 
                 <div className={styles.modalInfo}>
-                  {(() => {
-                    const colName = getCollectionName(quickViewPiece);
-                    return colName ? <p className={styles.modalCategory}>{colName}</p> : null;
-                  })()}
-                  <h3 id="featured-quickview-title" className={styles.modalTitle}>{quickViewPiece.name}</h3>
-                  <p className={styles.modalPrice}>GHC {Number(quickViewPiece.price).toLocaleString()}</p>
+                  <h3 id="featured-quickview-title" className={`t-display ${styles.modalTitle}`}>{quickViewPiece.name}</h3>
+                  <div className={styles.modalPriceRow}>
+                    <span className={styles.modalPrice}>{formatPrice(quickViewPiece.price)}</span>
+                    {(quickViewPiece as any).originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice((quickViewPiece as any).originalPrice)}</span>}
+                  </div>
 
-                  {quickViewPiece.description ? (
-                    <p className={styles.modalDesc}>{quickViewPiece.description}</p>
-                  ) : null}
+                  <p className={styles.modalDesc}>{quickViewPiece.description}</p>
 
                   {(quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") && (
                     <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
@@ -293,37 +293,53 @@ export default function FeaturedSection() {
                         </button>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      className={styles.sizeGuideBtn}
+                      onClick={() => setSizeGuideOpen(true)}
+                    >
+                      Size Guide
+                    </button>
                   </div>
+                  {selectedSize === "Custom" && (
+                    <p className={styles.customNotice}>
+                      Custom sizing selected. We will contact you for measurements after checkout.
+                    </p>
+                  )}
 
-                  {!selectedSize ? (
-                    <p className={styles.modalHint}>Pick a size to add to cart.</p>
-                  ) : null}
+                  {quickViewPiece.isOutOfStock && (
+                    <p className={styles.customNotice} style={{ color: "#c00", background: "#fee" }}>
+                      This item is currently out of stock.
+                    </p>
+                  )}
 
                   <div className={styles.modalQtyRow}>
                     <div className={styles.qtyLeft}>
                       <span className={styles.qtyLabel}>Quantity:</span>
-                    <div className={styles.qtyControl}>
-                      <button
-                        type="button"
-                        className={styles.qtyBtn}
-                        onClick={() => setQty(Math.max(1, qty - 1))}
-                      >
-                        -
-                      </button>
-                      <span className={styles.qtyVal}>{qty}</span>
-                      <button
-                        type="button"
-                        className={styles.qtyBtn}
-                        onClick={() => {
-                          if (qty < quickViewPiece.quantity) {
-                            setQty(qty + 1);
-                          }
-                        }}
-                        disabled={qty >= quickViewPiece.quantity}
-                      >
-                        +
-                      </button>
-                    </div>
+                      <div className={styles.qtyControl}>
+                        <button
+                          type="button"
+                          className={styles.qtyBtn}
+                          onClick={() => setQty(Math.max(1, qty - 1))}
+                        >
+                          -
+                        </button>
+                        <span className={styles.qtyVal}>{qty}</span>
+                        <button
+                          type="button"
+                          className={styles.qtyBtn}
+                          onClick={() => {
+                            if (qty < quickViewPiece.quantity) {
+                              setQty(qty + 1);
+                            } else {
+                              toast.error(`Only ${quickViewPiece.quantity} items available.`);
+                            }
+                          }}
+                          disabled={qty >= quickViewPiece.quantity}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
 
                     {quickViewPiece.quantity > 0 && quickViewPiece.quantity < 6 && (
@@ -336,15 +352,10 @@ export default function FeaturedSection() {
                       type="button"
                       className={`btn btn-primary ${styles.modalAddBtn}`}
                       onClick={handleAddToCart}
-                      disabled={addStatus !== "idle" || !selectedSize || quickViewPiece.isOutOfStock}
+                      disabled={addStatus !== "idle" || quickViewPiece.isOutOfStock}
+                      style={{ transition: "all 0.3s ease" }}
                     >
-                      {quickViewPiece.isOutOfStock
-                        ? "Out of Stock"
-                        : addStatus === "idle"
-                          ? "Add To Cart"
-                          : addStatus === "adding"
-                            ? "Adding..."
-                            : "Added"}
+                      {quickViewPiece.isOutOfStock ? "Out of Stock" : addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added 👍"}
                     </button>
 
                     <button
@@ -352,13 +363,22 @@ export default function FeaturedSection() {
                       className={styles.modalWishlistBtn}
                       onClick={() => toggleWishlist(quickViewPiece)}
                     >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill={isInWishlist(quickViewPiece.id) ? "var(--alaska-gray)" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" suppressHydrationWarning>
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                      </svg>
                       {isInWishlist(quickViewPiece.id) ? "Saved to wishlist" : "Add to wishlist"}
                     </button>
-
-                    <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={styles.modalFullDetail}>
-                      View Full Details →
-                    </Link>
                   </div>
+
+                  <div className={styles.modalMeta}>
+                    {(() => {
+                      const colName = getCollectionName(quickViewPiece);
+                      return colName ? <p><span>Collection:</span> {colName}</p> : null;
+                    })()}
+                  </div>
+                  <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={styles.modalFullDetail}>
+                    View Full Details →
+                  </Link>
                 </div>
               </div>
             </div>
@@ -487,6 +507,10 @@ export default function FeaturedSection() {
       </div>
 
       {modal}
+      {typeof document !== "undefined" && createPortal(
+        <SizeGuideModal open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} kind={sizeGuideKind} />,
+        document.body,
+      )}
     </section>
   );
 }
