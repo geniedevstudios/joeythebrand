@@ -247,6 +247,7 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   featured: Boolean(row.featured),
   wearTag: normalizeWearTag(row.wear_tag),
   quantity: Number(row.quantity ?? 0),
+  variants: (row.variants as any) || [],
 });
 
 const mapPromo = (row: Record<string, unknown>): PromotionCode => ({

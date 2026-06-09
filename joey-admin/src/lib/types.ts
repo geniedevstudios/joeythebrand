@@ -33,6 +33,15 @@ export interface ProductSize {
   available: boolean;
 }
 
+export type ProductVariantType = "color" | "fit_combo";
+
+export interface ProductVariant {
+  id: string;
+  type: ProductVariantType;
+  colorHex?: string;
+  images?: string[];
+}
+
 export interface Product {
   id: string;
   slug?: string;
@@ -54,6 +63,7 @@ export interface Product {
   featured: boolean;
   wearTag: WearTag;
   quantity: number;
+  variants?: ProductVariant[];
 }
 
 export interface PromotionCode {

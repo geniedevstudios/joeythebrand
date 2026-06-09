@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { dataStore } from "@/lib/dataStore";
-import type { Product, ProductSize, Collection, WearTag } from "@/lib/types";
+import type { Product, ProductSize, Collection, WearTag, ProductVariant } from "@/lib/types";
 import { Edit2, Plus, X, Trash2, Layers, Package } from "lucide-react";
 import AssetUrlField from "@/components/AssetUrlField";
 import AssetGalleryField from "@/components/AssetGalleryField";
@@ -45,38 +45,7 @@ function inferSizeButtonsMode(sizes?: ProductSize[] | null): SizeButtonsMode {
   return sizes.some((s) => isUkSizeName(s.name)) ? "uk" : "standard";
 }
 
-const FALLBACK_COLLECTIONS: Collection[] = [
-  {
-    id: "fallback-1",
-    slug: "always-lit",
-    name: "Always Lit",
-    briefDescription: "",
-    description: "",
-    galleryUrls: [],
-    sortOrder: 1,
-    createdAt: "",
-  },
-  {
-    id: "fallback-2",
-    slug: "limited-edition",
-    name: "Limited Edition",
-    briefDescription: "",
-    description: "",
-    galleryUrls: [],
-    sortOrder: 2,
-    createdAt: "",
-  },
-  {
-    id: "fallback-3",
-    slug: "sample-sale",
-    name: "Sample Sale",
-    briefDescription: "",
-    description: "",
-    galleryUrls: [],
-    sortOrder: 3,
-    createdAt: "",
-  },
-];
+
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -113,6 +82,8 @@ export default function ProductsPage() {
   const [detailsLines, setDetailsLines] = useState<string[]>([""]);
   const detailInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [sizeButtonsMode, setSizeButtonsMode] = useState<SizeButtonsMode>("standard");
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [productModalTab, setProductModalTab] = useState<"regular" | "variant">("regular");
 
   const [productPendingDelete, setProductPendingDelete] = useState<Product | null>(null);
   const [collectionPendingDelete, setCollectionPendingDelete] = useState<Collection | null>(null);
@@ -147,12 +118,16 @@ export default function ProductsPage() {
       setHoverImageUrl(editingProduct.hoverImage?.trim() || "");
       setDetailsLines(editingProduct.details?.length ? editingProduct.details : [""]);
       setSizeButtonsMode(inferSizeButtonsMode(editingProduct.sizes));
+      setVariants(editingProduct.variants || []);
+      setProductModalTab(editingProduct.variants && editingProduct.variants.length > 0 ? "variant" : "regular");
     } else {
       setMainImageUrl("");
       setHoverImageUrl("");
       setExtraImageUrls(["", "", ""]);
       setDetailsLines([""]);
       setSizeButtonsMode("standard");
+      setVariants([]);
+      setProductModalTab("regular");
     }
   }, [isModalOpen, editingProduct]);
 
@@ -213,7 +188,7 @@ export default function ProductsPage() {
   }, [tab, loadCollectionsOnly]);
 
   const collectionOptions = useMemo(() => {
-    const base = collections.length > 0 ? collections : FALLBACK_COLLECTIONS;
+    const base = collections;
     
     // Add "None" option
     const optionsWithNone = [
@@ -328,6 +303,7 @@ export default function ProductsPage() {
           sizes: newSizes,
           wearTag,
           quantity,
+          variants: productModalTab === "variant" ? variants : [],
         });
       } else {
         await dataStore.addProduct({
@@ -348,6 +324,7 @@ export default function ProductsPage() {
           featured,
           wearTag,
           quantity,
+          variants: productModalTab === "variant" ? variants : [],
         });
       }
       toast.success(editingProduct ? "Product updated." : "Product created.");
@@ -579,21 +556,15 @@ export default function ProductsPage() {
                       </tr>
                     ))
                   ) : collectionsLoadError ? (
-                    FALLBACK_COLLECTIONS.map((c) => (
-                      <tr key={c.id}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">{c.name}</td>
-                        <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-700">{c.slug}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-700">{c.sortOrder}</td>
-                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-700">{c.briefDescription || "—"}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-xs text-zinc-700">
-                          Run SQL to edit
-                        </td>
-                      </tr>
-                    ))
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-red-500">
+                        Error loading collections: {collectionsLoadError}
+                      </td>
+                    </tr>
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-10 text-center text-sm text-zinc-900">
-                        No collections yet. Use <strong>Add collection</strong> or run the SQL seed file.
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-zinc-500">
+                        No collections found. Create your first collection above.
                       </td>
                     </tr>
                   )}
@@ -738,14 +709,121 @@ export default function ProductsPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
+            <div className="flex items-center justify-between px-6 pt-4">
               <h2 className="text-xl font-bold">{editingProduct ? "Edit product" : "Add product"}</h2>
               <button type="button" onClick={() => setIsModalOpen(false)} className="text-zinc-600 hover:text-zinc-900">
                 <X className="h-6 w-6" />
               </button>
             </div>
+            
+            <div className="border-b border-zinc-200 px-6 py-4 flex justify-center">
+              <div className="inline-flex rounded-lg bg-zinc-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => setProductModalTab("regular")}
+                  className={`rounded-md px-6 py-2 text-sm font-medium transition-all ${
+                    productModalTab === "regular"
+                      ? "bg-white text-zinc-900 shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-900"
+                  }`}
+                >
+                  Regular Product
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProductModalTab("variant")}
+                  className={`rounded-md px-6 py-2 text-sm font-medium transition-all ${
+                    productModalTab === "variant"
+                      ? "bg-white text-zinc-900 shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-900"
+                  }`}
+                >
+                  Product with Variants
+                </button>
+              </div>
+            </div>
 
             <form onSubmit={handleSave} className="flex-1 space-y-6 overflow-y-auto p-6">
+              {productModalTab === "variant" && (
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm mb-6">
+                  <div className="mb-4">
+                    <h3 className="text-base font-semibold text-zinc-900">Color variant</h3>
+                    <p className="mt-1 text-sm text-zinc-600">Select the color for the main product</p>
+                  </div>
+                  
+                  <div className="flex gap-6 mb-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-zinc-300"
+                        checked={variants.some(v => v.id === "main-color")}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setVariants([{ id: "main-color", type: "color", images: [] }, ...variants]);
+                          } else {
+                            setVariants(variants.filter(v => v.id !== "main-color"));
+                          }
+                        }}
+                      />
+                      <span className="text-sm font-medium">Color</span>
+                    </label>
+                  </div>
+
+                  {variants.some(v => v.id === "main-color") && (
+                    <div className="space-y-6">
+                      <div className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+                        <div className="mb-5 flex items-center justify-between">
+                          <span className="text-sm font-semibold text-zinc-900">Main Color</span>
+                          <button
+                            type="button"
+                            onClick={() => setVariants(variants.filter(v => v.id !== "main-color"))}
+                            className="rounded p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            aria-label="Remove color"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-6">
+                          <div>
+                            <label className="block text-sm font-medium text-zinc-700">Color Hex</label>
+                            <div className="mt-2 flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={variants.find(v => v.id === "main-color")?.colorHex || "#000000"}
+                                onChange={(e) => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(v => v.id === "main-color");
+                                  if (vIdx !== -1) {
+                                    next[vIdx] = { ...next[vIdx], colorHex: e.target.value };
+                                    setVariants(next);
+                                  }
+                                }}
+                                className="h-10 w-10 cursor-pointer rounded-md border border-zinc-200 p-0 shadow-sm"
+                              />
+                              <input
+                                type="text"
+                                value={variants.find(v => v.id === "main-color")?.colorHex || ""}
+                                placeholder="#000000"
+                                onChange={(e) => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(v => v.id === "main-color");
+                                  if (vIdx !== -1) {
+                                    next[vIdx] = { ...next[vIdx], colorHex: e.target.value };
+                                    setVariants(next);
+                                  }
+                                }}
+                                className="block w-32 rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm shadow-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-6">
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-medium text-zinc-700">Name</label>
@@ -1052,6 +1130,130 @@ export default function ProductsPage() {
                   </div>
                   <p className="mt-2 text-xs text-zinc-700">Uncheck a size to mark it unavailable.</p>
                 </div>
+
+                {productModalTab === "variant" && (
+                  <div className="col-span-2 border-t border-zinc-200 pt-6 mt-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700">Additional Variants</label>
+                        <p className="mt-1 text-xs text-zinc-700">Add other color or fit options for this product.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setVariants([...variants, { id: `var-${Date.now()}`, type: "color", images: [] }])}
+                        className="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                      >
+                        <Plus className="-ml-1 mr-1 h-3 w-3" />
+                        Add variant
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {variants.filter(v => v.id !== "main-color").map((variant, idx) => (
+                        <div key={variant.id} className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-semibold text-zinc-900">Variant {idx + 1}</span>
+                              <AdminStyledSelect
+                                name={`variant-type-${variant.id}`}
+                                defaultValue={variant.type}
+                                options={[
+                                  { value: "color", label: "Color" },
+                                  { value: "fit_combo", label: "Fit Combo (Inactive)" }
+                                ]}
+                                onValueChange={(val) => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(v => v.id === variant.id);
+                                  next[vIdx] = { ...next[vIdx], type: val as any };
+                                  setVariants(next);
+                                }}
+                                wrapperClassName="min-w-[180px]"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setVariants(variants.filter(v => v.id !== variant.id))}
+                              className="text-red-500 hover:text-red-700"
+                              aria-label="Remove variant"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          {variant.type === "color" && (
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-xs font-medium text-zinc-700">Color Hex</label>
+                                <div className="mt-1 flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    value={variant.colorHex || "#000000"}
+                                    onChange={(e) => {
+                                      const next = [...variants];
+                                      const vIdx = next.findIndex(v => v.id === variant.id);
+                                      next[vIdx] = { ...next[vIdx], colorHex: e.target.value };
+                                      setVariants(next);
+                                    }}
+                                    className="h-8 w-8 cursor-pointer rounded border border-zinc-300 p-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={variant.colorHex || ""}
+                                    placeholder="#000000"
+                                    onChange={(e) => {
+                                      const next = [...variants];
+                                      const vIdx = next.findIndex(v => v.id === variant.id);
+                                      next[vIdx] = { ...next[vIdx], colorHex: e.target.value };
+                                      setVariants(next);
+                                    }}
+                                    className="block w-32 rounded-md border border-zinc-300 p-1.5 font-mono text-sm shadow-sm"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <label className="mb-2 block text-xs font-medium text-zinc-700">Variant Images (Max 3)</label>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                  {[0, 1, 2].map((imgIdx) => (
+                                    <AssetUrlField
+                                      key={imgIdx}
+                                      id={`variant-${variant.id}-img-${imgIdx}`}
+                                      label={`Image ${imgIdx + 1}`}
+                                      value={(variant.images || [])[imgIdx] || ""}
+                                      onChange={(url) => {
+                                        const next = [...variants];
+                                        const vIdx = next.findIndex(v => v.id === variant.id);
+                                        const newImages = [...(next[vIdx].images || [])];
+                                        newImages[imgIdx] = url;
+                                        next[vIdx] = { ...next[vIdx], images: newImages };
+                                        setVariants(next);
+                                      }}
+                                      uploadFolder={`${productUploadFolder}/variants/${variant.id}`}
+                                      accept="image/*,video/mp4,video/webm"
+                                      placeholder="URL or upload"
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {variant.type === "fit_combo" && (
+                            <div className="rounded border border-dashed border-zinc-300 bg-white p-4">
+                              <p className="text-center text-sm text-zinc-500">Fit combo configuration is currently inactive.</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      
+                      {variants.filter(v => v.id !== "main-color").length === 0 && (
+                        <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center">
+                          <p className="text-sm text-zinc-500">No additional variants added.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {error && (

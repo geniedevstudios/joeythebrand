@@ -12,9 +12,10 @@ import { useStoreLoading } from "@/hooks/useStoreLoading";
 import ProductMedia from "@/components/shop/ProductMedia";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
+import ProductSuggestions from "@/components/shop/ProductSuggestions";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import styles from "./ProductClient.module.css";
-
+import shopStyles from "../ShopClient.module.css";
 const EMPTY_ARRAY: any[] = [];
 const _getEmptyArray = () => EMPTY_ARRAY;
 const _getProducts = () => dataStore.getProducts();
@@ -94,10 +95,12 @@ export default function ProductClient({ slug }: { slug: string }) {
   const [qty, setQty] = useState(1);
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
   const [activeImage, setActiveImage] = useState<string>("");
+  const [activeColorVariantId, setActiveColorVariantId] = useState<string>("main-color");
   const [quickViewItem, setQuickViewItem] = useState<any>(null);
   const [quickViewSize, setQuickViewSize] = useState("");
   const [quickViewFit, setQuickViewFit] = useState("");
   const [quickViewImage, setQuickViewImage] = useState("");
+  const [quickViewColorVariantId, setQuickViewColorVariantId] = useState<string>("main-color");
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
@@ -123,6 +126,7 @@ export default function ProductClient({ slug }: { slug: string }) {
     } else if (quickViewItem?.wearTag === "unisex") {
       setQuickViewFit("Men");
     }
+    setQuickViewColorVariantId("main-color");
   }, [quickViewItem]);
 
   const getCollectionName = useMemo(() => {
@@ -157,10 +161,26 @@ export default function ProductClient({ slug }: { slug: string }) {
 
   // Escape handling is inside SizeGuideModal.
 
-  const galleryImages = useMemo(() => {
-    if (!product || !product.images) return EMPTY_ARRAY;
-    return product.images.filter((img: string) => img !== product.hoverImage);
+  const colorVariants = useMemo(() => {
+    if (!product || !product.variants) return [];
+    return product.variants.filter((v: any) => v.type === "color" && v.colorHex);
   }, [product]);
+
+  const activeColorVariant = useMemo(() => {
+    return colorVariants.find((v: any) => v.id === activeColorVariantId);
+  }, [colorVariants, activeColorVariantId]);
+
+  const galleryImages = useMemo(() => {
+    if (!product) return EMPTY_ARRAY;
+    
+    let imagesToUse = product.images || [];
+
+    if (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.images && activeColorVariant.images.length > 0) {
+      imagesToUse = activeColorVariant.images;
+    }
+
+    return imagesToUse.filter((img: string) => img !== product.hoverImage);
+  }, [product, activeColorVariant]);
 
   useEffect(() => {
     if (galleryImages.length > 0) {
@@ -205,7 +225,28 @@ export default function ProductClient({ slug }: { slug: string }) {
     return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
   };
 
-  const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
+  const quickViewColorVariants = useMemo(() => {
+    if (!quickViewItem || !quickViewItem.variants) return [];
+    return quickViewItem.variants.filter((v: any) => v.type === "color" && v.colorHex);
+  }, [quickViewItem]);
+
+  const quickViewActiveColorVariant = useMemo(() => {
+    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
+  }, [quickViewColorVariants, quickViewColorVariantId]);
+
+  const quickViewGalleryImages = useMemo(() => {
+    if (!quickViewItem) return [];
+    let imagesToUse = quickViewItem.images || [];
+    if (quickViewActiveColorVariant && quickViewActiveColorVariant.id !== "main-color" && quickViewActiveColorVariant.images && quickViewActiveColorVariant.images.length > 0) {
+      imagesToUse = quickViewActiveColorVariant.images;
+    }
+    return imagesToUse.filter((img: string) => img !== quickViewItem.hoverImage);
+  }, [quickViewItem, quickViewActiveColorVariant]);
+
+  const formatPrice = (price: number | string) => {
+    if (typeof price === "string") return price;
+    return `GHC ${price.toLocaleString()}`;
+  };
   const {
     empty: productHeroEmpty,
     shellSpinner: productHeroSpinner,
@@ -353,6 +394,24 @@ export default function ProductClient({ slug }: { slug: string }) {
                     <ProductMedia src={img} alt={`${product.name} view ${idx + 1}`} />
                   </button>
                 ))}
+              </div>
+            )}
+
+            {colorVariants.length > 0 && (
+              <div className={styles.colorSelectorSection}>
+                <span className={styles.colorSelectorLabel}>Color:</span>
+                <div className={styles.colorSelectorSwatches}>
+                  {colorVariants.map((v: any) => (
+                    <button
+                      key={v.id}
+                      className={`${styles.colorSelectorBtn} ${activeColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
+                      style={{ backgroundColor: v.colorHex }}
+                      onClick={() => setActiveColorVariantId(v.id)}
+                      aria-label={`Select color ${v.colorHex}`}
+                      title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -549,93 +608,12 @@ export default function ProductClient({ slug }: { slug: string }) {
           </div>
         </div>
 
-        {suggestedProducts.length > 0 && (
-          <div className={styles.suggestionsSection}>
-            <div className={styles.suggestionsHeader}>
-              <h2 className={styles.suggestionsTitle}>{suggestionPhrase}</h2>
-              <Link href="/shop" className={styles.seeAllLink}>See all pieces →</Link>
-            </div>
-            <div className={styles.suggestionsGrid}>
-              {suggestedProducts.map((item: any) => (
-                <article key={item.id} className={styles.suggestCard}>
-                  <div className={styles.suggestImgWrap}>
-                    {item.hoverImage ? (
-                      <>
-                        <ProductMedia src={item.image} alt={item.name} className={styles.suggestImgPrimary} loading="lazy" />
-                        <ProductMedia src={item.hoverImage} alt="" className={styles.suggestImgHover} loading="lazy" aria-hidden="true" />
-                      </>
-                    ) : (
-                      <ProductMedia src={item.image} alt={item.name} className={styles.suggestImg} loading="lazy" />
-                    )}
-                    <div className={styles.suggestBadgeStack} aria-hidden="true">
-                      {item.isOutOfStock ? (
-                        <span className={styles.suggestBadgeSale} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                      ) : (
-                        <>
-                          {item.category === "limited-edition" && (
-                            <span className={styles.suggestBadge}>Limited</span>
-                          )}
-                          {item.category === "sample-sale" && (
-                            <span className={styles.suggestBadgeSale}>Sale</span>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    <div className={styles.suggestOverlay}>
-                      <div className={styles.suggestActions}>
-                        <button
-                          className={styles.suggestIconBtn}
-                          aria-label="Add to Wishlist"
-                          title="Add to Wishlist"
-                          onClick={() => toggleWishlist(item)}
-                        >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill={isInWishlist(item.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                          </svg>
-                        </button>
-                        <button
-                          className={styles.suggestIconBtn}
-                          aria-label="Quick View"
-                          title="Quick View"
-                          onClick={() => { setQuickViewItem(item); setQuickViewSize(""); setQuickViewImage(item.image); }}
-                        >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/>
-                          </svg>
-                        </button>
-                      </div>
-
-                      <div className={styles.suggestPickMeWrap}>
-                        {item.isOutOfStock ? (
-                          <span className={`${styles.suggestPickMeBtn} ${styles.soldOutBtn}`}>
-                            Sold Out
-                          </span>
-                        ) : (
-                          <Link
-                            href={`/shop/${item.slug || item.id}`}
-                            className={styles.suggestPickMeBtn}
-                            aria-label={`View ${item.name}`}
-                          >
-                            Pick Me
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className={styles.suggestInfo}>
-                    {(() => {
-                      const colName = getCollectionName(item);
-                      return colName ? <p className={styles.suggestCategory}>{colName}</p> : null;
-                    })()}
-                    <p className={styles.suggestName}>{item.name}</p>
-                    <p className={styles.suggestPrice}>{formatPrice(item.price)}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        )}
+        <ProductSuggestions
+          suggestedProducts={suggestedProducts}
+          suggestionPhrase={suggestionPhrase}
+          setQuickViewPiece={(item) => { setQuickViewItem(item); setQuickViewSize(""); setQuickViewImage(item.image); }}
+          formatPrice={formatPrice}
+        />
       </div>
     </div>
 
@@ -653,21 +631,43 @@ export default function ProductClient({ slug }: { slug: string }) {
               <div className={styles.modalImageWrap}>
                 <ProductMedia src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
               </div>
-              {quickViewItem.images && 
-               quickViewItem.images.filter((img: string) => img !== quickViewItem.hoverImage).length > 1 && (
+              {quickViewGalleryImages.length > 1 && (
                 <div className={styles.modalThumbnails}>
-                  {quickViewItem.images
-                    .filter((img: string) => img !== quickViewItem.hoverImage)
-                    .map((img: string, idx: number) => (
-                      <button 
-                        key={idx} 
-                        className={`${styles.thumbBtn} ${(quickViewImage || quickViewItem.image) === img ? styles.thumbActive : ""}`}
-                        aria-label={`Thumbnail ${idx + 1}`}
-                        onClick={() => setQuickViewImage(img)}
-                      >
-                        <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
-                      </button>
+                  {quickViewGalleryImages.map((img: string, idx: number) => (
+                    <button 
+                      key={idx} 
+                      className={`${styles.thumbBtn} ${(quickViewImage || quickViewItem.image) === img ? styles.thumbActive : ""}`}
+                      aria-label={`Thumbnail ${idx + 1}`}
+                      onClick={() => setQuickViewImage(img)}
+                    >
+                      <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {quickViewColorVariants.length > 0 && (
+                <div className={shopStyles.colorSelectorSection}>
+                  <span className={shopStyles.colorSelectorLabel}>Color:</span>
+                  <div className={shopStyles.colorSelectorSwatches}>
+                    {quickViewColorVariants.map((v: any) => (
+                      <button
+                        key={v.id}
+                        className={`${shopStyles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? shopStyles.colorSelectorBtnActive : ""}`}
+                        style={{ backgroundColor: v.colorHex }}
+                        onClick={() => {
+                          setQuickViewColorVariantId(v.id);
+                          if (v.images && v.images.length > 0) {
+                            setQuickViewImage(v.images[0]);
+                          } else {
+                            setQuickViewImage(quickViewItem.image);
+                          }
+                        }}
+                        aria-label={`Select color ${v.id}`}
+                        title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                      />
                     ))}
+                  </div>
                 </div>
               )}
             </div>

@@ -62,6 +62,7 @@ export default function ShopClient() {
   const [searchFocused, setSearchFocused] = useState(false);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const [quickViewPiece, setQuickViewPiece] = useState<any>(null);
+  const [quickViewColorVariantId, setQuickViewColorVariantId] = useState<string>("main-color");
   const [activeImage, setActiveImage] = useState<string>("");
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [qty, setQty] = useState(1);
@@ -140,6 +141,7 @@ export default function ShopClient() {
       document.body.style.overflow = "hidden";
       setQty(1);
       setSelectedSize("");
+      setQuickViewColorVariantId("main-color");
       if (quickViewPiece.wearTag === "womens") {
         setQuickViewFit("Standard");
       } else if (quickViewPiece.wearTag === "unisex") {
@@ -241,6 +243,33 @@ export default function ShopClient() {
     style: shopHeroStyle,
     showImageLoader: shopHeroImageLoader,
   } = usePageHeroShellRenderProps("shop");
+
+  const quickViewColorVariants = useMemo(() => {
+    if (!quickViewPiece || !quickViewPiece.variants) return [];
+    return quickViewPiece.variants.filter((v: any) => v.type === "color" && v.colorHex);
+  }, [quickViewPiece]);
+
+  const quickViewActiveVariant = useMemo(() => {
+    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
+  }, [quickViewColorVariants, quickViewColorVariantId]);
+
+  const quickViewGalleryImages = useMemo(() => {
+    if (!quickViewPiece) return [];
+    
+    let imagesToUse = quickViewPiece.images || [];
+
+    if (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.images && quickViewActiveVariant.images.length > 0) {
+      imagesToUse = quickViewActiveVariant.images;
+    }
+
+    return imagesToUse;
+  }, [quickViewPiece, quickViewActiveVariant]);
+
+  useEffect(() => {
+    if (quickViewGalleryImages.length > 0) {
+      setActiveImage(quickViewGalleryImages[0]);
+    }
+  }, [quickViewGalleryImages]);
 
   return (
     <div className={styles.page}>
@@ -387,21 +416,43 @@ export default function ShopClient() {
             </div>
           ) : (
             <div className={styles.grid}>
-              {filtered.map((p: any) => (
-                <article key={p.id} className={styles.card}>
-                  <div className={styles.imageWrapOuter}>
-                    <div className={styles.imageWrap}>
-                      {p.hoverImage ? (
-                        <>
-                          <ProductMedia src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
-                          <ProductMedia src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden="true" />
-                        </>
-                      ) : (
-                        <ProductMedia src={p.image} alt={p.name} className={styles.image} loading="lazy" />
-                      )}
+              {filtered.map((p: any) => {
+                const colorVariants = (p.variants || []).filter((v: any) => v.type === "color" && v.colorHex);
+                const hasColors = colorVariants.length > 0;
+                const swatchesToShow = colorVariants.slice(0, 3);
+                const totalColors = colorVariants.length;
 
-                      <div className={styles.overlay}>
-                        <div className={styles.actionButtons}>
+                return (
+                  <article key={p.id} className={styles.card}>
+                    <div className={styles.imageWrapOuter}>
+                      <div className={styles.imageWrap}>
+                        {p.hoverImage ? (
+                          <>
+                            <ProductMedia src={p.image} alt={p.name} className={styles.imagePrimary} loading="lazy" />
+                            <ProductMedia src={p.hoverImage} alt="" className={styles.imageHover} loading="lazy" aria-hidden="true" />
+                          </>
+                        ) : (
+                          <ProductMedia src={p.image} alt={p.name} className={styles.image} loading="lazy" />
+                        )}
+
+                        {hasColors && (
+                          <div className={styles.colorIndicatorWrap} aria-label={`${totalColors} colors available`}>
+                            {swatchesToShow.map((v: any) => (
+                              <div
+                                key={v.id}
+                                className={styles.colorSwatch}
+                                style={{ backgroundColor: v.colorHex }}
+                                aria-hidden="true"
+                              />
+                            ))}
+                            {totalColors > 0 && (
+                              <span className={styles.colorCount}>{totalColors}</span>
+                            )}
+                          </div>
+                        )}
+
+                        <div className={styles.overlay}>
+                          <div className={styles.actionButtons}>
                         <button
                           className={styles.iconBtn}
                           aria-label="Add to Wishlist"
@@ -476,7 +527,8 @@ export default function ShopClient() {
                     </div>
                   </div>
                 </article>
-              ))}
+              );
+            })}
             </div>
           )}
         </div>
@@ -494,20 +546,37 @@ export default function ShopClient() {
             <div className={styles.modalGrid}>
               <div className={styles.modalGallery}>
                 <div className={styles.modalImageWrap}>
-                  <ProductMedia src={activeImage || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
+                  <ProductMedia src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
                 </div>
-                {quickViewPiece.images && quickViewPiece.images.length > 1 && (
+                {quickViewGalleryImages && quickViewGalleryImages.length > 1 && (
                   <div className={styles.modalThumbnails}>
-                    {quickViewPiece.images.map((img: string, idx: number) => (
+                    {quickViewGalleryImages.map((img: string, idx: number) => (
                       <button
                         key={idx}
-                        className={`${styles.thumbBtn} ${(activeImage || quickViewPiece.image) === img ? styles.thumbActive : ""}`}
+                        className={`${styles.thumbBtn} ${(activeImage || quickViewGalleryImages[0]) === img ? styles.thumbActive : ""}`}
                         onClick={() => setActiveImage(img)}
                         aria-label={`View image ${idx + 1}`}
                       >
                         <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
                       </button>
                     ))}
+                  </div>
+                )}
+                {quickViewColorVariants.length > 0 && (
+                  <div className={styles.colorSelectorSection}>
+                    <span className={styles.colorSelectorLabel}>Color:</span>
+                    <div className={styles.colorSelectorSwatches}>
+                      {quickViewColorVariants.map((v: any) => (
+                        <button
+                          key={v.id}
+                          className={`${styles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
+                          style={{ backgroundColor: v.colorHex }}
+                          onClick={() => setQuickViewColorVariantId(v.id)}
+                          aria-label={`Select color ${v.colorHex}`}
+                          title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

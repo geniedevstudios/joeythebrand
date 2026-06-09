@@ -67,9 +67,30 @@
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: var(--space-xl);
+}
+
+.grid > * {
+  width: calc(20% - (var(--space-xl) * 4 / 5));
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .grid > * {
+    width: calc(33.333% - (var(--space-xl) * 2 / 3));
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    gap: var(--space-md);
+  }
+  .grid > * {
+    width: calc(50% - (var(--space-md) / 2));
+  }
 }
 
 /* Card - matching shop card style */
@@ -182,6 +203,7 @@
   pointer-events: auto;
   transform: translateY(6px);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
 }
 
 .card:hover .pickMeWrap {

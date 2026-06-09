@@ -137,7 +137,7 @@
   padding: var(--space-md);
   opacity: 0;
   transition: opacity var(--transition-base);
-  z-index: 5;
+  z-index: 10;
   pointer-events: none;
 }
 
@@ -669,3 +669,88 @@
   .name { font-size: 1.1rem; }
   .price { font-size: 0.85rem; }
 }
+
+/* Color Selector for Modal */
+.colorSelectorSection {
+  margin-top: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 8px 0;
+}
+
+.colorSelectorLabel {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--alaska-gray);
+  text-transform: uppercase;
+}
+
+.colorSelectorSwatches {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.colorSelectorBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--color-border), inset 0 1px 3px rgba(0,0,0,0.15);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.colorSelectorBtn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 1px var(--alaska-gray), inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.colorSelectorBtnActive {
+  box-shadow: 0 0 0 1px var(--blue-athracite), inset 0 1px 3px rgba(0,0,0,0.15);
+  transform: scale(1.1);
+}
+
+
+/* Color Variants Indicator on Product Cards */
+.colorIndicatorWrap {
+  position: absolute;
+  bottom: var(--space-md);
+  right: var(--space-md);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 999px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: opacity 0.3s ease;
+}
+
+.colorSwatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.colorCount {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  margin-top: 1px;
+  margin-bottom: 2px;
+}
+

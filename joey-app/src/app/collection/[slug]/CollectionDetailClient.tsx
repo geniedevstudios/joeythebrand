@@ -13,7 +13,7 @@ import EventVideo from "@/app/events/[slug]/EventVideo";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
-import type { Product } from "@/lib/types";
+import type { Product, PublicCollection } from "@/lib/types";
 import { ShopProductGridSkeleton } from "@/components/shop/ShopProductGridSkeleton";
 import ProductMedia from "@/components/shop/ProductMedia";
 
@@ -63,6 +63,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
 
   const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
+  const [quickViewColorVariantId, setQuickViewColorVariantId] = useState<string>("main-color");
   const [activeImage, setActiveImage] = useState<string>("");
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
@@ -83,7 +84,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const briefHero = (collection?.briefDescription ?? "").trim();
 
   const collectionGallery = useMemo(
-    () => (collection?.galleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
+    () => (collection?.galleryUrls ?? []).map((u: any) => String(u || "").trim()).filter(Boolean),
     [collection?.galleryUrls],
   );
 
@@ -97,7 +98,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   const detailVideoUrl = String(collection?.detailVideoUrl ?? "").trim();
   const detailVideoPosterUrl = String(collection?.detailVideoPosterUrl ?? "").trim();
   const detailGallery = useMemo(
-    () => (collection?.detailGalleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
+    () => (collection?.detailGalleryUrls ?? []).map((u: any) => String(u || "").trim()).filter(Boolean),
     [collection?.detailGalleryUrls],
   );
 
@@ -136,6 +137,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       document.body.style.overflow = "hidden";
       setQty(1);
       setSelectedSize("");
+      setQuickViewColorVariantId("main-color");
       if (quickViewPiece.wearTag === "womens") {
         setQuickViewFit("Standard");
       } else if (quickViewPiece.wearTag === "unisex") {
@@ -258,7 +260,32 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       </div>
     );
   }
+  const quickViewColorVariants = useMemo(() => {
+    if (!quickViewPiece || !quickViewPiece.variants) return [];
+    return quickViewPiece.variants.filter((v: any) => v.type === "color" && v.colorHex);
+  }, [quickViewPiece]);
 
+  const quickViewActiveVariant = useMemo(() => {
+    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
+  }, [quickViewColorVariants, quickViewColorVariantId]);
+
+  const quickViewGalleryImages = useMemo(() => {
+    if (!quickViewPiece) return [];
+    
+    let imagesToUse = quickViewPiece.images || [];
+
+    if (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.images && quickViewActiveVariant.images.length > 0) {
+      imagesToUse = quickViewActiveVariant.images;
+    }
+
+    return [quickViewPiece.image, ...imagesToUse].filter((v, i, a) => a.indexOf(v) === i);
+  }, [quickViewPiece, quickViewActiveVariant]);
+
+  useEffect(() => {
+    if (quickViewGalleryImages.length > 0) {
+      setActiveImage(quickViewGalleryImages[0]);
+    }
+  }, [quickViewGalleryImages]);
 
   return (
     <div className={styles.page}>
@@ -313,7 +340,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
           <div className="container">
             <div className={`${eventStyles.shotsSection} ${styles.collectionShotsSection}`}>
               <div className={`${eventStyles.shotsGrid} ${styles.collectionShotsGrid}`} aria-label="Collection gallery">
-                {collectionGallery.map((u, idx) => (
+                {collectionGallery.map((u: string, idx: number) => (
                   <div key={`${u}-${idx}`} className={`${eventStyles.shotCard} ${styles.collectionShotCard}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img className={`${eventStyles.shotImg} ${styles.collectionShotImg}`} src={u} alt="" loading="lazy" />
@@ -353,7 +380,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
           <div className="container">
             <div className={`${eventStyles.shotsSection} ${styles.collectionShotsSection}`}>
               <div className={`${eventStyles.shotsGrid} ${styles.collectionShotsGrid}`} aria-label="More collection images">
-                {detailGallery.map((u, idx) => (
+                {detailGallery.map((u: string, idx: number) => (
                   <div key={`${u}-${idx}`} className={`${eventStyles.shotCard} ${styles.collectionShotCard}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img className={`${eventStyles.shotImg} ${styles.collectionShotImg}`} src={u} alt="" loading="lazy" />
@@ -411,21 +438,43 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
             </div>
           ) : (
             <div className={shopStyles.grid}>
-              {displayedProducts.map((p) => (
-                <article key={p.id} className={shopStyles.card}>
-                  <div className={shopStyles.imageWrapOuter}>
-                    <div className={shopStyles.imageWrap}>
-                      {p.hoverImage ? (
-                        <>
-                          <ProductMedia src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
-                          <ProductMedia src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
-                        </>
-                      ) : (
-                        <ProductMedia src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
-                      )}
+              {displayedProducts.map((p) => {
+                const colorVariants = (p.variants || []).filter((v: any) => v.type === "color" && v.colorHex);
+                const hasColors = colorVariants.length > 0;
+                const swatchesToShow = colorVariants.slice(0, 3);
+                const totalColors = colorVariants.length;
 
-                      <div className={shopStyles.overlay}>
-                        <div className={shopStyles.actionButtons}>
+                return (
+                  <article key={p.id} className={shopStyles.card}>
+                    <div className={shopStyles.imageWrapOuter}>
+                      <div className={shopStyles.imageWrap}>
+                        {p.hoverImage ? (
+                          <>
+                            <ProductMedia src={p.image} alt={p.name} className={shopStyles.imagePrimary} loading="lazy" />
+                            <ProductMedia src={p.hoverImage} alt="" className={shopStyles.imageHover} loading="lazy" aria-hidden />
+                          </>
+                        ) : (
+                          <ProductMedia src={p.image} alt={p.name} className={shopStyles.image} loading="lazy" />
+                        )}
+
+                        {hasColors && (
+                          <div className={shopStyles.colorIndicatorWrap} aria-label={`${totalColors} colors available`}>
+                            {swatchesToShow.map((v: any) => (
+                              <div
+                                key={v.id}
+                                className={shopStyles.colorSwatch}
+                                style={{ backgroundColor: v.colorHex }}
+                                aria-hidden="true"
+                              />
+                            ))}
+                            {totalColors > 0 && (
+                              <span className={shopStyles.colorCount}>{totalColors}</span>
+                            )}
+                          </div>
+                        )}
+
+                        <div className={shopStyles.overlay}>
+                          <div className={shopStyles.actionButtons}>
                         <button
                           className={shopStyles.iconBtn}
                           aria-label="Add to Wishlist"
@@ -493,7 +542,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                     </div>
                   </div>
                 </article>
-              ))}
+              );
+            })}
             </div>
           )}
         </div>
@@ -513,23 +563,40 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
               <div className={styles.modalGallery}>
                 <div className={styles.modalImageWrap}>
                   <ProductMedia
-                    src={activeImage || quickViewPiece.image}
+                    src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image}
                     alt={quickViewPiece.name}
                     className={styles.modalImage}
                   />
                 </div>
-                {quickViewPiece.images && quickViewPiece.images.length > 1 && (
+                {quickViewGalleryImages && quickViewGalleryImages.length > 1 && (
                   <div className={styles.modalThumbnails}>
-                    {[quickViewPiece.image, ...quickViewPiece.images].filter((v, i, a) => a.indexOf(v) === i).map((img, idx) => (
+                    {quickViewGalleryImages.map((img, idx) => (
                       <button
                         key={idx}
-                        className={`${styles.thumbBtn} ${(activeImage || quickViewPiece.image) === img ? styles.thumbActive : ""}`}
+                        className={`${styles.thumbBtn} ${(activeImage || quickViewGalleryImages[0]) === img ? styles.thumbActive : ""}`}
                         onClick={() => setActiveImage(img)}
                         aria-label={`View image ${idx + 1}`}
                       >
                       <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
                       </button>
                     ))}
+                  </div>
+                )}
+                {quickViewColorVariants.length > 0 && (
+                  <div className={styles.colorSelectorSection}>
+                    <span className={styles.colorSelectorLabel}>Color:</span>
+                    <div className={styles.colorSelectorSwatches}>
+                      {quickViewColorVariants.map((v: any) => (
+                        <button
+                          key={v.id}
+                          className={`${styles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
+                          style={{ backgroundColor: v.colorHex }}
+                          onClick={() => setQuickViewColorVariantId(v.id)}
+                          aria-label={`Select color ${v.colorHex}`}
+                          title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

@@ -228,6 +228,60 @@
   max-width: 520px;
 }
 
+.colorCount {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  margin-top: 1px;
+  margin-bottom: 2px;
+}
+
+/* Color Selector for Modal */
+.colorSelectorSection {
+  margin-top: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 8px 0;
+}
+
+.colorSelectorLabel {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--alaska-gray);
+  text-transform: uppercase;
+}
+
+.colorSelectorSwatches {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.colorSelectorBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--color-border), inset 0 1px 3px rgba(0,0,0,0.15);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.colorSelectorBtn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 1px var(--alaska-gray), inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.colorSelectorBtnActive {
+  box-shadow: 0 0 0 1px var(--blue-athracite), inset 0 1px 3px rgba(0,0,0,0.15);
+  transform: scale(1.1);
+}
+
 .collectionDetailProse {
   margin: 0;
   font-family: var(--font-body);
@@ -674,7 +728,7 @@
   );
   opacity: 0;
   transition: opacity 0.4s ease;
-  z-index: 2;
+  z-index: 10;
   pointer-events: none;
 }
 
@@ -690,6 +744,7 @@
   pointer-events: auto;
   transform: translateY(6px);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
 }
 
 .card:hover .productPickMeWrap {
