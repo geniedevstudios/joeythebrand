@@ -10,11 +10,21 @@ export interface ProductSize {
 
 export type ProductVariantType = "color" | "fit_combo";
 
+export interface ProductCombo {
+  id: string;
+  name: string;
+  price: number;
+  thumbnailUrl: string;
+  images: string[];
+}
+
 export interface ProductVariant {
   id: string;
   type: ProductVariantType;
   colorHex?: string;
   images?: string[];
+  name?: string;
+  combos?: ProductCombo[];
 }
 
 export interface Product {

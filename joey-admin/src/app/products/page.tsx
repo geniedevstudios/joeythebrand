@@ -59,6 +59,167 @@ function sanitizeCollectionSlug(raw: string): string {
 
 type TabId = "collections" | "products";
 
+function CombosEditor({ variantId, variants, setVariants, productUploadFolder }: { variantId: string, variants: ProductVariant[], setVariants: (v: ProductVariant[]) => void, productUploadFolder: string }) {
+  const variant = variants.find(v => v.id === variantId);
+  const combos = variant?.combos || [];
+  return (
+    <div className="mt-6 border-t border-zinc-200 pt-6">
+      <div className="flex items-center justify-between mb-4">
+        <label className="block text-sm font-medium text-zinc-700">Paired Combos</label>
+        <button
+          type="button"
+          onClick={() => {
+            const next = [...variants];
+            const vIdx = next.findIndex(v => v.id === variantId);
+            if (vIdx !== -1) {
+              const nextCombos = [...(next[vIdx].combos || []), { id: `combo-${Date.now()}`, name: "", price: 0, thumbnailUrl: "", images: [] }];
+              next[vIdx] = { ...next[vIdx], combos: nextCombos };
+              setVariants(next);
+            }
+          }}
+          className="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          <Plus className="-ml-1 mr-1 h-3 w-3" />
+          Add Combo
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {combos.map((combo, comboIdx) => (
+          <div key={combo.id} className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold text-zinc-900">Combo {comboIdx + 1}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = [...variants];
+                  const vIdx = next.findIndex(v => v.id === variantId);
+                  if (vIdx !== -1) {
+                    const nextCombos = (next[vIdx].combos || []).filter(c => c.id !== combo.id);
+                    next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                    setVariants(next);
+                  }
+                }}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700">Combo Name</label>
+                <input
+                  type="text"
+                  value={combo.name}
+                  placeholder="e.g. White Jeans"
+                  onChange={(e) => {
+                    const next = [...variants];
+                    const vIdx = next.findIndex(v => v.id === variantId);
+                    if (vIdx !== -1) {
+                      const nextCombos = [...(next[vIdx].combos || [])];
+                      const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                      if (cIdx !== -1) {
+                        nextCombos[cIdx] = { ...nextCombos[cIdx], name: e.target.value };
+                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                        setVariants(next);
+                      }
+                    }
+                  }}
+                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-700">Combo Price Override (GHC)</label>
+                <input
+                  type="number"
+                  value={combo.price || ""}
+                  placeholder="0.00"
+                  onChange={(e) => {
+                    const next = [...variants];
+                    const vIdx = next.findIndex(v => v.id === variantId);
+                    if (vIdx !== -1) {
+                      const nextCombos = [...(next[vIdx].combos || [])];
+                      const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                      if (cIdx !== -1) {
+                        nextCombos[cIdx] = { ...nextCombos[cIdx], price: parseFloat(e.target.value) || 0 };
+                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                        setVariants(next);
+                      }
+                    }
+                  }}
+                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <AssetUrlField
+                id={`variant-${variantId}-combo-${combo.id}-thumb`}
+                label="Thumbnail Image (Small swatch)"
+                value={combo.thumbnailUrl || ""}
+                onChange={(url) => {
+                  const next = [...variants];
+                  const vIdx = next.findIndex(v => v.id === variantId);
+                  if (vIdx !== -1) {
+                    const nextCombos = [...(next[vIdx].combos || [])];
+                    const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                    if (cIdx !== -1) {
+                      nextCombos[cIdx] = { ...nextCombos[cIdx], thumbnailUrl: url };
+                      next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                      setVariants(next);
+                    }
+                  }
+                }}
+                uploadFolder={`${productUploadFolder}/variants/${variantId}/combos/${combo.id}`}
+                accept="image/*"
+                placeholder="URL or upload"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-medium text-zinc-700">Gallery Images (Max 3)</label>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {[0, 1, 2].map((imgIdx) => (
+                  <AssetUrlField
+                    key={imgIdx}
+                    id={`variant-${variantId}-combo-${combo.id}-img-${imgIdx}`}
+                    label={`Image ${imgIdx + 1}`}
+                    value={(combo.images || [])[imgIdx] || ""}
+                    onChange={(url) => {
+                      const next = [...variants];
+                      const vIdx = next.findIndex(v => v.id === variantId);
+                      if (vIdx !== -1) {
+                        const nextCombos = [...(next[vIdx].combos || [])];
+                        const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                        if (cIdx !== -1) {
+                          const newImages = [...(nextCombos[cIdx].images || [])];
+                          newImages[imgIdx] = url;
+                          nextCombos[cIdx] = { ...nextCombos[cIdx], images: newImages };
+                          next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                          setVariants(next);
+                        }
+                      }
+                    }}
+                    uploadFolder={`${productUploadFolder}/variants/${variantId}/combos/${combo.id}`}
+                    accept="image/*,video/mp4,video/webm"
+                    placeholder="URL or upload"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+        {combos.length === 0 && (
+          <div className="rounded-lg border border-dashed border-zinc-300 p-4 text-center">
+            <p className="text-sm text-zinc-500">No combos added for this color.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   const [tab, setTab] = useState<TabId>("products");
   const [products, setProducts] = useState<Product[]>([]);
@@ -773,22 +934,6 @@ export default function ProductsPage() {
                       />
                       <span className="text-sm font-medium">Color</span>
                     </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-zinc-300"
-                        checked={variants.some(v => v.id === "fit-combo")}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setVariants([...variants, { id: "fit-combo", type: "fit", images: [] }]);
-                          } else {
-                            setVariants(variants.filter(v => v.id !== "fit-combo"));
-                          }
-                        }}
-                      />
-                      <span className="text-sm font-medium">Fit combo</span>
-                    </label>
                   </div>
 
                   {variants.some(v => v.id === "main-color") && (
@@ -840,6 +985,13 @@ export default function ProductsPage() {
                             </div>
                           </div>
                         </div>
+
+                        <CombosEditor
+                          variantId="main-color"
+                          variants={variants}
+                          setVariants={setVariants}
+                          productUploadFolder={productUploadFolder}
+                        />
                       </div>
                     </div>
                   )}
@@ -1235,8 +1387,7 @@ export default function ProductsPage() {
                                 name={`variant-type-${variant.id}`}
                                 defaultValue={variant.type}
                                 options={[
-                                  { value: "color", label: "Color" },
-                                  { value: "fit_combo", label: "Fit Combo" }
+                                  { value: "color", label: "Color" }
                                 ]}
                                 onValueChange={(val) => {
                                   const next = [...variants];
@@ -1312,11 +1463,23 @@ export default function ProductsPage() {
                                   ))}
                                 </div>
                               </div>
+
+                              <CombosEditor
+                                variantId={variant.id}
+                                variants={variants}
+                                setVariants={setVariants}
+                                productUploadFolder={productUploadFolder}
+                              />
                             </div>
                           )}
 
                           {variant.type === "fit_combo" && (
                             <div className="space-y-4">
+                              <div className="rounded border border-amber-200 bg-amber-50 p-4 mb-4">
+                                <p className="text-sm text-amber-800">
+                                  <strong>Deprecated:</strong> Top-level fit combos are no longer supported. Please re-create this combo inside the specific Color variant above and delete this one.
+                                </p>
+                              </div>
                               <div>
                                 <label className="block text-xs font-medium text-zinc-700">Variant Name</label>
                                 <input

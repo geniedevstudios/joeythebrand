@@ -96,11 +96,15 @@ export default function ProductClient({ slug }: { slug: string }) {
   const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
   const [activeImage, setActiveImage] = useState<string>("");
   const [activeColorVariantId, setActiveColorVariantId] = useState<string>("main-color");
+  const [activeMode, setActiveMode] = useState<"solo" | "paired">("solo");
+  const [activeComboId, setActiveComboId] = useState<string>("");
   const [quickViewItem, setQuickViewItem] = useState<any>(null);
   const [quickViewSize, setQuickViewSize] = useState("");
   const [quickViewFit, setQuickViewFit] = useState("");
   const [quickViewImage, setQuickViewImage] = useState("");
   const [quickViewColorVariantId, setQuickViewColorVariantId] = useState<string>("main-color");
+  const [quickViewMode, setQuickViewMode] = useState<"solo" | "paired">("solo");
+  const [quickViewComboId, setQuickViewComboId] = useState<string>("");
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
@@ -127,6 +131,8 @@ export default function ProductClient({ slug }: { slug: string }) {
       setQuickViewFit("Men");
     }
     setQuickViewColorVariantId("main-color");
+    setQuickViewMode("solo");
+    setQuickViewComboId("");
   }, [quickViewItem]);
 
   const getCollectionName = useMemo(() => {
@@ -170,17 +176,24 @@ export default function ProductClient({ slug }: { slug: string }) {
     return colorVariants.find((v: any) => v.id === activeColorVariantId);
   }, [colorVariants, activeColorVariantId]);
 
+  const activeCombo = useMemo(() => {
+    if (activeMode !== "paired" || !activeComboId || !activeColorVariant?.combos) return null;
+    return activeColorVariant.combos.find((c: any) => c.id === activeComboId);
+  }, [activeMode, activeComboId, activeColorVariant]);
+
   const galleryImages = useMemo(() => {
     if (!product) return EMPTY_ARRAY;
     
     let imagesToUse = product.images || [];
 
-    if (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.images && activeColorVariant.images.length > 0) {
+    if (activeCombo && activeCombo.images && activeCombo.images.length > 0) {
+      imagesToUse = activeCombo.images;
+    } else if (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.images && activeColorVariant.images.length > 0) {
       imagesToUse = activeColorVariant.images;
     }
 
     return imagesToUse.filter((img: string) => img !== product.hoverImage);
-  }, [product, activeColorVariant]);
+  }, [product, activeColorVariant, activeCombo]);
 
   useEffect(() => {
     if (galleryImages.length > 0) {
@@ -234,14 +247,22 @@ export default function ProductClient({ slug }: { slug: string }) {
     return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
   }, [quickViewColorVariants, quickViewColorVariantId]);
 
+  const quickViewActiveCombo = useMemo(() => {
+    if (quickViewMode !== "paired" || !quickViewComboId || !quickViewActiveColorVariant?.combos) return null;
+    return quickViewActiveColorVariant.combos.find((c: any) => c.id === quickViewComboId);
+  }, [quickViewMode, quickViewComboId, quickViewActiveColorVariant]);
+
   const quickViewGalleryImages = useMemo(() => {
     if (!quickViewItem) return [];
     let imagesToUse = quickViewItem.images || [];
-    if (quickViewActiveColorVariant && quickViewActiveColorVariant.id !== "main-color" && quickViewActiveColorVariant.images && quickViewActiveColorVariant.images.length > 0) {
+
+    if (quickViewActiveCombo && quickViewActiveCombo.images && quickViewActiveCombo.images.length > 0) {
+      imagesToUse = quickViewActiveCombo.images;
+    } else if (quickViewActiveColorVariant && quickViewActiveColorVariant.id !== "main-color" && quickViewActiveColorVariant.images && quickViewActiveColorVariant.images.length > 0) {
       imagesToUse = quickViewActiveColorVariant.images;
     }
     return imagesToUse.filter((img: string) => img !== quickViewItem.hoverImage);
-  }, [quickViewItem, quickViewActiveColorVariant]);
+  }, [quickViewItem, quickViewActiveColorVariant, quickViewActiveCombo]);
 
   const formatPrice = (price: number | string) => {
     if (typeof price === "string") return price;
@@ -303,12 +324,12 @@ export default function ProductClient({ slug }: { slug: string }) {
       import("@/store/cartStore").then(({ cartStore }) => {
         cartStore.addItem({
           productId: product.id,
-          name: product.name,
+          name: activeCombo ? `${product.name} - ${activeCombo.name}` : product.name,
           size: selectedSize || "Standard",
           fit: (product.wearTag === "womens" || product.wearTag === "unisex") ? selectedFit : undefined,
           wearTag: product.wearTag,
-          price: product.price,
-          image: product.image,
+          price: activeCombo ? (activeCombo.price || product.price) : product.price,
+          image: activeCombo?.thumbnailUrl || galleryImages[0] || product.image,
           quantity: qty,
           maxStock: product.quantity
         });
@@ -406,12 +427,72 @@ export default function ProductClient({ slug }: { slug: string }) {
                       key={v.id}
                       className={`${styles.colorSelectorBtn} ${activeColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
                       style={{ backgroundColor: v.colorHex }}
-                      onClick={() => setActiveColorVariantId(v.id)}
+                      onClick={() => {
+                        setActiveColorVariantId(v.id);
+                        setActiveMode("solo");
+                        setActiveComboId("");
+                      }}
                       aria-label={`Select color ${v.colorHex}`}
                       title={v.id === "main-color" ? "Main Color" : "Additional Color"}
                     />
                   ))}
                 </div>
+
+                {activeColorVariant && activeColorVariant.combos && activeColorVariant.combos.length > 0 && (
+                  <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                    <div className={styles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
+                      <button
+                        type="button"
+                        onClick={() => { setActiveMode("solo"); setActiveComboId(""); }}
+                        style={{ 
+                          padding: "0.25rem 0", 
+                          borderBottom: activeMode === "solo" ? "2px solid #000" : "2px solid transparent",
+                          color: activeMode === "solo" ? "#000" : "#888",
+                          fontWeight: activeMode === "solo" ? 600 : 400,
+                          background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                        }}
+                      >
+                        Solo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveMode("paired")}
+                        style={{ 
+                          padding: "0.25rem 0", 
+                          borderBottom: activeMode === "paired" ? "2px solid #000" : "2px solid transparent",
+                          color: activeMode === "paired" ? "#000" : "#888",
+                          fontWeight: activeMode === "paired" ? 600 : 400,
+                          background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                        }}
+                      >
+                        Paired
+                      </button>
+                    </div>
+                    
+                    {activeMode === "paired" && (
+                      <div className={styles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        {activeColorVariant.combos.map((combo: any) => (
+                          <button
+                            key={combo.id}
+                            onClick={() => setActiveComboId(combo.id)}
+                            style={{
+                              width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
+                              border: activeComboId === combo.id ? "2px solid #000" : "1px solid #e5e5e5",
+                              padding: 0, background: "none", cursor: "pointer", position: "relative"
+                            }}
+                            title={combo.name}
+                          >
+                            {combo.thumbnailUrl ? (
+                              <img src={combo.thumbnailUrl} alt={combo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>{combo.name.slice(0, 2)}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -422,11 +503,15 @@ export default function ProductClient({ slug }: { slug: string }) {
                 const colName = getCollectionName(product);
                 return colName ? <span className={styles.categoryLabel}>{colName}</span> : null;
               })()}
-              <h1 className={`t-display ${styles.productName}`}>{product.name}</h1>
+              <h1 className={`t-display ${styles.productName}`}>
+                {product.name} {activeCombo ? `+ ${activeCombo.name}` : ""}
+              </h1>
               
               <div className={styles.priceRow}>
-                <span className={styles.price}>{formatPrice(product.price)}</span>
-                {product.originalPrice && <span className={styles.originalPrice}>{formatPrice(product.originalPrice)}</span>}
+                <span className={styles.price}>
+                  {formatPrice(activeCombo ? (activeCombo.price || product.price) : product.price)}
+                </span>
+                {!activeCombo && product.originalPrice && <span className={styles.originalPrice}>{formatPrice(product.originalPrice)}</span>}
               </div>
 
               <div className={styles.divider} />
@@ -657,6 +742,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                         style={{ backgroundColor: v.colorHex }}
                         onClick={() => {
                           setQuickViewColorVariantId(v.id);
+                          setQuickViewMode("solo");
+                          setQuickViewComboId("");
                           if (v.images && v.images.length > 0) {
                             setQuickViewImage(v.images[0]);
                           } else {
@@ -668,15 +755,75 @@ export default function ProductClient({ slug }: { slug: string }) {
                       />
                     ))}
                   </div>
+
+                  {quickViewActiveColorVariant && quickViewActiveColorVariant.combos && quickViewActiveColorVariant.combos.length > 0 && (
+                    <div className={shopStyles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                      <div className={shopStyles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => { setQuickViewMode("solo"); setQuickViewComboId(""); }}
+                          style={{ 
+                            padding: "0.25rem 0", 
+                            borderBottom: quickViewMode === "solo" ? "2px solid #000" : "2px solid transparent",
+                            color: quickViewMode === "solo" ? "#000" : "#888",
+                            fontWeight: quickViewMode === "solo" ? 600 : 400,
+                            background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                          }}
+                        >
+                          Solo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setQuickViewMode("paired")}
+                          style={{ 
+                            padding: "0.25rem 0", 
+                            borderBottom: quickViewMode === "paired" ? "2px solid #000" : "2px solid transparent",
+                            color: quickViewMode === "paired" ? "#000" : "#888",
+                            fontWeight: quickViewMode === "paired" ? 600 : 400,
+                            background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                          }}
+                        >
+                          Paired
+                        </button>
+                      </div>
+                      
+                      {quickViewMode === "paired" && (
+                        <div className={shopStyles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          {quickViewActiveColorVariant.combos.map((combo: any) => (
+                            <button
+                              key={combo.id}
+                              onClick={() => setQuickViewComboId(combo.id)}
+                              style={{
+                                width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
+                                border: quickViewComboId === combo.id ? "2px solid #000" : "1px solid #e5e5e5",
+                                padding: 0, background: "none", cursor: "pointer", position: "relative"
+                              }}
+                              title={combo.name}
+                            >
+                              {combo.thumbnailUrl ? (
+                                <img src={combo.thumbnailUrl} alt={combo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ) : (
+                                <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>{combo.name.slice(0, 2)}</div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             <div className={styles.modalInfo}>
-              <h2 className={`t-display ${styles.modalTitle}`}>{quickViewItem.name}</h2>
+              <h2 className={`t-display ${styles.modalTitle}`}>
+                {quickViewItem.name} {quickViewActiveCombo ? `+ ${quickViewActiveCombo.name}` : ""}
+              </h2>
               <div className={styles.modalPriceRow}>
-                <span className={styles.modalPrice}>{formatPrice(quickViewItem.price)}</span>
-                {quickViewItem.originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice(quickViewItem.originalPrice)}</span>}
+                <span className={styles.modalPrice}>
+                  {formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price)}
+                </span>
+                {!quickViewActiveCombo && quickViewItem.originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice(quickViewItem.originalPrice)}</span>}
               </div>
               
               <p className={styles.modalDesc}>{quickViewItem.description}</p>
@@ -765,12 +912,12 @@ export default function ProductClient({ slug }: { slug: string }) {
                     import("@/store/cartStore").then(({ cartStore }) => {
                       cartStore.addItem({
                         productId: quickViewItem.id,
-                        name: quickViewItem.name,
+                        name: quickViewActiveCombo ? `${quickViewItem.name} - ${quickViewActiveCombo.name}` : quickViewItem.name,
                         size: quickViewSize || "Standard",
                         fit: (quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") ? quickViewFit : undefined,
                         wearTag: quickViewItem.wearTag,
-                        price: quickViewItem.price,
-                        image: quickViewItem.image,
+                        price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price,
+                        image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewItem.image,
                         quantity: qty,
                         maxStock: quickViewItem.quantity,
                       });
