@@ -753,8 +753,8 @@ export default function ProductsPage() {
               {productModalTab === "variant" && (
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm mb-6">
                   <div className="mb-4">
-                    <h3 className="text-base font-semibold text-zinc-900">Color variant</h3>
-                    <p className="mt-1 text-sm text-zinc-600">Select the color for the main product</p>
+                    <h3 className="text-base font-semibold text-zinc-900">Variants</h3>
+                    <p className="mt-1 text-sm text-zinc-600">Select the variant types for the product</p>
                   </div>
                   
                   <div className="flex gap-6 mb-6">
@@ -772,6 +772,22 @@ export default function ProductsPage() {
                         }}
                       />
                       <span className="text-sm font-medium">Color</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-zinc-300"
+                        checked={variants.some(v => v.id === "fit-combo")}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setVariants([...variants, { id: "fit-combo", type: "fit", images: [] }]);
+                          } else {
+                            setVariants(variants.filter(v => v.id !== "fit-combo"));
+                          }
+                        }}
+                      />
+                      <span className="text-sm font-medium">Fit combo</span>
                     </label>
                   </div>
 
@@ -967,6 +983,61 @@ export default function ProductsPage() {
                     ))}
                   </div>
                 </div>
+
+                {variants.some(v => v.id === "fit-combo") && (
+                  <div className="col-span-2 mt-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm">
+                    <h3 className="text-base font-semibold text-zinc-900 mb-4">Fit Combo Details</h3>
+                    <div className="grid gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700">Name of the variant</label>
+                        <input
+                          type="text"
+                          value={variants.find(v => v.id === "fit-combo")?.name || ""}
+                          placeholder="e.g., Two-Piece Set"
+                          onChange={(e) => {
+                            const next = [...variants];
+                            const idx = next.findIndex(v => v.id === "fit-combo");
+                            if (idx !== -1) {
+                              next[idx] = { ...next[idx], name: e.target.value };
+                              setVariants(next);
+                            }
+                          }}
+                          className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm font-medium text-zinc-700">Variant images</p>
+                        <p className="mt-0.5 text-xs text-zinc-700">
+                          Three photos specific to this fit combo variant.
+                        </p>
+                        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                          {[0, 1, 2].map((i) => (
+                            <AssetUrlField
+                              key={i}
+                              id={`fit-combo-img-${i}`}
+                              label={`Variant image ${i + 1}`}
+                              value={(variants.find(v => v.id === "fit-combo")?.images || [])[i] || ""}
+                              onChange={(url) => {
+                                const next = [...variants];
+                                const idx = next.findIndex(v => v.id === "fit-combo");
+                                if (idx !== -1) {
+                                  const images = [...(next[idx].images || [])];
+                                  images[i] = url;
+                                  next[idx] = { ...next[idx], images };
+                                  setVariants(next);
+                                }
+                              }}
+                              uploadFolder={productUploadFolder}
+                              accept="image/*,video/mp4,video/webm"
+                              placeholder="Optional — URL or upload"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-zinc-700">Description</label>
@@ -1165,7 +1236,7 @@ export default function ProductsPage() {
                                 defaultValue={variant.type}
                                 options={[
                                   { value: "color", label: "Color" },
-                                  { value: "fit_combo", label: "Fit Combo (Inactive)" }
+                                  { value: "fit_combo", label: "Fit Combo" }
                                 ]}
                                 onValueChange={(val) => {
                                   const next = [...variants];
@@ -1245,8 +1316,47 @@ export default function ProductsPage() {
                           )}
 
                           {variant.type === "fit_combo" && (
-                            <div className="rounded border border-dashed border-zinc-300 bg-white p-4">
-                              <p className="text-center text-sm text-zinc-500">Fit combo configuration is currently inactive.</p>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-xs font-medium text-zinc-700">Variant Name</label>
+                                <input
+                                  type="text"
+                                  value={variant.name || ""}
+                                  placeholder="e.g. Two-Piece Set"
+                                  onChange={(e) => {
+                                    const next = [...variants];
+                                    const vIdx = next.findIndex(v => v.id === variant.id);
+                                    next[vIdx] = { ...next[vIdx], name: e.target.value };
+                                    setVariants(next);
+                                  }}
+                                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="mb-2 block text-xs font-medium text-zinc-700">Variant Images (Max 3)</label>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                  {[0, 1, 2].map((imgIdx) => (
+                                    <AssetUrlField
+                                      key={imgIdx}
+                                      id={`variant-${variant.id}-img-${imgIdx}`}
+                                      label={`Image ${imgIdx + 1}`}
+                                      value={(variant.images || [])[imgIdx] || ""}
+                                      onChange={(url) => {
+                                        const next = [...variants];
+                                        const vIdx = next.findIndex(v => v.id === variant.id);
+                                        const newImages = [...(next[vIdx].images || [])];
+                                        newImages[imgIdx] = url;
+                                        next[vIdx] = { ...next[vIdx], images: newImages };
+                                        setVariants(next);
+                                      }}
+                                      uploadFolder={`${productUploadFolder}/variants/${variant.id}`}
+                                      accept="image/*,video/mp4,video/webm"
+                                      placeholder="URL or upload"
+                                    />
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>

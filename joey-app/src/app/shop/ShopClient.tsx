@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef, useSyncExternalStore, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -68,6 +69,10 @@ export default function ShopClient() {
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState("");
   const [quickViewFit, setQuickViewFit] = useState("Standard");
+  const [priceFilterOpen, setPriceFilterOpen] = useState(false);
+  const [tempMinPrice, setTempMinPrice] = useState("0");
+  const [tempMaxPrice, setTempMaxPrice] = useState("5000");
+  const [activePriceFilter, setActivePriceFilter] = useState<[number, number] | null>(null);
   const searchParams = useSearchParams();
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyArray);
   const collections = useSyncExternalStore(dataStore.subscribe, _getCollections, _getEmptyCollections);
@@ -233,8 +238,11 @@ export default function ShopClient() {
     } else if (wearFilter === "womens") {
       list = list.filter((p: any) => p.wearTag === "womens" || p.wearTag === "unisex");
     }
+    if (activePriceFilter) {
+      list = list.filter((p: any) => p.price >= activePriceFilter[0] && p.price <= activePriceFilter[1]);
+    }
     return list;
-  }, [products, selectedCollectionSlug, wearFilter]);
+  }, [products, selectedCollectionSlug, wearFilter, activePriceFilter]);
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
   const {
@@ -398,6 +406,29 @@ export default function ShopClient() {
                 {f.label}
               </button>
             ))}
+            <button
+              type="button"
+              className={`${styles.wearPill} ${activePriceFilter ? styles.wearPillActive : ""}`}
+              onClick={() => {
+                if (activePriceFilter) {
+                  setTempMinPrice(String(activePriceFilter[0]));
+                  setTempMaxPrice(String(activePriceFilter[1]));
+                }
+                setPriceFilterOpen(true);
+              }}
+            >
+              {activePriceFilter ? `GHC ${activePriceFilter[0]} - ${activePriceFilter[1]}` : "Price"}
+            </button>
+            {activePriceFilter && (
+              <button
+                type="button"
+                className={styles.clearFilterBtn}
+                onClick={() => setActivePriceFilter(null)}
+                aria-label="Clear price filter"
+              >
+                &times;
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -703,6 +734,68 @@ export default function ShopClient() {
       )}
 
       <SizeGuideModal open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} kind={sizeGuideKind} />
+
+      {priceFilterOpen && typeof document !== "undefined" && createPortal(
+        <div className={styles.modalBackdrop} onClick={() => setPriceFilterOpen(false)} aria-hidden="true">
+          <div className={styles.priceModalContent} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="price-modal-title">
+            <button className={styles.modalClose} onClick={() => setPriceFilterOpen(false)} aria-label="Close price filter">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <h3 id="price-modal-title" className={styles.priceModalTitle}>Filter by Price</h3>
+            <div className={styles.priceInputsWrap}>
+              <div className={styles.priceInputGroup}>
+                <label>Min (GHC)</label>
+                <input
+                  type="number"
+                  value={tempMinPrice}
+                  onChange={(e) => setTempMinPrice(e.target.value)}
+                  className={styles.priceInput}
+                  min="0"
+                />
+              </div>
+              <span className={styles.priceSeparator}>-</span>
+              <div className={styles.priceInputGroup}>
+                <label>Max (GHC)</label>
+                <input
+                  type="number"
+                  value={tempMaxPrice}
+                  onChange={(e) => setTempMaxPrice(e.target.value)}
+                  className={styles.priceInput}
+                  min="0"
+                />
+              </div>
+            </div>
+            <div className={styles.priceModalActions}>
+              <button
+                className={`btn btn-secondary ${styles.priceClearBtn}`}
+                onClick={() => {
+                  setActivePriceFilter(null);
+                  setPriceFilterOpen(false);
+                }}
+              >
+                Clear
+              </button>
+              <button
+                className={`btn btn-primary ${styles.priceApplyBtn}`}
+                onClick={() => {
+                  const min = parseInt(tempMinPrice, 10) || 0;
+                  const max = parseInt(tempMaxPrice, 10) || 0;
+                  if (max >= min) {
+                    setActivePriceFilter([min, max]);
+                  }
+                  setPriceFilterOpen(false);
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

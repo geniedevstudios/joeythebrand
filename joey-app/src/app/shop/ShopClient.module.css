@@ -1167,3 +1167,124 @@
   box-shadow: 0 0 0 1px var(--blue-athracite), inset 0 1px 3px rgba(0,0,0,0.15);
   transform: scale(1.1);
 }
+
+.filterDivider {
+  width: 1px;
+  height: 24px;
+  background: var(--color-border);
+  margin: 0 8px;
+}
+
+.clearFilterBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-border);
+  color: var(--alaska-gray);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-left: -4px;
+  transition: all var(--transition-fast);
+}
+
+.clearFilterBtn:hover {
+  background: var(--cinereous);
+  color: #fff;
+}
+
+/* Price Filter Modal */
+.priceModalContent {
+  background: var(--color-surface);
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.priceModalTitle {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--blue-athracite);
+  margin-bottom: var(--space-lg);
+  font-weight: 400;
+}
+
+.priceInputsWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.priceInputGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.priceInputGroup label {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cinereous);
+}
+
+.priceInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--blue-athracite);
+  background: transparent;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.priceInput:focus {
+  border-color: var(--blue-athracite);
+}
+
+.priceSeparator {
+  color: var(--alaska-gray);
+  font-size: 1.2rem;
+  margin-top: 24px;
+}
+
+.priceModalActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  justify-content: flex-end;
+}
+
+.priceClearBtn, .priceApplyBtn {
+  padding: 10px 24px;
+  font-size: 0.85rem;
+}
+
+.priceClearBtn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--alaska-gray);
+}
+
+.priceClearBtn:hover {
+  border-color: var(--blue-athracite);
+  color: var(--blue-athracite);
+}
