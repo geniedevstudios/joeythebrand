@@ -246,7 +246,10 @@ export default function ProductsPage() {
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const slug = (formData.get("slug") as string)?.trim() || undefined;
+    let slug = (formData.get("slug") as string)?.trim().toLowerCase();
+    if (!slug) {
+      slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    }
     const category = formData.get("category") as string;
     const price = Number(formData.get("price"));
     const primary = mainImageUrl.trim();
@@ -406,7 +409,10 @@ export default function ProductsPage() {
           detailGalleryUrls,
         });
       } else {
-        const slug = (form.querySelector('[name="col-slug"]') as HTMLInputElement).value.trim().toLowerCase();
+        let slug = (form.querySelector('[name="col-slug"]') as HTMLInputElement).value.trim().toLowerCase();
+        if (!slug) {
+          slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        }
         if (!SLUG_PATTERN.test(slug)) {
           const msg =
             "Slug: lowercase letters, numbers, and hyphens only (e.g. spring-drop).";
@@ -1297,10 +1303,9 @@ export default function ProductsPage() {
             <form onSubmit={handleSaveCollection} className="space-y-4">
               {!editingCollection && (
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700">Slug</label>
+                  <label className="block text-sm font-medium text-zinc-700">Slug (leave empty to auto-generate)</label>
                   <input
                     name="col-slug"
-                    required
                     value={pendingColSlug}
                     onChange={(e) => setPendingColSlug(e.target.value)}
                     placeholder="e.g. spring-drop"

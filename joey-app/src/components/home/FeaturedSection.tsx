@@ -126,6 +126,33 @@ export default function FeaturedSection() {
     return () => { document.body.style.overflow = ""; };
   }, [quickViewPiece]);
 
+  const quickViewColorVariants = useMemo(() => {
+    if (!quickViewPiece || !quickViewPiece.variants) return [];
+    return quickViewPiece.variants.filter((v: any) => v.type === "color" && v.colorHex);
+  }, [quickViewPiece]);
+
+  const quickViewActiveVariant = useMemo(() => {
+    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
+  }, [quickViewColorVariants, quickViewColorVariantId]);
+
+  const quickViewGalleryImages = useMemo(() => {
+    if (!quickViewPiece) return [];
+    
+    let imagesToUse = quickViewPiece.images || [];
+
+    if (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.images && quickViewActiveVariant.images.length > 0) {
+      imagesToUse = quickViewActiveVariant.images;
+    }
+
+    return imagesToUse;
+  }, [quickViewPiece, quickViewActiveVariant]);
+
+  useEffect(() => {
+    if (quickViewGalleryImages.length > 0) {
+      setActiveImage(quickViewGalleryImages[0]);
+    }
+  }, [quickViewGalleryImages]);
+
   if (isStoreLoading && featured.length === 0) {
     return <FeaturedSectionSkeleton />;
   }
@@ -199,32 +226,7 @@ export default function FeaturedSection() {
 
   const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
 
-  const quickViewColorVariants = useMemo(() => {
-    if (!quickViewPiece || !quickViewPiece.variants) return [];
-    return quickViewPiece.variants.filter((v: any) => v.type === "color" && v.colorHex);
-  }, [quickViewPiece]);
 
-  const quickViewActiveVariant = useMemo(() => {
-    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
-  }, [quickViewColorVariants, quickViewColorVariantId]);
-
-  const quickViewGalleryImages = useMemo(() => {
-    if (!quickViewPiece) return [];
-    
-    let imagesToUse = quickViewPiece.images || [];
-
-    if (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.images && quickViewActiveVariant.images.length > 0) {
-      imagesToUse = quickViewActiveVariant.images;
-    }
-
-    return imagesToUse;
-  }, [quickViewPiece, quickViewActiveVariant]);
-
-  useEffect(() => {
-    if (quickViewGalleryImages.length > 0) {
-      setActiveImage(quickViewGalleryImages[0]);
-    }
-  }, [quickViewGalleryImages]);
 
   const modal =
     quickViewPiece && typeof document !== "undefined"
@@ -583,3 +585,5 @@ export default function FeaturedSection() {
     </section>
   );
 }
+
+// Trigger rebuild

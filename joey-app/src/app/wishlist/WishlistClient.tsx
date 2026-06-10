@@ -15,12 +15,15 @@ import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import ProductSuggestions from "@/components/shop/ProductSuggestions";
 
+import type { Product } from "@/lib/types";
+
 const EMPTY_ARRAY: WishlistItem[] = [];
+const EMPTY_PRODUCTS: Product[] = [];
 type AddStatus = "idle" | "adding" | "added";
 
 export default function WishlistClient() {
   const items = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
-  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => []);
+  const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
   const [quickAddStatus, setQuickAddStatus] = useState<AddStatus>("idle");
   
   const {

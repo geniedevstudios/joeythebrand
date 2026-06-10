@@ -601,9 +601,9 @@
 
 .price {
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  color: var(--alaska-gray);
-  font-weight: 400;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--blue-athracite);
 }
 
 @media (max-width: 1024px) {

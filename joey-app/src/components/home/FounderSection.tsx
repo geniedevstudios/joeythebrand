@@ -37,6 +37,8 @@ function CtaLink({
   );
 }
 
+const EMPTY_COLLECTIONS: PublicCollection[] = [];
+
 export default function FounderSection({
   initialCollections,
   initialSiteContent,
@@ -49,7 +51,7 @@ export default function FounderSection({
   const collections = useSyncExternalStore(
     dataStore.subscribe,
     dataStore.getCollections,
-    () => (initialCollections && initialCollections.length > 0 ? initialCollections : []),
+    () => (initialCollections && initialCollections.length > 0 ? initialCollections : EMPTY_COLLECTIONS),
   );
 
   const site = useSyncExternalStore(
