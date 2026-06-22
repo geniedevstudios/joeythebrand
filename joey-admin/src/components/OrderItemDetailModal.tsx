@@ -78,7 +78,7 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
             </div>
 
             <div className="space-y-4">
-              <div className={`grid ${item.fit ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
                   <p className="text-xs font-semibold text-zinc-700">Size</p>
                   <p className="mt-2 text-xl font-bold text-zinc-900">{formatSizeLabel(item.size, item.fit, item.wearTag)}</p>
@@ -87,6 +87,21 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
                   <div className="rounded-xl border border-zinc-200 bg-white p-4">
                     <p className="text-xs font-semibold text-zinc-700">Fit</p>
                     <p className="mt-2 text-xl font-bold text-zinc-900">{item.fit}</p>
+                  </div>
+                )}
+                {(item.color || item.colorHex) && (
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                    <p className="text-xs font-semibold text-zinc-700">Color</p>
+                    <p className="mt-2 text-xl font-bold text-zinc-900 capitalize flex items-center gap-2">
+                      {item.colorHex && <span style={{ width: 20, height: 20, borderRadius: "50%", backgroundColor: item.colorHex, border: "1px solid #ccc", display: "inline-block" }} title={item.color} />}
+                      {item.color}
+                    </p>
+                  </div>
+                )}
+                {item.combo && (
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                    <p className="text-xs font-semibold text-zinc-700">Combo</p>
+                    <p className="mt-2 text-xl font-bold text-zinc-900 capitalize">{item.combo}</p>
                   </div>
                 )}
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">

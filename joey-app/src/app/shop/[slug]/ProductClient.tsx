@@ -177,9 +177,12 @@ export default function ProductClient({ slug }: { slug: string }) {
   }, [colorVariants, activeColorVariantId]);
 
   const activeCombo = useMemo(() => {
-    if (activeMode !== "paired" || !activeComboId || !activeColorVariant?.combos) return null;
-    return activeColorVariant.combos.find((c: any) => c.id === activeComboId);
-  }, [activeMode, activeComboId, activeColorVariant]);
+    if (activeMode !== "paired" || !activeComboId) return null;
+    if (activeComboId === "fit-combo") {
+      return product?.variants?.find((v: any) => v.id === "fit-combo") || null;
+    }
+    return activeColorVariant?.combos?.find((c: any) => c.id === activeComboId) || null;
+  }, [activeMode, activeComboId, activeColorVariant, product]);
 
   const galleryImages = useMemo(() => {
     if (!product) return EMPTY_ARRAY;
@@ -192,7 +195,7 @@ export default function ProductClient({ slug }: { slug: string }) {
       imagesToUse = activeColorVariant.images;
     }
 
-    return imagesToUse.filter((img: string) => img !== product.hoverImage);
+    return imagesToUse.filter((img: string) => img && img.trim() !== "" && img !== product.hoverImage);
   }, [product, activeColorVariant, activeCombo]);
 
   useEffect(() => {
@@ -324,7 +327,10 @@ export default function ProductClient({ slug }: { slug: string }) {
       import("@/store/cartStore").then(({ cartStore }) => {
         cartStore.addItem({
           productId: product.id,
-          name: activeCombo ? `${product.name} - ${activeCombo.name}` : product.name,
+          name: product.name,
+          color: activeColorVariant?.name || (activeColorVariant?.id === "main-color" ? "Main Color" : undefined),
+          colorHex: activeColorVariant?.colorHex,
+          combo: activeCombo ? activeCombo.name : undefined,
           size: selectedSize || "Standard",
           fit: (product.wearTag === "womens" || product.wearTag === "unisex") ? selectedFit : undefined,
           wearTag: product.wearTag,
@@ -429,17 +435,21 @@ export default function ProductClient({ slug }: { slug: string }) {
                       style={{ backgroundColor: v.colorHex }}
                       onClick={() => {
                         setActiveColorVariantId(v.id);
-                        setActiveMode("solo");
-                        setActiveComboId("");
+                        if (activeMode === "paired" && v.combos && v.combos.length > 0) {
+                          setActiveComboId(v.combos[0].id);
+                        }
                       }}
                       aria-label={`Select color ${v.colorHex}`}
                       title={v.id === "main-color" ? "Main Color" : "Additional Color"}
                     />
                   ))}
                 </div>
+              </div>
+            )}
 
-                {activeColorVariant && activeColorVariant.combos && activeColorVariant.combos.length > 0 && (
+            {activeColorVariant && activeColorVariant.combos && activeColorVariant.combos.length > 0 && (
                   <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                    <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
                     <div className={styles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
                       <button
                         type="button"
@@ -493,6 +503,60 @@ export default function ProductClient({ slug }: { slug: string }) {
                     )}
                   </div>
                 )}
+
+            {product.variants?.some((v: any) => v.id === "fit-combo") && colorVariants.length === 0 && (
+              <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
+                <div className={styles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveMode("solo"); setActiveComboId(""); }}
+                    style={{ 
+                      padding: "0.25rem 0", 
+                      borderBottom: activeMode === "solo" ? "2px solid #000" : "2px solid transparent",
+                      color: activeMode === "solo" ? "#000" : "#888",
+                      fontWeight: activeMode === "solo" ? 600 : 400,
+                      background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                    }}
+                  >
+                    Solo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveMode("paired"); setActiveComboId("fit-combo"); }}
+                    style={{ 
+                      padding: "0.25rem 0", 
+                      borderBottom: activeMode === "paired" ? "2px solid #000" : "2px solid transparent",
+                      color: activeMode === "paired" ? "#000" : "#888",
+                      fontWeight: activeMode === "paired" ? 600 : 400,
+                      background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                    }}
+                  >
+                    Paired
+                  </button>
+                </div>
+                
+                {activeMode === "paired" && (
+                  <div className={styles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => setActiveComboId("fit-combo")}
+                      style={{
+                        width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
+                        border: activeComboId === "fit-combo" ? "2px solid #000" : "1px solid #e5e5e5",
+                        padding: 0, background: "none", cursor: "pointer", position: "relative"
+                      }}
+                      title={product.variants.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo"}
+                    >
+                      {product.variants.find((v: any) => v.id === "fit-combo")?.thumbnailUrl ? (
+                        <img src={product.variants.find((v: any) => v.id === "fit-combo").thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>
+                          {(product.variants.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo").slice(0, 2)}
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -504,7 +568,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                 return colName ? <span className={styles.categoryLabel}>{colName}</span> : null;
               })()}
               <h1 className={`t-display ${styles.productName}`}>
-                {product.name} {activeCombo ? `+ ${activeCombo.name}` : ""}
+                {product.name} {activeCombo ? (activeCombo.nameFormat === "brackets" ? `(${activeCombo.name})` : `+ ${activeCombo.name}`) : ""}
               </h1>
               
               <div className={styles.priceRow}>
@@ -732,32 +796,39 @@ export default function ProductClient({ slug }: { slug: string }) {
               )}
 
               {quickViewColorVariants.length > 0 && (
-                <div className={shopStyles.colorSelectorSection}>
-                  <span className={shopStyles.colorSelectorLabel}>Color:</span>
-                  <div className={shopStyles.colorSelectorSwatches}>
-                    {quickViewColorVariants.map((v: any) => (
-                      <button
-                        key={v.id}
-                        className={`${shopStyles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? shopStyles.colorSelectorBtnActive : ""}`}
-                        style={{ backgroundColor: v.colorHex }}
-                        onClick={() => {
-                          setQuickViewColorVariantId(v.id);
-                          setQuickViewMode("solo");
-                          setQuickViewComboId("");
-                          if (v.images && v.images.length > 0) {
-                            setQuickViewImage(v.images[0]);
-                          } else {
-                            setQuickViewImage(quickViewItem.image);
-                          }
-                        }}
-                        aria-label={`Select color ${v.id}`}
-                        title={v.id === "main-color" ? "Main Color" : "Additional Color"}
-                      />
-                    ))}
+                <>
+                  <div className={shopStyles.colorSelectorSection}>
+                    <span className={shopStyles.colorSelectorLabel}>Color:</span>
+                    <div className={shopStyles.colorSelectorSwatches}>
+                      {quickViewColorVariants.map((v: any) => (
+                        <button
+                          key={v.id}
+                          className={`${shopStyles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? shopStyles.colorSelectorBtnActive : ""}`}
+                          style={{ backgroundColor: v.colorHex }}
+                          onClick={() => {
+                            setQuickViewColorVariantId(v.id);
+                            if (quickViewMode === "paired" && v.combos && v.combos.length > 0) {
+                              setQuickViewComboId(v.combos[0].id);
+                            } else {
+                              setQuickViewMode("solo");
+                              setQuickViewComboId("");
+                            }
+                            if (v.images && v.images.length > 0) {
+                              setQuickViewImage(v.images[0]);
+                            } else {
+                              setQuickViewImage(quickViewItem.image);
+                            }
+                          }}
+                          aria-label={`Select color ${v.id}`}
+                          title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   {quickViewActiveColorVariant && quickViewActiveColorVariant.combos && quickViewActiveColorVariant.combos.length > 0 && (
                     <div className={shopStyles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                      <span className={shopStyles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
                       <div className={shopStyles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
                         <button
                           type="button"
@@ -811,13 +882,13 @@ export default function ProductClient({ slug }: { slug: string }) {
                       )}
                     </div>
                   )}
-                </div>
+                </>
               )}
             </div>
 
             <div className={styles.modalInfo}>
               <h2 className={`t-display ${styles.modalTitle}`}>
-                {quickViewItem.name} {quickViewActiveCombo ? `+ ${quickViewActiveCombo.name}` : ""}
+                {quickViewItem.name} {quickViewActiveCombo ? (quickViewActiveCombo.nameFormat === "brackets" ? `(${quickViewActiveCombo.name})` : `+ ${quickViewActiveCombo.name}`) : ""}
               </h2>
               <div className={styles.modalPriceRow}>
                 <span className={styles.modalPrice}>
@@ -912,7 +983,10 @@ export default function ProductClient({ slug }: { slug: string }) {
                     import("@/store/cartStore").then(({ cartStore }) => {
                       cartStore.addItem({
                         productId: quickViewItem.id,
-                        name: quickViewActiveCombo ? `${quickViewItem.name} - ${quickViewActiveCombo.name}` : quickViewItem.name,
+                        name: quickViewItem.name,
+                        color: quickViewActiveColorVariant?.name || (quickViewActiveColorVariant?.id === "main-color" ? "Main Color" : undefined),
+                        colorHex: quickViewActiveColorVariant?.colorHex,
+                        combo: quickViewActiveCombo ? quickViewActiveCombo.name : undefined,
                         size: quickViewSize || "Standard",
                         fit: (quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") ? quickViewFit : undefined,
                         wearTag: quickViewItem.wearTag,

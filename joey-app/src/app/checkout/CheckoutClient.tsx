@@ -195,6 +195,9 @@ export default function CheckoutClient() {
         items: items.map((item) => ({
           productId: item.productId,
           name: item.name,
+          color: item.color,
+          colorHex: item.colorHex,
+          combo: item.combo,
           size: item.size,
           fit: item.fit,
           wearTag: item.wearTag,
@@ -458,6 +461,12 @@ export default function CheckoutClient() {
                 </div>
                 <div className={styles.itemInfo}>
                   <span className={styles.itemName}>{item.name}</span>
+                  {(item.color || item.colorHex) && (
+                    <div className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", marginTop: "2px", display: "flex", alignItems: "center", gap: "6px", textTransform: "capitalize" }}>
+                      Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex, border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
+                    </div>
+                  )}
+                  {item.combo && <span className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", display: "block", marginTop: "2px", textTransform: "capitalize" }}>Combo: {item.combo}</span>}
                   <span className={styles.itemSize}>
                     {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
                   </span>

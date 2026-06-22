@@ -16,6 +16,7 @@ export interface ProductCombo {
   price: number;
   thumbnailUrl: string;
   images: string[];
+  nameFormat?: "plus" | "brackets";
 }
 
 export interface ProductVariant {
@@ -24,7 +25,10 @@ export interface ProductVariant {
   colorHex?: string;
   images?: string[];
   name?: string;
+  price?: number;
   combos?: ProductCombo[];
+  nameFormat?: "plus" | "brackets";
+  thumbnailUrl?: string;
 }
 
 export interface Product {
@@ -111,6 +115,9 @@ export interface Order {
 export interface OrderItem {
   productId: string;
   name: string;
+  color?: string;
+  colorHex?: string;
+  combo?: string;
   size: string;
   fit?: string;
   wearTag?: string;

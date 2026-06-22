@@ -2,6 +2,9 @@ export type CartItem = {
   id: string;
   productId: string;
   name: string;
+  color?: string;
+  colorHex?: string;
+  combo?: string;
   size: string;
   fit?: string;
   wearTag?: string;
@@ -83,7 +86,7 @@ export const cartStore = {
   },
 
   addItem: (item: Omit<CartItem, "id">) => {
-    const id = `${item.productId}-${item.size}${item.fit ? `-${item.fit}` : ""}`;
+    const id = `${item.productId}-${item.color || 'none'}-${item.combo || 'none'}-${item.size}${item.fit ? `-${item.fit}` : ""}`;
     const existingIndex = cart.findIndex((i) => i.id === id);
     if (existingIndex > -1) {
       const updatedCart = [...cart];

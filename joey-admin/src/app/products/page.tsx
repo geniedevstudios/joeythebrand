@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { dataStore } from "@/lib/dataStore";
 import type { Product, ProductSize, Collection, WearTag, ProductVariant } from "@/lib/types";
 import { Edit2, Plus, X, Trash2, Layers, Package } from "lucide-react";
@@ -106,7 +107,7 @@ function CombosEditor({ variantId, variants, setVariants, productUploadFolder }:
               </button>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-xs font-medium text-zinc-700">Combo Name</label>
                 <input
@@ -130,7 +131,32 @@ function CombosEditor({ variantId, variants, setVariants, productUploadFolder }:
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-700">Combo Price Override (GHC)</label>
+                <label className="block text-xs font-medium text-zinc-700">Display Format</label>
+                <AdminStyledSelect
+                  name={`combo-format-${combo.id}`}
+                  defaultValue={combo.nameFormat || "plus"}
+                  options={[
+                    { value: "plus", label: "Base + Combo" },
+                    { value: "brackets", label: "Base (Combo)" },
+                  ]}
+                  onValueChange={(val) => {
+                    const next = [...variants];
+                    const vIdx = next.findIndex(v => v.id === variantId);
+                    if (vIdx !== -1) {
+                      const nextCombos = [...(next[vIdx].combos || [])];
+                      const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                      if (cIdx !== -1) {
+                        nextCombos[cIdx] = { ...nextCombos[cIdx], nameFormat: val as "plus" | "brackets" };
+                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                        setVariants(next);
+                      }
+                    }
+                  }}
+                  wrapperClassName="mt-1"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-700">Price Override (GHC)</label>
                 <input
                   type="number"
                   value={combo.price || ""}
@@ -221,6 +247,8 @@ function CombosEditor({ variantId, variants, setVariants, productUploadFolder }:
 }
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [tab, setTab] = useState<TabId>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -343,6 +371,28 @@ export default function ProductsPage() {
     const unsubscribe = dataStore.subscribe(load);
     return unsubscribe;
   }, [load]);
+
+  // Auto-open product editor when ?edit=<productId> is in the URL
+  const editParam = searchParams.get("edit");
+  const autoOpenedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editParam || products.length === 0) return;
+    // Prevent re-opening if we already handled this param
+    if (autoOpenedRef.current === editParam) return;
+    const match = products.find((p) => p.id === editParam);
+    if (match) {
+      autoOpenedRef.current = editParam;
+      setTab("products");
+      setEditingProduct(match);
+      setError("");
+      setNewProductUploadKey("");
+      setIsModalOpen(true);
+      // Clean the URL param so closing the modal doesn't re-trigger
+      const url = new URL(window.location.href);
+      url.searchParams.delete("edit");
+      router.replace(url.pathname + url.search, { scroll: false });
+    }
+  }, [editParam, products, router]);
 
   useEffect(() => {
     if (tab === "collections") loadCollectionsOnly();
@@ -934,6 +984,21 @@ export default function ProductsPage() {
                       />
                       <span className="text-sm font-medium">Color</span>
                     </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-zinc-300"
+                        checked={variants.some(v => v.id === "fit-combo")}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setVariants([...variants, { id: "fit-combo", type: "fit_combo", images: [] }]);
+                          } else {
+                            setVariants(variants.filter(v => v.id !== "fit-combo"));
+                          }
+                        }}
+                      />
+                      <span className="text-sm font-medium">Fit Combo</span>
+                    </label>
                   </div>
 
                   {variants.some(v => v.id === "main-color") && (
@@ -1141,7 +1206,7 @@ export default function ProductsPage() {
                     <h3 className="text-base font-semibold text-zinc-900 mb-4">Fit Combo Details</h3>
                     <div className="grid gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-zinc-700">Name of the variant</label>
+                        <label className="block text-sm font-medium text-zinc-700">Combo Name</label>
                         <input
                           type="text"
                           value={variants.find(v => v.id === "fit-combo")?.name || ""}
@@ -1155,6 +1220,65 @@ export default function ProductsPage() {
                             }
                           }}
                           className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700">Display Format</label>
+                        <AdminStyledSelect
+                          name="fit-combo-format"
+                          defaultValue={variants.find(v => v.id === "fit-combo")?.nameFormat || "plus"}
+                          options={[
+                            { value: "plus", label: "Base + Combo" },
+                            { value: "brackets", label: "Base (Combo)" },
+                          ]}
+                          onValueChange={(val) => {
+                            const next = [...variants];
+                            const idx = next.findIndex(v => v.id === "fit-combo");
+                            if (idx !== -1) {
+                              next[idx] = { ...next[idx], nameFormat: val as "plus" | "brackets" };
+                              setVariants(next);
+                            }
+                          }}
+                          wrapperClassName="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700">Combo Price Override (GHC)</label>
+                        <input
+                          type="number"
+                          value={variants.find(v => v.id === "fit-combo")?.price || ""}
+                          placeholder="0.00"
+                          onChange={(e) => {
+                            const next = [...variants];
+                            const idx = next.findIndex(v => v.id === "fit-combo");
+                            if (idx !== -1) {
+                              next[idx] = { ...next[idx], price: parseFloat(e.target.value) || 0 };
+                              setVariants(next);
+                            }
+                          }}
+                          className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">Combo Thumbnail Image</label>
+                        <AssetUrlField
+                          id="fit-combo-thumb"
+                          label="Thumbnail Image URL"
+                          value={variants.find(v => v.id === "fit-combo")?.thumbnailUrl || ""}
+                          onChange={(url) => {
+                            const next = [...variants];
+                            const idx = next.findIndex(v => v.id === "fit-combo");
+                            if (idx !== -1) {
+                              next[idx] = { ...next[idx], thumbnailUrl: url };
+                              setVariants(next);
+                            }
+                          }}
+                          uploadFolder={`${productUploadFolder}/variants/fit-combo`}
+                          accept="image/*"
+                          placeholder="Thumbnail URL or upload"
                         />
                       </div>
                       
@@ -1378,7 +1502,7 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="space-y-4">
-                      {variants.filter(v => v.id !== "main-color").map((variant, idx) => (
+                      {variants.filter(v => v.id !== "main-color" && v.id !== "fit-combo").map((variant, idx) => (
                         <div key={variant.id} className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
                           <div className="mb-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -1475,11 +1599,6 @@ export default function ProductsPage() {
 
                           {variant.type === "fit_combo" && (
                             <div className="space-y-4">
-                              <div className="rounded border border-amber-200 bg-amber-50 p-4 mb-4">
-                                <p className="text-sm text-amber-800">
-                                  <strong>Deprecated:</strong> Top-level fit combos are no longer supported. Please re-create this combo inside the specific Color variant above and delete this one.
-                                </p>
-                              </div>
                               <div>
                                 <label className="block text-xs font-medium text-zinc-700">Variant Name</label>
                                 <input
@@ -1489,10 +1608,53 @@ export default function ProductsPage() {
                                   onChange={(e) => {
                                     const next = [...variants];
                                     const vIdx = next.findIndex(v => v.id === variant.id);
-                                    next[vIdx] = { ...next[vIdx], name: e.target.value };
-                                    setVariants(next);
+                                    if (vIdx !== -1) {
+                                      next[vIdx] = { ...next[vIdx], name: e.target.value };
+                                      setVariants(next);
+                                    }
                                   }}
                                   className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-zinc-700">Display Format</label>
+                                <AdminStyledSelect
+                                  name={`variant-format-${variant.id}`}
+                                  defaultValue={variant.nameFormat || "plus"}
+                                  options={[
+                                    { value: "plus", label: "Base + Combo" },
+                                    { value: "brackets", label: "Base (Combo)" },
+                                  ]}
+                                  onValueChange={(val) => {
+                                    const next = [...variants];
+                                    const vIdx = next.findIndex(v => v.id === variant.id);
+                                    if (vIdx !== -1) {
+                                      next[vIdx] = { ...next[vIdx], nameFormat: val as "plus" | "brackets" };
+                                      setVariants(next);
+                                    }
+                                  }}
+                                  wrapperClassName="mt-1"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="mb-2 block text-xs font-medium text-zinc-700">Combo Thumbnail Image</label>
+                                <AssetUrlField
+                                  id={`variant-${variant.id}-thumb`}
+                                  label="Thumbnail Image URL"
+                                  value={variant.thumbnailUrl || ""}
+                                  onChange={(url) => {
+                                    const next = [...variants];
+                                    const vIdx = next.findIndex(v => v.id === variant.id);
+                                    if (vIdx !== -1) {
+                                      next[vIdx] = { ...next[vIdx], thumbnailUrl: url };
+                                      setVariants(next);
+                                    }
+                                  }}
+                                  uploadFolder={`${productUploadFolder}/variants/${variant.id}`}
+                                  accept="image/*"
+                                  placeholder="Thumbnail URL or upload"
                                 />
                               </div>
                               
@@ -1525,7 +1687,7 @@ export default function ProductsPage() {
                         </div>
                       ))}
                       
-                      {variants.filter(v => v.id !== "main-color").length === 0 && (
+                      {variants.filter(v => v.id !== "main-color" && v.id !== "fit-combo").length === 0 && (
                         <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center">
                           <p className="text-sm text-zinc-500">No additional variants added.</p>
                         </div>

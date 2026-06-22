@@ -910,25 +910,22 @@
 }
 
 .modalImageWrap {
-  position: relative;
   width: 100%;
-  aspect-ratio: 3/4;
-  max-height: 50vh;
-  background: var(--skintone);
+  display: flex;
+  justify-content: center;
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
 .modalImageWrap > :is(img, video),
 .modalImage:is(img, video) {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: var(--skintone);
-  display: block;
+  width: auto;
+  height: auto;
   max-width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--radius-md);
 }
 
 .modalThumbnails {
@@ -1240,7 +1237,6 @@
   }
 
   .modalImageWrap {
-    aspect-ratio: 1/1;
     max-height: 40vh;
   }
 

@@ -192,6 +192,16 @@ export default function OrdersPage() {
                                 <span className="line-clamp-2 text-sm font-medium text-zinc-900">
                                   {item.name}
                                 </span>
+                                {(item.color || item.combo) && (
+                                  <span className="mt-0.5 block text-xs text-zinc-600">
+                                    {(item.color || item.colorHex) && (
+                                      <span className="mr-3 inline-flex items-center gap-1.5 capitalize">
+                                        Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex, border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
+                                      </span>
+                                    )}
+                                    {item.combo && <span className="capitalize">Combo: {item.combo}</span>}
+                                  </span>
+                                )}
                                 <span className="mt-0.5 block text-xs text-zinc-800">
                                   Size{" "}
                                   <span className="font-semibold text-zinc-700">{formatSizeLabel(item.size, item.fit, item.wearTag)}</span>

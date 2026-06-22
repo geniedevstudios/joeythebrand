@@ -147,6 +147,16 @@ function OrderLineRow({ line }: { line: OrderItem }) {
         <ProductMedia src={line.image} alt="" className={styles.orderLineImg} />
         <span className={styles.orderLineBody}>
           <span className={styles.orderLineName}>{line.name || "Product"}</span>
+          {(line.color || line.combo) && (
+            <span className={styles.orderLineMeta} style={{ marginTop: "2px", textTransform: "capitalize" }}>
+              {(line.color || line.colorHex) && (
+                <span style={{ marginRight: "8px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  Color: {line.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: line.colorHex, border: "1px solid #ccc", display: "inline-block" }} title={line.color} /> : line.color}
+                </span>
+              )}
+              {line.combo && <span>Combo: {line.combo}</span>}
+            </span>
+          )}
           <span className={styles.orderLineMeta}>
             Size <strong>{formatSizeLabel(size, line.fit, line.wearTag)}</strong>
             {line.fit && (

@@ -501,7 +501,7 @@ export default function Dashboard() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => router.push("/products")}
+                            onClick={() => router.push(`/products?edit=${p.id}`)}
                             className="text-xs font-semibold text-red-100/90 hover:underline"
                           >
                             Restock
@@ -522,10 +522,10 @@ export default function Dashboard() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => router.push("/products")}
+                            onClick={() => router.push(`/products?edit=${p.id}`)}
                             className="text-xs font-semibold text-amber-100/90 hover:underline"
                           >
-                            Refill
+                            Edit
                           </button>
                         </div>
                       ))}

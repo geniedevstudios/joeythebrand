@@ -1041,7 +1041,6 @@
     padding: var(--space-lg);
   }
   .modalImageWrap {
-    aspect-ratio: 1/1;
     max-height: 40vh;
   }
   .modalThumbnails {

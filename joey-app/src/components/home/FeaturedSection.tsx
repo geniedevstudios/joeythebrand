@@ -66,6 +66,8 @@ export default function FeaturedSection() {
   const wishlistItems = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_WISHLIST);
   const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
   const [quickViewColorVariantId, setQuickViewColorVariantId] = useState<string>("main-color");
+  const [quickViewMode, setQuickViewMode] = useState<"solo" | "paired">("solo");
+  const [quickViewComboId, setQuickViewComboId] = useState<string>("");
   const [activeImage, setActiveImage] = useState<string>("");
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [qty, setQty] = useState(1);
@@ -135,6 +137,14 @@ export default function FeaturedSection() {
     return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
   }, [quickViewColorVariants, quickViewColorVariantId]);
 
+  const quickViewActiveCombo = useMemo(() => {
+    if (quickViewMode !== "paired" || !quickViewComboId) return null;
+    if (quickViewComboId === "fit-combo") {
+      return quickViewPiece?.variants?.find((v: any) => v.id === "fit-combo") || null;
+    }
+    return quickViewActiveVariant?.combos?.find((c: any) => c.id === quickViewComboId) || null;
+  }, [quickViewMode, quickViewComboId, quickViewPiece, quickViewActiveVariant]);
+
   const quickViewGalleryImages = useMemo(() => {
     if (!quickViewPiece) return [];
     
@@ -144,8 +154,12 @@ export default function FeaturedSection() {
       imagesToUse = quickViewActiveVariant.images;
     }
 
-    return imagesToUse;
-  }, [quickViewPiece, quickViewActiveVariant]);
+    if (quickViewActiveCombo && quickViewActiveCombo.images && quickViewActiveCombo.images.length > 0) {
+      imagesToUse = quickViewActiveCombo.images;
+    }
+
+    return imagesToUse.filter((img: string) => img && img.trim() !== "");
+  }, [quickViewPiece, quickViewActiveVariant, quickViewActiveCombo]);
 
   useEffect(() => {
     if (quickViewGalleryImages.length > 0) {
@@ -210,11 +224,14 @@ export default function FeaturedSection() {
         cartStore.addItem({
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
+          color: quickViewActiveVariant?.name || (quickViewActiveVariant?.id === "main-color" ? "Main Color" : undefined),
+          colorHex: quickViewActiveVariant?.colorHex,
+          combo: quickViewActiveCombo ? quickViewActiveCombo.name : undefined,
           size: selectedSize || "Standard",
           fit: (quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") ? selectedFit : undefined,
           wearTag: quickViewPiece.wearTag,
-          price: quickViewPiece.price,
-          image: quickViewPiece.image,
+          price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price,
+          image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewPiece.image,
           quantity: qty,
           maxStock: quickViewPiece.quantity ?? 99,
         });
@@ -281,30 +298,155 @@ export default function FeaturedSection() {
                     </div>
                   )}
 
+                  {quickViewPiece?.variants?.some((v: any) => v.id === "fit-combo") && quickViewColorVariants.length === 0 && (
+                    <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                      <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
+                      <div className={styles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => { setQuickViewMode("solo"); setQuickViewComboId(""); }}
+                          style={{ 
+                            padding: "0.25rem 0", 
+                            borderBottom: quickViewMode === "solo" ? "2px solid #000" : "2px solid transparent",
+                            color: quickViewMode === "solo" ? "#000" : "#888",
+                            fontWeight: quickViewMode === "solo" ? 600 : 400,
+                            background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                          }}
+                        >
+                          Solo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setQuickViewMode("paired"); setQuickViewComboId("fit-combo"); }}
+                          style={{ 
+                            padding: "0.25rem 0", 
+                            borderBottom: quickViewMode === "paired" ? "2px solid #000" : "2px solid transparent",
+                            color: quickViewMode === "paired" ? "#000" : "#888",
+                            fontWeight: quickViewMode === "paired" ? 600 : 400,
+                            background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                          }}
+                        >
+                          Paired
+                        </button>
+                      </div>
+
+                      {quickViewMode === "paired" && (
+                        <div className={styles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <button
+                            onClick={() => setQuickViewComboId("fit-combo")}
+                            style={{
+                              width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
+                              border: quickViewComboId === "fit-combo" ? "2px solid #000" : "1px solid #e5e5e5",
+                              padding: 0, background: "none", cursor: "pointer", position: "relative"
+                            }}
+                            title={quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo"}
+                          >
+                            {quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.thumbnailUrl ? (
+                              <img src={quickViewPiece.variants.find((v: any) => v.id === "fit-combo").thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>
+                                {(quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo").slice(0, 2)}
+                              </div>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {quickViewColorVariants.length > 0 && (
-                    <div className={styles.colorSelectorSection}>
-                      <span className={styles.colorSelectorLabel}>Color:</span>
-                      <div className={styles.colorSelectorSwatches}>
+                    <>
+                      <div className={styles.colorSelectorSection}>
+                        <span className={styles.colorSelectorLabel}>Color:</span>
+                        <div className={styles.colorSelectorSwatches}>
                         {quickViewColorVariants.map((v: any) => (
                           <button
                             key={v.id}
                             className={`${styles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
                             style={{ backgroundColor: v.colorHex }}
-                            onClick={() => setQuickViewColorVariantId(v.id)}
+                            onClick={() => {
+                              setQuickViewColorVariantId(v.id);
+                              if (quickViewMode === "paired" && v.combos && v.combos.length > 0) {
+                                setQuickViewComboId(v.combos[0].id);
+                              } else {
+                                setQuickViewMode("solo");
+                                setQuickViewComboId("");
+                              }
+                            }}
                             aria-label={`Select color ${v.colorHex}`}
                             title={v.id === "main-color" ? "Main Color" : "Additional Color"}
                           />
                         ))}
+                        </div>
                       </div>
-                    </div>
+
+                      {quickViewActiveVariant && quickViewActiveVariant.combos && quickViewActiveVariant.combos.length > 0 && (
+                        <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                          <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
+                          <div className={styles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
+                            <button
+                              type="button"
+                              onClick={() => { setQuickViewMode("solo"); setQuickViewComboId(""); }}
+                              style={{ 
+                                padding: "0.25rem 0", 
+                                borderBottom: quickViewMode === "solo" ? "2px solid #000" : "2px solid transparent",
+                                color: quickViewMode === "solo" ? "#000" : "#888",
+                                fontWeight: quickViewMode === "solo" ? 600 : 400,
+                                background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                              }}
+                            >
+                              Solo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setQuickViewMode("paired"); setQuickViewComboId(quickViewActiveVariant.combos[0].id); }}
+                              style={{ 
+                                padding: "0.25rem 0", 
+                                borderBottom: quickViewMode === "paired" ? "2px solid #000" : "2px solid transparent",
+                                color: quickViewMode === "paired" ? "#000" : "#888",
+                                fontWeight: quickViewMode === "paired" ? 600 : 400,
+                                background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                              }}
+                            >
+                              Paired
+                            </button>
+                          </div>
+                          
+                          {quickViewMode === "paired" && (
+                            <div className={styles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                              {quickViewActiveVariant.combos.map((combo: any) => (
+                                <button
+                                  key={combo.id}
+                                  onClick={() => setQuickViewComboId(combo.id)}
+                                  style={{
+                                    width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
+                                    border: quickViewComboId === combo.id ? "2px solid #000" : "1px solid #e5e5e5",
+                                    padding: 0, background: "none", cursor: "pointer", position: "relative"
+                                  }}
+                                  title={combo.name}
+                                >
+                                  {combo.thumbnailUrl ? (
+                                    <img src={combo.thumbnailUrl} alt={combo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  ) : (
+                                    <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>{combo.name.slice(0, 2)}</div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
                 <div className={styles.modalInfo}>
-                  <h3 id="featured-quickview-title" className={`t-display ${styles.modalTitle}`}>{quickViewPiece.name}</h3>
+                  <h3 id="featured-quickview-title" className={`t-display ${styles.modalTitle}`}>
+                    {quickViewPiece.name} {quickViewActiveCombo ? (quickViewActiveCombo.nameFormat === "brackets" ? `(${quickViewActiveCombo.name})` : `+ ${quickViewActiveCombo.name}`) : ""}
+                  </h3>
                   <div className={styles.modalPriceRow}>
-                    <span className={styles.modalPrice}>{formatPrice(quickViewPiece.price)}</span>
-                    {(quickViewPiece as any).originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice((quickViewPiece as any).originalPrice)}</span>}
+                    <span className={styles.modalPrice}>{formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}</span>
+                    {!quickViewActiveCombo && (quickViewPiece as any).originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice((quickViewPiece as any).originalPrice)}</span>}
                   </div>
 
                   <p className={styles.modalDesc}>{quickViewPiece.description}</p>
