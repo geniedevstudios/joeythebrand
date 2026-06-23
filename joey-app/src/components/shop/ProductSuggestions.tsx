@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { toast } from "sonner";
 import { wishlistStore } from "@/store/wishlistStore";
 import ProductMedia from "@/components/shop/ProductMedia";
@@ -41,7 +42,8 @@ export default function ProductSuggestions({
 
             return (
               <article key={item.id} className={productStyles.suggestCard}>
-                <div className={productStyles.suggestImgWrap}>
+                <div style={{ position: "relative" }}>
+                  <div className={productStyles.suggestImgWrap}>
                   {item.hoverImage ? (
                     <>
                       <ProductMedia src={item.image} alt={item.name} className={productStyles.suggestImgPrimary} loading="lazy" />
@@ -61,12 +63,12 @@ export default function ProductSuggestions({
                           aria-hidden="true"
                         />
                       ))}
-                      {totalColors > 0 && (
-                        <span className={shopStyles.colorCount}>{totalColors}</span>
+                      {totalColors > 3 && (
+                        <span className={shopStyles.colorCount}>3+</span>
                       )}
                     </div>
                   )}
-                  
+
                   <div className={productStyles.suggestOverlay}>
                     <div className={productStyles.suggestActions}>
                       <button
@@ -104,18 +106,49 @@ export default function ProductSuggestions({
                       </button>
                     </div>
                     <div className={productStyles.suggestPickMeWrap}>
-                      {item.isOutOfStock ? (
-                        <span className={`${productStyles.suggestPickMeBtn} ${shopStyles.soldOutBtn}`}>
-                          Sold Out
-                        </span>
-                      ) : (
-                        <Link href={`/shop/${item.slug || item.id}`} className={productStyles.suggestPickMeBtn}>
-                          Pick Me
-                        </Link>
-                      )}
+                      {(() => {
+                        const isBespoke = !!(item.bespokeAvailable && item.quantity <= 0);
+                        return isBespoke ? (
+                          <Link href={`/shop/${item.slug || item.id}`} className={productStyles.suggestPickMeBtn}>
+                            Bespoke
+                          </Link>
+                        ) : item.isOutOfStock ? (
+                          <span className={`${productStyles.suggestPickMeBtn} ${shopStyles.soldOutBtn}`}>
+                            Sold Out
+                          </span>
+                        ) : (
+                          <Link href={`/shop/${item.slug || item.id}`} className={productStyles.suggestPickMeBtn}>
+                            Pick Me
+                          </Link>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
+
+                <div className={shopStyles.badgeStack} aria-hidden="true">
+                  {(() => {
+                    const isBespoke = !!(item.bespokeAvailable && item.quantity <= 0);
+                    return isBespoke ? (
+                      <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                    ) : item.isOutOfStock ? (
+                      <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                    ) : (
+                      <>
+                        {item.category === "sample-sale" && (
+                          <span className={shopStyles.saleBadge}>SALE</span>
+                        )}
+                        {item.isLimited && item.category !== "sample-sale" && (
+                          <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                        )}
+                        {item.isBestSeller && (
+                          <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
                 <div className={productStyles.suggestInfo}>
                   <h3 className={productStyles.suggestName}>{item.name}</h3>
                   <p className={productStyles.suggestPrice}>{formatPrice(item.price)}</p>

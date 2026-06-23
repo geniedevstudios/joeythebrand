@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useSyncExternalStore, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -191,6 +192,7 @@ export default function ShopClient() {
 
     setTimeout(() => {
       import("@/store/cartStore").then(({ cartStore }) => {
+        const isBespokeProduct = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
         cartStore.addItem({
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
@@ -203,7 +205,9 @@ export default function ShopClient() {
           price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price,
           image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewPiece.image,
           quantity: qty,
-          maxStock: quickViewPiece.quantity ?? 99,
+          maxStock: isBespokeProduct ? 999 : (quickViewPiece.quantity ?? 99),
+          isBespoke: isBespokeProduct || undefined,
+          bespokeLeadDays: isBespokeProduct ? (quickViewPiece.bespokeLeadDays || 14) : undefined,
         });
 
         setAddStatus("added");
@@ -524,39 +528,55 @@ export default function ShopClient() {
                         </div>
 
                         <div className={styles.pickMeWrap}>
-                          {p.isOutOfStock ? (
-                            <span className={`${styles.pickMeBtn} ${styles.soldOutBtn}`}>
-                              Sold Out
-                            </span>
-                          ) : (
-                            <Link
-                              href={`/shop/${p.slug || p.id}`}
-                              className={styles.pickMeBtn}
-                              aria-label={`View ${p.name}`}
-                            >
-                              Pick Me
-                            </Link>
-                          )}
+                          {(() => {
+                            const isBespoke = !!(p.bespokeAvailable && p.quantity <= 0);
+                            return isBespoke ? (
+                              <Link
+                                href={`/shop/${p.slug || p.id}`}
+                                className={styles.pickMeBtn}
+                                aria-label={`View ${p.name}`}
+                              >
+                                Bespoke
+                              </Link>
+                            ) : p.isOutOfStock ? (
+                              <span className={`${styles.pickMeBtn} ${styles.soldOutBtn}`}>
+                                Sold Out
+                              </span>
+                            ) : (
+                              <Link
+                                href={`/shop/${p.slug || p.id}`}
+                                className={styles.pickMeBtn}
+                                aria-label={`View ${p.name}`}
+                              >
+                                Pick Me
+                              </Link>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
 
                     <div className={styles.badgeStack} aria-hidden="true">
-                      {p.isOutOfStock ? (
-                        <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                      ) : (
-                        <>
-                          {p.category === "sample-sale" && (
-                            <span className={styles.saleBadge}>SALE</span>
-                          )}
-                          {p.isLimited && p.category !== "sample-sale" && (
-                            <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
-                          )}
-                          {p.isBestSeller && (
-                            <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                          )}
-                        </>
-                      )}
+                      {(() => {
+                        const isBespoke = !!(p.bespokeAvailable && p.quantity <= 0);
+                        return isBespoke ? (
+                          <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                        ) : p.isOutOfStock ? (
+                          <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                        ) : (
+                          <>
+                            {p.category === "sample-sale" && (
+                              <span className={styles.saleBadge}>SALE</span>
+                            )}
+                            {p.isLimited && p.category !== "sample-sale" && (
+                              <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                            )}
+                            {p.isBestSeller && (
+                              <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   <div className={styles.info}>
@@ -593,8 +613,30 @@ export default function ShopClient() {
             </button>
             <div className={styles.modalGrid}>
               <div className={styles.modalGallery}>
-                <div className={styles.modalImageWrap}>
+                <div className={styles.modalImageWrap} style={{ position: "relative" }}>
                   <ProductMedia src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
+                  <div className={styles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
+                    {(() => {
+                      const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                      return isBespoke ? (
+                        <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                      ) : quickViewPiece.isOutOfStock ? (
+                        <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                      ) : (
+                        <>
+                          {quickViewPiece.category === "sample-sale" && (
+                            <span className={styles.saleBadge}>SALE</span>
+                          )}
+                          {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
+                            <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                          )}
+                          {quickViewPiece.isBestSeller && (
+                            <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
                 {quickViewGalleryImages && quickViewGalleryImages.length > 1 && (
                   <div className={styles.modalThumbnails}>
@@ -654,7 +696,7 @@ export default function ShopClient() {
                           title={quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo"}
                         >
                           {quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.thumbnailUrl ? (
-                            <img src={quickViewPiece.variants.find((v: any) => v.id === "fit-combo").thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <img src={quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           ) : (
                             <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>
                               {(quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo").slice(0, 2)}
@@ -711,7 +753,7 @@ export default function ShopClient() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => { setQuickViewMode("paired"); setQuickViewComboId(quickViewActiveVariant.combos[0].id); }}
+                            onClick={() => { setQuickViewMode("paired"); setQuickViewComboId(quickViewActiveVariant?.combos?.[0]?.id || ""); }}
                             style={{ 
                               padding: "0.25rem 0", 
                               borderBottom: quickViewMode === "paired" ? "2px solid #000" : "2px solid transparent",
@@ -726,7 +768,7 @@ export default function ShopClient() {
                         
                         {quickViewMode === "paired" && (
                           <div className={styles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                            {quickViewActiveVariant.combos.map((combo: any) => (
+                            {quickViewActiveVariant.combos?.map((combo: any) => (
                               <button
                                 key={combo.id}
                                 onClick={() => setQuickViewComboId(combo.id)}
@@ -809,11 +851,18 @@ export default function ShopClient() {
                   </p>
                 )}
 
-                {quickViewPiece.isOutOfStock && (
-                  <p className={styles.customNotice} style={{ color: "#c00", background: "#fee" }}>
-                    This item is currently out of stock.
-                  </p>
-                )}
+                {(() => {
+                  const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                  return isBespoke ? (
+                    <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff" }}>
+                      🧵 Bespoke order. Expect ~{quickViewPiece.bespokeLeadDays || 14} days for production.
+                    </p>
+                  ) : quickViewPiece.isOutOfStock ? (
+                    <p className={styles.customNotice} style={{ color: "#c00", background: "#fee" }}>
+                      This item is currently out of stock.
+                    </p>
+                  ) : null;
+                })()}
 
                 <div className={styles.modalQtyRow}>
                   <div className={styles.qtyLeft}>
@@ -824,13 +873,14 @@ export default function ShopClient() {
                       <button 
                         className={styles.qtyBtn} 
                         onClick={() => {
-                          if (qty < quickViewPiece.quantity) {
+                          const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                          if (isBespoke || qty < (quickViewPiece.quantity ?? 999)) {
                             setQty(qty + 1);
                           } else {
                             toast.error(`Only ${quickViewPiece.quantity} items available.`);
                           }
                         }}
-                        disabled={qty >= quickViewPiece.quantity}
+                        disabled={!(!!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0)) && qty >= (quickViewPiece.quantity ?? 999)}
                       >
                         +
                       </button>
@@ -843,14 +893,23 @@ export default function ShopClient() {
                 </div>
 
                 <div className={styles.modalActions}>
-                  <button
-                    className={`btn btn-primary ${styles.modalAddBtn}`}
-                    onClick={handleAddToCart}
-                    disabled={addStatus !== "idle" || quickViewPiece.isOutOfStock}
-                    style={{ transition: "all 0.3s ease" }}
-                  >
-                    {quickViewPiece.isOutOfStock ? "Out of Stock" : addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added 👍"}
-                  </button>
+                  {(() => {
+                    const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                    return (
+                      <button
+                        className={`btn btn-primary ${styles.modalAddBtn}`}
+                        onClick={handleAddToCart}
+                        disabled={(quickViewPiece.isOutOfStock && !isBespoke) || addStatus !== "idle"}
+                        style={{ transition: "all 0.3s ease" }}
+                      >
+                        {quickViewPiece.isOutOfStock && !isBespoke
+                          ? "Out of Stock"
+                          : isBespoke
+                            ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added 👍")
+                            : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added 👍")}
+                      </button>
+                    );
+                  })()}
                   <button
                     className={styles.modalWishlistBtn}
                     onClick={() => toggleWishlist(quickViewPiece)}
@@ -861,6 +920,18 @@ export default function ShopClient() {
                     {isInWishlist(quickViewPiece.id) ? "Saved to wishlist" : "Add to wishlist"}
                   </button>
                 </div>
+
+                {(() => {
+                  const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                  return isBespoke ? (
+                    <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "16px", marginBottom: "2px", fontSize: "0.95rem", color: "rgba(20, 20, 20, 0.78)", background: "#f5f3ff", borderColor: "#c4b5fd", padding: "8px", borderRadius: "6px" }}>
+                      <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "18px", height: "18px", color: "#7c3aed" }} />
+                      <span style={{ color: "#5b21b6" }}>
+                        bespoke piece would be handcrafted for you within {quickViewPiece.bespokeLeadDays || 14} days
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
 
                 <div className={styles.modalMeta}>
                   {(() => {

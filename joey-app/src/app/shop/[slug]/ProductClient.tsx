@@ -315,6 +315,8 @@ export default function ProductClient({ slug }: { slug: string }) {
     );
   }
 
+  const isBespokeProduct = !!(product.bespokeAvailable && product.quantity <= 0);
+
   const handleAddToCart = () => {
     if (!selectedSize && (product.sizes?.length ?? 0) > 0) {
       toast.error("Please pick a size before adding to cart.");
@@ -337,7 +339,9 @@ export default function ProductClient({ slug }: { slug: string }) {
           price: activeCombo ? (activeCombo.price || product.price) : product.price,
           image: activeCombo?.thumbnailUrl || galleryImages[0] || product.image,
           quantity: qty,
-          maxStock: product.quantity
+          maxStock: isBespokeProduct ? 999 : product.quantity,
+          isBespoke: isBespokeProduct || undefined,
+          bespokeLeadDays: isBespokeProduct ? (product.bespokeLeadDays || 14) : undefined,
         });
         
         setAddStatus("added");
@@ -394,7 +398,9 @@ export default function ProductClient({ slug }: { slug: string }) {
                 className={styles.mainImage} 
               />
               <div className={styles.badgeStack} aria-hidden="true">
-                {product.isOutOfStock ? (
+                {isBespokeProduct ? (
+                  <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                ) : product.isOutOfStock ? (
                   <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                 ) : (
                   <>
@@ -403,6 +409,9 @@ export default function ProductClient({ slug }: { slug: string }) {
                     )}
                     {product.isLimited && product.category !== "sample-sale" && (
                       <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                    )}
+                    {product.isBestSeller && (
+                      <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
                     )}
                   </>
                 )}
@@ -656,11 +665,15 @@ export default function ProductClient({ slug }: { slug: string }) {
                 )}
               </div>
 
-              {product.isOutOfStock && (
+              {isBespokeProduct ? (
+                <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff", marginTop: "12px" }}>
+                  🧵 This piece is bespoke. Expect approximately {product.bespokeLeadDays || 14} days for production after your order is confirmed.
+                </p>
+              ) : product.isOutOfStock ? (
                 <p className={styles.customNotice} style={{ color: "#c00", background: "#fee", marginTop: "12px" }}>
                   This item is currently out of stock.
                 </p>
-              )}
+              ) : null}
 
               <div className={styles.qtySection}>
                 <div className={styles.qtyHeader}>
@@ -672,13 +685,13 @@ export default function ProductClient({ slug }: { slug: string }) {
                   <button 
                     className={styles.qtyBtn} 
                     onClick={() => {
-                      if (qty < product.quantity) {
+                      if (isBespokeProduct || qty < product.quantity) {
                         setQty(qty + 1);
                       } else {
                         toast.error(`Only ${product.quantity} items available in stock.`);
                       }
                     }}
-                    disabled={qty >= product.quantity}
+                    disabled={!isBespokeProduct && qty >= product.quantity}
                   >
                     +
                   </button>
@@ -690,9 +703,13 @@ export default function ProductClient({ slug }: { slug: string }) {
                   <button 
                     className="btn btn-primary btn-lg" 
                     onClick={handleAddToCart}
-                    disabled={addStatus !== "idle" || product.isOutOfStock}
+                    disabled={addStatus !== "idle" || (product.isOutOfStock && !isBespokeProduct)}
                   >
-                    {product.isOutOfStock ? "Out of Stock" : addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added ✓"}
+                    {product.isOutOfStock && !isBespokeProduct
+                      ? "Out of Stock"
+                      : isBespokeProduct
+                        ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added ✓")
+                        : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added ✓")}
                   </button>
                   <button 
                     className={`btn btn-outline btn-lg ${styles.wishlistBtn}`}
@@ -705,7 +722,14 @@ export default function ProductClient({ slug }: { slug: string }) {
                   </button>
                 </div>
 
-                {typeof product.quantity === "number" &&
+                {isBespokeProduct ? (
+                  <div className={styles.lowStockNotice} role="status" aria-live="polite" style={{ background: "#f5f3ff", borderColor: "#c4b5fd" }}>
+                    <Clock className={styles.lowStockIcon} aria-hidden style={{ color: "#7c3aed" }} />
+                    <span style={{ color: "#5b21b6" }}>
+                      bespoke piece would be handcrafted for you within {product.bespokeLeadDays || 14} days
+                    </span>
+                  </div>
+                ) : typeof product.quantity === "number" &&
                 product.quantity > 0 &&
                 product.quantity <= 5 &&
                 !product.isOutOfStock ? (
@@ -777,8 +801,30 @@ export default function ProductClient({ slug }: { slug: string }) {
           </button>
           <div className={styles.modalGrid}>
             <div className={styles.modalGallery}>
-              <div className={styles.modalImageWrap}>
+              <div className={styles.modalImageWrap} style={{ position: "relative" }}>
                 <ProductMedia src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
+                <div className={shopStyles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
+                  {(() => {
+                    const isBespoke = !!(quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0);
+                    return isBespoke ? (
+                      <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                    ) : quickViewItem.isOutOfStock ? (
+                      <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                    ) : (
+                      <>
+                        {quickViewItem.category === "sample-sale" && (
+                          <span className={shopStyles.saleBadge}>SALE</span>
+                        )}
+                        {quickViewItem.isLimited && quickViewItem.category !== "sample-sale" && (
+                          <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                        )}
+                        {quickViewItem.isBestSeller && (
+                          <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
               {quickViewGalleryImages.length > 1 && (
                 <div className={styles.modalThumbnails}>
@@ -944,6 +990,19 @@ export default function ProductClient({ slug }: { slug: string }) {
                 </p>
               )}
 
+              {(() => {
+                const isBespoke = !!(quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0);
+                return isBespoke ? (
+                  <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff", marginTop: "12px" }}>
+                    🧵 Bespoke order. Expect ~{quickViewItem.bespokeLeadDays || 14} days for production.
+                  </p>
+                ) : quickViewItem.isOutOfStock ? (
+                  <p className={styles.customNotice} style={{ color: "#c00", background: "#fee", marginTop: "12px" }}>
+                    This item is currently out of stock.
+                  </p>
+                ) : null;
+              })()}
+
               <div className={styles.modalQtyRow}>
                 <div className={styles.qtyLeft}>
                   <span className={styles.qtyLabel}>Quantity:</span>
@@ -953,13 +1012,14 @@ export default function ProductClient({ slug }: { slug: string }) {
                     <button 
                       className={styles.qtyBtn} 
                       onClick={() => {
-                        if (qty < (quickViewItem.quantity ?? 999)) {
+                        const isBespoke = !!(quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0);
+                        if (isBespoke || qty < (quickViewItem.quantity ?? 999)) {
                           setQty(qty + 1);
                         } else {
                           toast.error(`Only ${quickViewItem.quantity} items available.`);
                         }
                       }}
-                      disabled={qty >= (quickViewItem.quantity ?? 999)}
+                      disabled={!(!!(quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0)) && qty >= (quickViewItem.quantity ?? 999)}
                     >
                       +
                     </button>
@@ -972,37 +1032,58 @@ export default function ProductClient({ slug }: { slug: string }) {
               </div>
 
               <div className={styles.modalActions}>
-                <button 
-                  className={`btn btn-primary ${styles.modalAddBtn}`} 
-                  onClick={() => {
-                    if (!quickViewSize && quickViewItem.sizes?.length) {
-                      toast.error(`Please select a size for ${quickViewItem.name} first!`);
-                      return;
-                    }
+                {(() => {
+                  const isBespoke = !!(quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0);
+                  return (
+                    <button 
+                      className={`btn btn-primary ${styles.modalAddBtn}`} 
+                      disabled={(quickViewItem.isOutOfStock && !isBespoke) || addStatus !== "idle"}
+                      style={{ transition: "all 0.3s ease" }}
+                      onClick={() => {
+                        if (!quickViewSize && quickViewItem.sizes?.length) {
+                          toast.error(`Please select a size for ${quickViewItem.name} first!`);
+                          return;
+                        }
 
-                    import("@/store/cartStore").then(({ cartStore }) => {
-                      cartStore.addItem({
-                        productId: quickViewItem.id,
-                        name: quickViewItem.name,
-                        color: quickViewActiveColorVariant?.name || (quickViewActiveColorVariant?.id === "main-color" ? "Main Color" : undefined),
-                        colorHex: quickViewActiveColorVariant?.colorHex,
-                        combo: quickViewActiveCombo ? quickViewActiveCombo.name : undefined,
-                        size: quickViewSize || "Standard",
-                        fit: (quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") ? quickViewFit : undefined,
-                        wearTag: quickViewItem.wearTag,
-                        price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price,
-                        image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewItem.image,
-                        quantity: qty,
-                        maxStock: quickViewItem.quantity,
-                      });
-                      toast.success(`${quickViewItem.name} added to your cart!`);
-                      setQuickViewItem(null);
-                      setQuickViewImage("");
-                    });
-                  }}
-                >
-                  Add To Cart
-                </button>
+                        setAddStatus("adding");
+                        setTimeout(() => {
+                          import("@/store/cartStore").then(({ cartStore }) => {
+                            cartStore.addItem({
+                              productId: quickViewItem.id,
+                              name: quickViewItem.name,
+                              color: quickViewActiveColorVariant?.name || (quickViewActiveColorVariant?.id === "main-color" ? "Main Color" : undefined),
+                              colorHex: quickViewActiveColorVariant?.colorHex,
+                              combo: quickViewActiveCombo ? quickViewActiveCombo.name : undefined,
+                              size: quickViewSize || "Standard",
+                              fit: (quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") ? quickViewFit : undefined,
+                              wearTag: quickViewItem.wearTag,
+                              price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price,
+                              image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewItem.image,
+                              quantity: qty,
+                              maxStock: isBespoke ? 999 : quickViewItem.quantity,
+                              isBespoke: isBespoke || undefined,
+                              bespokeLeadDays: isBespoke ? (quickViewItem.bespokeLeadDays || 14) : undefined,
+                            });
+                            
+                            setAddStatus("added");
+                            toast.success(`${quickViewItem.name} added to your cart!`);
+                            setTimeout(() => {
+                              setAddStatus("idle");
+                              setQuickViewItem(null);
+                              setQuickViewImage("");
+                            }, 2000);
+                          });
+                        }, 400);
+                      }}
+                    >
+                      {quickViewItem.isOutOfStock && !isBespoke
+                        ? "Out of Stock"
+                        : isBespoke
+                          ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added 👍")
+                          : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added 👍")}
+                    </button>
+                  );
+                })()}
                 <button 
                   className={styles.modalWishlistBtn}
                   onClick={() => toggleWishlist(quickViewItem)}
@@ -1013,6 +1094,18 @@ export default function ProductClient({ slug }: { slug: string }) {
                   {isInWishlist(quickViewItem.id) ? "Saved to wishlist" : "Add to wishlist"}
                 </button>
               </div>
+
+              {(() => {
+                const isBespoke = !!(quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0);
+                return isBespoke ? (
+                  <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "16px", marginBottom: "2px", fontSize: "0.95rem", color: "rgba(20, 20, 20, 0.78)", background: "#f5f3ff", borderColor: "#c4b5fd", padding: "8px", borderRadius: "6px" }}>
+                    <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "18px", height: "18px", color: "#7c3aed" }} />
+                    <span style={{ color: "#5b21b6" }}>
+                      bespoke piece would be handcrafted for you within {quickViewItem.bespokeLeadDays || 14} days
+                    </span>
+                  </div>
+                ) : null;
+              })()}
 
               <div className={styles.modalMeta}>
                 {(() => {

@@ -47,6 +47,8 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   featured: Boolean(row.featured),
   wearTag: normalizeWearTag(row.wear_tag),
   quantity: Number(row.quantity ?? 0),
+  bespokeAvailable: Boolean(row.bespoke_available),
+  bespokeLeadDays: Number(row.bespoke_lead_days ?? 14),
   variants: (row.variants as any) || [],
 });
 
@@ -431,6 +433,8 @@ export const dataStore = {
     if (updates.featured !== undefined) payload.featured = updates.featured;
     if (updates.wearTag !== undefined) payload.wear_tag = updates.wearTag;
     if (updates.quantity !== undefined) payload.quantity = updates.quantity;
+    if (updates.bespokeAvailable !== undefined) payload.bespoke_available = updates.bespokeAvailable;
+    if (updates.bespokeLeadDays !== undefined) payload.bespoke_lead_days = updates.bespokeLeadDays;
     if (updates.variants !== undefined) payload.variants = updates.variants;
 
     const { error } = await supabase.from("products").update(payload).eq("id", id);
@@ -463,6 +467,8 @@ export const dataStore = {
       featured: product.featured,
       wear_tag: product.wearTag ?? "unisex",
       quantity: product.quantity ?? 0,
+      bespoke_available: product.bespokeAvailable ?? false,
+      bespoke_lead_days: product.bespokeLeadDays ?? 14,
       variants: product.variants ?? [],
     });
     if (error) throw new Error(error.message);

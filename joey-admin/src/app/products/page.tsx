@@ -273,6 +273,7 @@ export default function ProductsPage() {
   const [sizeButtonsMode, setSizeButtonsMode] = useState<SizeButtonsMode>("standard");
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [productModalTab, setProductModalTab] = useState<"regular" | "variant">("regular");
+  const [badgeType, setBadgeType] = useState<string>("none");
 
   const [productPendingDelete, setProductPendingDelete] = useState<Product | null>(null);
   const [collectionPendingDelete, setCollectionPendingDelete] = useState<Collection | null>(null);
@@ -309,6 +310,17 @@ export default function ProductsPage() {
       setSizeButtonsMode(inferSizeButtonsMode(editingProduct.sizes));
       setVariants(editingProduct.variants || []);
       setProductModalTab(editingProduct.variants && editingProduct.variants.length > 0 ? "variant" : "regular");
+      setBadgeType(
+        editingProduct.isOutOfStock
+          ? "isOutOfStock"
+          : editingProduct.isLimited
+          ? "isLimited"
+          : editingProduct.isBestSeller
+          ? "isBestSeller"
+          : editingProduct.bespokeAvailable
+          ? "bespokeAvailable"
+          : "none"
+      );
     } else {
       setMainImageUrl("");
       setHoverImageUrl("");
@@ -317,6 +329,7 @@ export default function ProductsPage() {
       setSizeButtonsMode("standard");
       setVariants([]);
       setProductModalTab("regular");
+      setBadgeType("none");
     }
   }, [isModalOpen, editingProduct]);
 
@@ -477,14 +490,18 @@ export default function ProductsPage() {
       .split(/\n/)
       .map((s) => s.replace(/^[•\-\u2022]\s*/, "").trim())
       .filter(Boolean);
-    const isOutOfStock = formData.get("isOutOfStock") === "on";
-    const isLimited = formData.get("isLimited") === "on";
-    const isBestSeller = formData.get("isBestSeller") === "on";
+    const badgeType = formData.get("badgeType") as string;
+    const isOutOfStock = badgeType === "isOutOfStock";
+    const isLimited = badgeType === "isLimited";
+    const isBestSeller = badgeType === "isBestSeller";
+    const bespokeAvailable = badgeType === "bespokeAvailable";
+
     const featured = formData.get("featured") === "on";
     const wearRaw = (formData.get("wearTag") as string) || "unisex";
     const wearTag: WearTag =
       wearRaw === "mens" || wearRaw === "womens" || wearRaw === "unisex" ? wearRaw : "unisex";
     const quantity = Number(formData.get("quantity")) || 0;
+    const bespokeLeadDays = Number(formData.get("bespokeLeadDays")) || 14;
 
     const col = collectionOptions.find((c) => c.slug === category);
     const categoryName =
@@ -517,6 +534,8 @@ export default function ProductsPage() {
           sizes: newSizes,
           wearTag,
           quantity,
+          bespokeAvailable,
+          bespokeLeadDays,
           variants: productModalTab === "variant" ? variants : [],
         });
       } else {
@@ -538,6 +557,8 @@ export default function ProductsPage() {
           featured,
           wearTag,
           quantity,
+          bespokeAvailable,
+          bespokeLeadDays,
           variants: productModalTab === "variant" ? variants : [],
         });
       }
@@ -889,6 +910,11 @@ export default function ProductsPage() {
                         {product.isBestSeller && (
                           <span className="ml-2 inline-flex rounded-full bg-yellow-100 px-2 text-xs font-semibold leading-5 text-yellow-800">
                             Best Seller
+                          </span>
+                        )}
+                        {product.bespokeAvailable && (
+                          <span className="ml-2 inline-flex rounded-full bg-purple-100 px-2 text-xs font-semibold leading-5 text-purple-800">
+                            Bespoke
                           </span>
                         )}
                       </td>
@@ -1404,36 +1430,43 @@ export default function ProductsPage() {
                   </p>
                 </div>
 
-                <div className="col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-zinc-700">Inventory &amp; tags</label>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-zinc-700" id="product-field-badge">
+                    Product Badge
+                  </label>
+                  <AdminStyledSelect
+                    name="badgeType"
+                    labelledBy="product-field-badge"
+                    defaultValue={badgeType}
+                    onValueChange={setBadgeType}
+                    wrapperClassName="mt-1"
+                    options={[
+                      { value: "none", label: "None" },
+                      { value: "isOutOfStock", label: "Out of stock" },
+                      { value: "isLimited", label: "Limited edition / archive" },
+                      { value: "isBestSeller", label: "Best Seller" },
+                      { value: "bespokeAvailable", label: "Bespoke available (made to order when out of stock)" },
+                    ]}
+                  />
+                  {badgeType === "bespokeAvailable" && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-zinc-700">Bespoke lead time (days)</label>
                       <input
-                        type="checkbox"
-                        name="isOutOfStock"
-                        defaultChecked={editingProduct?.isOutOfStock}
-                        className="rounded border-zinc-300 text-zinc-900"
+                        type="number"
+                        name="bespokeLeadDays"
+                        defaultValue={editingProduct?.bespokeLeadDays ?? 14}
+                        min={1}
+                        max={90}
+                        className="mt-1 block w-32 rounded-md border border-zinc-300 p-2 text-sm shadow-sm bg-white"
                       />
-                      <span className="text-sm font-medium text-zinc-900">Out of stock</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        name="isLimited"
-                        defaultChecked={editingProduct?.isLimited}
-                        className="rounded border-zinc-300 text-zinc-900"
-                      />
-                      <span className="text-sm font-medium text-zinc-900">Limited edition / archive</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        name="isBestSeller"
-                        defaultChecked={editingProduct?.isBestSeller}
-                        className="rounded border-zinc-300 text-zinc-900"
-                      />
-                      <span className="text-sm font-medium text-zinc-900">Best seller</span>
-                    </label>
+                      <p className="mt-1 text-xs text-zinc-500">How many days to produce a bespoke order for this product.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-zinc-700">Features</label>
+                  <div className="mt-3 space-y-2">
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"

@@ -159,6 +159,11 @@ export default function CartClient() {
                       <p className={styles.itemSize}>
                         {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
                       </p>
+                      {item.isBespoke && (
+                        <p style={{ fontSize: "11px", color: "#7c3aed", background: "#f5f3ff", padding: "3px 8px", borderRadius: "4px", marginTop: "4px", display: "inline-block", fontWeight: 600 }}>
+                          Bespoke Order · ~{item.bespokeLeadDays || 14} days
+                        </p>
+                      )}
                     </div>
                   </div>
 

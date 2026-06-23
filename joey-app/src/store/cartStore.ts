@@ -12,6 +12,8 @@ export type CartItem = {
   image: string;
   quantity: number;
   maxStock: number;
+  isBespoke?: boolean;
+  bespokeLeadDays?: number;
 };
 
 export type AppliedPromotion = {

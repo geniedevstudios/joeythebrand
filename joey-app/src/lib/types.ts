@@ -52,6 +52,8 @@ export interface Product {
   featured: boolean;
   wearTag: WearTag;
   quantity: number;
+  bespokeAvailable?: boolean;
+  bespokeLeadDays?: number;
   variants?: ProductVariant[];
 }
 

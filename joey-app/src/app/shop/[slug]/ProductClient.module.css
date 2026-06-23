@@ -150,7 +150,7 @@
   position: absolute;
   top: var(--space-md);
   left: var(--space-md);
-  z-index: 3;
+  z-index: 20;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -780,7 +780,7 @@
   position: absolute;
   top: 10px;
   left: 10px;
-  z-index: 3;
+  z-index: 20;
   display: flex;
   flex-direction: column;
   gap: 6px;

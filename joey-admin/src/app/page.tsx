@@ -234,9 +234,10 @@ export default function Dashboard() {
     );
   }
 
-  const outOfStock = products.filter((p) => p.quantity <= 0);
-  const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < 5);
-  const inventoryAlerts = outOfStock.length + lowStock.length;
+  const outOfStock = products.filter((p) => p.quantity <= 0 && !p.bespokeAvailable);
+  const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < 5 && !p.bespokeAvailable);
+  const bespokeProducts = products.filter((p) => p.bespokeAvailable);
+  const inventoryAlerts = outOfStock.length + lowStock.length + bespokeProducts.length;
 
   const recentOrders = orders.slice(0, 6);
   const t = todayParts();
@@ -360,7 +361,8 @@ export default function Dashboard() {
                       {outOfStock.length ? `${outOfStock.length} out` : ""}
                       {outOfStock.length && lowStock.length ? " · " : ""}
                       {lowStock.length ? `${lowStock.length} low` : ""}
-                      {!outOfStock.length && !lowStock.length ? "Healthy" : ""}
+                      {bespokeProducts.length ? `${outOfStock.length || lowStock.length ? " · " : ""}${bespokeProducts.length} bespoke` : ""}
+                      {!outOfStock.length && !lowStock.length && !bespokeProducts.length ? "Healthy" : ""}
                     </span>
                   </div>
                 </button>
@@ -524,6 +526,27 @@ export default function Dashboard() {
                             type="button"
                             onClick={() => router.push(`/products?edit=${p.id}`)}
                             className="text-xs font-semibold text-amber-100/90 hover:underline"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      ))}
+
+                      {bespokeProducts.slice(0, 3).map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between rounded-2xl border border-purple-500/15 bg-purple-500/10 p-4"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                            <p className="text-xs font-semibold text-purple-200/90">
+                              Bespoke option available
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/products?edit=${p.id}`)}
+                            className="text-xs font-semibold text-purple-100/90 hover:underline"
                           >
                             Edit
                           </button>

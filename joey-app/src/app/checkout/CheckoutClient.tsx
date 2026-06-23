@@ -470,6 +470,11 @@ export default function CheckoutClient() {
                   <span className={styles.itemSize}>
                     {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
                   </span>
+                  {item.isBespoke && (
+                    <span style={{ fontSize: "11px", color: "#7c3aed", background: "#f5f3ff", padding: "2px 7px", borderRadius: "4px", marginTop: "3px", display: "inline-block", fontWeight: 600 }}>
+                      Bespoke Order · ~{item.bespokeLeadDays || 14} days
+                    </span>
+                  )}
                 </div>
                 <span className={styles.itemPrice}>GHC {(item.price * item.quantity).toLocaleString()}</span>
               </div>
