@@ -5,8 +5,8 @@ const CuratedInner = () => (
   <>
     <span className={styles.curatedLabel}>Curated by</span>
     <Image
-      src="/emoji-genie-apple.png"
-      alt="Developer emoji"
+      src="/genie-logo.png"
+      alt="Genie Logo"
       width={24}
       height={24}
       className={styles.genieImg}
