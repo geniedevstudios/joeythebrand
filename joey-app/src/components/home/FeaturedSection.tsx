@@ -691,8 +691,8 @@ export default function FeaturedSection() {
                             aria-hidden="true"
                           />
                         ))}
-                        {totalColors > 0 && (
-                          <span className={styles.colorCount}>{totalColors}</span>
+                        {totalColors > 3 && (
+                          <span className={styles.colorCount}>3+</span>
                         )}
                       </div>
                     )}

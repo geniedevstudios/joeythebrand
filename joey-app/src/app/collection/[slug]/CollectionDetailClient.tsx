@@ -487,8 +487,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                                 aria-hidden="true"
                               />
                             ))}
-                            {totalColors > 0 && (
-                              <span className={shopStyles.colorCount}>{totalColors}</span>
+                            {totalColors > 3 && (
+                              <span className={shopStyles.colorCount}>3+</span>
                             )}
                           </div>
                         )}

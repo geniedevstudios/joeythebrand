@@ -109,7 +109,8 @@ const mapCollection = (row: Record<string, unknown>): Collection => ({
   briefDescription: (row.brief_description as string) || "",
   description: (row.description as string) || "",
   image: (row.image as string) || undefined,
-  hoverImage: (row.hover_image as string) || undefined,
+  image2: (row.image2 as string) || undefined,
+  image3: (row.image3 as string) || undefined,
   galleryUrls: Array.isArray(row.gallery_urls)
     ? (row.gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
     : [],
@@ -326,7 +327,8 @@ export const dataStore = {
       brief_description: c.briefDescription.trim(),
       description: c.description.trim(),
       image: c.image || null,
-      hover_image: c.hoverImage || null,
+      image2: c.image2 || null,
+      image3: c.image3 || null,
       gallery_urls: (c.galleryUrls ?? []).map((u) => String(u || "").trim()).filter(Boolean),
       detail_writeup: String(c.detailWriteup ?? "").trim(),
       detail_video_url: String(c.detailVideoUrl ?? "").trim(),
@@ -348,7 +350,8 @@ export const dataStore = {
         | "description"
         | "sortOrder"
         | "image"
-        | "hoverImage"
+        | "image2"
+        | "image3"
         | "galleryUrls"
         | "detailWriteup"
         | "detailVideoUrl"
@@ -363,7 +366,8 @@ export const dataStore = {
     if (updates.description !== undefined) payload.description = updates.description.trim();
     if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
     if (updates.image !== undefined) payload.image = updates.image || null;
-    if (updates.hoverImage !== undefined) payload.hover_image = updates.hoverImage || null;
+    if (updates.image2 !== undefined) payload.image2 = updates.image2 || null;
+    if (updates.image3 !== undefined) payload.image3 = updates.image3 || null;
     if (updates.galleryUrls !== undefined) {
       payload.gallery_urls = updates.galleryUrls.map((u) => String(u || "").trim()).filter(Boolean);
     }

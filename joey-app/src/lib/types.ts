@@ -67,7 +67,8 @@ export interface PublicCollection {
   /** Long-form copy for the collection detail page body. */
   description: string;
   image?: string;
-  hoverImage?: string;
+  image2?: string;
+  image3?: string;
   /** Images above the wear filter on /collection/[slug] (same layout as event galleries). */
   galleryUrls?: string[];
   /** Optional write-up shown after the first gallery. */

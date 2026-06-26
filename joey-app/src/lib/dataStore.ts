@@ -35,7 +35,8 @@ export function mapPublicCollectionFromSupabaseRow(row: Record<string, unknown>)
     briefDescription: briefRaw,
     description: detailed,
     image: (row.image as string) || undefined,
-    hoverImage: (row.hover_image as string) || undefined,
+    image2: (row.image2 as string) || undefined,
+    image3: (row.image3 as string) || undefined,
     galleryUrls: Array.isArray(row.gallery_urls)
       ? (row.gallery_urls as unknown[]).map((u) => String(u || "").trim()).filter(Boolean)
       : undefined,

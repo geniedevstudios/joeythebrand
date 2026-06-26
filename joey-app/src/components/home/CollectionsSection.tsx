@@ -9,45 +9,6 @@ import type { Product, PublicCollection } from "@/lib/types";
 import { slideshowImagesForCollectionBlob } from "@/lib/collectionBlobImages";
 import styles from "./CollectionsSection.module.css";
 
-function CardSlideshow({
-  images,
-  fallbackImage,
-}: {
-  images: string[];
-  fallbackImage?: string;
-}) {
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  useEffect(() => {
-    if (images.length <= 1) return;
-    const interval = setInterval(() => {
-      setActiveIdx((prev) => (prev + 1) % images.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [images]);
-
-  const validFallback =
-    fallbackImage?.startsWith("/") || fallbackImage?.startsWith("http")
-      ? fallbackImage
-      : null;
-  const renderImages =
-    images.length > 0 ? images : validFallback ? [validFallback] : [];
-
-  return (
-    <>
-      {renderImages.map((img, i) => (
-        <img
-          key={`${img}-${i}`}
-          src={img}
-          alt=""
-          className={`${styles.cardImage} ${i === activeIdx ? styles.imageActive : ""}`}
-          loading="lazy"
-        />
-      ))}
-    </>
-  );
-}
-
 type CollectionsSectionProps = {
   initialCollections?: PublicCollection[];
   /** `id` on the `<h2>`; also used for the section `aria-labelledby`. */
@@ -64,36 +25,57 @@ const _getEmptyProducts = () => EMPTY_PRODUCTS;
 const _getCollections = () => dataStore.getCollections();
 const _getProducts = () => dataStore.getProducts();
 
-function CollectionsSkeleton({ count = 6 }: { count?: number }) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => (
-        <article key={i} className={`${styles.card} ${styles.spanNormal}`}>
-          <div className={styles.imageWrap}>
-            <div className="skeleton" style={{ width: "100%", height: "100%" }} />
-          </div>
-          <div className={styles.textOverlay}>
-            <div className="skeleton" style={{ height: 20, width: "60%", marginBottom: 8 }} />
-            <div className="skeleton" style={{ height: 14, width: "80%" }} />
-          </div>
-        </article>
-      ))}
-    </>
-  );
+function TypewriterText({ text, isActive, speed = 25, delay = 0 }: { text: string, isActive: boolean, speed?: number, delay?: number }) {
+  const [displayedText, setDisplayedText] = useState("");
+
+  useEffect(() => {
+    if (!isActive) {
+      setDisplayedText("");
+      return;
+    }
+
+    let currentIndex = 0;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let intervalId: ReturnType<typeof setInterval>;
+
+    timeoutId = setTimeout(() => {
+      if (text.length === 0) return;
+      setDisplayedText(text.slice(0, 1));
+      currentIndex = 1;
+
+      intervalId = setInterval(() => {
+        if (currentIndex >= text.length) {
+          clearInterval(intervalId);
+          return;
+        }
+        setDisplayedText(text.slice(0, currentIndex + 1));
+        currentIndex++;
+      }, speed);
+    }, delay);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
+  }, [isActive, text, speed, delay]);
+
+  return <>{displayedText}</>;
 }
 
-const BENTO_CLASSES = [
-  "spanLarge",
-  "spanTall",
-  "spanNormal",
-  "spanNormal",
-  "spanWide",
-  "spanNormal",
-  "spanTall",
-  "spanLarge",
-  "spanNormal",
-  "spanWide",
-];
+function CollectionsSkeleton() {
+  return (
+    <div className={styles.bentoContainer}>
+      <div className={styles.leftColumn}>
+        <div className="skeleton" style={{ flex: 1, borderRadius: 16 }} />
+        <div className={styles.bottomCards}>
+          <div className="skeleton" style={{ height: "100%", borderRadius: 16 }} />
+          <div className="skeleton" style={{ height: "100%", borderRadius: 16 }} />
+        </div>
+      </div>
+      <div className="skeleton" style={{ height: "100%", borderRadius: 16 }} />
+    </div>
+  );
+}
 
 export default function CollectionsSection({
   initialCollections,
@@ -110,11 +92,22 @@ export default function CollectionsSection({
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, _getEmptyProducts);
   const isStoreLoading = useStoreLoading();
 
+  const [activeIndex, setActiveIndex] = useState(0);
+
   const list = collections;
+
+  // Auto-cycle the active collection every 5 seconds
+  useEffect(() => {
+    if (!list || list.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % list.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [list]);
 
   if (!list || list.length === 0) return null;
 
-  // Enhance collections with their respective product images for the slideshow
+  // Enhance collections with their respective product images
   const collectionData = list.map((col) => {
     const colProducts = products.filter(
       (p) =>
@@ -150,33 +143,88 @@ export default function CollectionsSection({
           </Link>
         </div>
 
-        <div className={styles.collectionsGrid}>
-          {isStoreLoading ? (
-            <CollectionsSkeleton count={6} />
-          ) : (
-            collectionData.map((col, idx) => {
-              const spanClass = styles[BENTO_CLASSES[idx % BENTO_CLASSES.length]];
-              return (
-                <Link key={col.id} href={`/collection/${col.slug}`} className={`${styles.card} ${spanClass}`}>
-                  <div className={styles.imageWrap}>
-                    <CardSlideshow images={col.images} fallbackImage={col.image} />
-                  </div>
+        {isStoreLoading ? (
+          <CollectionsSkeleton />
+        ) : (
+          <>
+            <div className={styles.bentoContainer}>
+              {collectionData.map((col, idx) => {
+                const isActive = idx === activeIndex;
 
-                  <div className={styles.textOverlay}>
-                    <h3 className={styles.collectionName}>{col.name}</h3>
-                    {(col.briefDescription || col.description)?.trim() ? (
-                      <p className={styles.collectionDesc}>{(col.briefDescription || col.description).trim()}</p>
-                    ) : null}
+                // Fallbacks if a collection lacks multiple images
+                const mainImage = col.image || col.images[0] || "/placeholder-collection.jpg";
+                const img2 = col.image2 || col.images[1] || mainImage;
+                const img3 = col.image3 || col.images[2] || mainImage;
+
+                return (
+                  <div key={col.id} className={`${styles.bentoSlide} ${isActive ? styles.active : ""}`}>
+                    <div className={styles.leftColumn}>
+                      <Link href={`/collection/${col.slug}`} className={styles.textBlock}>
+                        <div className={styles.arrowIcon}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M7 17L17 7"></path>
+                            <path d="M7 7h10v10"></path>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 style={{ minHeight: "1.2em" }}>
+                            <TypewriterText text={col.name || "Silence is not quiet enough."} isActive={isActive} delay={400} speed={40} />
+                          </h3>
+                          <p className={styles.textBlockDesc} style={{ minHeight: "3em" }}>
+                            <TypewriterText text={col.briefDescription || col.description || "Every collection tells a unique silhouette story."} isActive={isActive} delay={900} speed={25} />
+                          </p>
+                        </div>
+                        <div className={styles.linesDecoration}>
+                          <div className={`${styles.line} ${styles.short}`}></div>
+                          <div className={`${styles.line} ${styles.medium}`}></div>
+                        </div>
+                      </Link>
+
+                      <div className={styles.bottomCards}>
+                        <Link href={`/collection/${col.slug}`} className={styles.smallCard}>
+                          <img src={img2} alt="" className={styles.cardImage} loading="lazy" />
+                          <div className={styles.cardOverlay}>
+                            <p className={styles.cardLabel}>For the clan...</p>
+                          </div>
+                        </Link>
+                        <Link href={`/collection/${col.slug}`} className={styles.smallCard}>
+                          <img src={img3} alt="" className={styles.cardImage} loading="lazy" />
+                          <div className={styles.cardOverlay}>
+                            <p className={styles.cardLabel}>the selected few.</p>
+                          </div>
+                        </Link>
+                      </div>
+                    </div>
+
+                    <div className={styles.rightColumn}>
+                      <img src={mainImage} alt={col.name} className={styles.cardImage} loading="lazy" />
+                      <div className={styles.cardOverlay} style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0) 100%)' }}></div>
+
+                      <div className={styles.rightContent}>
+                        <div className={styles.buttonRow}>
+                          <Link href={`/collection/${col.slug}`} className={styles.pickMeBtn}>
+                            VIEW PIECES
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className={styles.blobOverlay}>
-                    <span className={styles.pickMeBtn}>VIEW PIECES</span>
-                  </div>
-                </Link>
-              );
-            })
-          )}
-        </div>
+                );
+              })}
+            </div>
+
+            <div className={styles.indicators}>
+              {collectionData.map((_, idx) => (
+                <button
+                  key={idx}
+                  className={`${styles.indicator} ${idx === activeIndex ? styles.active : ""}`}
+                  onClick={() => setActiveIndex(idx)}
+                  aria-label={`Go to collection ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

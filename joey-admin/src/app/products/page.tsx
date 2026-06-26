@@ -279,7 +279,8 @@ export default function ProductsPage() {
   const [collectionPendingDelete, setCollectionPendingDelete] = useState<Collection | null>(null);
 
   const [colMainImageUrl, setColMainImageUrl] = useState("");
-  const [colHoverImageUrl, setColHoverImageUrl] = useState("");
+  const [colImage2Url, setColImage2Url] = useState("");
+  const [colImage3Url, setColImage3Url] = useState("");
   const [colGalleryUrls, setColGalleryUrls] = useState<string[]>([]);
   const [colDetailWriteup, setColDetailWriteup] = useState("");
   const [colDetailVideoUrl, setColDetailVideoUrl] = useState("");
@@ -578,7 +579,8 @@ export default function ProductsPage() {
     setEditingCollection(null);
     setCollectionFormError("");
     setColMainImageUrl("");
-    setColHoverImageUrl("");
+    setColImage2Url("");
+    setColImage3Url("");
     setColGalleryUrls([]);
     setColDetailWriteup("");
     setColDetailVideoUrl("");
@@ -592,7 +594,8 @@ export default function ProductsPage() {
     setEditingCollection(c);
     setCollectionFormError("");
     setColMainImageUrl(c.image?.trim() || "");
-    setColHoverImageUrl(c.hoverImage || "");
+    setColImage2Url(c.image2 || "");
+    setColImage3Url(c.image3 || "");
     setColGalleryUrls(c.galleryUrls ?? []);
     setColDetailWriteup(String(c.detailWriteup ?? c.description ?? ""));
     setColDetailVideoUrl(String(c.detailVideoUrl ?? ""));
@@ -633,7 +636,8 @@ export default function ProductsPage() {
           description,
           sortOrder,
           image: colMainImageUrl,
-          hoverImage: colHoverImageUrl,
+          image2: colImage2Url,
+          image3: colImage3Url,
           galleryUrls,
           detailWriteup,
           detailVideoUrl,
@@ -1842,13 +1846,25 @@ export default function ProductsPage() {
 
               <div>
                 <AssetUrlField
-                  id="col-hover-image"
-                  label="Hover Image"
-                  value={colHoverImageUrl}
-                  onChange={setColHoverImageUrl}
+                  id="col-image2"
+                  label="Secondary Image 1"
+                  value={colImage2Url}
+                  onChange={setColImage2Url}
                   uploadFolder="collections"
                   accept="image/*"
-                  placeholder="Optional hover effect image"
+                  placeholder="Secondary showcase image 1"
+                />
+              </div>
+
+              <div>
+                <AssetUrlField
+                  id="col-image3"
+                  label="Secondary Image 2"
+                  value={colImage3Url}
+                  onChange={setColImage3Url}
+                  uploadFolder="collections"
+                  accept="image/*"
+                  placeholder="Secondary showcase image 2"
                 />
               </div>
 

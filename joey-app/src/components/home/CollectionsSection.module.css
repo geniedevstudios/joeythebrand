@@ -37,58 +37,122 @@
   flex-shrink: 0;
 }
 
-.collectionsGrid {
+/* BENTO LAYOUT Container */
+.bentoContainer {
   display: grid;
-  /* Reference is closer to a 3-column bento collage */
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 260px;
-  grid-auto-flow: dense;
-  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: 600px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
   margin-top: var(--space-xl);
 }
 
-.card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 18px;
-  background: #0e1116;
-  display: block;
-  text-decoration: none;
-  isolation: isolate;
-  cursor: pointer;
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.06) inset;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Bento Span Classes */
-.spanWide {
-  grid-column: span 2;
-  grid-row: span 1;
-}
-
-.spanTall {
-  grid-column: span 1;
-  grid-row: span 2;
-}
-
-.spanLarge {
-  grid-column: span 2;
-  grid-row: span 2;
-}
-
-.spanNormal {
-  grid-column: span 1;
-  grid-row: span 1;
-}
-
-.imageWrap {
+.bentoSlide {
   position: absolute;
   inset: 0;
-  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+  z-index: 1;
+}
+
+.bentoSlide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* LEFT COLUMN */
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   height: 100%;
+}
+
+.textBlock {
+  flex: 1;
+  background-color: #E2E6E9; /* From reference image */
+  border-radius: 16px;
+  padding: 32px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.textBlock h3 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+  line-height: 1.1;
+  max-width: 85%;
+}
+
+.arrowIcon {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.textBlock:hover .arrowIcon {
+  transform: translate(2px, -2px);
+}
+
+.linesDecoration {
+  margin-top: auto;
+}
+
+.line {
+  height: 2px;
+  background-color: #4A79A9; /* Blue lines */
+  border-radius: 2px;
+  margin-top: 16px;
+}
+
+.line.short {
+  width: 60%;
+}
+
+.line.medium {
+  width: 80%;
+}
+
+/* BOTTOM CARDS */
+.bottomCards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: 45%;
+}
+
+.smallCard {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
   background: #111;
+  display: block;
 }
 
 .cardImage {
@@ -97,152 +161,159 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 50%;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease, filter 0.6s ease;
-  opacity: 0;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s ease;
 }
 
-/* Reduce "bad crops" by biasing focal point per tile shape */
-.spanTall .cardImage {
-  /* Tall tiles often crop faces/heads: bias upward slightly */
-  object-position: 50% 30%;
-}
-
-.spanWide .cardImage {
-  /* Wide tiles tend to crop too much top/bottom: keep centered */
-  object-position: 50% 45%;
-}
-
-.spanLarge .cardImage {
-  /* Large tiles: gentle upward bias */
-  object-position: 50% 38%;
-}
-
-.imageActive {
-  opacity: 1;
-}
-
-.card:hover .cardImage {
+.smallCard:hover .cardImage,
+.rightColumn:hover .cardImage {
   transform: scale(1.05);
-  filter: saturate(1.05) contrast(1.05);
+  filter: saturate(1.05);
 }
 
-/* Text Overlays inside the card */
-.textOverlay {
+.cardOverlay {
   position: absolute;
   inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0) 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: var(--space-lg);
-  z-index: 2;
-  background: linear-gradient(
-    to bottom,
-    rgba(20, 18, 16, 0) 0%,
-    rgba(20, 18, 16, 0) 50%,
-    rgba(20, 18, 16, 0.5) 75%,
-    rgba(20, 18, 16, 0.9) 100%
-  );
+  padding: 24px;
   pointer-events: none;
 }
 
-.collectionName {
-  font-family: var(--font-display);
-  font-size: clamp(1.4rem, 2vw, 1.75rem);
-  font-weight: 300;
+.cardLabel {
   color: #fff;
-  margin: 0 0 4px 0;
-}
-
-.collectionDesc {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.75);
-  font-style: italic;
-  max-width: 90%;
-  line-height: 1.4;
+  font-size: 1rem;
   margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
-/* Hover overlay for button */
-.blobOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(20, 18, 16, 0.2);
+.textBlockDesc {
+  font-size: 1.1rem;
+  color: rgba(17, 17, 17, 0.7);
+  margin: 12px 0 0 0;
+  line-height: 1.5;
+  max-width: 90%;
+}
+
+/* RIGHT COLUMN */
+.rightColumn {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: 3;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 32px;
+  text-decoration: none;
 }
 
-.card:hover .blobOverlay {
-  opacity: 1;
+.rightContent {
+  position: relative;
+  z-index: 2;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  pointer-events: auto; /* Since parent overlay might block it */
 }
 
 .pickMeBtn {
   display: inline-block;
-  padding: 10px 20px;
+  padding: 12px 28px;
   text-align: center;
   background: transparent;
   color: #fff;
   font-family: var(--font-label);
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-full, 9999px);
   font-weight: 600;
   transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
 }
 
-.card:hover .pickMeBtn {
+.rightColumn:hover .pickMeBtn,
+.pickMeBtn:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: #fff;
 }
 
-/* Responsive adjustments */
+/* Slide Indicators */
+.indicators {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.indicator {
+  width: 48px;
+  height: 4px;
+  background: rgba(17, 24, 39, 0.15);
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.3s ease;
+}
+
+.indicator.active {
+  background: var(--blue-athracite);
+}
+
+/* Responsive */
 @media (max-width: 1024px) {
-  .collectionsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 240px;
+  .bentoContainer {
+    height: 500px;
   }
 }
 
 @media (max-width: 768px) {
-  .headerRow {
-    flex-direction: column;
-    align-items: flex-start;
+  .bentoContainer {
+    height: auto;
+    grid-template-columns: 1fr;
+    border-radius: 0;
+    overflow: visible;
+  }
+  
+  .bentoSlide {
+    position: relative;
+    grid-template-columns: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+    display: none; /* Hide inactive slides entirely on mobile to save vertical space */
   }
 
-  .viewAll {
-    width: 100%;
-    margin-top: var(--space-md);
+  .bentoSlide.active {
+    display: grid;
+    animation: fadeIn 0.6s ease;
   }
 
-  .collectionsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 240px;
+  .textBlock {
+    min-height: 240px;
+  }
+  
+  .bottomCards {
+    height: 240px;
   }
 
-  .spanWide,
-  .spanLarge {
-    grid-column: span 2;
+  .rightColumn {
+    min-height: 400px;
   }
 }
 
-@media (max-width: 480px) {
-  .collectionsGrid {
-    grid-template-columns: 1fr;
-    grid-auto-rows: 300px;
-  }
-
-  .spanWide,
-  .spanLarge,
-  .spanTall,
-  .spanNormal {
-    grid-column: span 1;
-    grid-row: span 1;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -13,7 +13,8 @@ export interface Collection {
   /** Full story on /collection/[slug]. */
   description: string;
   image?: string;
-  hoverImage?: string;
+  image2?: string;
+  image3?: string;
   /** Shown on /collection/[slug] above the wear filter (same layout as event galleries). */
   galleryUrls: string[];
   /** Optional write-up shown after the first gallery on /collection/[slug]. */
