@@ -12,9 +12,10 @@ import {
 type Option = { value: string; label: string };
 
 type AdminStyledSelectProps = {
-  name: string;
+  name?: string;
   options: Option[];
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
   required?: boolean;
   /** e.g. `mt-1` to align with other fields */
   wrapperClassName?: string;
@@ -29,13 +30,17 @@ export default function AdminStyledSelect({
   name,
   options,
   defaultValue,
+  value: controlledValue,
   required,
   wrapperClassName,
   labelledBy,
   onValueChange,
   disabled = false,
 }: AdminStyledSelectProps) {
-  const [value, setValue] = useState(defaultValue);
+  const [internalValue, setInternalValue] = useState(defaultValue ?? "");
+  const isControlled = controlledValue !== undefined;
+  const value = isControlled ? controlledValue : internalValue;
+
   const [open, setOpen] = useState(false);
   /** Panel opens downward (default) or upward when there is more room above. */
   const [placement, setPlacement] = useState<"below" | "above">("below");
@@ -49,8 +54,10 @@ export default function AdminStyledSelect({
   const menuRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
-    setValue(defaultValue);
-  }, [defaultValue]);
+    if (defaultValue !== undefined && !isControlled) {
+      setInternalValue(defaultValue);
+    }
+  }, [defaultValue, isControlled]);
 
   useEffect(() => {
     if (disabled) setOpen(false);
@@ -150,7 +157,9 @@ export default function AdminStyledSelect({
                     setOpen(false);
                     return;
                   }
-                  setValue(opt.value);
+                  if (!isControlled) {
+                    setInternalValue(opt.value);
+                  }
                   setOpen(false);
                   onValueChange?.(opt.value);
                 }}
