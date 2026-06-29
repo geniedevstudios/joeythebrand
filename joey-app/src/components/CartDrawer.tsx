@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ProductMedia from "@/components/shop/ProductMedia";
 import { cartStore, type CartItem } from "@/store/cartStore";
@@ -35,6 +36,7 @@ export default function CartDrawer() {
   const [promoInput, setPromoInput] = useState("");
   const [promoError, setPromoError] = useState("");
   const [promoSuccess, setPromoSuccess] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -242,11 +244,11 @@ export default function CartDrawer() {
                   if (!user) {
                     toast.error("Sign in or create an account to proceed to checkout.", {
                       description: "Head to your account page to sign in or sign up.",
-                      action: { label: "Account", onClick: () => { cartStore.toggleCart(false); window.location.href = "/account"; } },
+                      action: { label: "Account", onClick: () => { cartStore.toggleCart(false); router.push("/account"); } },
                     });
                   } else {
                     cartStore.toggleCart(false);
-                    window.location.href = "/checkout";
+                    router.push("/checkout");
                   }
                 }}
               >

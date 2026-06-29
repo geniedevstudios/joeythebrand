@@ -44,7 +44,7 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId)
-      .select("items")
+      .select("items, shipping_address, customer_name, customer_email, customer_phone")
       .single();
 
     if (orderError || !orderData) {
@@ -61,21 +61,60 @@ export async function POST(req: Request) {
       if (items && Array.isArray(items)) {
         for (const item of items) {
           if (item.productId && item.quantity) {
-            // Get current quantity
+            // Get current quantity and variants
             const { data: product, error: fetchErr } = await supabaseAdmin
               .from("products")
-              .select("quantity")
+              .select("quantity, variants")
               .eq("id", item.productId)
               .single();
 
             if (product && !fetchErr) {
               const newQuantity = Math.max(0, (product.quantity || 0) - item.quantity);
+              
+              let updatedVariants = product.variants;
+              let variantsChanged = false;
+              if (Array.isArray(updatedVariants)) {
+                updatedVariants = updatedVariants.map((v: any) => {
+                  let changedV = false;
+                  // If we are decrementing a color variant directly (no combo)
+                  if (item.variantId && v.id === item.variantId && !item.comboId) {
+                    v.quantity = Math.max(0, (v.quantity || 0) - item.quantity);
+                    v.isOutOfStock = v.quantity <= 0;
+                    changedV = true;
+                  }
+                  // If we are decrementing a fit-combo directly
+                  else if (item.comboId === "fit-combo" && v.id === "fit-combo") {
+                    v.quantity = Math.max(0, (v.quantity || 0) - item.quantity);
+                    v.isOutOfStock = v.quantity <= 0;
+                    changedV = true;
+                  }
+                  // If we are decrementing a combo inside a color variant (or any variant)
+                  if (item.comboId && item.comboId !== "fit-combo" && Array.isArray(v.combos)) {
+                    v.combos = v.combos.map((c: any) => {
+                      if (c.id === item.comboId) {
+                        c.quantity = Math.max(0, (c.quantity || 0) - item.quantity);
+                        c.isOutOfStock = c.quantity <= 0;
+                        changedV = true;
+                      }
+                      return c;
+                    });
+                  }
+                  if (changedV) variantsChanged = true;
+                  return v;
+                });
+              }
+
+              const updatePayload: any = {
+                quantity: newQuantity,
+                is_out_of_stock: newQuantity <= 0,
+              };
+              if (variantsChanged) {
+                updatePayload.variants = updatedVariants;
+              }
+
               await supabaseAdmin
                 .from("products")
-                .update({
-                  quantity: newQuantity,
-                  is_out_of_stock: newQuantity <= 0,
-                })
+                .update(updatePayload)
                 .eq("id", item.productId);
             } else if (fetchErr) {
                console.error(`Inventory Fetch Error for ${item.productId}:`, fetchErr.message);

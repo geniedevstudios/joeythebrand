@@ -151,8 +151,47 @@
 .submitBtn {
   margin-top: var(--space-lg);
   width: 100%;
+  display: flex;
+  align-items: center;
   justify-content: center;
   padding: var(--space-md) var(--space-xl);
+  font-family: var(--font-label);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.submitBtnPrimary {
+  background: var(--blue-athracite);
+  color: #fff;
+}
+
+.submitBtnPrimary:hover:not(:disabled) {
+  background: var(--dark-wood);
+}
+
+.submitBtnPrimary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submitBtnSecondary {
+  background: transparent;
+  color: var(--blue-athracite);
+  border-color: var(--blue-athracite);
+}
+
+.submitBtnSecondary:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.submitBtnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .summarySection {

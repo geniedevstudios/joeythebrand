@@ -49,6 +49,8 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   quantity: Number(row.quantity ?? 0),
   bespokeAvailable: Boolean(row.bespoke_available),
   bespokeLeadDays: Number(row.bespoke_lead_days ?? 14),
+  weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
+  hsCode: (row.hs_code as string) || undefined,
   variants: (row.variants as any) || [],
 });
 
@@ -98,6 +100,12 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   status: row.status as OrderStatus,
   userId: row.user_id as string | undefined,
   notes: row.notes as string | undefined,
+  dhlTrackingNumber: row.dhl_tracking_number as string | undefined,
+  dhlLabelUrl: row.dhl_label_url as string | undefined,
+  dhlStatus: row.dhl_status as string | undefined,
+  statusHistory: (typeof row.dhl_status === "string" && row.dhl_status.startsWith("[")) 
+    ? JSON.parse(row.dhl_status) 
+    : [],
   createdAt: row.created_at as string,
   updatedAt: row.updated_at as string,
 });
@@ -439,6 +447,8 @@ export const dataStore = {
     if (updates.quantity !== undefined) payload.quantity = updates.quantity;
     if (updates.bespokeAvailable !== undefined) payload.bespoke_available = updates.bespokeAvailable;
     if (updates.bespokeLeadDays !== undefined) payload.bespoke_lead_days = updates.bespokeLeadDays;
+    if (updates.weightKg !== undefined) payload.weight_kg = updates.weightKg;
+    if (updates.hsCode !== undefined) payload.hs_code = updates.hsCode;
     if (updates.variants !== undefined) payload.variants = updates.variants;
 
     const { error } = await supabase.from("products").update(payload).eq("id", id);
@@ -473,6 +483,8 @@ export const dataStore = {
       quantity: product.quantity ?? 0,
       bespoke_available: product.bespokeAvailable ?? false,
       bespoke_lead_days: product.bespokeLeadDays ?? 14,
+      weight_kg: product.weightKg ?? null,
+      hs_code: product.hsCode ?? null,
       variants: product.variants ?? [],
     });
     if (error) throw new Error(error.message);
@@ -540,9 +552,35 @@ export const dataStore = {
   },
 
   updateOrderStatus: async (id: string, status: OrderStatus): Promise<void> => {
+    // Fetch the current order to get its dhl_status (where we store history for local orders)
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from("orders")
+      .select("dhl_status, dhl_tracking_number")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw new Error(fetchError.message);
+
+    const payload: Record<string, unknown> = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+
+    // If it's a domestic order (no DHL tracking), we store history in dhl_status
+    if (!currentOrder.dhl_tracking_number) {
+      let history: { status: string; timestamp: string }[] = [];
+      if (typeof currentOrder.dhl_status === "string" && currentOrder.dhl_status.startsWith("[")) {
+        try {
+          history = JSON.parse(currentOrder.dhl_status);
+        } catch(e) {}
+      }
+      history.push({ status, timestamp: new Date().toISOString() });
+      payload.dhl_status = JSON.stringify(history);
+    }
+
     const { error } = await supabase
       .from("orders")
-      .update({ status, updated_at: new Date().toISOString() })
+      .update(payload)
       .eq("id", id);
     if (error) throw new Error(error.message);
     dataStore.notify();

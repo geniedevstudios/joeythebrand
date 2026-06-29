@@ -42,6 +42,10 @@ export interface ProductCombo {
   price: number;
   thumbnailUrl: string;
   images: string[];
+  quantity?: number;
+  isOutOfStock?: boolean;
+  bespokeAvailable?: boolean;
+  bespokeLeadDays?: number;
   nameFormat?: "plus" | "brackets";
 }
 
@@ -54,7 +58,10 @@ export interface ProductVariant {
   price?: number;
   combos?: ProductCombo[];
   nameFormat?: "plus" | "brackets";
-  thumbnailUrl?: string;
+  quantity?: number;
+  isOutOfStock?: boolean;
+  bespokeAvailable?: boolean;
+  bespokeLeadDays?: number;
 }
 
 export interface Product {
@@ -78,8 +85,10 @@ export interface Product {
   featured: boolean;
   wearTag: WearTag;
   quantity: number;
-  bespokeAvailable: boolean;
-  bespokeLeadDays: number;
+  bespokeAvailable?: boolean;
+  bespokeLeadDays?: number;
+  weightKg?: number;
+  hsCode?: string;
   variants?: ProductVariant[];
 }
 
@@ -109,6 +118,7 @@ export interface Order {
   dhlTrackingNumber?: string;
   dhlLabelUrl?: string;
   dhlStatus?: string;
+  statusHistory?: { status: string; timestamp: string }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -116,18 +126,32 @@ export interface Order {
 export interface OrderItem {
   productId: string;
   name: string;
-  size: string;
   color?: string;
   colorHex?: string;
-  fit?: string;
   combo?: string;
+  size: string;
+  fit?: string;
   wearTag?: string;
   price: number;
   quantity: number;
   image: string;
+  variantId?: string;
+  comboId?: string;
+  isBespoke?: boolean;
+  bespokeLeadDays?: number;
 }
 
-export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+export type OrderStatus = 
+  | "pending" 
+  | "processing" 
+  | "order packaged" 
+  | "courier on his way to pick package" 
+  | "courier picked package" 
+  | "courier on the way to deliver package" 
+  | "package delivered" 
+  | "shipped" 
+  | "delivered" 
+  | "cancelled";
 
 /** Bespoke / consultation request lifecycle (admin confirms or declines). */
 export type ConsultationStatus = "pending" | "confirmed" | "declined";

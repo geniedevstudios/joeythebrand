@@ -17,8 +17,11 @@ import { toast } from "sonner";
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
+  { value: "order packaged", label: "Order Packaged" },
+  { value: "courier on his way to pick package", label: "Courier On His Way To Pick Package" },
+  { value: "courier picked package", label: "Courier Picked Package" },
+  { value: "courier on the way to deliver package", label: "Courier On The Way To Deliver Package" },
+  { value: "package delivered", label: "Package Delivered" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
@@ -240,15 +243,91 @@ export default function OrdersPage() {
                       <span id={`order-status-label-${order.id}`} className="sr-only">
                         Update order status
                       </span>
-                      <AdminStyledSelect
-                        name={`order-status-${order.id}`}
-                        labelledBy={`order-status-label-${order.id}`}
-                        defaultValue={order.status}
-                        disabled={updatingId === order.id}
-                        onValueChange={(v) => void handleStatusChange(order.id, v as OrderStatus)}
-                        options={STATUS_OPTIONS}
-                        wrapperClassName="min-w-[156px]"
-                      />
+                      {order.shippingAddress.includes("(international)") ? (
+                        <div className="text-sm font-medium text-zinc-700 bg-zinc-100 px-3 py-2 rounded-md inline-block w-full text-center">
+                          Managed by DHL
+                        </div>
+                      ) : (
+                        <AdminStyledSelect
+                          name={`order-status-${order.id}`}
+                          labelledBy={`order-status-label-${order.id}`}
+                          defaultValue={order.status}
+                          disabled={updatingId === order.id}
+                          onValueChange={(v) => void handleStatusChange(order.id, v as OrderStatus)}
+                          options={STATUS_OPTIONS}
+                          wrapperClassName="min-w-[156px]"
+                        />
+                      )}
+                      {order.dhlTrackingNumber ? (
+                        <div className="mt-3 text-xs border-t border-zinc-100 pt-2">
+                          <p className="font-medium text-zinc-900 mb-1">DHL Ship</p>
+                          {order.dhlStatus?.startsWith("Pickup Scheduled") && (
+                            <a 
+                              href={order.dhlLabelUrl?.startsWith("data:") ? order.dhlLabelUrl : `data:application/pdf;base64,${order.dhlLabelUrl}`} 
+                              download={`DHL_Label_${order.dhlTrackingNumber}.pdf`} 
+                              className="text-blue-600 hover:underline block mb-1"
+                            >
+                              Download Label
+                            </a>
+                          )}
+                          {!order.dhlStatus?.startsWith("Pickup Scheduled") && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  setUpdatingId(order.id);
+                                  const res = await fetch("/api/dhl/schedule-pickup", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ orderId: order.id, trackingNumber: order.dhlTrackingNumber })
+                                  });
+                                  const data = await res.json();
+                                  if (!res.ok) throw new Error(data.error || "Failed");
+                                  toast.success(`Pickup scheduled! Confirmation: ${data.dispatchConfirmationNumber}`);
+                                  await load();
+                                } catch (err: any) {
+                                  toast.error(`Error: ${err.message}`);
+                                } finally {
+                                  setUpdatingId(null);
+                                }
+                              }}
+                              className="text-white bg-black hover:bg-zinc-800 px-2 py-1 rounded w-full mt-1 transition-colors"
+                            >
+                              Schedule Pickup
+                            </button>
+                          )}
+                          <p className="mt-1 text-[10px] text-zinc-500">{order.dhlStatus}</p>
+                        </div>
+                      ) : order.shippingAddress?.includes("(international)") ? (
+                        <div className="mt-3 border-t border-zinc-100 pt-2">
+                          <button
+                            type="button"
+                            disabled={updatingId === order.id}
+                            onClick={async () => {
+                              try {
+                                setUpdatingId(order.id);
+                                const res = await fetch("/api/dhl/create-shipment", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ orderId: order.id })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error || "Failed to create shipment");
+                                toast.success(`Shipment created! Tracking: ${data.trackingNumber}`);
+                                await load();
+                              } catch (err: any) {
+                                toast.error(`Error: ${err.message}`);
+                              } finally {
+                                setUpdatingId(null);
+                              }
+                            }}
+                            className="text-white bg-black hover:bg-zinc-800 px-2 py-1.5 rounded w-full text-xs font-medium transition-colors disabled:opacity-50"
+                          >
+                            {updatingId === order.id ? "Creating..." : "Create DHL Shipment"}
+                          </button>
+                        </div>
+                      ) : null}
+
                       {updatingId === order.id ? (
                         <p className="mt-1 text-xs text-zinc-700">Saving…</p>
                       ) : null}

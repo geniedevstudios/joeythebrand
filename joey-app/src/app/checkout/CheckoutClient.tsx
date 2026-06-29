@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { wishlistStore } from "@/store/wishlistStore";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { toast } from "sonner";
@@ -61,14 +62,19 @@ function buildShippingAddress(
     d.postalCode.trim(),
     countryLine,
   ].filter(Boolean);
-  return `${parts.join(", ")} (international)`;
+  return `${parts.join(", ")} | DHL[${d.city.trim()}|${d.postalCode.trim()}|${d.country}] (international)`;
 }
 
 export default function CheckoutClient() {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_ARRAY);
   const appliedPromo = useSyncExternalStore(cartStore.subscribe, cartStore.getAppliedPromo, () => null);
 
   const [shippingDestination, setShippingDestination] = useState<ShippingDestination>("ghana");
+  const [shippingCost, setShippingCost] = useState<number>(0);
+  const [shippingCalculated, setShippingCalculated] = useState<boolean>(true); // true for ghana by default
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -104,8 +110,9 @@ export default function CheckoutClient() {
 
   const subtotalRaw = items.reduce((acc, current) => acc + (current.price * current.quantity), 0);
   const discount = appliedPromo?.discount || 0;
-  const total = subtotalRaw - discount;
+  const total = subtotalRaw - discount + shippingCost;
   const formattedSubtotal = `GHC ${subtotalRaw.toLocaleString()}`;
+  const formattedShipping = shippingDestination === "ghana" ? "Calculated at next step" : (shippingCalculated ? `GHC ${shippingCost.toLocaleString()}` : "Requires calculation");
   const formattedTotal = `GHC ${total.toLocaleString()}`;
 
   if (items.length === 0) {
@@ -141,6 +148,8 @@ export default function CheckoutClient() {
 
   const handleDestinationChange = (dest: ShippingDestination) => {
     setShippingDestination(dest);
+    setShippingCost(0);
+    setShippingCalculated(dest === "ghana");
     if (dest === "ghana") {
       setFormData((prev) => ({
         ...prev,
@@ -150,6 +159,48 @@ export default function CheckoutClient() {
       }));
     } else {
       setFormData((prev) => ({ ...prev, region: "" }));
+    }
+  };
+
+  const handleCalculateShipping = async () => {
+    if (!formData.country.trim() || !formData.city.trim() || !formData.address.trim()) {
+      toast.error("Please provide your street address, city, and country first.");
+      return;
+    }
+    setIsCalculatingShipping(true);
+    try {
+      // 1. Validate Address
+      const valRes = await fetch(`/api/shipping/validate?city=${encodeURIComponent(formData.city)}&postalCode=${encodeURIComponent(formData.postalCode)}&countryCode=${encodeURIComponent(formData.country)}`);
+      if (!valRes.ok) {
+        const valData = await valRes.json();
+        // The user wanted us to strictly block checkout if DHL doesn't recognize the address
+        throw new Error(`Invalid Address: ${valData.details || valData.error || "Please check your city, postal code, and country."}`);
+      }
+
+      // 2. Fetch Rates
+      const res = await fetch("/api/shipping/rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destination: {
+            countryCode: formData.country,
+            city: formData.city,
+            postalCode: formData.postalCode,
+          },
+          items: items.map(i => ({ weightKg: i.weightKg || 0.5, quantity: i.quantity }))
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ? `${data.error}: ${data.details}` : "Failed to calculate shipping rates");
+      }
+      setShippingCost(data.price);
+      setShippingCalculated(true);
+      toast.success("Shipping calculated via DHL Express!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to calculate shipping.");
+    } finally {
+      setIsCalculatingShipping(false);
     }
   };
 
@@ -211,6 +262,7 @@ export default function CheckoutClient() {
         status: "pending",
         userId: session?.user?.id,
         notes: formData.notes || undefined,
+        shippingCost, // save shipping cost locally if we had that field, but total is enough
       };
 
       // 1. Initial Order Creation (Unpaid)
@@ -251,7 +303,7 @@ export default function CheckoutClient() {
 
                 cartStore.clearCart();
                 toast.success(`Order ${formatOrderNumber(placed)} placed successfully.`);
-                window.location.href = "/account";
+                router.push("/account");
              } catch (err) {
                 toast.error(err instanceof Error ? err.message : "Payment verification failed. Please contact support.");
                 setIsSubmitting(false);
@@ -440,13 +492,24 @@ export default function CheckoutClient() {
                 value={formData.notes} onChange={handleChange} />
             </div>
 
-            <button
-              type="submit"
-              className={`btn btn-primary btn-lg ${styles.submitBtn}`}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Processing..." : `Place Order — ${formattedTotal}`}
-            </button>
+            {shippingDestination === "international" && !shippingCalculated ? (
+              <button
+                type="button"
+                className={`${styles.submitBtn} ${styles.submitBtnSecondary}`}
+                onClick={handleCalculateShipping}
+                disabled={isCalculatingShipping}
+              >
+                {isCalculatingShipping ? "Calculating..." : "Calculate Shipping"}
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className={`${styles.submitBtn} ${styles.submitBtnPrimary}`}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Processing..." : `Place Order — ${formattedTotal}`}
+              </button>
+            )}
           </form>
         </div>
 
@@ -494,7 +557,7 @@ export default function CheckoutClient() {
             )}
             <div className={styles.totalRow}>
               <span>Shipping</span>
-              <span>Calculated at next step</span>
+              <span>{formattedShipping}</span>
             </div>
             <div className={`${styles.totalRow} ${styles.totalFinal}`}>
               <span>Total</span>

@@ -102,6 +102,11 @@ function statusLabel(status: Order["status"]) {
   const map: Record<Order["status"], string> = {
     pending: "Pending",
     processing: "Processing",
+    "order packaged": "Order Packaged",
+    "courier on his way to pick package": "Courier on his way to pick package",
+    "courier picked package": "Courier picked package",
+    "courier on the way to deliver package": "Courier on the way to deliver package",
+    "package delivered": "Package Delivered",
     shipped: "Shipped",
     delivered: "Delivered",
     cancelled: "Cancelled",
@@ -177,6 +182,363 @@ function OrderLineRow({ line }: { line: OrderItem }) {
   );
 }
 
+function formatEventDateTime(dateStr: string, timeStr?: string) {
+  if (!dateStr) return "";
+  let d: Date;
+  if (dateStr.includes("T")) {
+    d = new Date(dateStr);
+  } else {
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    } else {
+      d = new Date(dateStr);
+    }
+  }
+  
+  if (isNaN(d.getTime())) return dateStr.trim();
+  
+  const monthNames = ["june", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  monthNames[0] = "january";
+  const month = monthNames[d.getMonth()];
+  
+  const date = d.getDate();
+  const suffix = (date === 1 || date === 21 || date === 31) ? "st" : (date === 2 || date === 22) ? "nd" : (date === 3 || date === 23) ? "rd" : "th";
+  const year = d.getFullYear();
+
+  return `${month} ${date}${suffix}, ${year}`;
+}
+
+function OrderTracking({ trackingNumber, dhlStatus, createdAt, updatedAt }: { trackingNumber: string; dhlStatus?: string; createdAt: string; updatedAt: string }) {
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<any[]>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTracking = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch(`/api/shipping/track?trackingNumber=${trackingNumber}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to fetch tracking");
+        
+        if (isMounted) {
+          const shipment = data.shipments?.[0];
+          if (shipment?.events && shipment.events.length > 0) {
+            setEvents(shipment.events);
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) setError(err.message);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchTracking();
+    return () => { isMounted = false; };
+  }, [trackingNumber]);
+
+  const localEvents: any[] = [];
+  try {
+    const createdDate = new Date(createdAt);
+    const updatedDate = new Date(updatedAt || createdAt);
+    
+    localEvents.push({
+      date: createdDate.toISOString().split("T")[0],
+      time: createdDate.toISOString().split("T")[1].substring(0, 5),
+      description: "Order received",
+    });
+
+    if (dhlStatus === "Manifested" || dhlStatus?.startsWith("Pickup Scheduled")) {
+      const eventDate = dhlStatus === "Manifested" ? updatedDate : createdDate;
+      localEvents.push({
+        date: eventDate.toISOString().split("T")[0],
+        time: eventDate.toISOString().split("T")[1].substring(0, 5),
+        description: "Ready to be packed",
+      });
+    }
+
+    if (dhlStatus?.startsWith("Pickup Scheduled")) {
+      localEvents.push({
+        date: updatedDate.toISOString().split("T")[0],
+        time: updatedDate.toISOString().split("T")[1].substring(0, 5),
+        description: "Order packed and awaiting courier",
+      });
+    }
+  } catch(e) {}
+
+  const allEvents = [...localEvents, ...events];
+
+  return (
+    <div style={{ marginTop: 12, padding: 12, backgroundColor: "var(--light-bg)", borderRadius: 6, width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <span style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>DHL Express Tracking</span>
+          <div style={{ fontWeight: 600, letterSpacing: "1px", fontSize: "0.9rem" }}>{trackingNumber}</div>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <a
+            href={`https://www.dhl.com/gh-en/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingNumber}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-outline"
+            style={{ padding: "4px 8px", fontSize: "0.8rem", height: "auto", minHeight: 0 }}
+          >
+            Track on DHL
+          </a>
+        </div>
+      </div>
+      
+      <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+        {loading && <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>Loading tracking events...</p>}
+        {error && <p style={{ fontSize: "0.85rem", color: "var(--error)" }}>{error}</p>}
+        {!loading && !error && allEvents.length > 0 && (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+            {allEvents.map((ev, i) => (
+              <li key={i} style={{ display: "flex", gap: 12, fontSize: "0.85rem", flexDirection: "column", sm: { flexDirection: "row" } } as any}>
+                <div style={{ color: "var(--cinereous)", flexShrink: 0, minWidth: "160px" }}>
+                  {formatEventDateTime(ev.date, ev.time)}
+                </div>
+                <div>
+                  <strong>{ev.description}</strong>
+                  {ev.serviceArea?.[0]?.description && (
+                    <span style={{ display: "block", color: "var(--cinereous)", marginTop: 2 }}>
+                      {ev.serviceArea[0].description}
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DomesticOrderTracking({ history, createdAt }: { history: { status: string; timestamp: string }[], createdAt: string }) {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+  const events = [
+    { status: "pending", timestamp: createdAt },
+    ...history
+  ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  const DOMESTIC_SEQUENCE = [
+    "pending",
+    "processing",
+    "order packaged",
+    "courier picked package",
+    "courier on the way to deliver package",
+    "package delivered"
+  ];
+
+  const getStepInfo = (status: string) => {
+    switch(status) {
+      case "pending": return { title: "Order Placed", desc: "We have received your order", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> };
+      case "processing": return { title: "Processing", desc: "We are preparing your order", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> };
+      case "order packaged": return { title: "Packaged", desc: "Your order is packed and ready", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> };
+      case "courier on his way to pick package":
+      case "courier picked package": return { title: "Package Picked Up", desc: "Courier has picked up the package", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><g transform="translate(4, 2) scale(0.8)"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></g><path d="M1 10h4"/><path d="M2 14h3"/><path d="M1 18h4"/></svg> };
+      case "courier on the way to deliver package": return { title: "Out for Delivery", desc: "Courier is on the way", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> };
+      case "package delivered": return { title: "Delivered", desc: "Package has been delivered", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line><polyline points="8 12 11 15 22 4"></polyline></svg> };
+      case "cancelled": return { title: "Cancelled", desc: "This order was cancelled", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> };
+      default: return { title: statusLabel(status as any), desc: "", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle></svg> };
+    }
+  };
+
+  const completedStatuses = events.map(e => e.status);
+  const lastStatus = completedStatuses[completedStatuses.length - 1];
+  const isCancelled = lastStatus === "cancelled";
+
+  const timelineData: any[] = events.map(e => {
+    return {
+      status: e.status,
+      timestamp: e.timestamp,
+      isCompleted: true,
+      isCurrent: e.status === lastStatus && !isCancelled && e.status !== "package delivered"
+    };
+  });
+
+  if (!isCancelled && lastStatus !== "package delivered") {
+    const lastIdx = DOMESTIC_SEQUENCE.indexOf(lastStatus);
+    if (lastIdx >= 0) {
+      for (let i = lastIdx + 1; i < DOMESTIC_SEQUENCE.length; i++) {
+        timelineData.push({
+          status: DOMESTIC_SEQUENCE[i],
+          timestamp: null,
+          isCompleted: false,
+          isCurrent: false
+        });
+      }
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 24, padding: "24px", backgroundColor: "#fff", border: "1px solid var(--border)", borderRadius: "16px", width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+        <div>
+          <span style={{ fontSize: "0.85rem", color: "var(--cinereous)", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Local Delivery Tracking</span>
+          <div style={{ fontWeight: 600, fontSize: "0.9rem", marginTop: 4, letterSpacing: "1px" }}>Order Timeline</div>
+        </div>
+      </div>
+      
+      {loading ? (
+        <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+          <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>Loading tracking events...</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+        {timelineData.map((item, i) => {
+          const isLast = i === timelineData.length - 1;
+          const info = getStepInfo(item.status);
+          const color = item.isCompleted || item.isCurrent ? "var(--blue-athracite)" : "#cbd5e1";
+          const bgColor = item.isCompleted || item.isCurrent ? "rgba(39, 43, 54, 0.05)" : "#f8fafc";
+          const textColor = item.isCompleted || item.isCurrent ? "var(--blue-athracite)" : "#94a3b8";
+          const descColor = item.isCompleted || item.isCurrent ? "var(--cinereous)" : "#cbd5e1";
+
+          let dateStr = "";
+          let timeStr = "";
+          if (item.timestamp) {
+            const formatted = formatEventDateTime(item.timestamp);
+            const parts = formatted.split(" @ ");
+            dateStr = parts[0];
+            timeStr = parts[1] || "";
+          }
+
+          return (
+            <div key={i} style={{ display: "flex", gap: "20px", position: "relative", minHeight: isLast ? "60px" : "90px" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "56px" }}>
+                <div style={{ 
+                  width: "56px", height: "56px", borderRadius: "16px", backgroundColor: bgColor, color: color,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  boxShadow: item.isCurrent ? "0 4px 12px rgba(39, 43, 54, 0.12)" : "none"
+                }}>
+                  {info.icon}
+                </div>
+                {!isLast && (
+                  <div style={{ flex: 1, width: "2px", backgroundColor: color, margin: "8px 0", position: "relative" }}>
+                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "6px", height: "6px", borderRadius: "50%", backgroundColor: color }} />
+                  </div>
+                )}
+              </div>
+              
+              <div style={{ flex: 1, paddingTop: "6px", paddingBottom: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: "0.85rem", color: textColor, marginBottom: "6px" }}>{info.title}</div>
+                    <div style={{ fontSize: "0.85rem", color: descColor, fontWeight: 500 }}>{info.desc}</div>
+                  </div>
+                  <div style={{ textAlign: "right", color: textColor, fontSize: "0.85rem" }}>
+                    {dateStr && <div style={{ fontWeight: 500 }}>{dateStr}</div>}
+                    {timeStr && <div style={{ marginTop: "4px" }}>{timeStr}</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      )}
+    </div>
+  );
+}
+
+function OrderTrackingButton({ 
+  isOpen, 
+  setIsOpen 
+}: { 
+  isOpen: boolean; 
+  setIsOpen: (o: boolean) => void;
+}) {
+  return (
+    <button
+      onClick={() => setIsOpen(!isOpen)}
+      className="btn btn-primary"
+      style={{ padding: "4px 12px", fontSize: "0.8rem", height: "auto", minHeight: 0 }}
+    >
+      {isOpen ? "Hide timeline" : "Show timeline"}
+    </button>
+  );
+}
+
+function OrderCard({ o, isInternational }: { o: Order, isInternational: boolean }) {
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+
+  return (
+    <li className={styles.orderCard}>
+      <div className={styles.orderCardTop}>
+        <div className={styles.orderInfo}>
+          <span className={styles.orderRef}>Order {formatOrderNumber(o)}</span>
+          <span className={styles.orderSeparator} aria-hidden>·</span>
+          <span className={styles.orderPlacedDate}>
+            {new Date(o.createdAt).toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
+        </div>
+        <div className={styles.orderStats}>
+          <span className={styles.orderTotal}>GHC {o.total.toLocaleString()}</span>
+          {isInternational && o.dhlTrackingNumber ? (
+            <OrderTrackingButton isOpen={isTimelineOpen} setIsOpen={setIsTimelineOpen} />
+          ) : isInternational && !o.dhlTrackingNumber ? (
+            <span className={styles.orderStatus} style={{ background: "#f0f0f0", color: "#666" }}>
+              Awaiting Tracking
+            </span>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <button
+                onClick={() => setIsTimelineOpen(!isTimelineOpen)}
+                className="btn btn-outline"
+                style={{ padding: "4px 12px", fontSize: "0.8rem", height: "auto", minHeight: 0 }}
+              >
+                {isTimelineOpen ? "Hide order status" : "Order status"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      {o.items && o.items.length > 0 ? (
+        <ul className={styles.orderLines}>
+          {o.items.map((line, idx) => (
+            <OrderLineRow
+              key={`${o.id}-${idx}-${line.productId}-${line.size ?? ""}`}
+              line={line}
+            />
+          ))}
+        </ul>
+      ) : (
+        <p className={styles.orderLinesEmpty}>No products listed for this order.</p>
+      )}
+      {o.notes?.trim() ? (
+        <p className={styles.orderNotes}>
+          <span className={styles.orderNotesLabel}>Your note</span>
+          {o.notes.trim()}
+        </p>
+      ) : null}
+      
+      {/* If timeline is open, render tracking block */}
+      {isInternational && o.dhlTrackingNumber && isTimelineOpen && (
+        <OrderTracking trackingNumber={o.dhlTrackingNumber} dhlStatus={o.dhlStatus} createdAt={o.createdAt} updatedAt={o.updatedAt} />
+      )}
+      {!isInternational && isTimelineOpen && (
+        <DomesticOrderTracking history={o.statusHistory || []} createdAt={o.createdAt} />
+      )}
+    </li>
+  );
+}
+
 function AccountDashboard({ userId }: { userId: string }) {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -186,6 +548,8 @@ function AccountDashboard({ userId }: { userId: string }) {
   const [consultationsLoading, setConsultationsLoading] = useState(true);
   const [consultationsError, setConsultationsError] = useState("");
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"orders" | "appointments">("orders");
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   const loadOrders = useCallback(async () => {
@@ -302,8 +666,24 @@ function AccountDashboard({ userId }: { userId: string }) {
       </div>
 
       <div className="container">
-        <div className={styles.profileHeader}>
-          <div className={styles.avatarContainer} ref={avatarMenuRef}>
+        <div className={styles.profileHeader} style={{ position: 'relative', justifyContent: 'center' }}>
+          
+          <div className={styles.segmentedToggle}>
+            <button 
+              onClick={() => setActiveTab("orders")}
+              className={`${styles.segmentedBtn} ${activeTab === "orders" ? styles.segmentedBtnActive : ""}`}
+            >
+              Orders
+            </button>
+            <button 
+              onClick={() => setActiveTab("appointments")}
+              className={`${styles.segmentedBtn} ${activeTab === "appointments" ? styles.segmentedBtnActive : ""}`}
+            >
+              Appointments
+            </button>
+          </div>
+
+          <div className={styles.avatarContainer} ref={avatarMenuRef} style={{ position: 'absolute', right: 0, margin: 0 }}>
             <button
               type="button"
               className={styles.profileAvatar}
@@ -348,13 +728,27 @@ function AccountDashboard({ userId }: { userId: string }) {
           </div>
         </div>
 
-        <div className={styles.grid}>
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <h2 className={styles.panelTitle}>Recent Orders</h2>
-              <Link href="/shop" className={styles.panelLink}>New Order</Link>
-            </div>
-            <div className={styles.panelBody}>
+        <div>
+          {activeTab === "orders" && (
+            <div style={{ marginTop: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: 0 }}>Recent Orders</h2>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  <button 
+                    onClick={() => setHistoryModalOpen(true)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--cinereous)", display: "flex", alignItems: "center", gap: "6px" }}
+                    aria-label="Order History"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>History</span>
+                  </button>
+                  <Link href="/shop" className="btn btn-outline" style={{ padding: "6px 16px", fontSize: "0.85rem" }}>New Order</Link>
+                </div>
+              </div>
+              <div>
               {ordersLoading ? (
                 <div className={styles.emptyState}>
                   <p>Loading orders…</p>
@@ -374,59 +768,34 @@ function AccountDashboard({ userId }: { userId: string }) {
                   </Link>
                 </div>
               ) : (
-                <div className={styles.panelScroll}>
-                  <ul className={styles.ordersList}>
-                    {orders.map((o) => (
-                      <li key={o.id} className={styles.orderCard}>
-                        <div className={styles.orderCardTop}>
-                          <div className={styles.orderInfo}>
-                            <span className={styles.orderRef}>Order {formatOrderNumber(o)}</span>
-                            <span className={styles.orderSeparator} aria-hidden>·</span>
-                            <span className={styles.orderPlacedDate}>
-                              {new Date(o.createdAt).toLocaleDateString(undefined, {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
-                          </div>
-                          <div className={styles.orderStats}>
-                            <span className={styles.orderTotal}>GHC {o.total.toLocaleString()}</span>
-                            <span className={styles.orderStatus}>{statusLabel(o.status)}</span>
-                          </div>
-                        </div>
-                        {o.items && o.items.length > 0 ? (
-                          <ul className={styles.orderLines}>
-                            {o.items.map((line, idx) => (
-                              <OrderLineRow
-                                key={`${o.id}-${idx}-${line.productId}-${line.size ?? ""}`}
-                                line={line}
-                              />
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className={styles.orderLinesEmpty}>No products listed for this order.</p>
-                        )}
-                        {o.notes?.trim() ? (
-                          <p className={styles.orderNotes}>
-                            <span className={styles.orderNotesLabel}>Your note</span>
-                            {o.notes.trim()}
-                          </p>
-                        ) : null}
-                      </li>
-                    ))}
+                <div>
+                  <ul className={styles.ordersList} style={{ margin: 0, padding: 0 }}>
+                    {orders.filter(o => o.status !== "package delivered" && o.status !== "cancelled").map((o) => {
+                      const isInternational = o.shippingAddress.includes("(international)");
+                      return (
+                        <OrderCard key={o.id} o={o} isInternational={isInternational} />
+                      );
+                    })}
+                    
+                    {orders.filter(o => o.status !== "package delivered" && o.status !== "cancelled").length === 0 && (
+                      <div className={styles.emptyState} style={{ marginTop: "32px", padding: "0 24px" }}>
+                        <p>No active orders found.</p>
+                      </div>
+                    )}
                   </ul>
                 </div>
               )}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <h2 className={styles.panelTitle}>Bespoke Appointments</h2>
-              <Link href="/bespoke" className={styles.panelLink}>Book Slot</Link>
-            </div>
-            <div className={styles.panelBody}>
+          {activeTab === "appointments" && (
+            <div style={{ marginTop: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: 0 }}>Bespoke Appointments</h2>
+                <Link href="/bespoke" className="btn btn-outline" style={{ padding: "6px 16px", fontSize: "0.85rem" }}>Book Slot</Link>
+              </div>
+              <div>
               {consultationsLoading ? (
                 <div className={styles.emptyState}>
                   <p>Loading appointments…</p>
@@ -446,8 +815,8 @@ function AccountDashboard({ userId }: { userId: string }) {
                   </Link>
                 </div>
               ) : (
-                <div className={styles.panelScroll}>
-                  <ul className={styles.consultationsList}>
+                <div>
+                  <ul className={styles.consultationsList} style={{ margin: 0, padding: 0 }}>
                     {consultations.map((c) => {
                       const pref = formatPreferredSlot(c.preferredDate, c.preferredTime);
                       return (
@@ -542,8 +911,37 @@ function AccountDashboard({ userId }: { userId: string }) {
               )}
             </div>
           </div>
+        )}
         </div>
       </div>
+      
+      {historyModalOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#fff", borderRadius: "12px", width: "100%", maxWidth: "600px", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 10px 40px rgba(0,0,0,0.1)" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 className={styles.panelTitle} style={{ margin: 0 }}>Order History</h2>
+              <button onClick={() => setHistoryModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--cinereous)" }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div className={styles.panelScroll} style={{ padding: "0" }}>
+              <ul className={styles.ordersList} style={{ margin: 0 }}>
+                {orders.filter(o => o.status === "package delivered" || o.status === "cancelled").map((o) => {
+                  const isInternational = o.shippingAddress.includes("(international)");
+                  return (
+                    <OrderCard key={o.id} o={o} isInternational={isInternational} />
+                  );
+                })}
+                {orders.filter(o => o.status === "package delivered" || o.status === "cancelled").length === 0 && (
+                  <div className={styles.emptyState} style={{ padding: "40px 24px" }}>
+                    <p>No past orders found.</p>
+                  </div>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

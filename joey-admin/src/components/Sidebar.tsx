@@ -58,7 +58,14 @@ export function Sidebar() {
         dataStore.getConsultationBookings(),
       ]);
       
-      const ordersCount = orders.filter((o) => o.status === "processing").length;
+      const activeStatuses = [
+        "processing",
+        "order packaged",
+        "courier on his way to pick package",
+        "courier picked package",
+        "courier on the way to deliver package"
+      ];
+      const ordersCount = orders.filter((o) => activeStatuses.includes(o.status)).length;
       const consultationsCount = consultations.filter((c) => c.status === "pending").length;
       
       setProcessingOrdersCount(ordersCount);

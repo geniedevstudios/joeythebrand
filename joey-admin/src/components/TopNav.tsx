@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LogOut, Menu, X, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { LogOut, Menu, X, Pencil, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
@@ -317,6 +317,19 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
           </nav>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                dataStore.notify();
+                toast.success("Database refreshed");
+              }}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/80 transition hover:bg-white/[0.08] hover:text-[#d6ff2a] sm:h-10 sm:w-10"
+              aria-label="Refresh Database"
+              title="Refresh Data"
+            >
+              <RefreshCw className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={2} />
+            </button>
+
             <button
               type="button"
               className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] lg:hidden"

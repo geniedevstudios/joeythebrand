@@ -250,6 +250,8 @@ const mapProduct = (row: Record<string, unknown>): Product => ({
   quantity: Number(row.quantity ?? 0),
   bespokeAvailable: Boolean(row.bespoke_available),
   bespokeLeadDays: Number(row.bespoke_lead_days ?? 14),
+  weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
+  hsCode: (row.hs_code as string) || undefined,
   variants: (row.variants as any) || [],
 });
 
@@ -332,6 +334,12 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   status: row.status as OrderStatus,
   userId: row.user_id as string | undefined,
   notes: row.notes as string | undefined,
+  dhlTrackingNumber: row.dhl_tracking_number as string | undefined,
+  dhlLabelUrl: row.dhl_label_url as string | undefined,
+  dhlStatus: row.dhl_status as string | undefined,
+  statusHistory: (typeof row.dhl_status === "string" && row.dhl_status.startsWith("[")) 
+    ? JSON.parse(row.dhl_status) 
+    : [],
   createdAt: row.created_at as string,
   updatedAt: row.updated_at as string,
 });

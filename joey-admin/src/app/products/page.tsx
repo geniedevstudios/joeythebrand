@@ -106,7 +106,7 @@ function CombosEditor({ variantId, variants, setVariants, productUploadFolder }:
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-xs font-medium text-zinc-700">Combo Name</label>
@@ -174,8 +174,86 @@ function CombosEditor({ variantId, variants, setVariants, productUploadFolder }:
                       }
                     }
                   }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700">Quantity in Stock</label>
+                <input
+                  type="number"
+                  value={combo.quantity ?? 0}
+                  onChange={(e) => {
+                    const next = [...variants];
+                    const vIdx = next.findIndex(v => v.id === variantId);
+                    if (vIdx !== -1) {
+                      const nextCombos = [...(next[vIdx].combos || [])];
+                      const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                      if (cIdx !== -1) {
+                        nextCombos[cIdx] = { ...nextCombos[cIdx], quantity: parseInt(e.target.value) || 0 };
+                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                        setVariants(next);
+                      }
+                    }
+                  }}
                   className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
+                <AdminStyledSelect
+                  name={`combo-stock-${combo.id}`}
+                  defaultValue={combo.bespokeAvailable ? "bespokeAvailable" : combo.isOutOfStock ? "isOutOfStock" : "inStock"}
+                  onValueChange={(val) => {
+                    const next = [...variants];
+                    const vIdx = next.findIndex(v => v.id === variantId);
+                    if (vIdx !== -1) {
+                      const nextCombos = [...(next[vIdx].combos || [])];
+                      const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                      if (cIdx !== -1) {
+                        nextCombos[cIdx] = {
+                          ...nextCombos[cIdx],
+                          isOutOfStock: val === "isOutOfStock",
+                          bespokeAvailable: val === "bespokeAvailable"
+                        };
+                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                        setVariants(next);
+                      }
+                    }
+                  }}
+                  options={[
+                    { value: "none", label: "None" },
+                    { value: "isOutOfStock", label: "Out of stock" },
+                    { value: "bespokeAvailable", label: "Bespoke available" }
+                  ]}
+                  wrapperClassName="mt-1"
+                />
+                {combo.bespokeAvailable && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-zinc-700">Bespoke lead time (days)</label>
+                    <input
+                      type="number"
+                      value={combo.bespokeLeadDays ?? 14}
+                      onChange={(e) => {
+                        const next = [...variants];
+                        const vIdx = next.findIndex(v => v.id === variantId);
+                        if (vIdx !== -1) {
+                          const nextCombos = [...(next[vIdx].combos || [])];
+                          const cIdx = nextCombos.findIndex(c => c.id === combo.id);
+                          if (cIdx !== -1) {
+                            nextCombos[cIdx] = { ...nextCombos[cIdx], bespokeLeadDays: parseInt(e.target.value) || 14 };
+                            next[vIdx] = { ...next[vIdx], combos: nextCombos };
+                            setVariants(next);
+                          }
+                        }
+                      }}
+                      min={1}
+                      max={90}
+                      className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -315,12 +393,12 @@ export default function ProductsPage() {
         editingProduct.isOutOfStock
           ? "isOutOfStock"
           : editingProduct.isLimited
-          ? "isLimited"
-          : editingProduct.isBestSeller
-          ? "isBestSeller"
-          : editingProduct.bespokeAvailable
-          ? "bespokeAvailable"
-          : "none"
+            ? "isLimited"
+            : editingProduct.isBestSeller
+              ? "isBestSeller"
+              : editingProduct.bespokeAvailable
+                ? "bespokeAvailable"
+                : "none"
       );
     } else {
       setMainImageUrl("");
@@ -414,7 +492,7 @@ export default function ProductsPage() {
 
   const collectionOptions = useMemo(() => {
     const base = collections;
-    
+
     // Add "None" option
     const optionsWithNone = [
       {
@@ -503,6 +581,8 @@ export default function ProductsPage() {
       wearRaw === "mens" || wearRaw === "womens" || wearRaw === "unisex" ? wearRaw : "unisex";
     const quantity = Number(formData.get("quantity")) || 0;
     const bespokeLeadDays = Number(formData.get("bespokeLeadDays")) || 14;
+    const weightKg = Number(formData.get("weightKg")) || 0.5;
+    const hsCode = (formData.get("hsCode") as string)?.trim() || "";
 
     const col = collectionOptions.find((c) => c.slug === category);
     const categoryName =
@@ -537,6 +617,8 @@ export default function ProductsPage() {
           quantity,
           bespokeAvailable,
           bespokeLeadDays,
+          weightKg,
+          hsCode,
           variants: productModalTab === "variant" ? variants : [],
         });
       } else {
@@ -560,6 +642,8 @@ export default function ProductsPage() {
           quantity,
           bespokeAvailable,
           bespokeLeadDays,
+          weightKg,
+          hsCode,
           variants: productModalTab === "variant" ? variants : [],
         });
       }
@@ -705,11 +789,10 @@ export default function ProductsPage() {
           <button
             type="button"
             onClick={() => setTab("collections")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              tab === "collections"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900"
-            }`}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${tab === "collections"
+              ? "bg-white text-zinc-900 shadow-sm"
+              : "text-zinc-600 hover:text-zinc-900"
+              }`}
           >
             <Layers className="h-4 w-4" aria-hidden />
             Create collections
@@ -717,11 +800,10 @@ export default function ProductsPage() {
           <button
             type="button"
             onClick={() => setTab("products")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              tab === "products"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900"
-            }`}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${tab === "products"
+              ? "bg-white text-zinc-900 shadow-sm"
+              : "text-zinc-600 hover:text-zinc-900"
+              }`}
           >
             <Package className="h-4 w-4" aria-hidden />
             Create products
@@ -963,28 +1045,26 @@ export default function ProductsPage() {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="border-b border-zinc-200 px-6 py-4 flex justify-center">
               <div className="inline-flex rounded-lg bg-zinc-100 p-1">
                 <button
                   type="button"
                   onClick={() => setProductModalTab("regular")}
-                  className={`rounded-md px-6 py-2 text-sm font-medium transition-all ${
-                    productModalTab === "regular"
-                      ? "bg-white text-zinc-900 shadow-sm"
-                      : "text-zinc-500 hover:text-zinc-900"
-                  }`}
+                  className={`rounded-md px-6 py-2 text-sm font-medium transition-all ${productModalTab === "regular"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-900"
+                    }`}
                 >
                   Regular Product
                 </button>
                 <button
                   type="button"
                   onClick={() => setProductModalTab("variant")}
-                  className={`rounded-md px-6 py-2 text-sm font-medium transition-all ${
-                    productModalTab === "variant"
-                      ? "bg-white text-zinc-900 shadow-sm"
-                      : "text-zinc-500 hover:text-zinc-900"
-                  }`}
+                  className={`rounded-md px-6 py-2 text-sm font-medium transition-all ${productModalTab === "variant"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-900"
+                    }`}
                 >
                   Product with Variants
                 </button>
@@ -998,11 +1078,11 @@ export default function ProductsPage() {
                     <h3 className="text-base font-semibold text-zinc-900">Variants</h3>
                     <p className="mt-1 text-sm text-zinc-600">Select the variant types for the product</p>
                   </div>
-                  
+
                   <div className="flex gap-6 mb-6">
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="rounded border-zinc-300"
                         checked={variants.some(v => v.id === "main-color")}
                         onChange={(e) => {
@@ -1016,8 +1096,8 @@ export default function ProductsPage() {
                       <span className="text-sm font-medium">Color</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="rounded border-zinc-300"
                         checked={variants.some(v => v.id === "fit-combo")}
                         onChange={(e) => {
@@ -1080,6 +1160,68 @@ export default function ProductsPage() {
                               />
                             </div>
                           </div>
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <label className="block text-sm font-medium text-zinc-700">Quantity in Stock</label>
+                              <input
+                                type="number"
+                                value={variants.find(v => v.id === "main-color")?.quantity ?? 0}
+                                onChange={(e) => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(v => v.id === "main-color");
+                                  if (vIdx !== -1) {
+                                    next[vIdx] = { ...next[vIdx], quantity: parseInt(e.target.value) || 0 };
+                                    setVariants(next);
+                                  }
+                                }}
+                                className="mt-2 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <label className="block text-sm font-medium text-zinc-700">Stock Status</label>
+                              <AdminStyledSelect
+                                value={variants.find(v => v.id === "main-color")?.bespokeAvailable ? "bespokeAvailable" : variants.find(v => v.id === "main-color")?.isOutOfStock ? "isOutOfStock" : "none"}
+                                onValueChange={(val) => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(v => v.id === "main-color");
+                                  if (vIdx !== -1) {
+                                    next[vIdx] = {
+                                      ...next[vIdx],
+                                      isOutOfStock: val === "isOutOfStock",
+                                      bespokeAvailable: val === "bespokeAvailable"
+                                    };
+                                    setVariants(next);
+                                  }
+                                }}
+                                options={[
+                                  { value: "none", label: "None" },
+                                  { value: "isOutOfStock", label: "Out of stock" },
+                                  { value: "bespokeAvailable", label: "Bespoke available" }
+                                ]}
+                                wrapperClassName="mt-1"
+                              />
+                              {variants.find(v => v.id === "main-color")?.bespokeAvailable && (
+                                <div className="mt-2">
+                                  <label className="block text-sm font-medium text-zinc-700">Bespoke lead time (days)</label>
+                                  <input
+                                    type="number"
+                                    value={variants.find(v => v.id === "main-color")?.bespokeLeadDays ?? 14}
+                                    onChange={(e) => {
+                                      const next = [...variants];
+                                      const vIdx = next.findIndex(v => v.id === "main-color");
+                                      if (vIdx !== -1) {
+                                        next[vIdx] = { ...next[vIdx], bespokeLeadDays: parseInt(e.target.value) || 14 };
+                                        setVariants(next);
+                                      }
+                                    }}
+                                    min={1}
+                                    max={90}
+                                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         <CombosEditor
@@ -1095,85 +1237,140 @@ export default function ProductsPage() {
               )}
 
               <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-zinc-700">Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    defaultValue={editingProduct?.name}
-                    required
-                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                  />
-                </div>
+                <details open className="col-span-2 group rounded-lg border border-zinc-200 bg-zinc-50/50">
+                  <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-semibold text-zinc-900 outline-none hover:bg-zinc-100">
+                    Product Information
+                    <span className="text-zinc-500 transition-transform duration-200 group-open:-rotate-180">
+                      ▼
+                    </span>
+                  </summary>
+                  <div className="border-t border-zinc-200 p-4">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700">Name</label>
+                        <input
+                          type="text"
+                          name="name"
+                          defaultValue={editingProduct?.name}
+                          required
+                          className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm bg-white"
+                        />
+                      </div>
 
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-zinc-700">URL Slug (leave empty to auto-generate)</label>
-                  <input
-                    type="text"
-                    name="slug"
-                    defaultValue={editingProduct?.slug}
-                    placeholder="e.g. summer-crochet"
-                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm font-mono placeholder:text-zinc-400"
-                  />
-                </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700">URL Slug (leave empty to auto-generate)</label>
+                        <input
+                          type="text"
+                          name="slug"
+                          defaultValue={editingProduct?.slug}
+                          placeholder="e.g. summer-crochet"
+                          className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm font-mono placeholder:text-zinc-400 bg-white"
+                        />
+                      </div>
 
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-zinc-700" id="product-field-collection">
-                    Collection (slug)
-                  </label>
-                  <AdminStyledSelect
-                    name="category"
-                    labelledBy="product-field-collection"
-                    defaultValue={editingProduct?.category || collectionOptions[0]?.slug || "always-lit"}
-                    wrapperClassName="mt-1"
-                    options={collectionOptions.map((col) => ({
-                      value: col.slug,
-                      label: `${col.name} (${col.slug})`,
-                    }))}
-                  />
-                </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700" id="product-field-collection">
+                          Collection (slug)
+                        </label>
+                        <AdminStyledSelect
+                          name="category"
+                          labelledBy="product-field-collection"
+                          defaultValue={editingProduct?.category || collectionOptions[0]?.slug || "always-lit"}
+                          wrapperClassName="mt-1 bg-white"
+                          options={collectionOptions.map((col) => ({
+                            value: col.slug,
+                            label: `${col.name} (${col.slug})`,
+                          }))}
+                        />
+                      </div>
 
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-zinc-700">Price (GHC)</label>
-                  <input
-                    type="number"
-                    name="price"
-                    defaultValue={editingProduct?.price}
-                    required
-                    min={0}
-                    step="0.01"
-                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                  />
-                </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700">Price (GHC)</label>
+                        <input
+                          type="number"
+                          name="price"
+                          defaultValue={editingProduct?.price}
+                          required
+                          min={0}
+                          step="0.01"
+                          className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm bg-white"
+                        />
+                      </div>
 
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-zinc-700">Quantity in Stock</label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    defaultValue={editingProduct?.quantity ?? 0}
-                    required
-                    min={0}
-                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                  />
-                </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700">Quantity in Stock</label>
+                        <input
+                          type="number"
+                          name="quantity"
+                          defaultValue={editingProduct?.quantity ?? 0}
+                          required
+                          min={0}
+                          className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm bg-white"
+                        />
+                      </div>
 
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-zinc-700" id="product-field-wear">
-                    Shop wear filter
-                  </label>
-                  <AdminStyledSelect
-                    name="wearTag"
-                    labelledBy="product-field-wear"
-                    defaultValue={editingProduct?.wearTag ?? "unisex"}
-                    wrapperClassName="mt-1"
-                    options={[
-                      { value: "unisex", label: "Unisex (shows in Men's and Women's)" },
-                      { value: "mens", label: "Men's wear" },
-                      { value: "womens", label: "Women's wear" },
-                    ]}
-                  />
-                </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700" id="product-field-wear">
+                          Shop wear filter
+                        </label>
+                        <AdminStyledSelect
+                          name="wearTag"
+                          labelledBy="product-field-wear"
+                          defaultValue={editingProduct?.wearTag ?? "unisex"}
+                          wrapperClassName="mt-1 bg-white"
+                          options={[
+                            { value: "unisex", label: "Unisex (shows in Men's and Women's)" },
+                            { value: "mens", label: "Men's wear" },
+                            { value: "womens", label: "Women's wear" },
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </details>
+
+                <details className="col-span-2 group rounded-lg border border-zinc-200 bg-zinc-50/50">
+                  <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-semibold text-zinc-900 outline-none hover:bg-zinc-100">
+                    DHL Information
+                    <span className="text-zinc-500 transition-transform duration-200 group-open:-rotate-180">
+                      ▼
+                    </span>
+                  </summary>
+                  <div className="border-t border-zinc-200 p-4">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700">Weight (kg)</label>
+                        <input
+                          type="number"
+                          name="weightKg"
+                          defaultValue={editingProduct?.weightKg ?? 0.5}
+                          required
+                          min={0.1}
+                          step="0.1"
+                          className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm bg-white"
+                        />
+                      </div>
+
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-sm font-medium text-zinc-700" id="product-field-hscode">
+                          Commodity (HS) Code
+                        </label>
+                        <AdminStyledSelect
+                          name="hsCode"
+                          labelledBy="product-field-hscode"
+                          defaultValue={editingProduct?.hsCode ?? "620442"}
+                          wrapperClassName="mt-1 bg-white"
+                          options={[
+                            { value: "620442", label: "620442 - Women's Dresses (Cotton)" },
+                            { value: "620319", label: "620319 - Men's Suits (Woven)" },
+                            { value: "621142", label: "621142 - Women's Garments (Other)" },
+                            { value: "610910", label: "610910 - T-shirts / Apparel (Knitted)" },
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </details>
 
                 <div className="col-span-2">
                   <AssetUrlField
@@ -1292,7 +1489,70 @@ export default function ProductsPage() {
                           className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm bg-white"
                         />
                       </div>
-                      
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-zinc-700">Quantity in Stock</label>
+                          <input
+                            type="number"
+                            value={variants.find(v => v.id === "fit-combo")?.quantity ?? 0}
+                            onChange={(e) => {
+                              const next = [...variants];
+                              const idx = next.findIndex(v => v.id === "fit-combo");
+                              if (idx !== -1) {
+                                next[idx] = { ...next[idx], quantity: parseInt(e.target.value) || 0 };
+                                setVariants(next);
+                              }
+                            }}
+                            className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm bg-white"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="block text-sm font-medium text-zinc-700">Stock Status</label>
+                          <AdminStyledSelect
+                            value={variants.find(v => v.id === "fit-combo")?.bespokeAvailable ? "bespokeAvailable" : variants.find(v => v.id === "fit-combo")?.isOutOfStock ? "isOutOfStock" : "none"}
+                            onValueChange={(val) => {
+                              const next = [...variants];
+                              const idx = next.findIndex(v => v.id === "fit-combo");
+                              if (idx !== -1) {
+                                next[idx] = {
+                                  ...next[idx],
+                                  isOutOfStock: val === "isOutOfStock",
+                                  bespokeAvailable: val === "bespokeAvailable"
+                                };
+                                setVariants(next);
+                              }
+                            }}
+                            options={[
+                              { value: "none", label: "None" },
+                              { value: "isOutOfStock", label: "Out of stock" },
+                              { value: "bespokeAvailable", label: "Bespoke available" }
+                            ]}
+                            wrapperClassName="mt-1"
+                          />
+                          {variants.find(v => v.id === "fit-combo")?.bespokeAvailable && (
+                            <div className="mt-2">
+                              <label className="block text-sm font-medium text-zinc-700">Bespoke lead time (days)</label>
+                              <input
+                                type="number"
+                                value={variants.find(v => v.id === "fit-combo")?.bespokeLeadDays ?? 14}
+                                onChange={(e) => {
+                                  const next = [...variants];
+                                  const idx = next.findIndex(v => v.id === "fit-combo");
+                                  if (idx !== -1) {
+                                    next[idx] = { ...next[idx], bespokeLeadDays: parseInt(e.target.value) || 14 };
+                                    setVariants(next);
+                                  }
+                                }}
+                                min={1}
+                                max={90}
+                                className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-zinc-700 mb-2">Combo Thumbnail Image</label>
                         <AssetUrlField
@@ -1312,7 +1572,7 @@ export default function ProductsPage() {
                           placeholder="Thumbnail URL or upload"
                         />
                       </div>
-                      
+
                       <div>
                         <p className="text-sm font-medium text-zinc-700">Variant images</p>
                         <p className="mt-0.5 text-xs text-zinc-700">
@@ -1600,7 +1860,70 @@ export default function ProductsPage() {
                                   />
                                 </div>
                               </div>
-                              
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs font-medium text-zinc-700">Quantity in Stock</label>
+                                  <input
+                                    type="number"
+                                    value={variant.quantity ?? 0}
+                                    onChange={(e) => {
+                                      const next = [...variants];
+                                      const vIdx = next.findIndex(v => v.id === variant.id);
+                                      if (vIdx !== -1) {
+                                        next[vIdx] = { ...next[vIdx], quantity: parseInt(e.target.value) || 0 };
+                                        setVariants(next);
+                                      }
+                                    }}
+                                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
+                                  <AdminStyledSelect
+                                    value={variant.bespokeAvailable ? "bespokeAvailable" : variant.isOutOfStock ? "isOutOfStock" : "none"}
+                                    onValueChange={(val) => {
+                                      const next = [...variants];
+                                      const vIdx = next.findIndex(v => v.id === variant.id);
+                                      if (vIdx !== -1) {
+                                        next[vIdx] = {
+                                          ...next[vIdx],
+                                          isOutOfStock: val === "isOutOfStock",
+                                          bespokeAvailable: val === "bespokeAvailable"
+                                        };
+                                        setVariants(next);
+                                      }
+                                    }}
+                                    options={[
+                                      { value: "none", label: "None" },
+                                      { value: "isOutOfStock", label: "Out of stock" },
+                                      { value: "bespokeAvailable", label: "Bespoke available" }
+                                    ]}
+                                    wrapperClassName="mt-1"
+                                  />
+                                  {variant.bespokeAvailable && (
+                                    <div className="mt-2">
+                                      <label className="block text-xs font-medium text-zinc-700">Bespoke lead time (days)</label>
+                                      <input
+                                        type="number"
+                                        value={variant.bespokeLeadDays ?? 14}
+                                        onChange={(e) => {
+                                          const next = [...variants];
+                                          const vIdx = next.findIndex(v => v.id === variant.id);
+                                          if (vIdx !== -1) {
+                                            next[vIdx] = { ...next[vIdx], bespokeLeadDays: parseInt(e.target.value) || 14 };
+                                            setVariants(next);
+                                          }
+                                        }}
+                                        min={1}
+                                        max={90}
+                                        className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
                               <div>
                                 <label className="mb-2 block text-xs font-medium text-zinc-700">Variant Images (Max 3)</label>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -1654,7 +1977,7 @@ export default function ProductsPage() {
                                   className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
                                 />
                               </div>
-                              
+
                               <div>
                                 <label className="block text-xs font-medium text-zinc-700">Display Format</label>
                                 <AdminStyledSelect
@@ -1675,7 +1998,7 @@ export default function ProductsPage() {
                                   wrapperClassName="mt-1"
                                 />
                               </div>
-                              
+
                               <div>
                                 <label className="mb-2 block text-xs font-medium text-zinc-700">Combo Thumbnail Image</label>
                                 <AssetUrlField
@@ -1695,7 +2018,7 @@ export default function ProductsPage() {
                                   placeholder="Thumbnail URL or upload"
                                 />
                               </div>
-                              
+
                               <div>
                                 <label className="mb-2 block text-xs font-medium text-zinc-700">Variant Images (Max 3)</label>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -1724,7 +2047,7 @@ export default function ProductsPage() {
                           )}
                         </div>
                       ))}
-                      
+
                       {variants.filter(v => v.id !== "main-color" && v.id !== "fit-combo").length === 0 && (
                         <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center">
                           <p className="text-sm text-zinc-500">No additional variants added.</p>

@@ -315,7 +315,24 @@ export default function ProductClient({ slug }: { slug: string }) {
     );
   }
 
-  const isBespokeProduct = !!(product.bespokeAvailable && product.quantity <= 0);
+  const currentCombo = activeCombo;
+  const currentColor = activeColorVariant;
+
+  const isComboOutOfStock = currentCombo?.isOutOfStock || (typeof currentCombo?.quantity === "number" && currentCombo.quantity <= 0);
+  const isColorOutOfStock = currentColor?.isOutOfStock || (typeof currentColor?.quantity === "number" && currentColor.quantity <= 0);
+  const isSelectedOutOfStock = activeMode === "paired" && currentCombo
+    ? isComboOutOfStock
+    : (activeMode === "solo" && currentColor?.id !== "main-color" ? isColorOutOfStock : product.isOutOfStock);
+
+  const isSelectedBespokeAvailable = activeMode === "paired" && currentCombo
+    ? currentCombo.bespokeAvailable ?? product.bespokeAvailable
+    : (activeMode === "solo" && currentColor?.id !== "main-color" ? currentColor?.bespokeAvailable ?? product.bespokeAvailable : product.bespokeAvailable);
+
+  const isBespokeProduct = !!(isSelectedBespokeAvailable && isSelectedOutOfStock);
+  const currentMaxStock = isBespokeProduct ? 999 : (activeMode === "paired" && currentCombo && typeof currentCombo.quantity === "number" ? currentCombo.quantity : (activeMode === "solo" && currentColor?.id !== "main-color" && typeof currentColor?.quantity === "number" ? currentColor.quantity : product.quantity));
+  const currentBespokeLeadDays = activeMode === "paired" && currentCombo && currentCombo.bespokeAvailable
+    ? currentCombo.bespokeLeadDays ?? product.bespokeLeadDays ?? 14
+    : (activeMode === "solo" && currentColor?.id !== "main-color" && currentColor?.bespokeAvailable ? currentColor.bespokeLeadDays ?? product.bespokeLeadDays ?? 14 : product.bespokeLeadDays ?? 14);
 
   const handleAddToCart = () => {
     if (!selectedSize && (product.sizes?.length ?? 0) > 0) {
@@ -339,9 +356,11 @@ export default function ProductClient({ slug }: { slug: string }) {
           price: activeCombo ? (activeCombo.price || product.price) : product.price,
           image: activeCombo?.thumbnailUrl || galleryImages[0] || product.image,
           quantity: qty,
-          maxStock: isBespokeProduct ? 999 : product.quantity,
+          maxStock: currentMaxStock,
           isBespoke: isBespokeProduct || undefined,
-          bespokeLeadDays: isBespokeProduct ? (product.bespokeLeadDays || 14) : undefined,
+          bespokeLeadDays: isBespokeProduct ? currentBespokeLeadDays : undefined,
+          variantId: activeColorVariant?.id !== "main-color" ? activeColorVariant?.id : undefined,
+          comboId: activeCombo ? activeCombo.id : undefined,
         });
         
         setAddStatus("added");
@@ -400,7 +419,7 @@ export default function ProductClient({ slug }: { slug: string }) {
               <div className={styles.badgeStack} aria-hidden="true">
                 {isBespokeProduct ? (
                   <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
-                ) : product.isOutOfStock ? (
+                ) : isSelectedOutOfStock ? (
                   <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                 ) : (
                   <>
@@ -441,7 +460,11 @@ export default function ProductClient({ slug }: { slug: string }) {
                     <button
                       key={v.id}
                       className={`${styles.colorSelectorBtn} ${activeColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
-                      style={{ backgroundColor: v.colorHex }}
+                      style={{ 
+                        backgroundColor: v.colorHex, 
+                        opacity: (v.isOutOfStock || (typeof v.quantity === "number" && v.quantity <= 0)) ? 0.4 : 1,
+                        textDecoration: (v.isOutOfStock || (typeof v.quantity === "number" && v.quantity <= 0)) ? "line-through" : "none"
+                      }}
                       onClick={() => {
                         setActiveColorVariantId(v.id);
                         if (activeMode === "paired" && v.combos && v.combos.length > 0) {
@@ -497,7 +520,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                             style={{
                               width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
                               border: activeComboId === combo.id ? "2px solid #000" : "1px solid #e5e5e5",
-                              padding: 0, background: "none", cursor: "pointer", position: "relative"
+                              padding: 0, background: "none", cursor: "pointer", position: "relative",
+                              opacity: (combo.isOutOfStock || (typeof combo.quantity === "number" && combo.quantity <= 0)) ? 0.4 : 1
                             }}
                             title={combo.name}
                           >
@@ -667,9 +691,9 @@ export default function ProductClient({ slug }: { slug: string }) {
 
               {isBespokeProduct ? (
                 <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff", marginTop: "12px" }}>
-                  🧵 This piece is bespoke. Expect approximately {product.bespokeLeadDays || 14} days for production after your order is confirmed.
+                  🧵 This piece is bespoke. Expect approximately {currentBespokeLeadDays} days for production after your order is confirmed.
                 </p>
-              ) : product.isOutOfStock ? (
+              ) : isSelectedOutOfStock ? (
                 <p className={styles.customNotice} style={{ color: "#c00", background: "#fee", marginTop: "12px" }}>
                   This item is currently out of stock.
                 </p>
@@ -685,13 +709,13 @@ export default function ProductClient({ slug }: { slug: string }) {
                   <button 
                     className={styles.qtyBtn} 
                     onClick={() => {
-                      if (isBespokeProduct || qty < product.quantity) {
+                      if (isBespokeProduct || qty < currentMaxStock) {
                         setQty(qty + 1);
                       } else {
-                        toast.error(`Only ${product.quantity} items available in stock.`);
+                        toast.error(`Only ${currentMaxStock} items available in stock.`);
                       }
                     }}
-                    disabled={!isBespokeProduct && qty >= product.quantity}
+                    disabled={!isBespokeProduct && qty >= currentMaxStock}
                   >
                     +
                   </button>
@@ -703,9 +727,9 @@ export default function ProductClient({ slug }: { slug: string }) {
                   <button 
                     className="btn btn-primary btn-lg" 
                     onClick={handleAddToCart}
-                    disabled={addStatus !== "idle" || (product.isOutOfStock && !isBespokeProduct)}
+                    disabled={addStatus !== "idle" || (isSelectedOutOfStock && !isBespokeProduct)}
                   >
-                    {product.isOutOfStock && !isBespokeProduct
+                    {isSelectedOutOfStock && !isBespokeProduct
                       ? "Out of Stock"
                       : isBespokeProduct
                         ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added ✓")
@@ -726,17 +750,17 @@ export default function ProductClient({ slug }: { slug: string }) {
                   <div className={styles.lowStockNotice} role="status" aria-live="polite" style={{ background: "#f5f3ff", borderColor: "#c4b5fd" }}>
                     <Clock className={styles.lowStockIcon} aria-hidden style={{ color: "#7c3aed" }} />
                     <span style={{ color: "#5b21b6" }}>
-                      bespoke piece would be handcrafted for you within {product.bespokeLeadDays || 14} days
+                      bespoke piece would be handcrafted for you within {currentBespokeLeadDays} days
                     </span>
                   </div>
-                ) : typeof product.quantity === "number" &&
-                product.quantity > 0 &&
-                product.quantity <= 5 &&
-                !product.isOutOfStock ? (
+                ) : typeof currentMaxStock === "number" &&
+                currentMaxStock > 0 &&
+                currentMaxStock <= 5 &&
+                !isSelectedOutOfStock ? (
                   <div className={styles.lowStockNotice} role="status" aria-live="polite">
                     <Clock className={styles.lowStockIcon} aria-hidden />
                     <span>
-                      Only {product.quantity} left in stock. Order soon.
+                      Only {currentMaxStock} left in stock. Order soon.
                     </span>
                   </div>
                 ) : null}
