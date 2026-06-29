@@ -8,14 +8,14 @@ function getAuthHeader() {
 
 export const SHIPPER_DETAILS = {
   postalAddress: {
-    postalCode: "00233",
+    postalCode: "GD-141-1647",
     cityName: "Accra",
     countryCode: "GH",
     addressLine1: "Nii KWAOFIO ST ASHALEY BOTWE"
   },
   contactInformation: {
-    email: "info@joeythebrand.com",
-    phone: "+233000000000", // Will update if user provides
+    email: "joeythebrandonline@gmail.com",
+    phone: "+233 24 409 3419",
     companyName: "JOEY THE BRAND",
     fullName: "JOSHUA OPPONG DARKO"
   }
@@ -95,12 +95,12 @@ export async function getShippingRates(req: DHLRateRequest) {
       const parsed = JSON.parse(errorBody);
       if (parsed.detail) errorDetail = parsed.detail;
       else if (parsed.message) errorDetail = parsed.message;
-    } catch (e) {}
+    } catch (e) { }
     throw new Error(`DHL Error: ${errorDetail}`);
   }
 
   const data = await res.json();
-  
+
   if (data.products && data.products.length > 0) {
     const product = data.products.find((p: any) => p.productCode === "P") || data.products[0];
     const priceObj = product.totalPrice.find((p: any) => p.priceCurrency === "GHS") || product.totalPrice[0];
@@ -110,7 +110,7 @@ export async function getShippingRates(req: DHLRateRequest) {
       productName: product.productName
     };
   }
-  
+
   throw new Error("No shipping products available for this destination");
 }
 
@@ -150,6 +150,15 @@ export async function createShipment(req: DHLShipmentRequest) {
     },
     productCode: "P",
     accounts: [{ typeCode: "shipper", number: account }],
+    outputImageProperties: {
+      allDocumentsInOneImage: true,
+      encodingFormat: "pdf",
+      imageOptions: [
+        { typeCode: "label", templateName: "ECOM26_84_A4_001", isRequested: true },
+        { typeCode: "waybillDoc", templateName: "ARCH_8x4", isRequested: true },
+        { typeCode: "invoice", templateName: "COMMERCIAL_INVOICE_P_10", isRequested: true, invoiceType: "commercial" }
+      ]
+    },
     customerDetails: {
       shipperDetails: SHIPPER_DETAILS,
       receiverDetails: {
@@ -218,7 +227,7 @@ export async function createShipment(req: DHLShipmentRequest) {
   }
 
   const data = await res.json();
-  
+
   // Return tracking number and base64 label
   return {
     trackingNumber: data.shipmentTrackingNumber,
@@ -286,7 +295,7 @@ export async function trackShipment(trackingNumber: string) {
   if (!res.ok) {
     const errorBody = await res.text();
     console.error("DHL Tracking Error:", errorBody);
-    
+
     // Fallback for DHL Test API 500 errors (which happen right after test labels are created)
     if (res.status === 500 && DHL_API_BASE.includes("test")) {
       return {
