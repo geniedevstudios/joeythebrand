@@ -262,7 +262,7 @@ export default function CheckoutClient() {
         status: "pending",
         userId: session?.user?.id,
         notes: formData.notes || undefined,
-        shippingCost, // save shipping cost locally if we had that field, but total is enough
+        // shippingCost, // save shipping cost locally if we had that field, but total is enough
       };
 
       // 1. Initial Order Creation (Unpaid)
@@ -526,7 +526,7 @@ export default function CheckoutClient() {
                   <span className={styles.itemName}>{item.name}</span>
                   {(item.color || item.colorHex) && (
                     <div className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", marginTop: "2px", display: "flex", alignItems: "center", gap: "6px", textTransform: "capitalize" }}>
-                      Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex, border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
+                      Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex || "#ccc", backgroundImage: item.image ? `url(${item.image})` : "none", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
                     </div>
                   )}
                   {item.combo && <span className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", display: "block", marginTop: "2px", textTransform: "capitalize" }}>Combo: {item.combo}</span>}

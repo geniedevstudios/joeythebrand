@@ -146,7 +146,7 @@ export default function CartDrawer() {
                     <h3 className={styles.itemName}>{item.name.toUpperCase()}</h3>
                     {(item.color || item.colorHex) && (
                       <div className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px", textTransform: "capitalize" }}>
-                        Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex, border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
+                        Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex || "#ccc", backgroundImage: item.image ? `url(${item.image})` : "none", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
                       </div>
                     )}
                     {item.combo && <p className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", marginBottom: "4px", textTransform: "capitalize" }}>Combo: {item.combo}</p>}

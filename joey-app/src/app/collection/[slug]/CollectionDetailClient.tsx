@@ -483,7 +483,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                               <div
                                 key={v.id}
                                 className={shopStyles.colorSwatch}
-                                style={{ backgroundColor: v.colorHex }}
+                                style={{ backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? p.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? p.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center" }}
                                 aria-hidden="true"
                               />
                             ))}
@@ -663,7 +663,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                           background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                         }}
                       >
-                        Solo
+                        Original
                       </button>
                       <button
                         type="button"
@@ -676,7 +676,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                           background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                         }}
                       >
-                        Paired
+                        Options
                       </button>
                     </div>
 
@@ -713,12 +713,17 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                           <button
                             key={v.id}
                             className={`${styles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
-                            style={{ backgroundColor: v.colorHex }}
+                            style={{ backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center" }}
                             onClick={() => {
                               setQuickViewColorVariantId(v.id);
-                              if (quickViewMode === "paired" && v.combos && v.combos.length > 0) {
+                              const isSoloUnavailable = v.isOutOfStock || (typeof v.quantity === "number" ? v.quantity <= 0 : !!v.bespokeAvailable);
+                              const hasCombos = v.combos && v.combos.length > 0;
+                              if (isSoloUnavailable && hasCombos) {
+                                setQuickViewMode("paired");
                                 setQuickViewComboId(v.combos[0].id);
-                              } else {
+                              } else if (quickViewMode === "paired" && hasCombos) {
+                                setQuickViewComboId(v.combos[0].id);
+                              } else if (!hasCombos) {
                                 setQuickViewMode("solo");
                                 setQuickViewComboId("");
                               }
@@ -745,8 +750,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                               background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                             }}
                           >
-                            Solo
-                          </button>
+                        Original
+                      </button>
                           <button
                             type="button"
                             onClick={() => { setQuickViewMode("paired"); setQuickViewComboId(quickViewActiveVariant?.combos?.[0]?.id || ""); }}
@@ -758,8 +763,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                               background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                             }}
                           >
-                            Paired
-                          </button>
+                        Options
+                      </button>
                         </div>
                         
                         {quickViewMode === "paired" && (

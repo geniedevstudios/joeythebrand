@@ -199,7 +199,7 @@ export default function OrdersPage() {
                                   <span className="mt-0.5 block text-xs text-zinc-600">
                                     {(item.color || item.colorHex) && (
                                       <span className="mr-3 inline-flex items-center gap-1.5 capitalize">
-                                        Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex, border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
+                                        Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex || "#ccc", backgroundImage: item.image ? `url(${item.image})` : "none", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
                                       </span>
                                     )}
                                     {item.combo && <span className="capitalize">Combo: {item.combo}</span>}

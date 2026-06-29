@@ -710,6 +710,10 @@ export default function ProductsPage() {
       available: formData.get(`size-${s.name}`) === "on",
     }));
 
+    const processedVariants = variants.map(v => 
+      v.id === "main-color" ? { ...v, images: [primary] } : v
+    );
+
     try {
       if (editingProduct) {
         await dataStore.updateProduct(editingProduct.id, {
@@ -734,7 +738,7 @@ export default function ProductsPage() {
           bespokeLeadDays,
           weightKg,
           hsCode,
-          variants,
+          variants: processedVariants,
         });
       } else {
         await dataStore.addProduct({
@@ -759,7 +763,7 @@ export default function ProductsPage() {
           bespokeLeadDays,
           weightKg,
           hsCode,
-          variants,
+          variants: processedVariants,
         });
       }
       toast.success(editingProduct ? "Product updated." : "Product created.");
@@ -1304,37 +1308,16 @@ export default function ProductsPage() {
                         <div className="space-y-6">
                           <div>
                             <label className="block text-sm font-medium text-zinc-700">
-                              Color Hex
+                              Color Name
                             </label>
                             <div className="mt-2 flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={
-                                  variants.find((v) => v.id === "main-color")
-                                    ?.colorHex || "#000000"
-                                }
-                                onChange={(e) => {
-                                  const next = [...variants];
-                                  const vIdx = next.findIndex(
-                                    (v) => v.id === "main-color",
-                                  );
-                                  if (vIdx !== -1) {
-                                    next[vIdx] = {
-                                      ...next[vIdx],
-                                      colorHex: e.target.value,
-                                    };
-                                    setVariants(next);
-                                  }
-                                }}
-                                className="h-10 w-10 cursor-pointer rounded-md border border-zinc-200 p-0 shadow-sm"
-                              />
                               <input
                                 type="text"
                                 value={
                                   variants.find((v) => v.id === "main-color")
-                                    ?.colorHex || ""
+                                    ?.name || ""
                                 }
-                                placeholder="#000000"
+                                placeholder="e.g. Classic Black"
                                 onChange={(e) => {
                                   const next = [...variants];
                                   const vIdx = next.findIndex(
@@ -1343,12 +1326,12 @@ export default function ProductsPage() {
                                   if (vIdx !== -1) {
                                     next[vIdx] = {
                                       ...next[vIdx],
-                                      colorHex: e.target.value,
+                                      name: e.target.value,
                                     };
                                     setVariants(next);
                                   }
                                 }}
-                                className="block w-32 rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm shadow-sm"
+                                className="block w-full max-w-md rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
                               />
                             </div>
                           </div>
@@ -1561,46 +1544,28 @@ export default function ProductsPage() {
                                     <div className="space-y-4">
                                       <div>
                                         <label className="block text-xs font-medium text-zinc-700">
-                                          Color Hex
-                                        </label>
-                                        <div className="mt-1 flex items-center gap-2">
-                                          <input
-                                            type="color"
-                                            value={
-                                              variant.colorHex || "#000000"
-                                            }
-                                            onChange={(e) => {
-                                              const next = [...variants];
-                                              const vIdx = next.findIndex(
-                                                (v) => v.id === variant.id,
-                                              );
-                                              next[vIdx] = {
-                                                ...next[vIdx],
-                                                colorHex: e.target.value,
-                                              };
-                                              setVariants(next);
-                                            }}
-                                            className="h-8 w-8 cursor-pointer rounded border border-zinc-300 p-0"
-                                          />
-                                          <input
-                                            type="text"
-                                            value={variant.colorHex || ""}
-                                            placeholder="#000000"
-                                            onChange={(e) => {
-                                              const next = [...variants];
-                                              const vIdx = next.findIndex(
-                                                (v) => v.id === variant.id,
-                                              );
-                                              next[vIdx] = {
-                                                ...next[vIdx],
-                                                colorHex: e.target.value,
-                                              };
-                                              setVariants(next);
-                                            }}
-                                            className="block w-32 rounded-md border border-zinc-300 p-1.5 font-mono text-sm shadow-sm"
-                                          />
+                                            Color Name
+                                          </label>
+                                          <div className="mt-1 flex items-center gap-2">
+                                            <input
+                                              type="text"
+                                              value={variant.name || ""}
+                                              placeholder="e.g. Midnight Velvet"
+                                              onChange={(e) => {
+                                                const next = [...variants];
+                                                const vIdx = next.findIndex(
+                                                  (v) => v.id === variant.id,
+                                                );
+                                                next[vIdx] = {
+                                                  ...next[vIdx],
+                                                  name: e.target.value,
+                                                };
+                                                setVariants(next);
+                                              }}
+                                              className="block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
+                                            />
+                                          </div>
                                         </div>
-                                      </div>
 
                                       <div className="grid grid-cols-2 gap-4">
                                         <div>

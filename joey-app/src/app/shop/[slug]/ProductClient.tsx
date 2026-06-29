@@ -193,6 +193,8 @@ export default function ProductClient({ slug }: { slug: string }) {
       imagesToUse = activeCombo.images;
     } else if (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.images && activeColorVariant.images.length > 0) {
       imagesToUse = activeColorVariant.images;
+    } else if (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.combos && activeColorVariant.combos[0]?.images?.length > 0) {
+      imagesToUse = activeColorVariant.combos[0].images;
     }
 
     return imagesToUse.filter((img: string) => img && img.trim() !== "" && img !== product.hoverImage);
@@ -318,8 +320,8 @@ export default function ProductClient({ slug }: { slug: string }) {
   const currentCombo = activeCombo;
   const currentColor = activeColorVariant;
 
-  const isComboOutOfStock = currentCombo?.isOutOfStock || (typeof currentCombo?.quantity === "number" && currentCombo.quantity <= 0);
-  const isColorOutOfStock = currentColor?.isOutOfStock || (typeof currentColor?.quantity === "number" && currentColor.quantity <= 0);
+  const isComboOutOfStock = currentCombo?.isOutOfStock || (typeof currentCombo?.quantity === "number" ? currentCombo.quantity <= 0 : !!currentCombo?.bespokeAvailable);
+  const isColorOutOfStock = currentColor?.isOutOfStock || (typeof currentColor?.quantity === "number" ? currentColor.quantity <= 0 : !!currentColor?.bespokeAvailable);
   const isSelectedOutOfStock = activeMode === "paired" && currentCombo
     ? isComboOutOfStock
     : (activeMode === "solo" && currentColor?.id !== "main-color" ? isColorOutOfStock : product.isOutOfStock);
@@ -461,13 +463,18 @@ export default function ProductClient({ slug }: { slug: string }) {
                       key={v.id}
                       className={`${styles.colorSelectorBtn} ${activeColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
                       style={{ 
-                        backgroundColor: v.colorHex, 
+                        backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? product.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? product.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center", 
                         opacity: (v.isOutOfStock || (typeof v.quantity === "number" && v.quantity <= 0)) ? 0.4 : 1,
                         textDecoration: (v.isOutOfStock || (typeof v.quantity === "number" && v.quantity <= 0)) ? "line-through" : "none"
                       }}
                       onClick={() => {
                         setActiveColorVariantId(v.id);
-                        if (activeMode === "paired" && v.combos && v.combos.length > 0) {
+                        const isSoloUnavailable = v.isOutOfStock || (typeof v.quantity === "number" ? v.quantity <= 0 : !!v.bespokeAvailable);
+                        const hasCombos = v.combos && v.combos.length > 0;
+                        if (isSoloUnavailable && hasCombos) {
+                          setActiveMode("paired");
+                          setActiveComboId(v.combos[0].id);
+                        } else if (activeMode === "paired" && hasCombos) {
                           setActiveComboId(v.combos[0].id);
                         }
                       }}
@@ -494,7 +501,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                           background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                         }}
                       >
-                        Solo
+                        Original
                       </button>
                       <button
                         type="button"
@@ -507,7 +514,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                           background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                         }}
                       >
-                        Paired
+                        Options
                       </button>
                     </div>
                     
@@ -552,8 +559,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                       background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                     }}
                   >
-                    Solo
-                  </button>
+                        Original
+                      </button>
                   <button
                     type="button"
                     onClick={() => { setActiveMode("paired"); setActiveComboId("fit-combo"); }}
@@ -565,8 +572,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                       background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                     }}
                   >
-                    Paired
-                  </button>
+                        Options
+                      </button>
                 </div>
                 
                 {activeMode === "paired" && (
@@ -874,15 +881,20 @@ export default function ProductClient({ slug }: { slug: string }) {
                         <button
                           key={v.id}
                           className={`${shopStyles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? shopStyles.colorSelectorBtnActive : ""}`}
-                          style={{ backgroundColor: v.colorHex }}
+                          style={{ backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? product.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? product.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center" }}
                           onClick={() => {
                             setQuickViewColorVariantId(v.id);
-                            if (quickViewMode === "paired" && v.combos && v.combos.length > 0) {
-                              setQuickViewComboId(v.combos[0].id);
-                            } else {
-                              setQuickViewMode("solo");
-                              setQuickViewComboId("");
-                            }
+                            const isSoloUnavailable = v.isOutOfStock || (typeof v.quantity === "number" ? v.quantity <= 0 : !!v.bespokeAvailable);
+                              const hasCombos = v.combos && v.combos.length > 0;
+                              if (isSoloUnavailable && hasCombos) {
+                                setQuickViewMode("paired");
+                                setQuickViewComboId(v.combos[0].id);
+                              } else if (quickViewMode === "paired" && hasCombos) {
+                                setQuickViewComboId(v.combos[0].id);
+                              } else if (!hasCombos) {
+                                setQuickViewMode("solo");
+                                setQuickViewComboId("");
+                              }
                             if (v.images && v.images.length > 0) {
                               setQuickViewImage(v.images[0]);
                             } else {
@@ -911,8 +923,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                             background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                           }}
                         >
-                          Solo
-                        </button>
+                        Original
+                      </button>
                         <button
                           type="button"
                           onClick={() => setQuickViewMode("paired")}
@@ -924,8 +936,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                             background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
                           }}
                         >
-                          Paired
-                        </button>
+                        Options
+                      </button>
                       </div>
                       
                       {quickViewMode === "paired" && (

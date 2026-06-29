@@ -14,6 +14,9 @@ export type CartItem = {
   maxStock: number;
   isBespoke?: boolean;
   bespokeLeadDays?: number;
+  weightKg?: number;
+  variantId?: string;
+  comboId?: string;
 };
 
 export type AppliedPromotion = {

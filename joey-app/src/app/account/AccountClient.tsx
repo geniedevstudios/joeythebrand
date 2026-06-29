@@ -221,7 +221,7 @@ function OrderLineRow({ line }: { line: OrderItem }) {
                         width: 14,
                         height: 14,
                         borderRadius: "50%",
-                        backgroundColor: line.colorHex,
+                        backgroundColor: line.colorHex || "#ccc", backgroundImage: line.image ? `url(${line.image})` : "none", backgroundSize: "cover", backgroundPosition: "center",
                         border: "1px solid #ccc",
                         display: "inline-block",
                       }}
