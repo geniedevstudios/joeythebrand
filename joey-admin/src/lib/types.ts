@@ -53,6 +53,7 @@ export interface ProductVariant {
   id: string;
   type: ProductVariantType;
   colorHex?: string;
+  thumbnailUrl?: string;
   images?: string[];
   name?: string;
   price?: number;
