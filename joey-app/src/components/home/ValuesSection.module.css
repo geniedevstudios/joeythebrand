@@ -1,6 +1,38 @@
 .values {
   background: var(--skintone);
   padding: var(--space-2xl) 0;
+  position: relative;
+}
+
+.imageBackgroundWrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  animation: bgFadeIn 0.8s ease forwards;
+}
+
+.imageBackgroundWrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(235, 228, 219, 0.6), rgba(235, 228, 219, 0.8));
+  z-index: 1;
+}
+
+.backgroundImage {
+  object-fit: cover;
+  z-index: 0;
+}
+
+@keyframes bgFadeIn {
+  from { opacity: 0; transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.container {
+  position: relative;
+  z-index: 2;
 }
 
 .header {
@@ -12,83 +44,107 @@
   margin-top: var(--space-sm);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-lg);
-}
-
-.card {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-xl);
+.accordion {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  width: 100%;
+}
+
+.row {
+  border-bottom: 1px solid var(--cinereous);
+  padding: var(--space-xl) 0;
+  cursor: pointer;
   position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
-  border-top: 3px solid var(--cinereous);
+  transition: background-color var(--transition-base);
 }
 
-.card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-lg);
-  border-top-color: var(--wood);
+.row:last-child {
+  border-bottom: none;
 }
 
-.cardTop {
+.row:hover {
+  /* We remove the solid color so we can clearly see the background image fade in behind the row */
+  /* background-color: var(--color-surface); */
+}
+
+.rowHeader {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+}
+
+.titleWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.indexBg {
+  position: absolute;
+  top: -1.5rem;
+  left: -1rem;
+  font-family: var(--font-display);
+  font-size: 8rem;
+  color: var(--cinereous);
+  opacity: 0.2;
+  font-weight: 300;
+  line-height: 1;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.rowTitle {
+  font-family: var(--font-label);
+  font-size: 1.25rem;
+  letter-spacing: 0.16em;
+  color: var(--blue-athracite);
 }
 
 .icon {
   font-size: 1.5rem;
   color: var(--wood);
+  transition: transform var(--transition-base);
 }
 
-.index {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  font-weight: 300;
-  color: var(--concerto);
-  line-height: 1;
+.row.expanded .icon {
+  transform: rotate(180deg);
 }
 
-.cardTitle {
-  font-family: var(--font-label);
-  font-size: 1rem;
-  letter-spacing: 0.16em;
-  color: var(--blue-athracite);
+.rowContent {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition-base);
+  position: relative;
+  z-index: 1;
 }
 
-.cardBody {
+.row.expanded .rowContent {
+  grid-template-rows: 1fr;
+}
+
+.rowBodyInner {
+  overflow: hidden;
+  padding-left: 0;
+}
+
+.rowBody {
+  padding-top: var(--space-lg);
   font-family: var(--font-body);
-  font-size: 0.925rem;
+  font-size: 1.1rem;
   font-weight: 300;
-  line-height: 1.7;
+  line-height: 1.8;
   color: var(--alaska-gray);
-  flex: 1;
+  max-width: 600px;
 }
 
-.cardLine {
-  width: 24px;
-  height: 2px;
-  background: var(--cinereous);
-  transition: width var(--transition-base);
-}
-
-.card:hover .cardLine {
-  width: 48px;
-  background: var(--wood);
-}
-
-@media (max-width: 1024px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 480px) {
-  .grid { grid-template-columns: 1fr; }
+@media (max-width: 768px) {
+  .titleWrapper {
+    gap: var(--space-md);
+  }
+  
+  .indexBg {
+    font-size: 5rem;
+    top: -0.5rem;
+  }
 }
