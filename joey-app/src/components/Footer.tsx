@@ -8,7 +8,7 @@ import CuratedPill from "./CuratedPill";
 import { useState } from "react";
 import CopyrightModal from "./CopyrightModal";
 
-const footerLinks = [
+const companyLinks = [
   { label: "Collections", href: "/collection" },
   { label: "Shop", href: "/shop" },
   { label: "Story", href: "/story" },
@@ -16,8 +16,11 @@ const footerLinks = [
   { label: "Bespoke", href: "/bespoke" },
   { label: "Contact", href: "/contact" },
   { label: "News & Blog", href: "/news" },
-  { label: "Shipping Policy", href: "/shipping" },
   { label: "Report an Issue", href: "/report-issue" },
+];
+
+const legalLinks = [
+  { label: "Shipping Policy", href: "/shipping" },
   { label: "Privacy Policy", href: "/privacy" },
 ];
 
@@ -44,15 +47,28 @@ export default function Footer() {
             <FooterNewsletter />
           </div>
 
-          <div className={styles.linksBlock}>
-            <p className={styles.linksLabel}>Company</p>
-            <nav className={styles.links} aria-label="Footer navigation">
-              {footerLinks.map((l) => (
-                <Link key={l.href} href={l.href} className={styles.link}>
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
+          <div className={styles.linksWrapper}>
+            <div className={styles.linksBlock}>
+              <p className={styles.linksLabel}>Company</p>
+              <nav className={styles.links} aria-label="Company navigation">
+                {companyLinks.map((l) => (
+                  <Link key={l.href} href={l.href} className={styles.link}>
+                    {l.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+            
+            <div className={styles.linksBlock}>
+              <p className={styles.linksLabel}>Legal</p>
+              <nav className={styles.links} aria-label="Legal navigation">
+                {legalLinks.map((l) => (
+                  <Link key={l.href} href={l.href} className={styles.link}>
+                    {l.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
           </div>
 
           <div className={styles.contact}>

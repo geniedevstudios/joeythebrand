@@ -1101,7 +1101,8 @@
   display: flex;
   align-items: center;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 100px;
+  overflow: hidden;
 }
 
 .qtyBtn {

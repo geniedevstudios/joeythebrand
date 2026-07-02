@@ -341,11 +341,12 @@
   letter-spacing: 0.1em;
   color: var(--cinereous);
   text-transform: uppercase;
-  background: none;
-  border: none;
-  text-decoration: underline;
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.1);
+  text-decoration: none;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 12px;
+  border-radius: 100px;
 }
 
 .sizeGuideBtn:hover {
@@ -430,7 +431,8 @@
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 100px;
+  overflow: hidden;
 }
 
 .qtyBtn {

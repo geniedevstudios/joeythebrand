@@ -190,6 +190,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
           wearTag: quickViewPiece.wearTag,
           price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price,
           image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewPiece.image,
+          image2: quickViewActiveCombo?.images?.[0] || quickViewGalleryImages[1] || quickViewPiece.images?.[0],
           quantity: qty,
           maxStock: isBespokeProduct ? 999 : (quickViewPiece.quantity ?? 99),
           isBespoke: isBespokeProduct || undefined,

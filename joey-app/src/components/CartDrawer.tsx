@@ -117,146 +117,161 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        <div className={styles.content}>
-          {items.length === 0 ? (
-            <div className={styles.centeredEmpty}>
-              <div className={styles.emptyTextGroup}>
-                <span className={styles.emptyLine}>{emptyPhrase.line1}</span>
-                <span className={styles.emptyLine}>
-                  <em className={styles.emptyItalic}>{emptyPhrase.line2.split(" ")[0]}</em> {emptyPhrase.line2.split(" ").slice(1).join(" ")}
-                </span>
-              </div>
-              <p className={styles.emptySub}>Your cart is currently empty</p>
-              <button 
-                className={styles.pillBtn} 
-                onClick={() => cartStore.toggleCart(false)}
-              >
-                START SHOPPING
-              </button>
-            </div>
-          ) : (
-            <div className={styles.itemsList}>
-              {items.map((item) => (
-                <div key={item.id} className={styles.cartItem}>
-                  <div className={styles.itemImageWrap}>
-                    <ProductMedia src={item.image} alt={item.name} className={styles.itemImage} />
-                  </div>
-                  
-                  <div className={styles.itemDetails}>
-                    <h3 className={styles.itemName}>{item.name.toUpperCase()}</h3>
-                    {(item.color || item.colorHex) && (
-                      <div className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px", textTransform: "capitalize" }}>
-                        Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex || "#ccc", backgroundImage: item.image ? `url(${item.image})` : "none", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
-                      </div>
-                    )}
-                    {item.combo && <p className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", marginBottom: "4px", textTransform: "capitalize" }}>Combo: {item.combo}</p>}
-                    <p className={styles.itemUnit}>GHC {item.price}</p>
-                    <p className={styles.itemSize}>
-                      {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
-                    </p>
-                    {item.isBespoke && (
-                      <p style={{ fontSize: "11px", color: "#7c3aed", background: "#f5f3ff", padding: "3px 8px", borderRadius: "4px", marginTop: "4px", display: "inline-block", fontWeight: 600 }}>
-                        Bespoke Order · ~{item.bespokeLeadDays || 14} days
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className={styles.itemControls}>
-                    <div className={styles.qtyBox}>
-                      <button className={styles.qtyBoxBtn} onClick={() => handleUpdateQuantity(item.id, -1)}>-</button>
-                      <span className={styles.qtyBoxVal}>{item.quantity}</span>
-                      <button 
-                        className={styles.qtyBoxBtn} 
-                        onClick={() => handleUpdateQuantity(item.id, 1)}
-                        disabled={item.quantity >= (item.maxStock ?? 999)}
-                        title={item.quantity >= (item.maxStock ?? 999) ? "Max stock reached" : ""}
-                      >
-                        +
-                      </button>
-                    </div>
-                    <button className={styles.removeBtn} onClick={() => handleRemove(item.id)}>Remove</button>
-                    <div className={styles.itemTotal}>
-                      GHC {(item.price * item.quantity).toLocaleString()}
-                    </div>
-                  </div>
+        <div className={styles.drawerBody}>
+          <div className={styles.content}>
+            {items.length === 0 ? (
+              <div className={styles.centeredEmpty}>
+                <div className={styles.emptyTextGroup}>
+                  <span className={styles.emptyLine}>{emptyPhrase.line1}</span>
+                  <span className={styles.emptyLine}>
+                    <em className={styles.emptyItalic}>{emptyPhrase.line2.split(" ")[0]}</em> {emptyPhrase.line2.split(" ").slice(1).join(" ")}
+                  </span>
                 </div>
-              ))}
+                <p className={styles.emptySub}>Your cart is currently empty</p>
+                <button 
+                  className={styles.pillBtn} 
+                  onClick={() => cartStore.toggleCart(false)}
+                >
+                  START SHOPPING
+                </button>
+              </div>
+            ) : (
+              <div className={styles.itemsList}>
+                {items.map((item) => (
+                  <div key={item.id} className={styles.cartItem}>
+                    <div className={styles.itemImagesGrid}>
+                      <div className={styles.itemImageWrap}>
+                        <ProductMedia src={item.image} alt={item.name} className={styles.itemImage} />
+                      </div>
+                      <div className={styles.itemImageWrap}>
+                        <ProductMedia src={item.image2 || item.image} alt={`${item.name} alternate`} className={styles.itemImage} />
+                      </div>
+                    </div>
+                    
+                    <div className={styles.itemDetails}>
+                      <h3 className={styles.itemName}>{item.name.toUpperCase()}</h3>
+                      <p className={styles.itemPrice}>GHC {item.price.toLocaleString()}</p>
+                      
+                      <div className={styles.itemVariantsList}>
+                        {(item.color || item.colorHex) && (
+                          <p className={styles.itemVariantText}>
+                            Color: {item.color}
+                          </p>
+                        )}
+                        {item.combo && <p className={styles.itemVariantText}>Combo: {item.combo}</p>}
+                        <p className={styles.itemVariantText}>
+                          Size: {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
+                        </p>
+                      </div>
+
+                      {item.isBespoke && (
+                        <p className={styles.bespokeTag}>
+                          Bespoke Order · ~{item.bespokeLeadDays || 14} days
+                        </p>
+                      )}
+
+                      <div className={styles.controlsRow}>
+                        <div className={styles.qtyBox}>
+                          <button className={styles.qtyBoxBtn} onClick={() => handleUpdateQuantity(item.id, -1)}>-</button>
+                          <span className={styles.qtyBoxVal}>{item.quantity}</span>
+                          <button 
+                            className={styles.qtyBoxBtn} 
+                            onClick={() => handleUpdateQuantity(item.id, 1)}
+                            disabled={item.quantity >= (item.maxStock ?? 999)}
+                            title={item.quantity >= (item.maxStock ?? 999) ? "Max stock reached" : ""}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button className={styles.removeIconBtn} onClick={() => handleRemove(item.id)} aria-label="Remove item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      <div className={styles.itemTotal}>
+                        Total: GHC {(item.price * item.quantity).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {items.length > 0 && (
+            <div className={styles.footer}>
+              <div className={styles.promoSection}>
+                {appliedPromo ? (
+                  <div className={styles.appliedPromo}>
+                    <span className={styles.promoCode}>{appliedPromo.code}</span>
+                    <span className={styles.promoDiscount}>-{appliedPromo.percentage}%</span>
+                    <button className={styles.removePromoBtn} onClick={handleRemovePromo}>Remove</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyPromo} className={styles.promoForm}>
+                    <input
+                      type="text"
+                      placeholder="Enter promo code"
+                      className={styles.promoInput}
+                      value={promoInput}
+                      onChange={(e) => setPromoInput(e.target.value)}
+                    />
+                    <button type="submit" className={styles.promoApplyBtn}>Apply</button>
+                  </form>
+                )}
+                {promoError && <p className={styles.promoError}>{promoError}</p>}
+                {promoSuccess && <p className={styles.promoSuccess}>{promoSuccess}</p>}
+              </div>
+
+              <div className={styles.subtotalBlock}>
+                <div className={styles.subtotalRow}>
+                  <span className={styles.subtotalLabel}>Subtotal</span>
+                  <span className={styles.subtotalValue}>GHC {subtotal.toLocaleString()}</span>
+                </div>
+
+                {discount > 0 && (
+                  <div className={styles.subtotalRow} style={{ color: "#22aa22" }}>
+                    <span className={styles.subtotalLabel}>Discount ({appliedPromo?.code})</span>
+                    <span className={styles.subtotalValue}>-GHC {discount.toLocaleString()}</span>
+                  </div>
+                )}
+
+                <div className={styles.totalRow}>
+                  <span className={styles.totalLabel}>Total</span>
+                  <span className={styles.totalValue}>GHC {total.toLocaleString()}</span>
+                </div>
+                <p className={styles.taxesNote}>
+                  Taxes included. <Link href="/shipping" style={{textDecoration: 'underline'}}>Shipping</Link> calculated at checkout.
+                </p>
+              </div>
+              
+              <div className={styles.actionButtonsCol}>
+                <Link href="/cart" className={styles.viewCartBtn} onClick={() => cartStore.toggleCart(false)}>
+                  VIEW CART
+                </Link>
+                <button
+                  className={styles.checkoutBtn}
+                  onClick={() => {
+                    if (!user) {
+                      toast.error("Sign in or create an account to proceed to checkout.", {
+                        description: "Head to your account page to sign in or sign up.",
+                        action: { label: "Account", onClick: () => { cartStore.toggleCart(false); router.push("/account"); } },
+                      });
+                    } else {
+                      cartStore.toggleCart(false);
+                      router.push("/checkout");
+                    }
+                  }}
+                >
+                  CHECKOUT
+                </button>
+              </div>
             </div>
           )}
         </div>
-
-        {items.length > 0 && (
-          <div className={styles.footer}>
-            <div className={styles.promoSection}>
-              {appliedPromo ? (
-                <div className={styles.appliedPromo}>
-                  <span className={styles.promoCode}>{appliedPromo.code}</span>
-                  <span className={styles.promoDiscount}>-{appliedPromo.percentage}%</span>
-                  <button className={styles.removePromoBtn} onClick={handleRemovePromo}>Remove</button>
-                </div>
-              ) : (
-                <form onSubmit={handleApplyPromo} className={styles.promoForm}>
-                  <input
-                    type="text"
-                    placeholder="Enter promo code"
-                    className={styles.promoInput}
-                    value={promoInput}
-                    onChange={(e) => setPromoInput(e.target.value)}
-                  />
-                  <button type="submit" className={styles.promoApplyBtn}>Apply</button>
-                </form>
-              )}
-              {promoError && <p className={styles.promoError}>{promoError}</p>}
-              {promoSuccess && <p className={styles.promoSuccess}>{promoSuccess}</p>}
-            </div>
-
-            <div className={styles.subtotalRow}>
-              <div className={styles.subtotalLeft}>
-                <span className={styles.subtotalLabel}>Subtotal</span>
-                <p className={styles.taxesNote}>
-                  Taxes included. <Link href="/shipping" style={{textDecoration: 'underline', color: 'inherit'}}>Shipping</Link> calculated at checkout.
-                </p>
-              </div>
-              <span className={styles.subtotalValue}>GHC {subtotal.toLocaleString()}</span>
-            </div>
-
-            {discount > 0 && (
-              <div className={styles.subtotalRow} style={{ color: "#22aa22" }}>
-                <span className={styles.subtotalLabel}>Discount ({appliedPromo?.code})</span>
-                <span className={styles.subtotalValue}>-GHC {discount.toLocaleString()}</span>
-              </div>
-            )}
-
-            <div className={styles.subtotalRow}>
-              <div className={styles.subtotalLeft}>
-                <span className={styles.subtotalLabel} style={{ fontWeight: "600", fontSize: "16px" }}>Total</span>
-              </div>
-              <span className={styles.subtotalValue} style={{ fontWeight: "600", fontSize: "18px" }}>GHC {total.toLocaleString()}</span>
-            </div>
-            
-            <div className={styles.actionButtonsRow}>
-              <Link href="/cart" className={styles.viewCartBtn} onClick={() => cartStore.toggleCart(false)}>
-                VIEW CART
-              </Link>
-              <button
-                className={styles.checkoutBtn}
-                onClick={() => {
-                  if (!user) {
-                    toast.error("Sign in or create an account to proceed to checkout.", {
-                      description: "Head to your account page to sign in or sign up.",
-                      action: { label: "Account", onClick: () => { cartStore.toggleCart(false); router.push("/account"); } },
-                    });
-                  } else {
-                    cartStore.toggleCart(false);
-                    router.push("/checkout");
-                  }
-                }}
-              >
-                CHECKOUT
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

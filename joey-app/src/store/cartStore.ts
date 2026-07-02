@@ -10,6 +10,7 @@ export type CartItem = {
   wearTag?: string;
   price: number;
   image: string;
+  image2?: string;
   quantity: number;
   maxStock: number;
   isBespoke?: boolean;

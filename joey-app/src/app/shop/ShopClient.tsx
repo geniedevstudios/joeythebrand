@@ -173,6 +173,7 @@ export default function ShopClient() {
       name: product.name,
       price: product.price,
       image: product.image,
+          image2: product.images?.[0],
       hoverImage: product.hoverImage,
       category: product.categoryName,
     });
@@ -204,6 +205,7 @@ export default function ShopClient() {
           wearTag: quickViewPiece.wearTag,
           price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price,
           image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewPiece.image,
+          image2: quickViewActiveCombo?.images?.[0] || quickViewGalleryImages[1] || quickViewPiece.images?.[0],
           quantity: qty,
           maxStock: isBespokeProduct ? 999 : (quickViewPiece.quantity ?? 99),
           isBespoke: isBespokeProduct || undefined,
