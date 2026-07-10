@@ -1,0 +1,173 @@
+.wrapper {
+  display: flex;
+  flex-direction: row;
+  min-height: 600px;
+  background: var(--skintone); /* Very light background for the sidebar */
+  border-top: 1px solid var(--color-border);
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  .wrapper {
+    flex-direction: column-reverse;
+  }
+}
+
+.sidebar {
+  flex: 0 0 400px;
+  background: #fff;
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 700px;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    flex: 1 1 auto;
+    border-right: none;
+    max-height: 500px;
+  }
+}
+
+.sidebarHeader {
+  padding: 40px var(--space-xl) 32px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebarTitle {
+  font-family: var(--font-cursive, var(--font-display));
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  font-weight: 400;
+  color: var(--blue-athracite);
+  margin: 0 0 16px 0;
+}
+
+.cursive {
+  font-family: var(--font-cursive);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.sidebarSubtitle {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: #8c93a1; /* matching the muted blue-grey from screenshot */
+  margin: 0;
+}
+
+.storeList {
+  display: flex;
+  flex-direction: column;
+}
+
+.storeItem {
+  padding: var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+  transition: opacity var(--transition-fast);
+  cursor: pointer;
+  background-color: transparent;
+}
+
+.storeItem:hover {
+  opacity: 0.8;
+}
+
+.storeItemActive {
+  background-color: transparent;
+}
+
+.storeName {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--blue-athracite);
+  margin: 0 0 4px 0;
+}
+
+.storeTagline {
+  font-family: var(--font-label);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+  margin: 0 0 16px 0;
+}
+
+.storeAddress {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--alaska-gray);
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.storeHoursLabel {
+  font-family: var(--font-label);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--cinereous);
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+}
+
+.storeHours {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--alaska-gray);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.hoursBlock {
+  border-left: 2px solid #e2e4e8; /* soft grey line from screenshot */
+  padding-left: 16px;
+  margin: 16px 0 24px 0;
+}
+
+.storeContact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+
+.storeLink {
+  color: var(--blue-athracite);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.storeLink:hover {
+  color: var(--cinereous);
+}
+
+.mapContainer {
+  flex: 1 1 auto;
+  min-height: 400px;
+  position: relative;
+  background: #eaeaea; /* placeholder before map loads */
+}
+
+/* Float a button over the map, like the screenshot */
+.mapOverlay {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 400; /* Leaflet tiles are z-index 200/300 */
+}
+
+.mapOverlayBtn {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: 12px 24px;
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  color: var(--blue-athracite);
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  font-weight: 500;
+}

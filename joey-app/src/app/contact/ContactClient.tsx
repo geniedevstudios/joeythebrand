@@ -9,6 +9,7 @@ import type { SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import { authStore } from "@/store/authStore";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import StoreLocator from "./StoreLocator";
 
 type ContactFormState = {
   name: string;
@@ -163,7 +164,7 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
 
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>Location</span>
-                  <span className={styles.infoValue}>Accra, Ghana</span>
+                  <span className={styles.infoValue}>Nii Kwaofio St, Ashaley Botwe, Accra, Ghana</span>
                 </div>
 
                 <div className={styles.infoItem}>
@@ -311,6 +312,8 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
           </div>
         </div>
       </div>
+
+      <StoreLocator />
     </div>
   );
 }

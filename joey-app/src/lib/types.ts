@@ -205,7 +205,8 @@ export type PageHeroKey =
   | "login"
   | "product"
   | "news"
-  | "report_issue";
+  | "report_issue"
+  | "events";
 
 /** How the hero fills the banner: cover = fill area (may crop); contain = full image visible (may letterbox). */
 export type PageHeroFit = "cover" | "contain";

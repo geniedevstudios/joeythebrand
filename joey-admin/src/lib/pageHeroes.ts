@@ -20,6 +20,7 @@ export const PAGE_HERO_KEYS: PageHeroKey[] = [
   "product",
   "news",
   "report_issue",
+  "events",
 ];
 
 export const PAGE_HERO_LABELS: Record<PageHeroKey, string> = {
@@ -39,6 +40,7 @@ export const PAGE_HERO_LABELS: Record<PageHeroKey, string> = {
   product: "Product (detail)",
   news: "News & Blog",
   report_issue: "Report an Issue",
+  events: "Events",
 };
 
 export const DEFAULT_PAGE_HEROES: Record<PageHeroKey, PageHeroMedia> = {
@@ -58,6 +60,7 @@ export const DEFAULT_PAGE_HEROES: Record<PageHeroKey, PageHeroMedia> = {
   product: EMPTY_PAGE_HERO,
   news: EMPTY_PAGE_HERO,
   report_issue: EMPTY_PAGE_HERO,
+  events: EMPTY_PAGE_HERO,
 };
 
 function parseFit(o: Record<string, unknown>): PageHeroFit {
@@ -94,7 +97,7 @@ export function mergePageHeroes(
     for (const key of PAGE_HERO_KEYS) {
       const parsed = parseMedia(obj[key]);
       if (parsed) {
-        if (key !== "home" && parsed.kind === "video") {
+        if (key !== "home" && key !== "events" && parsed.kind === "video") {
           base[key] = {
             kind: "image",
             src: parsed.src,

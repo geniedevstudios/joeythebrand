@@ -717,19 +717,46 @@ export default function EventsContentPage() {
           <form onSubmit={save} className="space-y-8">
             <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
               <div className="border-b border-zinc-200 px-6 py-5 bg-white">
-                <h3 className="text-base font-semibold leading-6 text-zinc-900">Main page video</h3>
+                <h3 className="text-base font-semibold leading-6 text-zinc-900">Main page text</h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold leading-6 text-zinc-900">Heading</label>
+                  <input
+                    type="text"
+                    value={heading}
+                    onChange={(e) => setHeading(e.target.value)}
+                    className="w-full rounded-md border border-zinc-300 py-2 px-3 text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                    placeholder="Events"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold leading-6 text-zinc-900">Subheading</label>
+                  <textarea
+                    value={subheading}
+                    onChange={(e) => setSubheading(e.target.value)}
+                    className="w-full rounded-md border border-zinc-300 py-2 px-3 text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 min-h-[80px]"
+                    placeholder="Announcements, trunk shows, and private moments..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+              <div className="border-b border-zinc-200 px-6 py-5 bg-white">
+                <h3 className="text-base font-semibold leading-6 text-zinc-900">Main page video or image</h3>
               </div>
               <div className="p-6 space-y-3">
                 <AssetUrlField
-                  label="Top video URL"
+                  label="Top video URL (or Image URL)"
                   value={topVideoUrl}
                   onChange={setTopVideoUrl}
                   uploadFolder="events/top"
-                  accept="video/*"
-                  placeholder="Upload MP4 or paste URL"
+                  accept="video/*,image/*"
+                  placeholder="Upload MP4/Image or paste URL"
                 />
                 <AssetUrlField
-                  label="Poster image (while video loads)"
+                  label="Poster image (while video loads, ignored if image above)"
                   value={topVideoPosterUrl}
                   onChange={setTopVideoPosterUrl}
                   uploadFolder="events/top/poster"

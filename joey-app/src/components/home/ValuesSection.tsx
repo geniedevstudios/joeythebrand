@@ -11,25 +11,25 @@ const values = [
     id: "power",
     title: "POWER",
     body: "We design for presence. Every silhouette is intentional.",
-    image: "/values/power.png",
+    image: "/values/power.jpeg",
   },
   {
     id: "craftsmanship",
     title: "CRAFTSMANSHIP",
     body: "Precision tailoring. Clean finishing. Elevated structure.",
-    image: "/values/craftsmanship.png",
+    image: "/values/craftsmanship.jpeg",
   },
   {
     id: "identity",
     title: "IDENTITY",
     body: "We honor culture, symbolism, and individuality.",
-    image: "/values/identity.png",
+    image: "/values/identity.jpeg",
   },
   {
     id: "excellence",
     title: "EXCELLENCE",
     body: "No compromise. No shortcuts. Only refined execution.",
-    image: "/values/excellence.png",
+    image: "/values/excellence.jpeg",
   },
 ];
 
@@ -67,9 +67,9 @@ export default function ValuesSection() {
           {values.map((v, i) => {
             const isExpanded = expandedIndex === i;
             return (
-              <div 
-                key={v.id} 
-                className={`${styles.row} ${isExpanded ? styles.expanded : ""}`} 
+              <div
+                key={v.id}
+                className={`${styles.row} ${isExpanded ? styles.expanded : ""}`}
                 id={`value-${v.id}`}
                 onClick={() => toggleExpanded(i)}
               >
@@ -80,7 +80,7 @@ export default function ValuesSection() {
                   </div>
                   <ChevronDown className={styles.icon} strokeWidth={1.5} />
                 </div>
-                
+
                 <div className={styles.rowContent}>
                   <div className={styles.rowBodyInner}>
                     <p className={styles.rowBody}>{v.body}</p>

@@ -462,18 +462,15 @@ input, textarea, select {
    ============================================= */
 .reveal {
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.7s ease, transform 0.7s ease;
+  transition: opacity 0.7s ease;
 }
 
 .reveal.animate-ready {
   opacity: 0;
-  transform: translateY(30px);
 }
 
 .reveal.animate-ready.visible {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .reveal-delay-1 { transition-delay: 0.1s; }

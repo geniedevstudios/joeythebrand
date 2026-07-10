@@ -401,7 +401,7 @@ export default function EventsClient({
       {/* Top video section */}
       <section
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.videoSection}`}
-        aria-label="Events video"
+        aria-label="Events video or image"
         aria-busy={videoLoading ? true : undefined}
       >
         <div className={styles.videoFrame} aria-hidden="true" />
@@ -414,27 +414,41 @@ export default function EventsClient({
             draggable={false}
           />
         ) : null}
-        <video
-          key={`${liveTopVideoUrl || ""}|${topUsablePoster || ""}`}
-          className={`${styles.video} ${videoLoading ? "" : styles.videoReady}`}
-          poster={topUsablePoster || undefined}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          onPlaying={revealVideo}
-          onCanPlay={(e) => {
-            const v = e.currentTarget;
-            if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealVideo();
-          }}
-          onTimeUpdate={(e) => {
-            if (e.currentTarget.currentTime > 0.02) revealVideo();
-          }}
-          onError={revealVideo}
-        >
-          <source src={liveTopVideoUrl || "/hero.mp4"} type="video/mp4" />
-        </video>
+        
+        {liveTopVideoUrl && /\.(jpe?g|png|webp|avif|gif)($|\?)/i.test(liveTopVideoUrl) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={liveTopVideoUrl}
+            src={liveTopVideoUrl}
+            alt="Events Hero"
+            className={`${styles.video} ${videoLoading ? "" : styles.videoReady}`}
+            style={{ objectFit: "cover", width: "100%", height: "100%" }}
+            onLoad={revealVideo}
+            onError={revealVideo}
+          />
+        ) : (
+          <video
+            key={`${liveTopVideoUrl || ""}|${topUsablePoster || ""}`}
+            className={`${styles.video} ${videoLoading ? "" : styles.videoReady}`}
+            poster={topUsablePoster || undefined}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onPlaying={revealVideo}
+            onCanPlay={(e) => {
+              const v = e.currentTarget;
+              if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealVideo();
+            }}
+            onTimeUpdate={(e) => {
+              if (e.currentTarget.currentTime > 0.02) revealVideo();
+            }}
+            onError={revealVideo}
+          >
+            <source src={liveTopVideoUrl || "/hero.mp4"} type="video/mp4" />
+          </video>
+        )}
         <div
           className={`${styles.videoLoader} ${videoLoading ? "" : styles.videoLoaderDone} ${topUsablePoster ? styles.videoLoaderOverPoster : ""}`}
           aria-hidden={!videoLoading}
@@ -442,20 +456,19 @@ export default function EventsClient({
           <div className={styles.videoLoaderSpinner} />
           <span className={styles.videoLoaderSrOnly}>{videoLoading ? "Loading events video" : ""}</span>
         </div>
+
+        <div className={styles.videoTextOverlay}>
+          <h1 className={styles.heroTitle}>{liveHeading ?? "Events"}</h1>
+          <p className={styles.heroSubtitle}>
+            {liveSubheading ?? "Announcements, trunk shows, and private moments — all in one place."}
+          </p>
+        </div>
       </section>
 
-      {/* Title + filters */}
+      {/* Filters */}
       <section className={styles.headingSection}>
         <div className="container">
           <div className={styles.headingRow}>
-            <div>
-              <span className={styles.kicker}>Events</span>
-              <h1 className={styles.title}>{liveHeading ?? "Events"}</h1>
-              <p className={styles.subtitle}>
-                {liveSubheading ?? "Announcements, trunk shows, and private moments — all in one place."}
-              </p>
-            </div>
-
             <div className={styles.filters} role="tablist" aria-label="Event category filter">
               {FILTERS.map((f) => {
                 const active = filter === f.id;

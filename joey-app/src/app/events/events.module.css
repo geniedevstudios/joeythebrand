@@ -13,6 +13,7 @@
   z-index: 0;
   width: 100%;
   aspect-ratio: 16 / 9;
+  position: relative; /* ensure overlay text positions relative to this */
 }
 
 .videoFrame {
@@ -104,6 +105,38 @@
   border: 0;
 }
 
+.videoTextOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.65) 100%);
+  padding: var(--space-3xl) var(--space-xl);
+  pointer-events: none;
+}
+
+.heroTitle {
+  font-family: var(--font-cursive);
+  font-size: clamp(3.5rem, 8vw, 5.5rem);
+  color: #fff;
+  margin: 0;
+  font-weight: 400;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+.heroSubtitle {
+  font-family: var(--font-cursive);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  color: rgba(255,255,255,0.9);
+  margin-top: var(--space-sm);
+  max-width: 700px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
 /* Heading + filters */
 .headingSection {
   padding: var(--space-2xl) 0 var(--space-2xl);
@@ -142,7 +175,7 @@
 .headingRow {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-end; /* Move filters to the right or center */
   gap: var(--space-xl);
   flex-wrap: wrap;
 }

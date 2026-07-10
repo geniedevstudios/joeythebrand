@@ -208,7 +208,8 @@ export type PageHeroKey =
   | "login"
   | "product"
   | "news"
-  | "report_issue";
+  | "report_issue"
+  | "events";
 
 export type PageHeroFit = "cover" | "contain";
 
