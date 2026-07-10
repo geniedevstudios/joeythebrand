@@ -47,6 +47,10 @@ export const metadata: Metadata = {
   description:
     "JOEY THE BRAND is a contemporary fashion house redefining modern silhouettes through structure, symbolism, and unapologetic identity. Based in Accra, Ghana.",
   keywords: ["JOEY THE BRAND", "African fashion", "luxury clothing", "bespoke tailoring", "Accra Ghana", "contemporary fashion"],
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
   },
