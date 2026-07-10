@@ -173,7 +173,6 @@ export default function ShopClient() {
       name: product.name,
       price: product.price,
       image: product.image,
-          image2: product.images?.[0],
       hoverImage: product.hoverImage,
       category: product.categoryName,
     });
