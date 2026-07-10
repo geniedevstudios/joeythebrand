@@ -10,6 +10,8 @@ import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/useP
 import { SkeletonCrossfade } from "@/components/SkeletonCrossfade";
 import type { Product, PublicCollection } from "@/lib/types";
 
+type CollectionRowData = PublicCollection & { images: string[] };
+
 function useReveal() {
   const [isVisible, setIsVisible] = useState(false);
   const domRef = useRef<HTMLElement | null>(null);
