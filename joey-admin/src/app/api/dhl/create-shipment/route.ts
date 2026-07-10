@@ -16,7 +16,7 @@ function parseAddress(shippingAddress: string) {
     return {
       addressLine1: shippingAddress.split("| DHL")[0].trim().substring(0, 45),
       city: dhlMatch[1].trim().substring(0, 45),
-      postalCode: dhlMatch[2].trim(),
+      postalCode: (dhlMatch[2] || "").trim().toUpperCase(),
       countryCode: dhlMatch[3].trim()
     };
   }
@@ -25,27 +25,24 @@ function parseAddress(shippingAddress: string) {
   try {
     if (shippingAddress.startsWith("{")) {
       const parsed = JSON.parse(shippingAddress);
+      if (!parsed.city || !parsed.countryCode) {
+        throw new Error("Invalid structured address: missing city or countryCode");
+      }
       return {
-        addressLine1: parsed.address || "Unknown",
-        city: parsed.city || "Unknown",
-        countryCode: parsed.country || "GH",
-        postalCode: parsed.postalCode || ""
+        addressLine1: (parsed.addressLine1 || parsed.address || "").substring(0, 45),
+        city: parsed.city.substring(0, 45),
+        countryCode: parsed.countryCode,
+        postalCode: (parsed.postalCode || "").trim().toUpperCase()
       };
     }
   } catch (e) {}
 
-  // Ultimate Fallback
-  return {
-    addressLine1: shippingAddress.substring(0, 45) || "Unknown",
-    city: "Unknown",
-    countryCode: "GH",
-    postalCode: ""
-  };
+  throw new Error(`Invalid shipping address format: ${shippingAddress}`);
 }
 
 export async function POST(request: Request) {
   try {
-    const { orderId } = await request.json();
+    const { orderId, packageDimensions } = await request.json();
     if (!orderId) {
       return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
     }
@@ -65,13 +62,33 @@ export async function POST(request: Request) {
     }
 
     const destination = parseAddress(order.shipping_address);
-    const items = (order.items || []).map((item: any) => ({
-      name: item.name || "Clothing",
-      quantity: item.quantity || 1,
-      price: item.price || 0,
-      weightKg: item.weightKg || 0.5,
-      hsCode: "610910"
-    }));
+    const productIds = (order.items || []).map((item: any) => item.productId || item.product_id).filter(Boolean);
+    let productsMap: Record<string, any> = {};
+    
+    if (productIds.length > 0) {
+      const { data: products } = await supabaseAdmin
+        .from("products")
+        .select("id, hs_code, weight_kg")
+        .in("id", productIds);
+        
+      productsMap = (products || []).reduce((acc: any, p: any) => {
+        acc[p.id] = p;
+        return acc;
+      }, {});
+    }
+
+    const items = (order.items || []).map((item: any) => {
+      const pId = item.productId || item.product_id;
+      const product = productsMap[pId] || {};
+      
+      return {
+        name: item.name || "Clothing",
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        weightKg: item.weightKg || item.weight_kg || product.weight_kg || 0.5,
+        hsCode: item.hsCode || item.hs_code || product.hs_code || "6114.20.00" // generic apparel fallback
+      };
+    });
 
     const result = await createShipment({
       orderId,
@@ -79,7 +96,8 @@ export async function POST(request: Request) {
       customerEmail: order.customer_email || "customer@example.com",
       customerPhone: order.customer_phone || "0000000000",
       destination,
-      items
+      items,
+      packageDimensions
     });
 
     const labelUrl = `data:application/pdf;base64,${result.labelData}`;

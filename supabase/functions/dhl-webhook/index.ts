@@ -22,14 +22,42 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  // Optional: Verify DHL Webhook Signature
-  // const signature = req.headers.get("dhl-signature");
-  // const secret = Deno.env.get("DHL_WEBHOOK_SECRET");
-  // Implement HMAC verification here if required by DHL.
+  const signature = req.headers.get("dhl-signature");
+  const secret = Deno.env.get("DHL_WEBHOOK_SECRET");
+
+  const bodyText = await req.text();
+
+  if (secret) {
+    if (!signature) {
+      return jsonResponse({ error: "Missing dhl-signature header" }, 401);
+    }
+    
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    const signatureBuffer = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(bodyText)
+    );
+    
+    const hashArray = Array.from(new Uint8Array(signatureBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    if (hashHex !== signature) {
+      return jsonResponse({ error: "Invalid webhook signature" }, 401);
+    }
+  }
 
   let payload;
   try {
-    payload = await req.json();
+    payload = JSON.parse(bodyText);
   } catch {
     return jsonResponse({ error: "Invalid JSON" }, 400);
   }

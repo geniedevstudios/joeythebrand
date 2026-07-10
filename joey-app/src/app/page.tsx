@@ -41,13 +41,13 @@ export default async function HomePage() {
         <CollectionsSection initialCollections={initialCollections} />
       </ScrollReveal>
       <ScrollReveal>
-        <AboutSection />
+        <FeaturedSection />
       </ScrollReveal>
       <ScrollReveal>
         <ValuesSection />
       </ScrollReveal>
       <ScrollReveal>
-        <FeaturedSection />
+        <AboutSection />
       </ScrollReveal>
       <ScrollReveal>
         <FounderSection initialCollections={initialCollections} initialSiteContent={initialSiteContent} />

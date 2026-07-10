@@ -11,7 +11,7 @@ import {
 } from "@/hooks/usePageHero";
 import { resolveHeroLayout } from "@/lib/pageHeroes";
 
-const words = ["Power.", "Precision.", "Presence."];
+
 
 export default function HeroSection({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const heroVideoRevealOnce = useRef(false);
@@ -28,6 +28,20 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
   const [heroVideoLoading, setHeroVideoLoading] = useState(media.kind === "video");
   /** Staggered CSS reveal for headline / subtext / CTAs (see .heroReady in CSS). */
   const [heroCopyReady, setHeroCopyReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setHeroVideoLoading(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const revealHeroVideo = useCallback(() => {
     if (heroVideoRevealOnce.current) return;
@@ -79,31 +93,33 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
                 draggable={false}
               />
             ) : null}
-            <video
-              key={media.src}
-              className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
-              style={{
-                objectFit: fit === "contain" ? "contain" : "cover",
-                objectPosition: position,
-              }}
-              poster={usablePoster || undefined}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              onPlaying={revealHeroVideo}
-              onCanPlay={(e) => {
-                const v = e.currentTarget;
-                if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealHeroVideo();
-              }}
-              onTimeUpdate={(e) => {
-                if (e.currentTarget.currentTime > 0.02) revealHeroVideo();
-              }}
-              onError={revealHeroVideo}
-            >
-              <source src={media.src} />
-            </video>
+            {!isMobile && (
+              <video
+                key={media.src}
+                className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
+                style={{
+                  objectFit: fit === "contain" ? "contain" : "cover",
+                  objectPosition: position,
+                }}
+                poster={usablePoster || undefined}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                onPlaying={revealHeroVideo}
+                onCanPlay={(e) => {
+                  const v = e.currentTarget;
+                  if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealHeroVideo();
+                }}
+                onTimeUpdate={(e) => {
+                  if (e.currentTarget.currentTime > 0.02) revealHeroVideo();
+                }}
+                onError={revealHeroVideo}
+              >
+                <source src={media.src} />
+              </video>
+            )}
           </>
         ) : media.src.trim() ? (
           /* Admin has set an image — render it */
@@ -120,7 +136,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
         ) : null /* No hero set — black bg from .bg, spinner below */}
         <div className={styles.overlay} />
         {/* Spinner while video loads */}
-        {media.kind === "video" && (
+        {media.kind === "video" && !isMobile && (
           <div
             className={`${styles.videoLoader} ${heroVideoLoading ? "" : styles.videoLoaderDone} ${usablePoster ? styles.videoLoaderOverPoster : ""}`}
             aria-hidden={!heroVideoLoading}
@@ -139,26 +155,11 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
 
       {/* Content */}
       <div className={`container ${styles.content}`}>
-        <span className={styles.preLabel}>EST. ACCRA, GHANA</span>
-
-        <h1 className={styles.headline}>
-          {words.map((word) => (
-            <span key={word} className={styles.word}>
-              {word}
-            </span>
-          ))}
-        </h1>
-
-        <p className={styles.subtext}>
-          JOEY THE BRAND is a contemporary fashion house redefining modern
-          silhouettes through structure, symbolism, and unapologetic identity.
-        </p>
-
         <div className={styles.ctas}>
-          <Link href="/shop" className="btn btn-primary btn-lg" id="hero-shop-cta">
+          <Link href="/shop" className={styles.glassBtn} id="hero-shop-cta">
             Shop The Collection
           </Link>
-          <Link href="/story" className="btn btn-ghost btn-lg" id="hero-story-cta">
+          <Link href="/story" className={styles.glassBtn} id="hero-story-cta">
             Discover The Story
           </Link>
         </div>

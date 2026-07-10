@@ -30,6 +30,8 @@ export default function OrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [itemModal, setItemModal] = useState<{ order: Order; item: OrderItem } | null>(null);
+  const [shipmentModal, setShipmentModal] = useState<{ orderId: string } | null>(null);
+  const [dimensions, setDimensions] = useState({ length: 30, width: 20, height: 10 });
 
   const load = useCallback(async () => {
     try {
@@ -79,6 +81,57 @@ export default function OrdersPage() {
         item={itemModal?.item ?? null}
         orderLabel={itemModal ? formatOrderNumber(itemModal.order) : ""}
       />
+
+      {shipmentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-bold text-zinc-900">Enter Package Dimensions</h3>
+            <p className="mb-4 text-sm text-zinc-600">Please measure the final packed box before generating the shipping label. Dimensions are in centimeters (cm).</p>
+            <div className="mb-4 grid grid-cols-3 gap-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-zinc-700">Length</label>
+                <input type="number" value={dimensions.length} onChange={e => setDimensions({...dimensions, length: Number(e.target.value)})} className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-zinc-700">Width</label>
+                <input type="number" value={dimensions.width} onChange={e => setDimensions({...dimensions, width: Number(e.target.value)})} className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-zinc-700">Height</label>
+                <input type="number" value={dimensions.height} onChange={e => setDimensions({...dimensions, height: Number(e.target.value)})} className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShipmentModal(null)} className="rounded-md px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100">Cancel</button>
+              <button
+                disabled={updatingId === shipmentModal.orderId}
+                onClick={async () => {
+                  try {
+                    setUpdatingId(shipmentModal.orderId);
+                    const res = await fetch("/api/dhl/create-shipment", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ orderId: shipmentModal.orderId, packageDimensions: dimensions })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Failed to create shipment");
+                    toast.success(`Shipment created! Tracking: ${data.trackingNumber}`);
+                    setShipmentModal(null);
+                    await load();
+                  } catch (err: any) {
+                    toast.error(`Error: ${err.message}`);
+                  } finally {
+                    setUpdatingId(null);
+                  }
+                }}
+                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {updatingId === shipmentModal.orderId ? "Creating..." : "Generate Label"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Orders</h1>
@@ -303,27 +356,10 @@ export default function OrdersPage() {
                           <button
                             type="button"
                             disabled={updatingId === order.id}
-                            onClick={async () => {
-                              try {
-                                setUpdatingId(order.id);
-                                const res = await fetch("/api/dhl/create-shipment", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ orderId: order.id })
-                                });
-                                const data = await res.json();
-                                if (!res.ok) throw new Error(data.error || "Failed to create shipment");
-                                toast.success(`Shipment created! Tracking: ${data.trackingNumber}`);
-                                await load();
-                              } catch (err: any) {
-                                toast.error(`Error: ${err.message}`);
-                              } finally {
-                                setUpdatingId(null);
-                              }
-                            }}
+                            onClick={() => setShipmentModal({ orderId: order.id })}
                             className="text-white bg-black hover:bg-zinc-800 px-2 py-1.5 rounded w-full text-xs font-medium transition-colors disabled:opacity-50"
                           >
-                            {updatingId === order.id ? "Creating..." : "Create DHL Shipment"}
+                            Create DHL Shipment
                           </button>
                         </div>
                       ) : null}

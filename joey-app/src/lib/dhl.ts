@@ -1,9 +1,37 @@
-export const DHL_API_BASE = "https://express.api.dhl.com/mydhlapi/test";
+export const DHL_API_BASE = process.env.DHL_API_BASE_URL || "https://express.api.dhl.com/mydhlapi/test";
 
 function getAuthHeader() {
   const key = process.env.DHL_API_KEY;
   const secret = process.env.DHL_API_SECRET;
+  if (!key || !secret) {
+    throw new Error("DHL API credentials missing in environment (DHL_API_KEY or DHL_API_SECRET)");
+  }
   return `Basic ${Buffer.from(`${key}:${secret}`).toString("base64")}`;
+}
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = 2, timeoutMs = 15000): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      if (response.ok || (response.status >= 400 && response.status < 500)) {
+        // Return on success or client error (no retry for 4xx)
+        return response;
+      }
+      if (i === retries) return response; // Max retries reached
+    } catch (err: any) {
+      clearTimeout(id);
+      if (i === retries) throw err; // Max retries reached
+    }
+    // Exponential backoff
+    await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+  }
+  throw new Error("Fetch failed after retries");
 }
 
 export const SHIPPER_DETAILS = {
@@ -28,6 +56,7 @@ export interface DHLRateRequest {
     countryCode: string;
   };
   weightKg: number;
+  packageDimensions?: { length: number; width: number; height: number; };
 }
 
 function getNextBusinessDay() {
@@ -72,12 +101,12 @@ export async function getShippingRates(req: DHLRateRequest) {
     packages: [
       {
         weight: req.weightKg || 1.0,
-        dimensions: { length: 30, width: 20, height: 10 }
+        dimensions: req.packageDimensions || { length: 30, width: 20, height: 10 }
       }
     ]
   };
 
-  const res = await fetch(`${DHL_API_BASE}/rates`, {
+  const res = await fetchWithRetry(`${DHL_API_BASE}/rates`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -132,6 +161,7 @@ export interface DHLShipmentRequest {
     weightKg: number;
     hsCode: string;
   }[];
+  packageDimensions?: { length: number; width: number; height: number; };
 }
 
 export async function createShipment(req: DHLShipmentRequest) {
@@ -182,7 +212,7 @@ export async function createShipment(req: DHLShipmentRequest) {
       packages: [
         {
           weight: totalWeight,
-          dimensions: { length: 30, width: 20, height: 10 },
+          dimensions: req.packageDimensions || { length: 30, width: 20, height: 10 },
           customerReferences: [{ value: req.orderId.substring(0, 35), typeCode: "CU" }],
           description: "Clothing apparel"
         }
@@ -191,16 +221,19 @@ export async function createShipment(req: DHLShipmentRequest) {
       declaredValue: declaredValue,
       declaredValueCurrency: "GHS",
       exportDeclaration: {
-        lineItems: req.items.map((item, index) => ({
-          number: index + 1,
-          description: item.name.substring(0, 45),
-          price: item.price || 0,
-          quantity: { value: item.quantity || 1, unitOfMeasurement: "EA" },
-          commodityCodes: [{ typeCode: "outbound", value: item.hsCode || "620442" }],
-          exportReasonType: "permanent",
-          manufacturerCountry: "GH",
-          weight: { netValue: item.weightKg || 0.5, grossValue: item.weightKg || 0.5 }
-        })),
+        lineItems: req.items.map((item, index) => {
+          if (!item.hsCode) throw new Error(`Item "${item.name}" is missing an HS Code. Please add it to the product before shipping.`);
+          return {
+            number: index + 1,
+            description: item.name.substring(0, 45),
+            price: item.price || 0,
+            quantity: { value: item.quantity || 1, unitOfMeasurement: "EA" },
+            commodityCodes: [{ typeCode: "outbound", value: item.hsCode }],
+            exportReasonType: "permanent",
+            manufacturerCountry: "GH",
+            weight: { netValue: item.weightKg || 0.5, grossValue: item.weightKg || 0.5 }
+          };
+        }),
         invoice: {
           number: `INV-${req.orderId.substring(0, 20)}`,
           date: new Date().toISOString().split("T")[0]
@@ -210,7 +243,7 @@ export async function createShipment(req: DHLShipmentRequest) {
     }
   };
 
-  const res = await fetch(`${DHL_API_BASE}/shipments`, {
+  const res = await fetchWithRetry(`${DHL_API_BASE}/shipments`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -235,7 +268,7 @@ export async function createShipment(req: DHLShipmentRequest) {
   };
 }
 
-export async function schedulePickup(trackingNumber: string) {
+export async function schedulePickup(trackingNumber: string, weight: number = 0.5, dimensions: { length: number; width: number; height: number; } = { length: 30, width: 20, height: 10 }) {
   const account = process.env.DHL_ACCOUNT_NUMBER;
   if (!account) throw new Error("DHL Account Number not configured");
 
@@ -252,11 +285,15 @@ export async function schedulePickup(trackingNumber: string) {
     },
     shipmentDetails: [{
       shipmentTrackingNumber: trackingNumber,
-      isCustomsDeclarable: true
+      unitOfMeasurement: "metric",
+      isCustomsDeclarable: true,
+      packages: [{ typeCode: "3BX", weight, dimensions }],
+      declaredValue: 100,
+      declaredValueCurrency: "GHS"
     }]
   };
 
-  const res = await fetch(`${DHL_API_BASE}/pickups`, {
+  const res = await fetchWithRetry(`${DHL_API_BASE}/pickups`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -279,7 +316,7 @@ export async function schedulePickup(trackingNumber: string) {
 }
 
 export async function trackShipment(trackingNumber: string) {
-  const res = await fetch(`${DHL_API_BASE}/shipments/${trackingNumber}/tracking`, {
+  const res = await fetchWithRetry(`${DHL_API_BASE}/shipments/${trackingNumber}/tracking`, {
     method: "GET",
     headers: {
       "Accept": "application/json",
@@ -293,7 +330,7 @@ export async function trackShipment(trackingNumber: string) {
     console.error("DHL Tracking Error:", errorBody);
     
     // If DHL Test API 500 errors (which happen right after test labels are created)
-    if (res.status === 500 && DHL_API_BASE.includes("test")) {
+    if (res.status === 500 && process.env.NODE_ENV === 'development' && DHL_API_BASE.includes("test")) {
       return { shipments: [] };
     }
 
@@ -319,7 +356,7 @@ export async function validateAddress({
     postalCode
   });
 
-  const res = await fetch(`${DHL_API_BASE}/address-validate?${params.toString()}`, {
+  const res = await fetchWithRetry(`${DHL_API_BASE}/address-validate?${params.toString()}`, {
     method: "GET",
     headers: {
       "Accept": "application/json",

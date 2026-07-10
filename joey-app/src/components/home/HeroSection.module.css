@@ -267,6 +267,29 @@
   flex-wrap: wrap;
 }
 
+.glassBtn {
+  display: inline-block;
+  padding: 12px 28px;
+  text-align: center;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-full, 9999px);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  text-decoration: none;
+}
+
+.glassBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+}
+
 /* Scroll indicator */
 .scrollIndicator {
   position: absolute;
