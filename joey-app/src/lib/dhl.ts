@@ -1,4 +1,4 @@
-export const DHL_API_BASE = process.env.DHL_API_BASE_URL || "https://express.api.dhl.com/mydhlapi/test";
+export const DHL_API_BASE = process.env.DHL_API_BASE_URL || "https://express.api.dhl.com/mydhlapi";
 
 function getAuthHeader() {
   const key = process.env.DHL_API_KEY;

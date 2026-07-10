@@ -21,16 +21,22 @@ import ProductMedia from "@/components/shop/ProductMedia";
 const EMPTY_ARRAY: CartItem[] = [];
 
 const regionOptions = [
-  { value: "greater-accra", label: "Greater Accra" },
+  { value: "ahafo", label: "Ahafo" },
   { value: "ashanti", label: "Ashanti" },
-  { value: "brong-ahafo", label: "Brong Ahafo" },
+  { value: "bono", label: "Bono" },
+  { value: "bono-east", label: "Bono East" },
   { value: "central", label: "Central" },
   { value: "eastern", label: "Eastern" },
+  { value: "greater-accra", label: "Greater Accra" },
+  { value: "north-east", label: "North East" },
   { value: "northern", label: "Northern" },
+  { value: "oti", label: "Oti" },
+  { value: "savannah", label: "Savannah" },
   { value: "upper-east", label: "Upper East" },
   { value: "upper-west", label: "Upper West" },
   { value: "volta", label: "Volta" },
   { value: "western", label: "Western" },
+  { value: "western-north", label: "Western North" },
 ];
 
 type ShippingDestination = "ghana" | "international";
@@ -75,6 +81,7 @@ export default function CheckoutClient() {
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [shippingCalculated, setShippingCalculated] = useState<boolean>(true); // true for ghana by default
   const [isCalculatingShipping, setIsCalculatingShipping] = useState<boolean>(false);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("card");
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -274,6 +281,7 @@ export default function CheckoutClient() {
         email: formData.email,
         amount: Math.round(total * 100), // Ensure integer Kobo
         currency: "GHS",
+        channels: [paymentMethod],
         ref: `ORDER-${items[0]?.name.replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "-")}-${placed.id.slice(-8)}`,
         metadata: {
           custom_fields: [
@@ -502,13 +510,45 @@ export default function CheckoutClient() {
                 {isCalculatingShipping ? "Calculating..." : "Calculate Shipping"}
               </button>
             ) : (
-              <button
-                type="submit"
-                className={`${styles.submitBtn} ${styles.submitBtnPrimary}`}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Processing..." : `Place Order — ${formattedTotal}`}
-              </button>
+              <>
+                <h2 className={styles.sectionTitle} style={{ marginTop: "32px", borderTop: "1px solid var(--color-border)", paddingTop: "32px" }}>Payment Method</h2>
+                <div className={styles.paymentMethods}>
+                  <label className={`${styles.paymentOption} ${paymentMethod === "card" ? styles.paymentOptionActive : ""}`}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="card" 
+                      checked={paymentMethod === "card"} 
+                      onChange={() => setPaymentMethod("card")} 
+                    />
+                    <div className={styles.paymentOptionContent}>
+                      <span className={styles.paymentOptionTitle}>Debit / Credit Card</span>
+                      <span className={styles.paymentOptionDesc}>Visa, Mastercard, Verve</span>
+                    </div>
+                  </label>
+                  <label className={`${styles.paymentOption} ${paymentMethod === "mobile_money" ? styles.paymentOptionActive : ""}`}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="mobile_money" 
+                      checked={paymentMethod === "mobile_money"} 
+                      onChange={() => setPaymentMethod("mobile_money")} 
+                    />
+                    <div className={styles.paymentOptionContent}>
+                      <span className={styles.paymentOptionTitle}>Mobile Money</span>
+                      <span className={styles.paymentOptionDesc}>MTN, Telecel, AirtelTigo</span>
+                    </div>
+                  </label>
+                </div>
+                
+                <button
+                  type="submit"
+                  className={`${styles.submitBtn} ${styles.submitBtnPrimary}`}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Processing..." : `Place Order — ${formattedTotal}`}
+                </button>
+              </>
             )}
           </form>
         </div>
