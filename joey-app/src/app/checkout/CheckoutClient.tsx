@@ -71,7 +71,7 @@ function buildShippingAddress(
   return `${parts.join(", ")} | DHL[${d.city.trim()}|${d.postalCode.trim()}|${d.country}] (international)`;
 }
 
-export default function CheckoutClient() {
+export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: boolean }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_ARRAY);
@@ -444,7 +444,7 @@ export default function CheckoutClient() {
                   />
                 </div>
               </div>
-            ) : (
+            ) : !dhlEnabled ? (
               <div className={styles.comingSoonBanner}>
                 <div className={styles.comingSoonIcon}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -464,19 +464,77 @@ export default function CheckoutClient() {
                   and we&apos;ll arrange it manually.
                 </p>
               </div>
+            ) : (
+              <>
+                <div className={styles.formRow}>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="city">City</label>
+                    <input id="city" name="city" type="text" className="form-input"
+                      placeholder="City" value={formData.city}
+                      onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="stateOrProvince">State / Province</label>
+                    <input id="stateOrProvince" name="stateOrProvince" type="text" className="form-input"
+                      placeholder="Region, state, or county" value={formData.stateOrProvince}
+                      onChange={handleChange} required />
+                  </div>
+                </div>
+                <p className={styles.fieldHint}>
+                  Use &quot;N/A&quot; if your address does not include a state or province.
+                </p>
+                <div className={styles.formRow}>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="postalCode">
+                      Postal / ZIP code{" "}
+                      <span style={{ fontWeight: 300, color: "var(--cinereous)" }}>(optional)</span>
+                    </label>
+                    <input id="postalCode" name="postalCode" type="text" className="form-input"
+                      placeholder="Postal or ZIP code" value={formData.postalCode}
+                      onChange={handleChange} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" id="country-label" htmlFor="country">Country</label>
+                    <CustomSelect
+                      id="country"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleChange}
+                      options={INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS}
+                      placeholder="Select country"
+                      required
+                      listMaxHeight={320}
+                    />
+                    <p className={styles.countryShippingHint}>
+                      Delivering within Ghana? Choose <strong>Within Ghana</strong> above — you'll use city and region instead.
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
 
-            {shippingDestination === "ghana" && (
-              <>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="notes">
-                    Order Notes <span style={{ fontWeight: 300, color: "var(--cinereous)" }}>(optional)</span>
-                  </label>
-                  <textarea id="notes" name="notes" className="form-input" rows={3}
-                    placeholder="Any special instructions for your order"
-                    value={formData.notes} onChange={handleChange} />
-                </div>
+            {(shippingDestination === "ghana" || dhlEnabled) && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="notes">
+                  Order Notes <span style={{ fontWeight: 300, color: "var(--cinereous)" }}>(optional)</span>
+                </label>
+                <textarea id="notes" name="notes" className="form-input" rows={3}
+                  placeholder="Any special instructions for your order"
+                  value={formData.notes} onChange={handleChange} />
+              </div>
+            )}
 
+            {shippingDestination === "international" && dhlEnabled && !shippingCalculated ? (
+              <button
+                type="button"
+                className={`${styles.submitBtn} ${styles.submitBtnSecondary}`}
+                onClick={handleCalculateShipping}
+                disabled={isCalculatingShipping}
+              >
+                {isCalculatingShipping ? "Calculating..." : "Calculate Shipping"}
+              </button>
+            ) : (shippingDestination === "ghana" || dhlEnabled) && (
+              <>
                 <h2 className={styles.sectionTitle} style={{ marginTop: "32px", borderTop: "1px solid var(--color-border)", paddingTop: "32px" }}>Payment Method</h2>
                 <div className={styles.paymentMethods}>
                   <label className={`${styles.paymentOption} ${paymentMethod === "card" ? styles.paymentOptionActive : ""}`}>
@@ -561,23 +619,28 @@ export default function CheckoutClient() {
                 <span>-GHC {discount.toLocaleString()}</span>
               </div>
             )}
-            {shippingDestination === "ghana" && (
-              <>
-                <div style={{ padding: "16px 0", borderBottom: "1px solid var(--color-border)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <span>Delivery</span>
-                    <span>{formattedShipping}</span>
-                  </div>
-                  <div style={{ fontSize: "13px", color: "var(--cinereous)", background: "var(--color-bg-secondary)", padding: "12px", borderRadius: "6px", display: "flex", gap: "8px", alignItems: "flex-start", lineHeight: 1.4 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: "2px" }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <span>Our salesperson will liaise with you on the delivery process.</span>
-                  </div>
+            {shippingDestination === "ghana" ? (
+              <div style={{ padding: "16px 0", borderBottom: "1px solid var(--color-border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <span>Delivery</span>
+                  <span>{formattedShipping}</span>
                 </div>
-                <div className={`${styles.totalRow} ${styles.totalFinal}`}>
-                  <span>Total</span>
-                  <span>{formattedTotal}</span>
+                <div style={{ fontSize: "13px", color: "var(--cinereous)", background: "var(--color-bg-secondary)", padding: "12px", borderRadius: "6px", display: "flex", gap: "8px", alignItems: "flex-start", lineHeight: 1.4 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: "2px" }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <span>Our salesperson will liaise with you on the delivery process.</span>
                 </div>
-              </>
+              </div>
+            ) : dhlEnabled ? (
+              <div className={styles.totalRow}>
+                <span>Shipping</span>
+                <span>{formattedShipping}</span>
+              </div>
+            ) : null}
+            {(shippingDestination === "ghana" || dhlEnabled) && (
+              <div className={`${styles.totalRow} ${styles.totalFinal}`}>
+                <span>Total</span>
+                <span>{formattedTotal}</span>
+              </div>
             )}
           </div>
         </div>

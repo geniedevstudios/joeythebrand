@@ -7,9 +7,10 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutPage() {
+  const dhlEnabled = !!(process.env.DHL_API_KEY && process.env.DHL_API_SECRET);
   return (
     <div style={{ paddingTop: "var(--nav-height)" }}>
-      <CheckoutClient />
+      <CheckoutClient dhlEnabled={dhlEnabled} />
     </div>
   );
 }
