@@ -15,6 +15,7 @@ import productStyles from "../shop/[slug]/ProductClient.module.css";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import ProductSuggestions from "@/components/shop/ProductSuggestions";
+import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
 
 import type { Product } from "@/lib/types";
 
@@ -98,7 +99,8 @@ export default function WishlistClient() {
 
     setTimeout(() => {
       const priceNum = Number(String(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price).replace(/[^0-9.-]+/g, ""));
-      const isBespokeProduct = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+      const stockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+      const isBespokeProduct = stockStatus.isBespokeProduct;
       cartStore.addItem({
         productId: quickViewPiece.id,
         name: quickViewPiece.name,
@@ -111,9 +113,9 @@ export default function WishlistClient() {
         price: priceNum,
         image: quickViewActiveCombo?.thumbnailUrl || activeImage || quickViewGalleryImages[0] || quickViewPiece.image,
         quantity: qty,
-        maxStock: isBespokeProduct ? 999 : (quickViewPiece.quantity ?? 99),
+        maxStock: stockStatus.maxStock ?? 99,
         isBespoke: isBespokeProduct || undefined,
-        bespokeLeadDays: isBespokeProduct ? (quickViewPiece.bespokeLeadDays || 14) : undefined,
+        bespokeLeadDays: isBespokeProduct ? (stockStatus.bespokeLeadDays ?? 14) : undefined,
       });
 
       wishlistStore.removeItem(quickViewPiece.id);
@@ -365,16 +367,20 @@ export default function WishlistClient() {
               </svg>
             </button>
             <div className={shopStyles.modalGrid}>
+              {(() => {
+                const quickViewStockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+                return (
+                  <>
               <div className={shopStyles.modalGallery}>
                 <div className={shopStyles.modalImageWrap} style={{ position: "relative" }}>
 
                   <ProductMedia src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image} alt={quickViewPiece.name} className={shopStyles.modalImage} />
                   <div className={shopStyles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
                     {(() => {
-                      const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                      const isBespoke = quickViewStockStatus.isBespokeProduct;
                       return isBespoke ? (
                         <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
-                      ) : quickViewPiece.isOutOfStock ? (
+                      ) : quickViewStockStatus.isSelectedOutOfStock ? (
                         <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                       ) : (
                         <>
@@ -474,7 +480,7 @@ export default function WishlistClient() {
                             style={{ backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center" }}
                             onClick={() => {
                               setQuickViewColorVariantId(v.id);
-                              const isSoloUnavailable = v.isOutOfStock || (typeof v.quantity === "number" && v.quantity <= 0);
+                              const isSoloUnavailable = getIsSoloUnavailable(v, quickViewPiece);
                               const hasCombos = v.combos && v.combos.length > 0;
                               if (isSoloUnavailable && hasCombos) {
                                 setQuickViewMode("paired");
@@ -609,12 +615,12 @@ export default function WishlistClient() {
                 )}
 
                 {(() => {
-                  const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                  const isBespoke = quickViewStockStatus.isBespokeProduct;
                   return isBespoke ? (
                     <p className={shopStyles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff" }}>
-                      🧵 Bespoke order. Expect ~{quickViewPiece.bespokeLeadDays || 14} days for production.
+                      🧵 Bespoke order. Expect ~{quickViewStockStatus.bespokeLeadDays || 14} days for production.
                     </p>
-                  ) : quickViewPiece.isOutOfStock ? (
+                  ) : quickViewStockStatus.isSelectedOutOfStock ? (
                     <p className={shopStyles.customNotice} style={{ color: "#c00", background: "#fee" }}>
                       This item is currently out of stock.
                     </p>
@@ -630,14 +636,14 @@ export default function WishlistClient() {
                       <button 
                         className={shopStyles.qtyBtn} 
                         onClick={() => {
-                          const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
-                          if (isBespoke || qty < (quickViewPiece.quantity ?? 999)) {
+                          const isBespoke = quickViewStockStatus.isBespokeProduct;
+                          if (isBespoke || qty < quickViewStockStatus.maxStock) {
                             setQty(qty + 1);
                           } else {
-                            toast.error(`Only ${quickViewPiece.quantity} items available.`);
+                            toast.error(`Only ${quickViewStockStatus.maxStock} items available.`);
                           }
                         }}
-                        disabled={!(!!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0)) && qty >= (quickViewPiece.quantity ?? 999)}
+                        disabled={!quickViewStockStatus.isBespokeProduct && qty >= quickViewStockStatus.maxStock}
                       >
                         +
                       </button>
@@ -651,19 +657,19 @@ export default function WishlistClient() {
 
                 <div className={shopStyles.modalActions}>
                   {(() => {
-                    const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                    const isBespoke = quickViewStockStatus.isBespokeProduct;
                     return (
                       <button
                         className={`btn btn-primary ${shopStyles.modalAddBtn}`}
                         onClick={handleAddToCartQuick}
-                        disabled={(quickViewPiece.isOutOfStock && !isBespoke) || quickAddStatus !== "idle"}
+                        disabled={(quickViewStockStatus.isSelectedOutOfStock && !isBespoke) || quickAddStatus !== "idle"}
                         style={{ transition: "all 0.3s ease" }}
                       >
-                        {quickViewPiece.isOutOfStock && !isBespoke
+                        {quickViewStockStatus.isSelectedOutOfStock && !isBespoke
                           ? "Out of Stock"
                           : isBespoke
-                            ? (quickAddStatus === "idle" ? "Order Bespoke" : quickAddStatus === "adding" ? "Adding..." : "Added 👍")
-                            : (quickAddStatus === "idle" ? "Add To Cart" : quickAddStatus === "adding" ? "Adding..." : "Added 👍")}
+                            ? (quickAddStatus === "idle" ? "Order Bespoke" : quickAddStatus === "adding" ? "Adding..." : "Added ✓")
+                            : (quickAddStatus === "idle" ? "Add To Cart" : quickAddStatus === "adding" ? "Adding..." : "Added ✓")}
                       </button>
                     );
                   })()}
@@ -694,12 +700,12 @@ export default function WishlistClient() {
                 </div>
 
                 {(() => {
-                  const isBespoke = !!(quickViewPiece.bespokeAvailable && quickViewPiece.quantity <= 0);
+                  const isBespoke = quickViewStockStatus.isBespokeProduct;
                   return isBespoke ? (
                     <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "16px", marginBottom: "2px", fontSize: "0.95rem", color: "rgba(20, 20, 20, 0.78)", background: "#f5f3ff", borderColor: "#c4b5fd", padding: "8px", borderRadius: "6px" }}>
                       <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "18px", height: "18px", color: "#7c3aed" }} />
                       <span style={{ color: "#5b21b6" }}>
-                        bespoke piece would be handcrafted for you within {quickViewPiece.bespokeLeadDays || 14} days
+                        bespoke piece would be handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
                       </span>
                     </div>
                   ) : null;
@@ -715,6 +721,9 @@ export default function WishlistClient() {
                   View Full Details →
                 </Link>
               </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

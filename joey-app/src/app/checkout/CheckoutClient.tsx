@@ -119,7 +119,7 @@ export default function CheckoutClient() {
   const discount = appliedPromo?.discount || 0;
   const total = subtotalRaw - discount + shippingCost;
   const formattedSubtotal = `GHC ${subtotalRaw.toLocaleString()}`;
-  const formattedShipping = shippingDestination === "ghana" ? "Calculated at next step" : (shippingCalculated ? `GHC ${shippingCost.toLocaleString()}` : "Requires calculation");
+  const formattedShipping = shippingDestination === "ghana" ? "TBD" : (shippingCalculated ? `GHC ${shippingCost.toLocaleString()}` : "Requires calculation");
   const formattedTotal = `GHC ${total.toLocaleString()}`;
 
   if (items.length === 0) {
@@ -383,11 +383,13 @@ export default function CheckoutClient() {
                 onChange={handleChange} required />
             </div>
 
-            <h2 className={styles.sectionTitle}>Shipping Address</h2>
+            <h2 className={styles.sectionTitle}>
+              {shippingDestination === "ghana" ? "Delivery Details" : "Shipping Address"}
+            </h2>
 
             <fieldset className={styles.destinationFieldset}>
               <legend className={`form-label ${styles.destinationLegend}`}>
-                Where should we ship your order?
+                Where should we {shippingDestination === "ghana" ? "deliver" : "ship"} your order?
               </legend>
               <div className={styles.destinationOptions}>
                 <label
@@ -595,10 +597,23 @@ export default function CheckoutClient() {
                 <span>-GHC {discount.toLocaleString()}</span>
               </div>
             )}
-            <div className={styles.totalRow}>
-              <span>Shipping</span>
-              <span>{formattedShipping}</span>
-            </div>
+            {shippingDestination === "ghana" ? (
+              <div style={{ padding: "16px 0", borderBottom: "1px solid var(--color-border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <span>Delivery</span>
+                  <span>{formattedShipping}</span>
+                </div>
+                <div style={{ fontSize: "13px", color: "var(--cinereous)", background: "var(--color-bg-secondary)", padding: "12px", borderRadius: "6px", display: "flex", gap: "8px", alignItems: "flex-start", lineHeight: 1.4 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: "2px" }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <span>Our salesperson will liaise with you on the delivery process.</span>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.totalRow}>
+                <span>Shipping</span>
+                <span>{formattedShipping}</span>
+              </div>
+            )}
             <div className={`${styles.totalRow} ${styles.totalFinal}`}>
               <span>Total</span>
               <span>{formattedTotal}</span>
