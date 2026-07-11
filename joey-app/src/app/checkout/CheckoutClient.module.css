@@ -382,3 +382,55 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Coming Soon – International Shipping Banner */
+.comingSoonBanner {
+  text-align: center;
+  padding: 40px 24px;
+  margin: 8px 0 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg-secondary);
+}
+
+.comingSoonIcon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--cinereous);
+  opacity: 0.55;
+}
+
+.comingSoonTitle {
+  font-family: var(--font-display, var(--font-heading, inherit));
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0 0 10px;
+  color: var(--color-text);
+}
+
+.comingSoonText {
+  font-size: 0.92rem;
+  color: var(--cinereous);
+  line-height: 1.55;
+  margin: 0 auto 14px;
+  max-width: 380px;
+}
+
+.comingSoonContact {
+  font-size: 0.85rem;
+  color: var(--cinereous);
+  margin: 0;
+}
+
+.comingSoonLink {
+  color: var(--blue-athracite);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
+
+.comingSoonLink:hover {
+  color: var(--color-text);
+}
