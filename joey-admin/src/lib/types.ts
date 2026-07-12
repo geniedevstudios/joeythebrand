@@ -113,6 +113,8 @@ export interface Order {
   total: number;
   discount: number;
   promotionCode?: string;
+  paymentStatus: "unpaid" | "paid";
+  paymentRef?: string;
   status: OrderStatus;
   userId?: string;
   notes?: string;

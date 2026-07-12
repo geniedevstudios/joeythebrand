@@ -97,6 +97,8 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   total: Number(row.total),
   discount: Number(row.discount),
   promotionCode: row.promotion_code as string | undefined,
+  paymentStatus: (row.payment_status as "unpaid" | "paid") || "unpaid",
+  paymentRef: (row.payment_ref as string) || undefined,
   status: row.status as OrderStatus,
   userId: row.user_id as string | undefined,
   notes: row.notes as string | undefined,

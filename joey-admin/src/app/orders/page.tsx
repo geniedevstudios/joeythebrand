@@ -286,6 +286,17 @@ export default function OrdersPage() {
                       <div className="text-sm font-semibold text-zinc-900">
                         GHC {order.total.toLocaleString()}
                       </div>
+                      <div className="mt-1">
+                        {order.paymentStatus === "unpaid" ? (
+                          <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
+                            Unpaid
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                            Paid
+                          </span>
+                        )}
+                      </div>
                       {order.promotionCode ? (
                         <div className="mt-1 text-xs text-green-700">
                           {order.promotionCode} (−GHC {order.discount.toLocaleString()})

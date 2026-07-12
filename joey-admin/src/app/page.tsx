@@ -177,7 +177,9 @@ export default function Dashboard() {
     }
   };
 
-  const orderRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const orderRevenue = orders
+    .filter((o) => o.paymentStatus === "paid")
+    .reduce((sum, order) => sum + order.total, 0);
   const consultationRevenue = consultations
     .filter((c) => c.paymentStatus === "paid")
     .reduce((sum, c) => sum + (c.priceGhs || 0), 0);
@@ -455,9 +457,20 @@ export default function Dashboard() {
                           <p className="text-sm font-semibold text-white">
                             GHC {order.total.toLocaleString()}
                           </p>
-                          <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-semibold text-white/70 capitalize">
-                            {order.status}
-                          </span>
+                          <div className="flex gap-2">
+                            {order.paymentStatus === "unpaid" ? (
+                              <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-400">
+                                Unpaid
+                              </span>
+                            ) : (
+                              <span className="rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1 text-xs font-semibold text-green-400">
+                                Paid
+                              </span>
+                            )}
+                            <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-semibold text-white/70 capitalize">
+                              {order.status}
+                            </span>
+                          </div>
                         </div>
                       </li>
                     ))}
