@@ -153,12 +153,20 @@ function EventGrid({
 export default function EventsClient({
   topVideoUrl,
   topVideoPosterUrl,
+  topVideoTabletUrl,
+  topVideoTabletPosterUrl,
+  topVideoMobileUrl,
+  topVideoMobilePosterUrl,
   heading,
   subheading,
   events,
 }: {
   topVideoUrl?: string;
   topVideoPosterUrl?: string;
+  topVideoTabletUrl?: string;
+  topVideoTabletPosterUrl?: string;
+  topVideoMobileUrl?: string;
+  topVideoMobilePosterUrl?: string;
   heading?: string;
   subheading?: string;
   events: PublicEvent[];
@@ -166,6 +174,10 @@ export default function EventsClient({
   const [liveEvents, setLiveEvents] = useState<PublicEvent[]>(events);
   const [liveTopVideoUrl, setLiveTopVideoUrl] = useState<string | undefined>(topVideoUrl);
   const [liveTopVideoPosterUrl, setLiveTopVideoPosterUrl] = useState<string | undefined>(topVideoPosterUrl);
+  const [liveTopVideoTabletUrl, setLiveTopVideoTabletUrl] = useState<string | undefined>(topVideoTabletUrl);
+  const [liveTopVideoTabletPosterUrl, setLiveTopVideoTabletPosterUrl] = useState<string | undefined>(topVideoTabletPosterUrl);
+  const [liveTopVideoMobileUrl, setLiveTopVideoMobileUrl] = useState<string | undefined>(topVideoMobileUrl);
+  const [liveTopVideoMobilePosterUrl, setLiveTopVideoMobilePosterUrl] = useState<string | undefined>(topVideoMobilePosterUrl);
   const [liveHeading, setLiveHeading] = useState<string | undefined>(heading);
   const [liveSubheading, setLiveSubheading] = useState<string | undefined>(subheading);
   const [filter, setFilter] = useState<EventCategory>("all");
@@ -209,15 +221,51 @@ export default function EventsClient({
     setLiveTopVideoPosterUrl(topVideoPosterUrl);
   }, [topVideoPosterUrl]);
 
+  useEffect(() => {
+    setLiveTopVideoTabletUrl(topVideoTabletUrl);
+  }, [topVideoTabletUrl]);
+
+  useEffect(() => {
+    setLiveTopVideoTabletPosterUrl(topVideoTabletPosterUrl);
+  }, [topVideoTabletPosterUrl]);
+
+  useEffect(() => {
+    setLiveTopVideoMobileUrl(topVideoMobileUrl);
+  }, [topVideoMobileUrl]);
+
+  useEffect(() => {
+    setLiveTopVideoMobilePosterUrl(topVideoMobilePosterUrl);
+  }, [topVideoMobilePosterUrl]);
+
+  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const activeVideoUrl = useMemo(() => {
+    if (width < 768 && liveTopVideoMobileUrl?.trim()) return liveTopVideoMobileUrl.trim();
+    if (width < 1024 && liveTopVideoTabletUrl?.trim()) return liveTopVideoTabletUrl.trim();
+    return liveTopVideoUrl?.trim();
+  }, [width, liveTopVideoMobileUrl, liveTopVideoTabletUrl, liveTopVideoUrl]);
+
+  const activePosterUrl = useMemo(() => {
+    if (width < 768 && liveTopVideoMobilePosterUrl?.trim()) return liveTopVideoMobilePosterUrl.trim();
+    if (width < 1024 && liveTopVideoTabletPosterUrl?.trim()) return liveTopVideoTabletPosterUrl.trim();
+    return liveTopVideoPosterUrl?.trim();
+  }, [width, liveTopVideoMobilePosterUrl, liveTopVideoTabletPosterUrl, liveTopVideoPosterUrl]);
+
   const topUsablePoster = useMemo(
-    () => usableVideoPoster(liveTopVideoUrl, liveTopVideoPosterUrl),
-    [liveTopVideoUrl, liveTopVideoPosterUrl],
+    () => usableVideoPoster(activeVideoUrl, activePosterUrl),
+    [activeVideoUrl, activePosterUrl],
   );
 
   useEffect(() => {
     videoRevealOnce.current = false;
     setVideoLoading(true);
-  }, [liveTopVideoUrl, topUsablePoster]);
+  }, [activeVideoUrl, topUsablePoster]);
 
   useEffect(() => {
     setLiveHeading(heading);
@@ -303,7 +351,7 @@ export default function EventsClient({
         t = undefined;
         const { data, error } = await supabase
           .from("events_page")
-          .select("heading, subheading, top_video_url, top_video_poster_url")
+          .select("heading, subheading, top_video_url, top_video_poster_url, top_video_tablet_url, top_video_tablet_poster_url, top_video_mobile_url, top_video_mobile_poster_url")
           .maybeSingle();
         if (error || !data) return;
 
@@ -313,11 +361,19 @@ export default function EventsClient({
         const nextTop = typeof d.top_video_url === "string" ? d.top_video_url.trim() : undefined;
         const nextPoster =
           typeof d.top_video_poster_url === "string" ? d.top_video_poster_url.trim() : undefined;
+        const nextTabletTop = typeof d.top_video_tablet_url === "string" ? d.top_video_tablet_url.trim() : undefined;
+        const nextTabletPoster = typeof d.top_video_tablet_poster_url === "string" ? d.top_video_tablet_poster_url.trim() : undefined;
+        const nextMobileTop = typeof d.top_video_mobile_url === "string" ? d.top_video_mobile_url.trim() : undefined;
+        const nextMobilePoster = typeof d.top_video_mobile_poster_url === "string" ? d.top_video_mobile_poster_url.trim() : undefined;
 
         setLiveHeading(nextHeading || "Events");
         setLiveSubheading(nextSubheading || undefined);
         setLiveTopVideoUrl(nextTop || undefined);
         setLiveTopVideoPosterUrl(nextPoster || undefined);
+        setLiveTopVideoTabletUrl(nextTabletTop || undefined);
+        setLiveTopVideoTabletPosterUrl(nextTabletPoster || undefined);
+        setLiveTopVideoMobileUrl(nextMobileTop || undefined);
+        setLiveTopVideoMobilePosterUrl(nextMobilePoster || undefined);
 
         // Force loader when the source changes.
         videoRevealOnce.current = false;
@@ -415,11 +471,11 @@ export default function EventsClient({
           />
         ) : null}
         
-        {liveTopVideoUrl && /\.(jpe?g|png|webp|avif|gif)($|\?)/i.test(liveTopVideoUrl) ? (
+        {activeVideoUrl && /\.(jpe?g|png|webp|avif|gif)($|\?)/i.test(activeVideoUrl) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            key={liveTopVideoUrl}
-            src={liveTopVideoUrl}
+            key={activeVideoUrl}
+            src={activeVideoUrl}
             alt="Events Hero"
             className={`${styles.video} ${videoLoading ? "" : styles.videoReady}`}
             style={{ objectFit: "cover", width: "100%", height: "100%" }}
@@ -428,7 +484,7 @@ export default function EventsClient({
           />
         ) : (
           <video
-            key={`${liveTopVideoUrl || ""}|${topUsablePoster || ""}`}
+            key={`${activeVideoUrl || ""}|${topUsablePoster || ""}`}
             className={`${styles.video} ${videoLoading ? "" : styles.videoReady}`}
             poster={topUsablePoster || undefined}
             autoPlay
@@ -446,7 +502,7 @@ export default function EventsClient({
             }}
             onError={revealVideo}
           >
-            <source src={liveTopVideoUrl || "/hero.mp4"} type="video/mp4" />
+            <source src={activeVideoUrl || "/hero.mp4"} type="video/mp4" />
           </video>
         )}
         <div

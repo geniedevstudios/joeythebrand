@@ -20,6 +20,10 @@ type EventsPageRow = {
   body: string | null;
   top_video_url?: string | null;
   top_video_poster_url?: string | null;
+  top_video_tablet_url?: string | null;
+  top_video_tablet_poster_url?: string | null;
+  top_video_mobile_url?: string | null;
+  top_video_mobile_poster_url?: string | null;
   updated_at?: string | null;
 };
 
@@ -422,6 +426,10 @@ export default function EventsContentPage() {
   const [body, setBody] = useState("");
   const [topVideoUrl, setTopVideoUrl] = useState("");
   const [topVideoPosterUrl, setTopVideoPosterUrl] = useState("");
+  const [topVideoTabletUrl, setTopVideoTabletUrl] = useState("");
+  const [topVideoTabletPosterUrl, setTopVideoTabletPosterUrl] = useState("");
+  const [topVideoMobileUrl, setTopVideoMobileUrl] = useState("");
+  const [topVideoMobilePosterUrl, setTopVideoMobilePosterUrl] = useState("");
   const [pageId, setPageId] = useState<number>(1);
   const [hasRow, setHasRow] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -448,7 +456,7 @@ export default function EventsContentPage() {
     try {
       const { data, error } = await supabase
         .from("events_page")
-        .select("id, heading, subheading, body, top_video_url, top_video_poster_url, updated_at")
+        .select("id, heading, subheading, body, top_video_url, top_video_poster_url, top_video_tablet_url, top_video_tablet_poster_url, top_video_mobile_url, top_video_mobile_poster_url, updated_at")
         .maybeSingle();
 
       if (error) throw error;
@@ -461,6 +469,10 @@ export default function EventsContentPage() {
       setBody(row?.body ? String(row.body) : "");
       setTopVideoUrl(row?.top_video_url ? String(row.top_video_url) : "");
       setTopVideoPosterUrl(row?.top_video_poster_url ? String(row.top_video_poster_url) : "");
+      setTopVideoTabletUrl(row?.top_video_tablet_url ? String(row.top_video_tablet_url) : "");
+      setTopVideoTabletPosterUrl(row?.top_video_tablet_poster_url ? String(row.top_video_tablet_poster_url) : "");
+      setTopVideoMobileUrl(row?.top_video_mobile_url ? String(row.top_video_mobile_url) : "");
+      setTopVideoMobilePosterUrl(row?.top_video_mobile_poster_url ? String(row.top_video_mobile_poster_url) : "");
     } catch (err) {
       console.error(err);
       toast.error("Could not load events content (check Supabase table/policies).");
@@ -471,6 +483,10 @@ export default function EventsContentPage() {
       setBody("");
       setTopVideoUrl("");
       setTopVideoPosterUrl("");
+      setTopVideoTabletUrl("");
+      setTopVideoTabletPosterUrl("");
+      setTopVideoMobileUrl("");
+      setTopVideoMobilePosterUrl("");
     } finally {
       setIsLoading(false);
     }
@@ -527,6 +543,10 @@ export default function EventsContentPage() {
         body: body.trim() || null,
         top_video_url: topVideoUrl.trim() || null,
         top_video_poster_url: topVideoPosterUrl.trim() || null,
+        top_video_tablet_url: topVideoTabletUrl.trim() || null,
+        top_video_tablet_poster_url: topVideoTabletPosterUrl.trim() || null,
+        top_video_mobile_url: topVideoMobileUrl.trim() || null,
+        top_video_mobile_poster_url: topVideoMobilePosterUrl.trim() || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -717,56 +737,112 @@ export default function EventsContentPage() {
           <form onSubmit={save} className="space-y-8">
             <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
               <div className="border-b border-zinc-200 px-6 py-5 bg-white">
-                <h3 className="text-base font-semibold leading-6 text-zinc-900">Main page text</h3>
+                <h3 className="text-base font-semibold leading-6 text-zinc-900">Main page content</h3>
               </div>
-              <div className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold leading-6 text-zinc-900">Heading</label>
-                  <input
-                    type="text"
-                    value={heading}
-                    onChange={(e) => setHeading(e.target.value)}
-                    className="w-full rounded-md border border-zinc-300 py-2 px-3 text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                    placeholder="Events"
-                  />
+              <div className="p-6 space-y-8">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold leading-6 text-zinc-900">Heading</label>
+                    <input
+                      type="text"
+                      value={heading}
+                      onChange={(e) => setHeading(e.target.value)}
+                      className="w-full rounded-md border border-zinc-300 py-2 px-3 text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                      placeholder="Events"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold leading-6 text-zinc-900">Subheading</label>
+                    <textarea
+                      value={subheading}
+                      onChange={(e) => setSubheading(e.target.value)}
+                      className="w-full rounded-md border border-zinc-300 py-2 px-3 text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 min-h-[80px]"
+                      placeholder="Announcements, trunk shows, and private moments..."
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold leading-6 text-zinc-900">Subheading</label>
-                  <textarea
-                    value={subheading}
-                    onChange={(e) => setSubheading(e.target.value)}
-                    className="w-full rounded-md border border-zinc-300 py-2 px-3 text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 min-h-[80px]"
-                    placeholder="Announcements, trunk shows, and private moments..."
-                  />
-                </div>
+
+                <div className="space-y-4 border-t border-zinc-100 pt-6">
+                  <h4 className="text-sm font-semibold leading-6 text-zinc-900">Hero background</h4>
+                <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden" open>
+                  <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                    Desktop (Default)
+                    <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="p-4 space-y-4">
+                    <AssetUrlField
+                      label="Top video URL (or Image URL)"
+                      value={topVideoUrl}
+                      onChange={setTopVideoUrl}
+                      uploadFolder="events/top"
+                      accept="video/*,image/*"
+                      placeholder="Upload MP4/Image or paste URL"
+                    />
+                    <AssetUrlField
+                      label="Poster image (while video loads, ignored if image above)"
+                      value={topVideoPosterUrl}
+                      onChange={setTopVideoPosterUrl}
+                      uploadFolder="events/top/poster"
+                      accept="image/*"
+                      placeholder="Upload image or paste URL"
+                    />
+                  </div>
+                </details>
+
+                <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden">
+                  <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                    Tablet (iPad) — Optional
+                    <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="p-4 space-y-4">
+                    <AssetUrlField
+                      label="Tablet video URL (or Image URL)"
+                      value={topVideoTabletUrl}
+                      onChange={setTopVideoTabletUrl}
+                      uploadFolder="events/top/tablet"
+                      accept="video/*,image/*"
+                      placeholder="Upload MP4/Image or paste URL"
+                    />
+                    <AssetUrlField
+                      label="Tablet poster image"
+                      value={topVideoTabletPosterUrl}
+                      onChange={setTopVideoTabletPosterUrl}
+                      uploadFolder="events/top/tablet-poster"
+                      accept="image/*"
+                      placeholder="Upload image or paste URL"
+                    />
+                  </div>
+                </details>
+
+                <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden">
+                  <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                    Mobile Phone — Optional
+                    <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="p-4 space-y-4">
+                    <AssetUrlField
+                      label="Mobile video URL (or Image URL)"
+                      value={topVideoMobileUrl}
+                      onChange={setTopVideoMobileUrl}
+                      uploadFolder="events/top/mobile"
+                      accept="video/*,image/*"
+                      placeholder="Upload MP4/Image or paste URL"
+                    />
+                    <AssetUrlField
+                      label="Mobile poster image"
+                      value={topVideoMobilePosterUrl}
+                      onChange={setTopVideoMobilePosterUrl}
+                      uploadFolder="events/top/mobile-poster"
+                      accept="image/*"
+                      placeholder="Upload image or paste URL"
+                    />
+                  </div>
+                </details>
               </div>
             </div>
+          </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-              <div className="border-b border-zinc-200 px-6 py-5 bg-white">
-                <h3 className="text-base font-semibold leading-6 text-zinc-900">Main page video or image</h3>
-              </div>
-              <div className="p-6 space-y-3">
-                <AssetUrlField
-                  label="Top video URL (or Image URL)"
-                  value={topVideoUrl}
-                  onChange={setTopVideoUrl}
-                  uploadFolder="events/top"
-                  accept="video/*,image/*"
-                  placeholder="Upload MP4/Image or paste URL"
-                />
-                <AssetUrlField
-                  label="Poster image (while video loads, ignored if image above)"
-                  value={topVideoPosterUrl}
-                  onChange={setTopVideoPosterUrl}
-                  uploadFolder="events/top/poster"
-                  accept="image/*"
-                  placeholder="Upload image or paste URL"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
+          <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={isSaving}

@@ -14,6 +14,10 @@ export default async function EventsPage() {
     <EventsClient
       topVideoUrl={page?.topVideoUrl}
       topVideoPosterUrl={page?.topVideoPosterUrl}
+      topVideoTabletUrl={page?.topVideoTabletUrl}
+      topVideoTabletPosterUrl={page?.topVideoTabletPosterUrl}
+      topVideoMobileUrl={page?.topVideoMobileUrl}
+      topVideoMobilePosterUrl={page?.topVideoMobilePosterUrl}
       heading={page?.heading}
       subheading={page?.subheading}
       events={events ?? []}

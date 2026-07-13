@@ -54,7 +54,7 @@ export function useHomeHeroPosterWithSSRSeed(initialSiteContent: SiteContent): s
   );
 }
 
-function useResponsiveSrc(m: PageHeroMedia): string {
+export function useResponsiveSrc(m: PageHeroMedia): string {
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
 
   useEffect(() => {

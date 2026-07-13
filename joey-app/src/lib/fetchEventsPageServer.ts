@@ -5,8 +5,11 @@ export type EventsPageContent = {
   subheading?: string;
   body?: string;
   topVideoUrl?: string;
-  /** Still image shown while `topVideoUrl` loads on /events */
   topVideoPosterUrl?: string;
+  topVideoTabletUrl?: string;
+  topVideoTabletPosterUrl?: string;
+  topVideoMobileUrl?: string;
+  topVideoMobilePosterUrl?: string;
   updatedAt?: string;
 };
 
@@ -26,7 +29,7 @@ export async function fetchEventsPageContent(): Promise<EventsPageContent | null
   const supabase = createClient(url, key);
   const { data, error } = await supabase
     .from("events_page")
-    .select("heading, subheading, body, top_video_url, top_video_poster_url, updated_at")
+    .select("heading, subheading, body, top_video_url, top_video_poster_url, top_video_tablet_url, top_video_tablet_poster_url, top_video_mobile_url, top_video_mobile_poster_url, updated_at")
     .maybeSingle();
 
   if (error || !data) return null;
@@ -38,6 +41,10 @@ export async function fetchEventsPageContent(): Promise<EventsPageContent | null
     body: row.body ? String(row.body).trim() : undefined,
     topVideoUrl: row.top_video_url ? String(row.top_video_url).trim() : undefined,
     topVideoPosterUrl: row.top_video_poster_url ? String(row.top_video_poster_url).trim() : undefined,
+    topVideoTabletUrl: row.top_video_tablet_url ? String(row.top_video_tablet_url).trim() : undefined,
+    topVideoTabletPosterUrl: row.top_video_tablet_poster_url ? String(row.top_video_tablet_poster_url).trim() : undefined,
+    topVideoMobileUrl: row.top_video_mobile_url ? String(row.top_video_mobile_url).trim() : undefined,
+    topVideoMobilePosterUrl: row.top_video_mobile_poster_url ? String(row.top_video_mobile_poster_url).trim() : undefined,
     updatedAt: row.updated_at ? String(row.updated_at) : undefined,
   };
 }

@@ -8,6 +8,7 @@ import {
   useHomeHeroMediaWithSSRSeed,
   useHomeHeroPosterWithSSRSeed,
   usePageHeroShellSpinnerWithSSRSeed,
+  useResponsiveSrc,
 } from "@/hooks/usePageHero";
 import { resolveHeroLayout } from "@/lib/pageHeroes";
 
@@ -16,6 +17,7 @@ import { resolveHeroLayout } from "@/lib/pageHeroes";
 export default function HeroSection({ initialSiteContent }: { initialSiteContent: SiteContent }) {
   const heroVideoRevealOnce = useRef(false);
   const media = useHomeHeroMediaWithSSRSeed(initialSiteContent);
+  const activeSrc = useResponsiveSrc(media);
   const posterUrl = useHomeHeroPosterWithSSRSeed(initialSiteContent);
   const { fit, position } = resolveHeroLayout(media);
   const homeHeroSpinner = usePageHeroShellSpinnerWithSSRSeed("home", initialSiteContent);
@@ -84,7 +86,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
               </picture>
             ) : null}
             <video
-              key={media.src}
+              key={activeSrc}
               className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
               style={{
                 objectFit: fit === "contain" ? "contain" : "cover",

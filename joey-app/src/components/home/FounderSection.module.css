@@ -233,3 +233,9 @@
     flex: 1 1 40%;
   }
 }
+
+@media (max-width: 768px) {
+  .bgImg {
+    object-position: top;
+  }
+}
