@@ -84,9 +84,20 @@ function parseMedia(raw: unknown): PageHeroMedia | null {
   if (!kind || !src) return null;
   // Reject stale legacy defaults stored in the DB before the admin hero system was live.
   if (LEGACY_BLOCKED_SRCS.has(src)) return null;
+  
+  const tabletSrc = typeof o.tabletSrc === "string" && o.tabletSrc.trim() ? o.tabletSrc.trim() : undefined;
+  const mobileSrc = typeof o.mobileSrc === "string" && o.mobileSrc.trim() ? o.mobileSrc.trim() : undefined;
+
   const fit = parseFit(o);
   const anchor = parseAnchor(o);
-  return { kind, src, fit, anchor };
+
+  if (kind === "video") {
+    const tabletPosterUrl = typeof o.tabletPosterUrl === "string" && o.tabletPosterUrl.trim() ? o.tabletPosterUrl.trim() : undefined;
+    const mobilePosterUrl = typeof o.mobilePosterUrl === "string" && o.mobilePosterUrl.trim() ? o.mobilePosterUrl.trim() : undefined;
+    return { kind, src, tabletSrc, mobileSrc, tabletPosterUrl, mobilePosterUrl, fit, anchor };
+  }
+  
+  return { kind, src, tabletSrc, mobileSrc, fit, anchor };
 }
 
 /** Maps anchor to CSS object-position / background-position. */
@@ -124,6 +135,8 @@ export function mergePageHeroes(
           base[key] = {
             kind: "image",
             src: parsed.src,
+            tabletSrc: parsed.tabletSrc,
+            mobileSrc: parsed.mobileSrc,
             fit: parsed.fit,
             anchor: parsed.anchor,
           };
@@ -147,6 +160,8 @@ export function getPageHeroMedia(
     return {
       kind: "image",
       src: m.src,
+      tabletSrc: m.tabletSrc,
+      mobileSrc: m.mobileSrc,
       fit: m.fit,
       anchor: m.anchor,
     };

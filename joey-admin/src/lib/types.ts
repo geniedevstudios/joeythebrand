@@ -217,9 +217,26 @@ export type PageHeroFit = "cover" | "contain";
 
 export type PageHeroAnchor = "top" | "center" | "bottom";
 
+/** Home may use video; all other pages use image only in the UI. */
 export type PageHeroMedia =
-  | { kind: "image"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor }
-  | { kind: "video"; src: string; fit?: PageHeroFit; anchor?: PageHeroAnchor };
+  | { 
+      kind: "image"; 
+      src: string; 
+      tabletSrc?: string; 
+      mobileSrc?: string; 
+      fit?: PageHeroFit; 
+      anchor?: PageHeroAnchor 
+    }
+  | { 
+      kind: "video"; 
+      src: string; 
+      tabletSrc?: string; 
+      mobileSrc?: string; 
+      tabletPosterUrl?: string;
+      mobilePosterUrl?: string;
+      fit?: PageHeroFit; 
+      anchor?: PageHeroAnchor 
+    };
 
 export type PromotionPopupAction = "newsletter" | "product" | "news";
 

@@ -28,20 +28,6 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
   const [heroVideoLoading, setHeroVideoLoading] = useState(media.kind === "video");
   /** Staggered CSS reveal for headline / subtext / CTAs (see .heroReady in CSS). */
   const [heroCopyReady, setHeroCopyReady] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (mobile) {
-        setHeroVideoLoading(false);
-      }
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   const revealHeroVideo = useCallback(() => {
     if (heroVideoRevealOnce.current) return;
@@ -81,62 +67,70 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
         {media.kind === "video" ? (
           <>
             {usablePoster ? (
-              <img
-                key={usablePoster}
-                src={usablePoster}
-                alt=""
-                className={`${styles.bgImg} ${styles.heroPoster}`}
-                style={{
-                  objectFit: fit === "contain" ? "contain" : "cover",
-                  objectPosition: position,
-                }}
-                draggable={false}
-              />
+              <picture>
+                {media.mobilePosterUrl ? <source media="(max-width: 767px)" srcSet={media.mobilePosterUrl} /> : null}
+                {media.tabletPosterUrl ? <source media="(max-width: 1024px)" srcSet={media.tabletPosterUrl} /> : null}
+                <img
+                  key={usablePoster}
+                  src={usablePoster}
+                  alt=""
+                  className={`${styles.bgImg} ${styles.heroPoster}`}
+                  style={{
+                    objectFit: fit === "contain" ? "contain" : "cover",
+                    objectPosition: position,
+                  }}
+                  draggable={false}
+                />
+              </picture>
             ) : null}
-            {!isMobile && (
-              <video
-                key={media.src}
-                className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
-                style={{
-                  objectFit: fit === "contain" ? "contain" : "cover",
-                  objectPosition: position,
-                }}
-                poster={usablePoster || undefined}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                onPlaying={revealHeroVideo}
-                onCanPlay={(e) => {
-                  const v = e.currentTarget;
-                  if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealHeroVideo();
-                }}
-                onTimeUpdate={(e) => {
-                  if (e.currentTarget.currentTime > 0.02) revealHeroVideo();
-                }}
-                onError={revealHeroVideo}
-              >
-                <source src={media.src} />
-              </video>
-            )}
+            <video
+              key={media.src}
+              className={`${styles.bgImg} ${styles.heroBgVideo} ${heroVideoLoading ? "" : styles.heroBgVideoVisible}`}
+              style={{
+                objectFit: fit === "contain" ? "contain" : "cover",
+                objectPosition: position,
+              }}
+              poster={usablePoster || undefined}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              onPlaying={revealHeroVideo}
+              onCanPlay={(e) => {
+                const v = e.currentTarget;
+                if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA && !v.paused) revealHeroVideo();
+              }}
+              onTimeUpdate={(e) => {
+                if (e.currentTarget.currentTime > 0.02) revealHeroVideo();
+              }}
+              onError={revealHeroVideo}
+            >
+              {media.mobileSrc ? <source media="(max-width: 767px)" src={media.mobileSrc} /> : null}
+              {media.tabletSrc ? <source media="(max-width: 1024px)" src={media.tabletSrc} /> : null}
+              <source src={media.src} />
+            </video>
           </>
         ) : media.src.trim() ? (
           /* Admin has set an image — render it */
-          <img
-            key={media.src}
-            src={media.src}
-            alt="JOEY THE BRAND editorial"
-            className={styles.bgImg}
-            style={{
-              objectFit: fit === "contain" ? "contain" : "cover",
-              objectPosition: position,
-            }}
-          />
+          <picture>
+            {media.mobileSrc ? <source media="(max-width: 767px)" srcSet={media.mobileSrc} /> : null}
+            {media.tabletSrc ? <source media="(max-width: 1024px)" srcSet={media.tabletSrc} /> : null}
+            <img
+              key={media.src}
+              src={media.src}
+              alt="JOEY THE BRAND editorial"
+              className={styles.bgImg}
+              style={{
+                objectFit: fit === "contain" ? "contain" : "cover",
+                objectPosition: position,
+              }}
+            />
+          </picture>
         ) : null /* No hero set — black bg from .bg, spinner below */}
         <div className={styles.overlay} />
         {/* Spinner while video loads */}
-        {media.kind === "video" && !isMobile && (
+        {media.kind === "video" && (
           <div
             className={`${styles.videoLoader} ${heroVideoLoading ? "" : styles.videoLoaderDone} ${usablePoster ? styles.videoLoaderOverPoster : ""}`}
             aria-hidden={!heroVideoLoading}

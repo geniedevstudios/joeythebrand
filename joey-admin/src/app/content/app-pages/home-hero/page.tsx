@@ -15,6 +15,10 @@ export default function HomeHeroPage() {
   const [homeKind, setHomeKind] = useState<"image" | "video">("image");
   const [homePrimaryUrl, setHomePrimaryUrl] = useState("");
   const [homePosterUrl, setHomePosterUrl] = useState("");
+  const [homeTabletUrl, setHomeTabletUrl] = useState("");
+  const [homeMobileUrl, setHomeMobileUrl] = useState("");
+  const [homeTabletPosterUrl, setHomeTabletPosterUrl] = useState("");
+  const [homeMobilePosterUrl, setHomeMobilePosterUrl] = useState("");
   const [fit, setFit] = useState<"cover" | "contain">("cover");
   const [anchor, setAnchor] = useState<"top" | "center" | "bottom">("top");
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +32,10 @@ export default function HomeHeroPage() {
       setHomeKind(h.kind);
       setHomePrimaryUrl(h.src);
       setHomePosterUrl(h.kind === "video" ? data.heroImage : "");
+      setHomeTabletUrl(h.tabletSrc ?? "");
+      setHomeMobileUrl(h.mobileSrc ?? "");
+      setHomeTabletPosterUrl(h.kind === "video" ? (h.tabletPosterUrl ?? "") : "");
+      setHomeMobilePosterUrl(h.kind === "video" ? (h.mobilePosterUrl ?? "") : "");
       setFit((h.fit ?? "cover") as any);
       setAnchor((h.anchor ?? "top") as any);
     } finally {
@@ -47,8 +55,24 @@ export default function HomeHeroPage() {
       const primary = homePrimaryUrl.trim();
       const homeMedia: PageHeroMedia =
         homeKind === "video"
-          ? { kind: "video", src: primary, fit, anchor }
-          : { kind: "image", src: primary, fit, anchor };
+          ? { 
+              kind: "video", 
+              src: primary, 
+              tabletSrc: homeTabletUrl.trim(),
+              mobileSrc: homeMobileUrl.trim(),
+              tabletPosterUrl: homeTabletPosterUrl.trim(),
+              mobilePosterUrl: homeMobilePosterUrl.trim(),
+              fit, 
+              anchor 
+            }
+          : { 
+              kind: "image", 
+              src: primary, 
+              tabletSrc: homeTabletUrl.trim(),
+              mobileSrc: homeMobileUrl.trim(),
+              fit, 
+              anchor 
+            };
 
       const nextHeroes = { ...content.pageHeroes, home: homeMedia };
 
@@ -122,25 +146,87 @@ export default function HomeHeroPage() {
               </label>
             </div>
 
-            <AssetUrlField
-              label={homeKind === "video" ? "Video URL" : "Image URL"}
-              value={homePrimaryUrl}
-              onChange={setHomePrimaryUrl}
-              uploadFolder="heroes/home"
-              accept={homeKind === "video" ? "video/*" : "image/*"}
-              placeholder="https://… or /path/from/public.jpg"
-            />
+            <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden" open>
+              <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                Desktop (Default)
+                <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="p-4 space-y-4">
+                <AssetUrlField
+                  label={homeKind === "video" ? "Video URL" : "Image URL"}
+                  value={homePrimaryUrl}
+                  onChange={setHomePrimaryUrl}
+                  uploadFolder="heroes/home"
+                  accept={homeKind === "video" ? "video/*" : "image/*"}
+                  placeholder="https://… or /path/from/public.jpg"
+                />
 
-            {homeKind === "video" ? (
-              <AssetUrlField
-                label="Poster image URL"
-                value={homePosterUrl}
-                onChange={setHomePosterUrl}
-                uploadFolder="heroes/home-poster"
-                accept="image/*"
-                placeholder="Shown before video loads"
-              />
-            ) : null}
+                {homeKind === "video" ? (
+                  <AssetUrlField
+                    label="Poster image URL"
+                    value={homePosterUrl}
+                    onChange={setHomePosterUrl}
+                    uploadFolder="heroes/home-poster"
+                    accept="image/*"
+                    placeholder="Shown before video loads"
+                  />
+                ) : null}
+              </div>
+            </details>
+
+            <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden">
+              <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                Tablet (iPad) — Optional
+                <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="p-4 space-y-4">
+                <AssetUrlField
+                  label={homeKind === "video" ? "Tablet Video URL" : "Tablet Image URL"}
+                  value={homeTabletUrl}
+                  onChange={setHomeTabletUrl}
+                  uploadFolder="heroes/home-tablet"
+                  accept={homeKind === "video" ? "video/*" : "image/*"}
+                  placeholder="Optional: custom file for tablets"
+                />
+
+                {homeKind === "video" ? (
+                  <AssetUrlField
+                    label="Tablet Poster URL"
+                    value={homeTabletPosterUrl}
+                    onChange={setHomeTabletPosterUrl}
+                    uploadFolder="heroes/home-tablet-poster"
+                    accept="image/*"
+                  />
+                ) : null}
+              </div>
+            </details>
+
+            <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden">
+              <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                Mobile Phone — Optional
+                <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="p-4 space-y-4">
+                <AssetUrlField
+                  label={homeKind === "video" ? "Mobile Video URL" : "Mobile Image URL"}
+                  value={homeMobileUrl}
+                  onChange={setHomeMobileUrl}
+                  uploadFolder="heroes/home-mobile"
+                  accept={homeKind === "video" ? "video/*" : "image/*"}
+                  placeholder="Optional: custom file for phones"
+                />
+
+                {homeKind === "video" ? (
+                  <AssetUrlField
+                    label="Mobile Poster URL"
+                    value={homeMobilePosterUrl}
+                    onChange={setHomeMobilePosterUrl}
+                    uploadFolder="heroes/home-mobile-poster"
+                    accept="image/*"
+                  />
+                ) : null}
+              </div>
+            </details>
 
             <HeroFitSelectors
               fit={fit}

@@ -79,9 +79,20 @@ function parseMedia(raw: unknown): PageHeroMedia | null {
   const kind = o.kind === "video" ? "video" : o.kind === "image" ? "image" : null;
   const src = typeof o.src === "string" && o.src.trim() ? o.src.trim() : null;
   if (!kind || !src) return null;
+  
+  const tabletSrc = typeof o.tabletSrc === "string" && o.tabletSrc.trim() ? o.tabletSrc.trim() : undefined;
+  const mobileSrc = typeof o.mobileSrc === "string" && o.mobileSrc.trim() ? o.mobileSrc.trim() : undefined;
+
   const fit = parseFit(o);
   const anchor = parseAnchor(o);
-  return { kind, src, fit, anchor };
+
+  if (kind === "video") {
+    const tabletPosterUrl = typeof o.tabletPosterUrl === "string" && o.tabletPosterUrl.trim() ? o.tabletPosterUrl.trim() : undefined;
+    const mobilePosterUrl = typeof o.mobilePosterUrl === "string" && o.mobilePosterUrl.trim() ? o.mobilePosterUrl.trim() : undefined;
+    return { kind, src, tabletSrc, mobileSrc, tabletPosterUrl, mobilePosterUrl, fit, anchor };
+  }
+  
+  return { kind, src, tabletSrc, mobileSrc, fit, anchor };
 }
 
 export function mergePageHeroes(
@@ -101,6 +112,8 @@ export function mergePageHeroes(
           base[key] = {
             kind: "image",
             src: parsed.src,
+            tabletSrc: parsed.tabletSrc,
+            mobileSrc: parsed.mobileSrc,
             fit: parsed.fit,
             anchor: parsed.anchor,
           };

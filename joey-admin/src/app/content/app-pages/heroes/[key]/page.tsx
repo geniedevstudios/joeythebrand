@@ -23,6 +23,8 @@ export default function SingleHeroPage() {
 
   const [content, setContent] = useState<SiteContent | null>(null);
   const [src, setSrc] = useState("");
+  const [tabletSrc, setTabletSrc] = useState("");
+  const [mobileSrc, setMobileSrc] = useState("");
   const [fit, setFit] = useState<"cover" | "contain">("cover");
   const [anchor, setAnchor] = useState<"top" | "center" | "bottom">("top");
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +37,8 @@ export default function SingleHeroPage() {
       if (!heroKey || heroKey === "home") return;
       const h = data.pageHeroes[heroKey];
       setSrc(h.src);
+      setTabletSrc(h.tabletSrc ?? "");
+      setMobileSrc(h.mobileSrc ?? "");
       setFit((h.fit ?? "cover") as any);
       setAnchor((h.anchor ?? "top") as any);
     } finally {
@@ -54,6 +58,8 @@ export default function SingleHeroPage() {
       const next: PageHeroMedia = {
         kind: "image",
         src: src.trim(),
+        tabletSrc: tabletSrc.trim(),
+        mobileSrc: mobileSrc.trim(),
         fit,
         anchor,
       };
@@ -117,13 +123,54 @@ export default function SingleHeroPage() {
             <h3 className="text-base font-semibold leading-6 text-zinc-900">Image</h3>
           </div>
           <div className="p-6 space-y-4">
-            <AssetUrlField
-              label="Hero image URL"
-              value={src}
-              onChange={setSrc}
-              uploadFolder={`heroes/${heroKey}`}
-              accept="image/*"
-            />
+            <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden" open>
+              <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                Desktop (Default)
+                <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="p-4 space-y-4">
+                <AssetUrlField
+                  label="Hero image URL"
+                  value={src}
+                  onChange={setSrc}
+                  uploadFolder={`heroes/${heroKey}`}
+                  accept="image/*"
+                />
+              </div>
+            </details>
+
+            <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden">
+              <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                Tablet (iPad) — Optional
+                <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="p-4 space-y-4">
+                <AssetUrlField
+                  label="Tablet image URL"
+                  value={tabletSrc}
+                  onChange={setTabletSrc}
+                  uploadFolder={`heroes/${heroKey}-tablet`}
+                  accept="image/*"
+                />
+              </div>
+            </details>
+
+            <details className="group border border-zinc-200 rounded-lg bg-zinc-50 overflow-hidden">
+              <summary className="cursor-pointer font-semibold px-4 py-3 bg-white hover:bg-zinc-50 border-b border-zinc-200 list-none flex justify-between items-center text-sm">
+                Mobile Phone — Optional
+                <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="p-4 space-y-4">
+                <AssetUrlField
+                  label="Mobile image URL"
+                  value={mobileSrc}
+                  onChange={setMobileSrc}
+                  uploadFolder={`heroes/${heroKey}-mobile`}
+                  accept="image/*"
+                />
+              </div>
+            </details>
+
             <HeroFitSelectors
               fit={fit}
               anchor={anchor}

@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useEffect, useState, useSyncExternalStore } from "react";
 import { dataStore } from "@/lib/dataStore";
 import type { PageHeroKey, PageHeroMedia, SiteContent } from "@/lib/types";
 import { getPageHeroMedia, backgroundImageUrl, resolveHeroLayout } from "@/lib/pageHeroes";
@@ -54,15 +54,29 @@ export function useHomeHeroPosterWithSSRSeed(initialSiteContent: SiteContent): s
   );
 }
 
+function useResponsiveSrc(m: PageHeroMedia): string {
+  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  if (width < 768 && m.mobileSrc?.trim()) return m.mobileSrc.trim();
+  if (width < 1024 && m.tabletSrc?.trim()) return m.tabletSrc.trim();
+  return (m.src ?? "").trim();
+}
+
 /** Image URL for hero layer (empty = no image; black bg — shell loader only during {@link usePageHeroShellSpinner}). */
 export function usePageHeroImageSrc(key: PageHeroKey): string {
   const m = usePageHeroMedia(key);
-  return (m.src ?? "").trim();
+  return useResponsiveSrc(m);
 }
 
 export function usePageHeroImageSrcWithSSRSeed(key: PageHeroKey, initialSiteContent: SiteContent): string {
   const m = usePageHeroMediaWithSSRSeed(key, initialSiteContent);
-  return (m.src ?? "").trim();
+  return useResponsiveSrc(m);
 }
 
 /** Global class for hero regions: pairs with `data-page-hero-empty`, `data-page-hero-loading`, and `globals.css`. */
