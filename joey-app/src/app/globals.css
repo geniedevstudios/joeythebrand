@@ -127,10 +127,14 @@ main {
 /* Per-route hero: empty src → black bg; loader only while dataStore.init() is still running (see data-page-hero-loading). */
 .page-hero-shell {
   position: relative;
-  background-attachment: fixed !important;
+  min-height: clamp(350px, 45vh, 500px);
+  background-attachment: scroll;
+  transition: opacity 0.5s ease-in-out;
 }
 
-
+.page-hero-shell[data-page-hero-ready="true"] {
+  background-attachment: fixed !important;
+}
 
 /* When the hero is empty but the store is still initializing, show the brand mark behind the ring spinner.
    Use the element background (not ::before) so route-specific ::before overlays (e.g. Shop header) can't replace it. */

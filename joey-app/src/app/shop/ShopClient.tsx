@@ -264,6 +264,7 @@ export default function ShopClient() {
     shellSpinner: shopHeroSpinner,
     style: shopHeroStyle,
     showImageLoader: shopHeroImageLoader,
+    imageReady: shopHeroImageReady,
   } = usePageHeroShellRenderProps("shop");
 
   const quickViewColorVariants = useMemo(() => {
@@ -311,6 +312,7 @@ export default function ShopClient() {
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={shopHeroEmpty ? "true" : "false"}
         data-page-hero-loading={shopHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={shopHeroImageReady ? "true" : "false"}
         style={shopHeroStyle}
       >
         {shopHeroImageLoader ? <PageHeroShellImageLoader /> : null}

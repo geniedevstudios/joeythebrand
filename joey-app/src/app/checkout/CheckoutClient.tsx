@@ -102,6 +102,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     shellSpinner: checkoutHeroSpinner,
     style: checkoutHeroStyle,
     showImageLoader: checkoutHeroImageLoader,
+    imageReady: checkoutHeroImageReady,
   } = usePageHeroShellRenderProps("checkout");
 
   useEffect(() => {
@@ -126,9 +127,10 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     return (
       <div className={styles.page}>
         <div
-          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.leftHeroShell}`}
           data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
           data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
+          data-page-hero-ready={checkoutHeroImageReady ? "true" : "false"}
           style={checkoutHeroStyle}
         >
           {checkoutHeroImageLoader ? <PageHeroShellImageLoader /> : null}
@@ -335,9 +337,10 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   return (
     <div className={styles.page}>
       <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.mobileHero}`}
         data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
         data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={checkoutHeroImageReady ? "true" : "false"}
         style={checkoutHeroStyle}
       >
         {checkoutHeroImageLoader ? <PageHeroShellImageLoader /> : null}

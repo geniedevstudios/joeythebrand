@@ -80,6 +80,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
     shellSpinner: collectionHeroSpinner,
     style: collectionHeroStyle,
     showImageLoader: collectionHeroImageLoader,
+    imageReady: collectionHeroImageReady,
   } = usePageHeroShellRenderProps("collection");
 
   // Find the specific collection - flexible case comparison

@@ -33,6 +33,7 @@ export default function WishlistClient() {
     shellSpinner: wishlistHeroSpinner,
     style: wishlistHeroStyle,
     showImageLoader: wishlistHeroImageLoader,
+    imageReady: wishlistHeroImageReady,
   } = usePageHeroShellRenderProps("wishlist");
 
   const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
@@ -195,6 +196,7 @@ export default function WishlistClient() {
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={wishlistHeroEmpty ? "true" : "false"}
         data-page-hero-loading={wishlistHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={wishlistHeroImageReady ? "true" : "false"}
         style={wishlistHeroStyle}
       >
         {wishlistHeroImageLoader ? <PageHeroShellImageLoader /> : null}

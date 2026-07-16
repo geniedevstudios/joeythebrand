@@ -217,6 +217,7 @@ export default function CollectionClient() {
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={collectionHeroEmpty ? "true" : "false"}
         data-page-hero-loading={collectionHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={collectionHeroImageReady ? "true" : "false"}
         style={collectionHeroStyle}
       >
         {collectionHeroImageLoader ? <PageHeroShellImageLoader /> : null}

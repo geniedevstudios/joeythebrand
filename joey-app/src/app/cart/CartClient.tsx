@@ -33,6 +33,7 @@ export default function CartClient() {
     shellSpinner: cartHeroSpinner,
     style: cartHeroStyle,
     showImageLoader: cartHeroImageLoader,
+    imageReady: cartHeroImageReady,
   } = usePageHeroShellRenderProps("cart");
 
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -78,6 +79,7 @@ export default function CartClient() {
           className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
           data-page-hero-empty={cartHeroEmpty ? "true" : "false"}
           data-page-hero-loading={cartHeroSpinner ? "true" : "false"}
+          data-page-hero-ready={cartHeroImageReady ? "true" : "false"}
           style={cartHeroStyle}
         >
           {cartHeroImageLoader ? <PageHeroShellImageLoader /> : null}
@@ -110,6 +112,7 @@ export default function CartClient() {
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={cartHeroEmpty ? "true" : "false"}
         data-page-hero-loading={cartHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={cartHeroImageReady ? "true" : "false"}
         style={cartHeroStyle}
       >
         {cartHeroImageLoader ? <PageHeroShellImageLoader /> : null}

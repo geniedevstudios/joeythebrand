@@ -279,6 +279,7 @@ export default function ProductClient({ slug }: { slug: string }) {
     shellSpinner: productHeroSpinner,
     style: productHeroStyle,
     showImageLoader: productHeroImageLoader,
+    imageReady: productHeroImageReady,
   } = usePageHeroShellRenderProps("product");
 
   const productHeroBanner = (
@@ -287,6 +288,7 @@ export default function ProductClient({ slug }: { slug: string }) {
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.heroBannerBg}`}
         data-page-hero-empty={productHeroEmpty ? "true" : "false"}
         data-page-hero-loading={productHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={productHeroImageReady ? "true" : "false"}
         style={productHeroStyle}
       >
         {productHeroImageLoader ? <PageHeroShellImageLoader /> : null}

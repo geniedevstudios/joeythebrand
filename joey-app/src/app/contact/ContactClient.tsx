@@ -47,6 +47,7 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
     shellSpinner: contactHeroSpinner,
     style: contactHeroStyle,
     showImageLoader: contactHeroImageLoader,
+    imageReady: contactHeroImageReady,
   } = usePageHeroShellRenderPropsWithSSRSeed("contact", initialSiteContent);
 
   /** URL: ?subject=General%20Inquiry or ?subject=general */
@@ -124,9 +125,10 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
   return (
     <div className={styles.page}>
       <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={contactHeroEmpty ? "true" : "false"}
         data-page-hero-loading={contactHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={contactHeroImageReady ? "true" : "false"}
         style={contactHeroStyle}
       >
         {contactHeroImageLoader ? <PageHeroShellImageLoader /> : null}

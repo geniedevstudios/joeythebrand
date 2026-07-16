@@ -1172,6 +1172,7 @@ function AccountDashboard({ userId }: { userId: string }) {
     shellSpinner: accountHeroSpinner,
     style: accountHeroStyle,
     showImageLoader: accountHeroImageLoader,
+    imageReady: accountHeroImageReady,
   } = usePageHeroShellRenderProps("account");
 
   return (
@@ -1180,6 +1181,7 @@ function AccountDashboard({ userId }: { userId: string }) {
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
         data-page-hero-loading={accountHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={accountHeroImageReady ? "true" : "false"}
         style={accountHeroStyle}
       >
         {accountHeroImageLoader ? <PageHeroShellImageLoader /> : null}
@@ -1727,6 +1729,7 @@ export default function AccountClient() {
     shellSpinner: accountHeroSpinner,
     style: accountHeroStyle,
     showImageLoader: accountHeroImageLoader,
+    imageReady: accountHeroImageReady,
   } = usePageHeroShellRenderProps("account");
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
@@ -1894,6 +1897,7 @@ export default function AccountClient() {
           className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
           data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
           data-page-hero-loading={accountHeroSpinner ? "true" : "false"}
+          data-page-hero-ready={accountHeroImageReady ? "true" : "false"}
           style={accountHeroStyle}
         >
           {accountHeroImageLoader ? <PageHeroShellImageLoader /> : null}
@@ -2228,6 +2232,7 @@ export default function AccountClient() {
         className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
         data-page-hero-loading={accountHeroSpinner ? "true" : "false"}
+        data-page-hero-ready={accountHeroImageReady ? "true" : "false"}
         style={accountHeroStyle}
       >
         {accountHeroImageLoader ? <PageHeroShellImageLoader /> : null}

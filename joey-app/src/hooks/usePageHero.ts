@@ -170,7 +170,7 @@ export function usePageHeroShellRenderProps(pageKey: PageHeroKey) {
   const style =
     !empty && !imageReady ? heroBlackPlaceholderStyle(m) : heroBackgroundStyleFromMedia(m, src);
   const showImageLoader = !empty && !imageReady;
-  return { empty, shellSpinner, style, showImageLoader };
+  return { empty, shellSpinner, style, showImageLoader, imageReady };
 }
 
 export function usePageHeroShellRenderPropsWithSSRSeed(pageKey: PageHeroKey, initialSiteContent: SiteContent) {
@@ -182,7 +182,7 @@ export function usePageHeroShellRenderPropsWithSSRSeed(pageKey: PageHeroKey, ini
   const style =
     !empty && !imageReady ? heroBlackPlaceholderStyle(m) : heroBackgroundStyleFromMedia(m, src);
   const showImageLoader = !empty && !imageReady;
-  return { empty, shellSpinner, style, showImageLoader };
+  return { empty, shellSpinner, style, showImageLoader, imageReady };
 }
 
 export function usePageHeroBackgroundStyle(key: PageHeroKey): CSSProperties {

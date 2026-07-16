@@ -15,15 +15,16 @@ export default function NewsHero({
   initialSiteContent: SiteContent;
   children: React.ReactNode;
 }) {
-  const { empty, shellSpinner, style, showImageLoader } = usePageHeroShellRenderPropsWithSSRSeed(
+  const { empty, shellSpinner, style, showImageLoader, imageReady } = usePageHeroShellRenderPropsWithSSRSeed(
     "news",
     initialSiteContent,
   );
   return (
     <div
-      className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
+      className={`${PAGE_HERO_SHELL_CLASS} ${styles.hero}`}
       data-page-hero-empty={empty ? "true" : "false"}
       data-page-hero-loading={shellSpinner ? "true" : "false"}
+      data-page-hero-ready={imageReady ? "true" : "false"}
       style={style}
     >
       {showImageLoader ? <PageHeroShellImageLoader /> : null}
