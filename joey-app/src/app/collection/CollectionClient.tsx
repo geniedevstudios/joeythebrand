@@ -187,6 +187,7 @@ export default function CollectionClient() {
     shellSpinner: collectionHeroSpinner,
     style: collectionHeroStyle,
     showImageLoader: collectionHeroImageLoader,
+    imageReady: collectionHeroImageReady,
   } = usePageHeroShellRenderProps("collection");
 
   const list = collections;
