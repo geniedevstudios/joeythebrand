@@ -1,11 +1,12 @@
 .overlay {
-  position: absolute;
+  position: absolute !important;
   inset: 0;
   display: grid;
   grid-template: 1fr / 1fr;
   place-items: center;
   pointer-events: none;
   background: #000000;
+  z-index: 4 !important;
 }
 
 .logo {
