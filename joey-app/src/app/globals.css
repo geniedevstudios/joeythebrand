@@ -67,7 +67,7 @@
   --transition-slow: 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Shared hero/header sizing (Account is the reference) */
-  --page-header-height: clamp(260px, 38vh, 420px);
+  --page-header-height: clamp(260px, 38dvh, 420px);
 }
 
 /* =============================================
@@ -117,7 +117,7 @@ body {
   max-width: 100vw;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 main {
@@ -127,13 +127,15 @@ main {
 /* Per-route hero: empty src → black bg; loader only while dataStore.init() is still running (see data-page-hero-loading). */
 .page-hero-shell {
   position: relative;
-  min-height: clamp(350px, 45vh, 500px);
+  min-height: clamp(350px, 45dvh, 500px);
   background-attachment: scroll;
   transition: opacity 0.5s ease-in-out;
 }
 
-.page-hero-shell[data-page-hero-ready="true"] {
-  background-attachment: fixed !important;
+@media (hover: hover) and (pointer: fine) {
+  .page-hero-shell[data-page-hero-ready="true"] {
+    background-attachment: fixed !important;
+  }
 }
 
 /* When the hero is empty but the store is still initializing, show the brand mark behind the ring spinner.
