@@ -262,7 +262,7 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
   return (
     <div className={styles.page}>
       <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
         data-page-hero-empty={bespokeHeroEmpty ? "true" : "false"}
         data-page-hero-loading={bespokeHeroSpinner ? "true" : "false"}
         data-page-hero-ready={bespokeHeroImageReady ? "true" : "false"}
