@@ -125,7 +125,7 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
   return (
     <div className={styles.page}>
       <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
         data-page-hero-empty={contactHeroEmpty ? "true" : "false"}
         data-page-hero-loading={contactHeroSpinner ? "true" : "false"}
         data-page-hero-ready={contactHeroImageReady ? "true" : "false"}

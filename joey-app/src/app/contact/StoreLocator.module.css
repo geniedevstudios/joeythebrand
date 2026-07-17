@@ -151,10 +151,18 @@
   background: #eaeaea; /* placeholder before map loads */
 }
 
+@media (max-width: 900px) {
+  .mapContainer {
+    flex: none;
+    height: 50vh;
+    min-height: 350px;
+  }
+}
+
 /* Float a button over the map, like the screenshot */
 .mapOverlay {
   position: absolute;
-  top: 24px;
+  bottom: 24px;
   left: 24px;
   z-index: 400; /* Leaflet tiles are z-index 200/300 */
 }
