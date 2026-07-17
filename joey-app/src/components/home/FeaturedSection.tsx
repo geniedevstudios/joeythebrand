@@ -27,14 +27,14 @@ function FeaturedSectionSkeleton() {
   return (
     <section className={`section ${styles.featured}`} id="featured" aria-busy="true">
       <div className="container">
-        <div className={styles.header}>
-          <div>
-            <span className="section-label">Crafted with intention</span>
-            <h2 className={`t-heading ${styles.heading}`}>Pieces that speak first.</h2>
+        <div className={styles.headerWrapper}>
+          <span className="section-label" style={{ display: 'flex', marginBottom: 'var(--space-md)' }}>Crafted with intention</span>
+          <div className={styles.header}>
+            <h2 className={`t-heading ${styles.heading}`} style={{ marginTop: 0 }}>Pieces that speak first.</h2>
+            <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
+              Shop for more
+            </Link>
           </div>
-          <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
-            Shop for more
-          </Link>
         </div>
         <div className={styles.grid}>
           {Array.from({ length: 4 }).map((_, i) => (
@@ -649,14 +649,14 @@ export default function FeaturedSection() {
   return (
     <section className={`section ${styles.featured}`} id="featured">
       <div className="container">
-        <div className={styles.header}>
-          <div>
-            <span className="section-label">{featuredLabel}</span>
-            <h2 className={`t-heading ${styles.heading}`}>Pieces that speak first.</h2>
+        <div className={styles.headerWrapper}>
+          <span className="section-label" style={{ display: 'flex', marginBottom: 'var(--space-md)' }}>{featuredLabel}</span>
+          <div className={styles.header}>
+            <h2 className={`t-heading ${styles.heading}`} style={{ marginTop: 0 }}>Pieces that speak first.</h2>
+            <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
+              Shop for more
+            </Link>
           </div>
-          <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
-            Shop for more
-          </Link>
         </div>
 
         <div className={styles.grid}>

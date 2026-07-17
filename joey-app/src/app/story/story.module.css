@@ -255,7 +255,6 @@
 @media (max-width: 768px) {
   .manifestoGrid { grid-template-columns: 1fr; }
   .founderGrid { grid-template-columns: 1fr; }
-  .founderImageWrap { aspect-ratio: 4/3; }
   .founderImage { object-position: top; }
   .ctaInner { flex-direction: column; text-align: center; }
   .ctaBtns { flex-direction: column; width: 100%; }

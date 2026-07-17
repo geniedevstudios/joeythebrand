@@ -3,11 +3,16 @@
   padding: var(--space-2xl) 0;
 }
 
+.headerWrapper {
+  margin-bottom: var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+}
+
 .header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-2xl);
   gap: var(--space-lg);
   flex-wrap: wrap;
 }
@@ -643,8 +648,15 @@
     scroll-snap-align: start;
   }
 
-  .header { flex-direction: column; align-items: flex-start; }
-  .viewAll { width: 100%; text-align: center; }
+  .header {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .viewAll {
+    width: auto !important;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.8rem;
+  }
 
   .modalGrid {
     grid-template-columns: 1fr;
