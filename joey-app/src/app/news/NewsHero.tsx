@@ -21,7 +21,7 @@ export default function NewsHero({
   );
   return (
     <div
-      className={`${PAGE_HERO_SHELL_CLASS} ${styles.hero}`}
+      className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
       data-page-hero-empty={empty ? "true" : "false"}
       data-page-hero-loading={shellSpinner ? "true" : "false"}
       data-page-hero-ready={imageReady ? "true" : "false"}

@@ -17,7 +17,7 @@ export default function ReportIssueClient({ initialSiteContent }: { initialSiteC
   return (
     <div className={styles.page}>
       <header 
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
         data-page-hero-empty={heroEmpty ? "true" : "false"}
         data-page-hero-loading={heroSpinner ? "true" : "false"}
         data-page-hero-ready={heroImageReady ? "true" : "false"}

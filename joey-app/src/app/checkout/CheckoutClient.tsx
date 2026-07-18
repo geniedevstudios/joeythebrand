@@ -127,7 +127,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     return (
       <div className={styles.page}>
         <div
-          className={`${PAGE_HERO_SHELL_CLASS} ${styles.leftHeroShell}`}
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
           data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
           data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
           data-page-hero-ready={checkoutHeroImageReady ? "true" : "false"}
@@ -337,7 +337,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   return (
     <div className={styles.page}>
       <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.mobileHero}`}
+        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
         data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
         data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
         data-page-hero-ready={checkoutHeroImageReady ? "true" : "false"}
