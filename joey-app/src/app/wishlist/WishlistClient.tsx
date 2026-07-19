@@ -105,7 +105,7 @@ export default function WishlistClient() {
       cartStore.addItem({
         productId: quickViewPiece.id,
         name: quickViewPiece.name,
-        color: quickViewActiveVariant?.name || (quickViewActiveVariant?.id === "main-color" ? "Main Color" : undefined),
+        color: quickViewActiveVariant?.name ,
         colorHex: quickViewActiveVariant?.colorHex,
         combo: quickViewActiveCombo ? quickViewActiveCombo.name : undefined,
         size: quickViewSize || "Standard",
@@ -495,7 +495,7 @@ export default function WishlistClient() {
                               }
                             }}
                             aria-label={`Select color ${v.colorHex}`}
-                            title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                            title={v.name || "Color"}
                           />
                         ))}
                       </div>

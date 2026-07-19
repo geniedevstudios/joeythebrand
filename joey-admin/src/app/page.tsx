@@ -22,6 +22,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import RevenueModal from "@/components/RevenueModal";
+import InventoryAlertsModal, { AlertItem } from "@/components/InventoryAlertsModal";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -62,6 +63,7 @@ export default function Dashboard() {
   const [consultations, setConsultations] = useState<ConsultationBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
+  const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [profileName, setProfileName] = useState<string>("");
   const [newUserName, setNewUserName] = useState("");
@@ -236,9 +238,108 @@ export default function Dashboard() {
     );
   }
 
-  const outOfStock = products.filter((p) => p.quantity <= 0 && !p.bespokeAvailable);
-  const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < 5 && !p.bespokeAvailable);
-  const bespokeProducts = products.filter((p) => p.bespokeAvailable);
+  const granularAlerts: AlertItem[] = [];
+
+  products.forEach((p) => {
+    const isBespoke = !!p.bespokeAvailable;
+    const baseItem = {
+      productId: p.id,
+      productName: p.name,
+      productImage: p.image,
+    };
+
+    if (p.variants && p.variants.length > 0) {
+      p.variants.forEach((v) => {
+        if (v.type === "fit_combo") {
+          // In "Fits Only" mode, the "Original" button in the storefront allows purchasing the general product!
+          // So we must generate an alert for the general product here.
+          const generalIsBespoke = isBespoke;
+          const generalIsOut = !!p.isOutOfStock;
+          const generalQ = p.quantity ?? 0;
+          if (generalIsBespoke) {
+            granularAlerts.push({ ...baseItem, id: `${p.id}-base`, variantName: "Original (Base)", quantity: generalQ, status: "bespoke" });
+          } else if (generalIsOut || generalQ <= 0) {
+            granularAlerts.push({ ...baseItem, id: `${p.id}-base`, variantName: "Original (Base)", quantity: generalQ, status: "out" });
+          } else if (generalQ < 5) {
+            granularAlerts.push({ ...baseItem, id: `${p.id}-base`, variantName: "Original (Base)", quantity: generalQ, status: "low" });
+          }
+
+          if (v.combos && v.combos.length > 0) {
+            v.combos.forEach((c) => {
+              const cIsBespoke = isBespoke || !!c.bespokeAvailable;
+              const cIsOut = !!c.isOutOfStock;
+              const cQ = c.quantity ?? 0;
+              
+              if (cIsBespoke) {
+                granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-${c.id}`, variantName: v.name, comboName: c.name, quantity: cQ, status: "bespoke" });
+              } else if (cIsOut || cQ <= 0) {
+                granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-${c.id}`, variantName: v.name, comboName: c.name, quantity: cQ, status: "out" });
+              } else if (cQ < 5) {
+                granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-${c.id}`, variantName: v.name, comboName: c.name, quantity: cQ, status: "low" });
+              }
+            });
+          } else {
+            // Old system fallback: flat fit_combo
+            const vIsBespoke = isBespoke || !!v.bespokeAvailable;
+            const vIsOut = !!v.isOutOfStock;
+            const vQ = v.quantity ?? 0;
+            if (vIsBespoke) {
+              granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}`, variantName: v.name, quantity: vQ, status: "bespoke" });
+            } else if (vIsOut || vQ <= 0) {
+              granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}`, variantName: v.name, quantity: vQ, status: "out" });
+            } else if (vQ < 5) {
+              granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}`, variantName: v.name, quantity: vQ, status: "low" });
+            }
+          }
+        } else {
+          // Color variant
+          // Evaluate the base color first
+          const vIsBespoke = isBespoke || !!v.bespokeAvailable;
+          const vIsOut = !!v.isOutOfStock;
+          const vQ = v.quantity ?? 0;
+          
+          // Add alert for the base variant (color)
+          if (vIsBespoke) {
+            granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-base`, variantName: v.name, quantity: vQ, status: "bespoke" });
+          } else if (vIsOut || vQ <= 0) {
+            granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-base`, variantName: v.name, quantity: vQ, status: "out" });
+          } else if (vQ < 5) {
+            granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-base`, variantName: v.name, quantity: vQ, status: "low" });
+          }
+
+          // Evaluate the combos (if any)
+          if (v.combos && v.combos.length > 0) {
+            v.combos.forEach((c) => {
+              const cIsBespoke = isBespoke || !!c.bespokeAvailable;
+              const cIsOut = !!c.isOutOfStock;
+              const cQ = c.quantity ?? 0;
+              
+              if (cIsBespoke) {
+                granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-${c.id}`, variantName: v.name, comboName: c.name, quantity: cQ, status: "bespoke" });
+              } else if (cIsOut || cQ <= 0) {
+                granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-${c.id}`, variantName: v.name, comboName: c.name, quantity: cQ, status: "out" });
+              } else if (cQ < 5) {
+                granularAlerts.push({ ...baseItem, id: `${p.id}-${v.id}-${c.id}`, variantName: v.name, comboName: c.name, quantity: cQ, status: "low" });
+              }
+            });
+          }
+        }
+      });
+    } else {
+      const q = p.quantity ?? 0;
+      if (isBespoke) {
+        granularAlerts.push({ ...baseItem, id: p.id, quantity: q, status: "bespoke" });
+      } else if (q <= 0) {
+        granularAlerts.push({ ...baseItem, id: p.id, quantity: q, status: "out" });
+      } else if (q < 5) {
+        granularAlerts.push({ ...baseItem, id: p.id, quantity: q, status: "low" });
+      }
+    }
+  });
+
+  const outOfStock = granularAlerts.filter((a) => a.status === "out");
+  const lowStock = granularAlerts.filter((a) => a.status === "low");
+  const bespokeProducts = granularAlerts.filter((a) => a.status === "bespoke");
   const inventoryAlerts = outOfStock.length + lowStock.length + bespokeProducts.length;
 
   const recentOrders = orders.slice(0, 6);
@@ -351,7 +452,7 @@ export default function Dashboard() {
 
                 <button
                   type="button"
-                  onClick={() => router.push("/products")}
+                  onClick={() => setIsAlertsModalOpen(true)}
                   className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:bg-black/30"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
@@ -489,13 +590,14 @@ export default function Dashboard() {
                     <h3 className="text-lg font-semibold tracking-tight text-white">Inventory</h3>
                     <p className="mt-1 text-sm text-white/60">Out of stock & low stock items.</p>
                   </div>
-                  <Link
-                    href="/products"
+                  <button
+                    type="button"
+                    onClick={() => setIsAlertsModalOpen(true)}
                     className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10"
                   >
                     Manage
                     <ExternalLink className="h-4 w-4 text-white/70" />
-                  </Link>
+                  </button>
                 </div>
 
                 <div className="mt-4 space-y-3">
@@ -511,12 +613,15 @@ export default function Dashboard() {
                           className="flex items-center justify-between rounded-2xl border border-red-500/15 bg-red-500/10 p-4"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                            <p className="truncate text-sm font-semibold text-white">
+                              {p.productName}
+                              {(p.variantName || p.comboName) && <span className="text-white/60 font-normal ml-1">({[p.variantName, p.comboName].filter(Boolean).join(" - ")})</span>}
+                            </p>
                             <p className="text-xs font-semibold text-red-200/90">Out of stock</p>
                           </div>
                           <button
                             type="button"
-                            onClick={() => router.push(`/products?edit=${p.id}`)}
+                            onClick={() => router.push(`/products?edit=${p.productId}`)}
                             className="text-xs font-semibold text-red-100/90 hover:underline"
                           >
                             Restock
@@ -530,14 +635,17 @@ export default function Dashboard() {
                           className="flex items-center justify-between rounded-2xl border border-amber-500/15 bg-amber-500/10 p-4"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                            <p className="truncate text-sm font-semibold text-white">
+                              {p.productName}
+                              {(p.variantName || p.comboName) && <span className="text-white/60 font-normal ml-1">({[p.variantName, p.comboName].filter(Boolean).join(" - ")})</span>}
+                            </p>
                             <p className="text-xs font-semibold text-amber-100/90">
                               Low stock ({p.quantity} left)
                             </p>
                           </div>
                           <button
                             type="button"
-                            onClick={() => router.push(`/products?edit=${p.id}`)}
+                            onClick={() => router.push(`/products?edit=${p.productId}`)}
                             className="text-xs font-semibold text-amber-100/90 hover:underline"
                           >
                             Edit
@@ -551,14 +659,17 @@ export default function Dashboard() {
                           className="flex items-center justify-between rounded-2xl border border-purple-500/15 bg-purple-500/10 p-4"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                            <p className="truncate text-sm font-semibold text-white">
+                              {p.productName}
+                              {(p.variantName || p.comboName) && <span className="text-white/60 font-normal ml-1">({[p.variantName, p.comboName].filter(Boolean).join(" - ")})</span>}
+                            </p>
                             <p className="text-xs font-semibold text-purple-200/90">
                               Bespoke option available
                             </p>
                           </div>
                           <button
                             type="button"
-                            onClick={() => router.push(`/products?edit=${p.id}`)}
+                            onClick={() => router.push(`/products?edit=${p.productId}`)}
                             className="text-xs font-semibold text-purple-100/90 hover:underline"
                           >
                             Edit
@@ -605,6 +716,12 @@ export default function Dashboard() {
         onClose={() => setIsRevenueModalOpen(false)}
         orders={orders}
         consultations={consultations}
+      />
+
+      <InventoryAlertsModal 
+        isOpen={isAlertsModalOpen}
+        onClose={() => setIsAlertsModalOpen(false)}
+        alerts={granularAlerts}
       />
 
       {createUserOpen ? (

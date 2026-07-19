@@ -228,7 +228,7 @@ export default function FeaturedSection() {
         cartStore.addItem({
           productId: quickViewPiece.id,
           name: quickViewPiece.name,
-          color: quickViewActiveVariant?.name || (quickViewActiveVariant?.id === "main-color" ? "Main Color" : undefined),
+          color: quickViewActiveVariant?.name ,
           colorHex: quickViewActiveVariant?.colorHex,
           combo: quickViewActiveCombo ? quickViewActiveCombo.name : undefined,
           size: selectedSize || "Standard",
@@ -411,7 +411,7 @@ export default function FeaturedSection() {
                               }
                             }}
                             aria-label={`Select color ${v.colorHex}`}
-                            title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                            title={v.name || "Color"}
                           />
                         ))}
                         </div>

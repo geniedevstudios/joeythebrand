@@ -354,7 +354,7 @@ export default function ProductClient({ slug }: { slug: string }) {
         cartStore.addItem({
           productId: product.id,
           name: product.name,
-          color: activeColorVariant?.name || (activeColorVariant?.id === "main-color" ? "Main Color" : undefined),
+          color: activeColorVariant?.name ,
           colorHex: activeColorVariant?.colorHex,
           combo: activeCombo ? activeCombo.name : undefined,
           size: selectedSize || "Standard",
@@ -506,7 +506,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                         }
                       }}
                       aria-label={`Select color ${v.colorHex}`}
-                      title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                      title={v.name || "Color"}
                     />
                   ))}
                 </div>
@@ -930,7 +930,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                             }
                           }}
                           aria-label={`Select color ${v.id}`}
-                          title={v.id === "main-color" ? "Main Color" : "Additional Color"}
+                          title={v.name || "Color"}
                         />
                       ))}
                     </div>
@@ -1119,7 +1119,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                             cartStore.addItem({
                               productId: quickViewItem.id,
                               name: quickViewItem.name,
-                              color: quickViewActiveColorVariant?.name || (quickViewActiveColorVariant?.id === "main-color" ? "Main Color" : undefined),
+                              color: quickViewActiveColorVariant?.name ,
                               colorHex: quickViewActiveColorVariant?.colorHex,
                               combo: quickViewActiveCombo ? quickViewActiveCombo.name : undefined,
                               size: quickViewSize || "Standard",
