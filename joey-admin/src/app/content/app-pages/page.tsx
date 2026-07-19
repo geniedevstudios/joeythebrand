@@ -5,8 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { PAGE_HERO_KEYS, PAGE_HERO_LABELS } from "@/lib/pageHeroes";
 
 const cards = [
-  { id: "homeHero", label: "Home — hero background", href: "/content/app-pages/home-hero" },
-  { id: "homeFounder", label: "Home — founder section", href: "/content/app-pages/home-founder" },
+  { id: "home", label: "Home Page", href: "/content/app-pages/home" },
   { id: "events", label: "Events page", href: "/content/app-pages/events" },
   { id: "newsBlog", label: "News & Blog", href: "/content/app-pages/news-blog" },
 ];

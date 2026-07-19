@@ -21,6 +21,15 @@ export default function HomeHeroPage() {
   const [homeMobilePosterUrl, setHomeMobilePosterUrl] = useState("");
   const [fit, setFit] = useState<"cover" | "contain">("cover");
   const [anchor, setAnchor] = useState<"top" | "center" | "bottom">("top");
+
+  // Founder Section fields
+  const [founderVideoUrl, setFounderVideoUrl] = useState("");
+  const [founderPosterUrl, setFounderPosterUrl] = useState("");
+  const [founderKicker, setFounderKicker] = useState("");
+  const [founderHeadline, setFounderHeadline] = useState("");
+  const [founderCtaLabel, setFounderCtaLabel] = useState("");
+  const [founderCtaHref, setFounderCtaHref] = useState("");
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,6 +47,14 @@ export default function HomeHeroPage() {
       setHomeMobilePosterUrl(h.kind === "video" ? (h.mobilePosterUrl ?? "") : "");
       setFit((h.fit ?? "cover") as any);
       setAnchor((h.anchor ?? "top") as any);
+
+      // Founder Section
+      setFounderVideoUrl(data.founderVideoUrl);
+      setFounderPosterUrl(data.founderVideoPosterUrl);
+      setFounderKicker(data.founderKicker);
+      setFounderHeadline(data.founderHeadline);
+      setFounderCtaLabel(data.founderCtaLabel);
+      setFounderCtaHref(data.founderCtaHref);
     } finally {
       setIsLoading(false);
     }
@@ -84,9 +101,15 @@ export default function HomeHeroPage() {
       await dataStore.updateSiteContent({
         heroImage: heroImageOut,
         pageHeroes: nextHeroes,
+        founderVideoUrl: founderVideoUrl.trim(),
+        founderVideoPosterUrl: founderPosterUrl.trim(),
+        founderKicker: founderKicker.trim(),
+        founderHeadline: founderHeadline.trim(),
+        founderCtaLabel: founderCtaLabel.trim(),
+        founderCtaHref: founderCtaHref.trim() || "/story",
       });
 
-      toast.success("Home hero saved.");
+      toast.success("Home page saved.");
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save.");
@@ -116,7 +139,7 @@ export default function HomeHeroPage() {
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to App pages
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Home — hero background</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Home page</h1>
       </div>
 
       <form onSubmit={save} className="space-y-8">
@@ -234,6 +257,77 @@ export default function HomeHeroPage() {
               onFit={(f) => setFit(f)}
               onAnchor={(a) => setAnchor(a)}
             />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-visible">
+          <div className="border-b border-zinc-200 px-6 py-5 bg-white">
+            <h3 className="text-base font-semibold leading-6 text-zinc-900">Founder section</h3>
+          </div>
+          <div className="p-6 space-y-8">
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-zinc-900">Background Media</h4>
+              <AssetUrlField
+                label="Video URL"
+                value={founderVideoUrl}
+                onChange={setFounderVideoUrl}
+                uploadFolder="site/founder"
+                accept="video/*"
+                placeholder="https://… or /path/to/video.mp4"
+              />
+              <AssetUrlField
+                label="Poster image URL (optional)"
+                value={founderPosterUrl}
+                onChange={setFounderPosterUrl}
+                uploadFolder="site/founder-poster"
+                accept="image/*"
+                placeholder="Still background if no video; otherwise shown until video plays"
+              />
+            </div>
+
+            <hr className="border-zinc-200" />
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-zinc-900">Founder section texts and buttons</h4>
+              <label className="block">
+                <span className="text-sm font-medium text-zinc-900">Kicker (small caps line)</span>
+                <input
+                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
+                  value={founderKicker}
+                  onChange={(e) => setFounderKicker(e.target.value)}
+                  placeholder="BEHIND THE PATTERN"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-zinc-900">Headline</span>
+                <textarea
+                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 min-h-[5rem]"
+                  value={founderHeadline}
+                  onChange={(e) => setFounderHeadline(e.target.value)}
+                  placeholder="An intimate look at the craft…"
+                />
+              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-medium text-zinc-900">Button label</span>
+                  <input
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
+                    value={founderCtaLabel}
+                    onChange={(e) => setFounderCtaLabel(e.target.value)}
+                    placeholder="DISCOVER THE STORY"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-zinc-900">Button link</span>
+                  <input
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
+                    value={founderCtaHref}
+                    onChange={(e) => setFounderCtaHref(e.target.value)}
+                    placeholder="/story"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
