@@ -166,14 +166,14 @@ export default function ProductWizard({
             const existingFitParent = existingVars.find(v => v.type === "fit_combo" && v.combos);
             if (existingFitParent) {
                existingFitParent.combos = [...(existingFitParent.combos || []), ...oldFitVariants.map((v, i) => ({
-                 id: `migrated-${v.id}-${i}`, name: v.name, price: v.price, thumbnailUrl: v.thumbnailUrl, images: v.images, nameFormat: v.nameFormat
+                 id: `migrated-${v.id}-${i}`, name: v.name || "", price: v.price, thumbnailUrl: v.thumbnailUrl, images: v.images, nameFormat: v.nameFormat
                }))];
             } else {
                existingVars.push({
                  id: "fit-combo",
                  type: "fit_combo",
                  combos: oldFitVariants.map((v, i) => ({
-                    id: `migrated-${v.id}-${i}`, name: v.name, price: v.price, thumbnailUrl: v.thumbnailUrl, images: v.images, nameFormat: v.nameFormat
+                    id: `migrated-${v.id}-${i}`, name: v.name || "", price: v.price, thumbnailUrl: v.thumbnailUrl, images: v.images, nameFormat: v.nameFormat
                  }))
                });
             }
