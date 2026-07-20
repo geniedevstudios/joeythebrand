@@ -142,8 +142,8 @@ export default function ProductWizard({
         setWeightKg(editingProduct.weightKg ?? 0.5);
         setHsCode(editingProduct.hsCode || "");
 
-        let existingVars = (editingProduct.variants || []).map(v => 
-          !v.type ? { ...v, type: "color" } : v
+        let existingVars: ProductVariant[] = (editingProduct.variants || []).map(v => 
+          (!v.type ? { ...v, type: "color" as const } : v) as ProductVariant
         );
 
         // Clean up stale main-color from buggy saves (where both fit-combo and an empty main-color were saved)
@@ -155,7 +155,7 @@ export default function ProductWizard({
 
         const hasColor = existingVars.some(v => v.type === "color");
         if (hasColor && !existingVars.some(v => v.id === "main-color")) {
-           existingVars = [{ id: "main-color", type: "color", name: editingProduct.name || "", images: [], combos: [] }, ...existingVars];
+           existingVars = [{ id: "main-color", type: "color", name: editingProduct.name || "", images: [], combos: [] } as ProductVariant, ...existingVars];
         }
 
         // Migrate older flat fit_combo variants into the new nested fit-combo structure
@@ -166,16 +166,16 @@ export default function ProductWizard({
             const existingFitParent = existingVars.find(v => v.type === "fit_combo" && v.combos);
             if (existingFitParent) {
                existingFitParent.combos = [...(existingFitParent.combos || []), ...oldFitVariants.map((v, i) => ({
-                 id: `migrated-${v.id}-${i}`, name: v.name || "", price: v.price, thumbnailUrl: v.thumbnailUrl, images: v.images, nameFormat: v.nameFormat
+                 id: `migrated-${v.id}-${i}`, name: v.name || "", price: v.price || 0, thumbnailUrl: v.thumbnailUrl || "", images: v.images || [], nameFormat: v.nameFormat
                }))];
             } else {
                existingVars.push({
                  id: "fit-combo",
                  type: "fit_combo",
                  combos: oldFitVariants.map((v, i) => ({
-                    id: `migrated-${v.id}-${i}`, name: v.name || "", price: v.price, thumbnailUrl: v.thumbnailUrl, images: v.images, nameFormat: v.nameFormat
+                    id: `migrated-${v.id}-${i}`, name: v.name || "", price: v.price || 0, thumbnailUrl: v.thumbnailUrl || "", images: v.images || [], nameFormat: v.nameFormat
                  }))
-               });
+               } as ProductVariant);
             }
         }
 
