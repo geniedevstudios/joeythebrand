@@ -1,3 +1,6 @@
+import { supabase } from "@/lib/supabase";
+import { authStore } from "./authStore";
+
 export type CartItem = {
   id: string;
   productId: string;
@@ -58,6 +61,17 @@ const loadAppliedPromo = (): AppliedPromotion | null => {
 const saveCart = (c: CartItem[]) => {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
+  
+  const user = authStore.getUser();
+  if (user) {
+    supabase.from("carts").upsert({
+      user_id: user.id,
+      items: c,
+      updated_at: new Date().toISOString()
+    }).then(({ error }) => {
+      if (error) console.error("Failed to sync cart to db:", error.message);
+    });
+  }
 };
 
 const saveAppliedPromo = (p: AppliedPromotion | null) => {
@@ -73,6 +87,45 @@ let cart: CartItem[] = typeof window !== "undefined" ? loadCart() : [];
 let appliedPromo: AppliedPromotion | null = typeof window !== "undefined" ? loadAppliedPromo() : null;
 let isOpen = false;
 let subscribers: (() => void)[] = [];
+
+if (typeof window !== "undefined") {
+  let lastUserId: string | null = null;
+  authStore.subscribe(() => {
+    const user = authStore.getUser();
+    if (user?.id !== lastUserId) {
+      if (user) {
+        // Logged in - fetch and merge
+        supabase.from("carts").select("items").eq("user_id", user.id).maybeSingle().then(({ data, error }) => {
+          if (!error) {
+            const dbCart: CartItem[] = data?.items || [];
+            const localCart = loadCart();
+            
+            let merged = [...dbCart];
+            for (const localItem of localCart) {
+              const existing = merged.find(i => i.id === localItem.id);
+              if (existing) {
+                existing.quantity = Math.min(existing.maxStock ?? 999, existing.quantity + localItem.quantity);
+              } else {
+                merged.push(localItem);
+              }
+            }
+            cart = merged;
+            saveCart(cart); // push merged back to DB and local
+            cartStore.notify();
+          }
+        });
+      } else if (lastUserId !== null) {
+        // Logged out
+        cart = [];
+        appliedPromo = null;
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(PROMO_KEY);
+        cartStore.notify();
+      }
+      lastUserId = user?.id || null;
+    }
+  });
+}
 
 export const cartStore = {
   getCart: () => cart,

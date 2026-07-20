@@ -84,7 +84,8 @@ export default function AssetUrlField({
       </label>
       <div className="mt-1 flex flex-col gap-3">
         {hideUrlField && isImage ? (
-          <div className="relative w-full max-w-[160px]">
+          <div className="flex flex-col gap-2 w-full max-w-[160px]">
+            <div className="relative w-full">
             <div
               role="button"
               tabIndex={0}
@@ -136,9 +137,18 @@ export default function AssetUrlField({
                 ×
               </button>
             ) : null}
+            </div>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="block w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-600 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
+              placeholder="Or paste external URL (e.g. Cloudinary)"
+            />
           </div>
         ) : hideUrlField && isVideo ? (
-          <div className="relative w-full max-w-[280px]">
+          <div className="flex flex-col gap-2 w-full max-w-[280px]">
+            <div className="relative w-full">
             <div
               role="button"
               tabIndex={0}
@@ -193,6 +203,14 @@ export default function AssetUrlField({
                 ×
               </button>
             ) : null}
+            </div>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="block w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-600 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
+              placeholder="Or paste external URL (e.g. Cloudinary)"
+            />
           </div>
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
