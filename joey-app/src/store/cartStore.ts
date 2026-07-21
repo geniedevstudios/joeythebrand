@@ -68,7 +68,7 @@ const saveCart = (c: CartItem[]) => {
       user_id: user.id,
       items: c,
       updated_at: new Date().toISOString()
-    }).then(({ error }) => {
+    }, { onConflict: 'user_id' }).then(({ error }) => {
       if (error) console.error("Failed to sync cart to db:", error.message);
     });
   }
