@@ -170,7 +170,7 @@ export default function ProductClient({ slug }: { slug: string }) {
 
   const colorVariants = useMemo(() => {
     if (!product || !product.variants) return [];
-    return product.variants.filter((v: any) => v.type === "color" && v.colorHex);
+    return product.variants.filter((v: any) => v.type === "color");
   }, [product]);
 
   const activeColorVariant = useMemo(() => {
@@ -246,7 +246,7 @@ export default function ProductClient({ slug }: { slug: string }) {
 
   const quickViewColorVariants = useMemo(() => {
     if (!quickViewItem || !quickViewItem.variants) return [];
-    return quickViewItem.variants.filter((v: any) => v.type === "color" && v.colorHex);
+    return quickViewItem.variants.filter((v: any) => v.type === "color");
   }, [quickViewItem]);
 
   const quickViewActiveColorVariant = useMemo(() => {
@@ -353,8 +353,8 @@ export default function ProductClient({ slug }: { slug: string }) {
       import("@/store/cartStore").then(({ cartStore }) => {
         cartStore.addItem({
           productId: product.id,
-          name: product.name,
-          color: activeColorVariant?.name ,
+          name: activeCombo?.productNameOverride ? activeCombo.productNameOverride : (activeColorVariant?.id !== "main-color" && activeColorVariant?.productNameOverride ? activeColorVariant.productNameOverride : product.name),
+          color: activeColorVariant?.id !== "main-color" ? activeColorVariant?.name : undefined,
           colorHex: activeColorVariant?.colorHex,
           combo: activeCombo ? activeCombo.name : undefined,
           size: selectedSize || "Standard",
@@ -636,7 +636,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                 return colName ? <span className={styles.categoryLabel}>{colName}</span> : null;
               })()}
               <h1 className={`t-display ${styles.productName}`}>
-                {product.name} {activeCombo ? (activeCombo.nameFormat === "brackets" ? `(${activeCombo.name})` : `+ ${activeCombo.name}`) : ""}
+                {activeCombo?.productNameOverride ? activeCombo.productNameOverride : (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.productNameOverride ? activeColorVariant.productNameOverride : product.name)}
               </h1>
               
               <div className={styles.priceRow}>
@@ -997,9 +997,9 @@ export default function ProductClient({ slug }: { slug: string }) {
             </div>
 
             <div className={styles.modalInfo}>
-              <h2 className={`t-display ${styles.modalTitle}`}>
-                {quickViewItem.name} {quickViewActiveCombo ? (quickViewActiveCombo.nameFormat === "brackets" ? `(${quickViewActiveCombo.name})` : `+ ${quickViewActiveCombo.name}`) : ""}
-              </h2>
+              <h3 className={styles.modalTitle}>
+                {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveColorVariant && quickViewActiveColorVariant.id !== "main-color" && quickViewActiveColorVariant.productNameOverride ? quickViewActiveColorVariant.productNameOverride : quickViewItem.name)}
+              </h3>
               <div className={styles.modalPriceRow}>
                 <span className={styles.modalPrice}>
                   {formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price)}

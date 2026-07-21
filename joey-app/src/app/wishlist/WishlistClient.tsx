@@ -152,7 +152,7 @@ export default function WishlistClient() {
 
   const quickViewColorVariants = useMemo(() => {
     if (!quickViewPiece || !quickViewPiece.variants) return [];
-    return quickViewPiece.variants.filter((v: any) => v.type === "color" && v.colorHex);
+    return quickViewPiece.variants.filter((v: any) => v.type === "color");
   }, [quickViewPiece]);
 
   const quickViewActiveVariant = useMemo(() => {
@@ -225,7 +225,7 @@ export default function WishlistClient() {
             <div className={styles.grid}>
               {items.map((item) => {
               const fullProduct = products.find(p => p.id === item.id) || (item as unknown as Product);
-              const colorVariants = ((fullProduct as any)?.variants || []).filter((v: any) => v.type === "color" && v.colorHex);
+              const colorVariants = ((fullProduct as any)?.variants || []).filter((v: any) => v.type === "color");
               const hasColors = colorVariants.length > 0;
               const swatchesToShow = colorVariants.slice(0, 3);
               const totalColors = colorVariants.length;
@@ -563,7 +563,7 @@ export default function WishlistClient() {
 
               <div className={shopStyles.modalInfo}>
                 <h2 id="modal-title" className={`t-display ${shopStyles.modalTitle}`}>
-                  {quickViewPiece.name} {quickViewActiveCombo ? (quickViewActiveCombo.nameFormat === "brackets" ? `(${quickViewActiveCombo.name})` : `+ ${quickViewActiveCombo.name}`) : ""}
+                  {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
                 </h2>
                 <div className={shopStyles.modalPriceRow}>
                   <span className={shopStyles.modalPrice}>{formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}</span>

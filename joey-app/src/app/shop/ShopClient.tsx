@@ -269,7 +269,7 @@ export default function ShopClient() {
 
   const quickViewColorVariants = useMemo(() => {
     if (!quickViewPiece || !quickViewPiece.variants) return [];
-    return quickViewPiece.variants.filter((v: any) => v.type === "color" && v.colorHex);
+    return quickViewPiece.variants.filter((v: any) => v.type === "color");
   }, [quickViewPiece]);
 
   const quickViewActiveVariant = useMemo(() => {
@@ -476,7 +476,7 @@ export default function ShopClient() {
           ) : (
             <div className={styles.grid}>
               {filtered.map((p: any) => {
-                const colorVariants = (p.variants || []).filter((v: any) => v.type === "color" && v.colorHex);
+                const colorVariants = (p.variants || []).filter((v: any) => v.type === "color");
                 const hasColors = colorVariants.length > 0;
                 const swatchesToShow = colorVariants.slice(0, 3);
                 const totalColors = colorVariants.length;
@@ -812,7 +812,7 @@ export default function ShopClient() {
 
               <div className={styles.modalInfo}>
                 <h2 id="modal-title" className={`t-display ${styles.modalTitle}`}>
-                  {quickViewPiece.name} {quickViewActiveCombo ? (quickViewActiveCombo.nameFormat === "brackets" ? `(${quickViewActiveCombo.name})` : `+ ${quickViewActiveCombo.name}`) : ""}
+                  {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
                 </h2>
                 <div className={styles.modalPriceRow}>
                   <span className={styles.modalPrice}>

@@ -736,25 +736,36 @@ export default function ProductWizard({
                     <h4 className="font-bold">{idx === 0 ? "Main Product Color (Option 1)" : `Color Option ${idx + 1}`}</h4>
                     <button type="button" onClick={() => setVariants(variants.filter(val => val.id !== v.id))} className="text-red-500 hover:text-red-700 p-1" disabled={idx === 0}><Trash2 className={`h-4 w-4 ${idx === 0 ? 'opacity-30' : ''}`} /></button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-zinc-700">Color Name</label>
-                      <input type="text" value={v.name || ""} onChange={e => {
-                        const next = [...variants];
-                        const idx = next.findIndex(val => val.id === v.id);
-                        next[idx].name = e.target.value;
-                        setVariants(next);
-                      }} placeholder="e.g. Classic Black" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                  <div className="flex flex-col gap-4 mb-4">
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-zinc-700">Color Name</label>
+                        <input type="text" value={v.name || ""} onChange={e => {
+                          const next = [...variants];
+                          const idx = next.findIndex(val => val.id === v.id);
+                          next[idx].name = e.target.value;
+                          setVariants(next);
+                        }} placeholder="e.g. Classic Black" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-zinc-700">Product Name Override (Optional)</label>
+                        <input type="text" value={v.productNameOverride || ""} onChange={e => {
+                          const next = [...variants];
+                          const idx = next.findIndex(val => val.id === v.id);
+                          next[idx].productNameOverride = e.target.value;
+                          setVariants(next);
+                        }} placeholder="e.g. The Black Dress" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                      </div>
                     </div>
                     <div className="flex gap-4">
-                      <div>
+                      <div className="flex-1">
                         <label className="block text-sm font-medium text-zinc-700">Quantity (Base Item)</label>
                         <input type="number" value={v.quantity ?? ""} onChange={e => {
                           const next = [...variants];
                           const idx = next.findIndex(val => val.id === v.id);
                           next[idx].quantity = Number(e.target.value);
                           setVariants(next);
-                        }} placeholder="0" className="mt-1 block w-32 rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                        }} placeholder="0" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
                       </div>
                       <div className="flex-1">
                         <label className="block text-sm font-medium text-zinc-700">Stock Status (Base Item)</label>
@@ -816,64 +827,59 @@ export default function ProductWizard({
                         <div className="space-y-4">
                           {(v.combos || []).map((combo, cIdx) => (
                             <div key={combo.id} className="bg-white border border-zinc-200 rounded-lg p-4 flex flex-col gap-4">
-                               <div className="flex gap-4 items-start">
-                                 <div className="flex-1">
-                                   <label className="block text-xs font-medium text-zinc-700">Fit Name</label>
-                                   <input type="text" value={combo.name} onChange={e => {
-                                      const next = [...variants];
-                                      const vIdx = next.findIndex(val => val.id === v.id);
-                                      const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                                      next[vIdx].combos![cIdx2].name = e.target.value;
-                                      setVariants(next);
-                                   }} placeholder="e.g. Tall" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                               <div className="flex flex-col gap-4">
+                                 <div className="flex gap-4 items-start">
+                                   <div className="flex-1">
+                                     <label className="block text-xs font-medium text-zinc-700">Fit Name Override (Optional)</label>
+                                     <input type="text" value={combo.productNameOverride || ""} onChange={e => {
+                                        const next = [...variants];
+                                        const vIdx = next.findIndex(val => val.id === v.id);
+                                        const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                        next[vIdx].combos![cIdx2].productNameOverride = e.target.value;
+                                        next[vIdx].combos![cIdx2].name = e.target.value;
+                                        setVariants(next);
+                                     }} placeholder="e.g. finesse 2.0 (blazer)" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                                   </div>
                                  </div>
-                                 <div className="w-32">
-                                   <label className="block text-xs font-medium text-zinc-700">Display Format</label>
-                                   <AdminStyledSelect name={`format-mat-${combo.id}`} defaultValue={combo.nameFormat || "plus"} onValueChange={(val) => {
-                                      const next = [...variants];
-                                      const vIdx = next.findIndex(val => val.id === v.id);
-                                      const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                                      next[vIdx].combos![cIdx2].nameFormat = val as "plus" | "brackets";
-                                      setVariants(next);
-                                   }} options={[{ value: "plus", label: "+ Combo" }, { value: "brackets", label: "(Combo)" }]} wrapperClassName="mt-1" />
+                                 <div className="flex gap-4 items-start">
+                                   <div className="flex-1">
+                                     <label className="block text-xs font-medium text-zinc-700">Price Add</label>
+                                     <input type="number" value={combo.price} onChange={e => {
+                                        const next = [...variants];
+                                        const vIdx = next.findIndex(val => val.id === v.id);
+                                        const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                        next[vIdx].combos![cIdx2].price = Number(e.target.value);
+                                        setVariants(next);
+                                     }} placeholder="0.00" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                                   </div>
+                                   <div className="flex-1">
+                                     <label className="block text-xs font-medium text-zinc-700">Qty</label>
+                                     <input type="number" value={combo.quantity ?? 0} onChange={e => {
+                                        const next = [...variants];
+                                        const vIdx = next.findIndex(val => val.id === v.id);
+                                        const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                        next[vIdx].combos![cIdx2].quantity = Number(e.target.value);
+                                        setVariants(next);
+                                     }} className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                                   </div>
+                                   <div className="flex-1">
+                                     <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
+                                     <AdminStyledSelect name={`stock-mat-${combo.id}`} defaultValue={combo.bespokeAvailable ? "bespoke" : combo.isOutOfStock ? "out" : "in"} onValueChange={(val) => {
+                                        const next = [...variants];
+                                        const vIdx = next.findIndex(val => val.id === v.id);
+                                        const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                        next[vIdx].combos![cIdx2].bespokeAvailable = val === "bespoke";
+                                        next[vIdx].combos![cIdx2].isOutOfStock = val === "out";
+                                        setVariants(next);
+                                     }} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }, { value: "bespoke", label: "Bespoke" }]} wrapperClassName="mt-1" />
+                                   </div>
+                                   <button type="button" onClick={() => {
+                                     const next = [...variants];
+                                     const vIdx = next.findIndex(val => val.id === v.id);
+                                     next[vIdx].combos = next[vIdx].combos!.filter(c => c.id !== combo.id);
+                                     setVariants(next);
+                                   }} className="pt-6 text-zinc-400 hover:text-red-500"><Trash2 className="h-5 w-5"/></button>
                                  </div>
-                                 <div className="w-32">
-                                   <label className="block text-xs font-medium text-zinc-700">Price Add</label>
-                                   <input type="number" value={combo.price} onChange={e => {
-                                      const next = [...variants];
-                                      const vIdx = next.findIndex(val => val.id === v.id);
-                                      const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                                      next[vIdx].combos![cIdx2].price = Number(e.target.value);
-                                      setVariants(next);
-                                   }} placeholder="0.00" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                                 </div>
-                                 <div className="w-24">
-                                   <label className="block text-xs font-medium text-zinc-700">Qty</label>
-                                   <input type="number" value={combo.quantity ?? 0} onChange={e => {
-                                      const next = [...variants];
-                                      const vIdx = next.findIndex(val => val.id === v.id);
-                                      const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                                      next[vIdx].combos![cIdx2].quantity = Number(e.target.value);
-                                      setVariants(next);
-                                   }} className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                                 </div>
-                                 <div className="w-32">
-                                   <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
-                                   <AdminStyledSelect name={`stock-mat-${combo.id}`} defaultValue={combo.bespokeAvailable ? "bespoke" : combo.isOutOfStock ? "out" : "in"} onValueChange={(val) => {
-                                      const next = [...variants];
-                                      const vIdx = next.findIndex(val => val.id === v.id);
-                                      const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                                      next[vIdx].combos![cIdx2].bespokeAvailable = val === "bespoke";
-                                      next[vIdx].combos![cIdx2].isOutOfStock = val === "out";
-                                      setVariants(next);
-                                   }} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }, { value: "bespoke", label: "Bespoke" }]} wrapperClassName="mt-1" />
-                                 </div>
-                                 <button type="button" onClick={() => {
-                                   const next = [...variants];
-                                   const vIdx = next.findIndex(val => val.id === v.id);
-                                   next[vIdx].combos = next[vIdx].combos!.filter(c => c.id !== combo.id);
-                                   setVariants(next);
-                                 }} className="pt-6 text-zinc-400 hover:text-red-500"><Trash2 className="h-5 w-5"/></button>
                                </div>
                                
                                <div className="pt-2 border-t border-zinc-100">
@@ -927,64 +933,59 @@ export default function ProductWizard({
                  <div className="space-y-4">
                    {(variants.find(v => v.id === "fit-combo")?.combos || []).map(combo => (
                      <div key={combo.id} className="bg-white border border-zinc-200 rounded-lg p-4 flex flex-col gap-4">
-                        <div className="flex gap-4 items-start">
-                          <div className="flex-1">
-                            <label className="block text-xs font-medium text-zinc-700">Fit Name</label>
-                            <input type="text" value={combo.name} onChange={e => {
+                        <div className="flex flex-col gap-4">
+                           <div className="flex gap-4 items-start">
+                             <div className="flex-1">
+                               <label className="block text-xs font-medium text-zinc-700">Fit Name Override (Optional)</label>
+                               <input type="text" value={combo.productNameOverride || ""} onChange={e => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(val => val.id === "fit-combo");
+                                  const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                  next[vIdx].combos![cIdx].productNameOverride = e.target.value;
+                                  next[vIdx].combos![cIdx].name = e.target.value;
+                                  setVariants(next);
+                               }} placeholder="e.g. finesse 2.0 (blazer)" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                             </div>
+                           </div>
+                           <div className="flex gap-4 items-start">
+                             <div className="flex-1">
+                               <label className="block text-xs font-medium text-zinc-700">Price Override (GHC)</label>
+                               <input type="number" value={combo.price} onChange={e => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(val => val.id === "fit-combo");
+                                  const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                  next[vIdx].combos![cIdx].price = Number(e.target.value);
+                                  setVariants(next);
+                               }} placeholder="0.00" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                             </div>
+                             <div className="flex-1">
+                               <label className="block text-xs font-medium text-zinc-700">Qty</label>
+                               <input type="number" value={combo.quantity ?? 0} onChange={e => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(val => val.id === "fit-combo");
+                                  const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                  next[vIdx].combos![cIdx].quantity = Number(e.target.value);
+                                  setVariants(next);
+                               }} className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
+                             </div>
+                             <div className="flex-1">
+                               <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
+                               <AdminStyledSelect name={`stock-fit-${combo.id}`} defaultValue={combo.bespokeAvailable ? "bespoke" : combo.isOutOfStock ? "out" : "in"} onValueChange={(val) => {
+                                  const next = [...variants];
+                                  const vIdx = next.findIndex(val => val.id === "fit-combo");
+                                  const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
+                                  next[vIdx].combos![cIdx].bespokeAvailable = val === "bespoke";
+                                  next[vIdx].combos![cIdx].isOutOfStock = val === "out";
+                                  setVariants(next);
+                               }} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }, { value: "bespoke", label: "Bespoke" }]} wrapperClassName="mt-1" />
+                             </div>
+                             <button type="button" onClick={() => {
                                const next = [...variants];
                                const vIdx = next.findIndex(val => val.id === "fit-combo");
-                               const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                               next[vIdx].combos![cIdx].name = e.target.value;
+                               next[vIdx].combos = next[vIdx].combos!.filter(c => c.id !== combo.id);
                                setVariants(next);
-                            }} placeholder="e.g. Tall" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                          </div>
-                          <div className="w-32">
-                            <label className="block text-xs font-medium text-zinc-700">Display Format</label>
-                            <AdminStyledSelect name={`format-${combo.id}`} defaultValue={combo.nameFormat || "plus"} onValueChange={(val) => {
-                               const next = [...variants];
-                               const vIdx = next.findIndex(val => val.id === "fit-combo");
-                               const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                               next[vIdx].combos![cIdx].nameFormat = val as "plus" | "brackets";
-                               setVariants(next);
-                            }} options={[{ value: "plus", label: "+ Combo" }, { value: "brackets", label: "(Combo)" }]} wrapperClassName="mt-1" />
-                          </div>
-                          <div className="w-32">
-                            <label className="block text-xs font-medium text-zinc-700">Price Override (GHC)</label>
-                            <input type="number" value={combo.price} onChange={e => {
-                               const next = [...variants];
-                               const vIdx = next.findIndex(val => val.id === "fit-combo");
-                               const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                               next[vIdx].combos![cIdx].price = Number(e.target.value);
-                               setVariants(next);
-                            }} placeholder="0.00" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                          </div>
-                          <div className="w-24">
-                            <label className="block text-xs font-medium text-zinc-700">Qty</label>
-                            <input type="number" value={combo.quantity ?? 0} onChange={e => {
-                               const next = [...variants];
-                               const vIdx = next.findIndex(val => val.id === "fit-combo");
-                               const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                               next[vIdx].combos![cIdx].quantity = Number(e.target.value);
-                               setVariants(next);
-                            }} className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                          </div>
-                          <div className="w-32">
-                            <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
-                            <AdminStyledSelect name={`stock-fit-${combo.id}`} defaultValue={combo.bespokeAvailable ? "bespoke" : combo.isOutOfStock ? "out" : "in"} onValueChange={(val) => {
-                               const next = [...variants];
-                               const vIdx = next.findIndex(val => val.id === "fit-combo");
-                               const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                               next[vIdx].combos![cIdx].bespokeAvailable = val === "bespoke";
-                               next[vIdx].combos![cIdx].isOutOfStock = val === "out";
-                               setVariants(next);
-                            }} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }, { value: "bespoke", label: "Bespoke" }]} wrapperClassName="mt-1" />
-                          </div>
-                          <button type="button" onClick={() => {
-                            const next = [...variants];
-                            const vIdx = next.findIndex(val => val.id === "fit-combo");
-                            next[vIdx].combos = next[vIdx].combos!.filter(c => c.id !== combo.id);
-                            setVariants(next);
-                          }} className="pt-6 text-zinc-400 hover:text-red-500"><Trash2 className="h-5 w-5"/></button>
+                             }} className="pt-6 text-zinc-400 hover:text-red-500"><Trash2 className="h-5 w-5"/></button>
+                           </div>
                         </div>
                         
                         <div className="pt-2 border-t border-zinc-100">

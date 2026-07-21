@@ -47,6 +47,7 @@ export interface ProductCombo {
   bespokeAvailable?: boolean;
   bespokeLeadDays?: number;
   nameFormat?: "plus" | "brackets";
+  productNameOverride?: string;
 }
 
 export interface ProductVariant {
@@ -63,6 +64,7 @@ export interface ProductVariant {
   isOutOfStock?: boolean;
   bespokeAvailable?: boolean;
   bespokeLeadDays?: number;
+  productNameOverride?: string;
 }
 
 export interface Product {

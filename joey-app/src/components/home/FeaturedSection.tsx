@@ -132,7 +132,7 @@ export default function FeaturedSection() {
 
   const quickViewColorVariants = useMemo(() => {
     if (!quickViewPiece || !quickViewPiece.variants) return [];
-    return quickViewPiece.variants.filter((v: any) => v.type === "color" && v.colorHex);
+    return quickViewPiece.variants.filter((v: any) => v.type === "color");
   }, [quickViewPiece]);
 
   const quickViewActiveVariant = useMemo(() => {
@@ -479,7 +479,7 @@ export default function FeaturedSection() {
 
                 <div className={styles.modalInfo}>
                   <h3 id="featured-quickview-title" className={`t-display ${styles.modalTitle}`}>
-                    {quickViewPiece.name} {quickViewActiveCombo ? (quickViewActiveCombo.nameFormat === "brackets" ? `(${quickViewActiveCombo.name})` : `+ ${quickViewActiveCombo.name}`) : ""}
+                    {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
                   </h3>
                   <div className={styles.modalPriceRow}>
                     <span className={styles.modalPrice}>{formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}</span>
@@ -661,7 +661,7 @@ export default function FeaturedSection() {
 
         <div className={styles.grid}>
           {featured.map((item) => {
-            const colorVariants = (item.variants || []).filter((v: any) => v.type === "color" && v.colorHex);
+            const colorVariants = (item.variants || []).filter((v: any) => v.type === "color");
             const hasColors = colorVariants.length > 0;
             const swatchesToShow = colorVariants.slice(0, 3);
             const totalColors = colorVariants.length;

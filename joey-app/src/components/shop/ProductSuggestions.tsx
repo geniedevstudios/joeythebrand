@@ -35,7 +35,7 @@ export default function ProductSuggestions({
         </div>
         <div className={productStyles.suggestionsGrid}>
           {suggestedProducts.map((item: any) => {
-            const colorVariants = (item.variants || []).filter((v: any) => v.type === "color" && v.colorHex);
+            const colorVariants = (item.variants || []).filter((v: any) => v.type === "color");
             const hasColors = colorVariants.length > 0;
             const swatchesToShow = colorVariants.slice(0, 3);
             const totalColors = colorVariants.length;
