@@ -593,7 +593,7 @@ export default function ShopClient() {
                         return colName ? colName : null;
                       })()}
                     </span>
-                    <h2 className={styles.name}>{p.name}</h2>
+                    <h2 className={styles.name} style={{ fontSize: p.name.length > 24 ? "0.95rem" : p.name.length > 16 ? "1.1rem" : undefined }}>{p.name}</h2>
                     <div className={styles.priceRow}>
                       <span className={styles.price}>{formatPrice(p.price)}</span>
                       {p.originalPrice && (

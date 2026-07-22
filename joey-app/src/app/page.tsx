@@ -41,13 +41,16 @@ export default async function HomePage() {
         <CollectionsSection initialCollections={initialCollections} />
       </ScrollReveal>
       <ScrollReveal>
-        <FeaturedSection />
+        <FeaturedSection splitMode="first-half" />
       </ScrollReveal>
       <ScrollReveal>
         <ValuesSection />
       </ScrollReveal>
       <ScrollReveal>
         <AboutSection />
+      </ScrollReveal>
+      <ScrollReveal>
+        <FeaturedSection splitMode="second-half" hideHeader />
       </ScrollReveal>
       <ScrollReveal>
         <FounderSection initialCollections={initialCollections} initialSiteContent={initialSiteContent} />

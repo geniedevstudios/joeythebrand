@@ -322,7 +322,7 @@ export default function WishlistClient() {
                   <span className={shopStyles.category}>
                     {item.category && item.category.toLowerCase() !== "none" ? item.category : ""}
                   </span>
-                  <h2 className={shopStyles.name}>{item.name}</h2>
+                  <h2 className={shopStyles.name} style={{ fontSize: item.name.length > 24 ? "0.95rem" : item.name.length > 16 ? "1.1rem" : undefined }}>{item.name}</h2>
                   <div className={shopStyles.priceRow}>
                     <span className={shopStyles.price}>
                       {typeof fullProduct?.price === "number"

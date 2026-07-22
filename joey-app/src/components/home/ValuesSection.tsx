@@ -40,12 +40,12 @@ export default function ValuesSection() {
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
-  const activeImage = expandedIndex !== null ? values[expandedIndex].image : null;
+  const activeImage = expandedIndex !== null ? values[expandedIndex].image : "/values/values.jpeg";
 
   return (
     <section className={`section section-warm ${styles.values}`} id="values">
       {activeImage && (
-        <div className={styles.imageBackgroundWrapper}>
+        <div key={activeImage} className={styles.imageBackgroundWrapper}>
           <Image
             src={activeImage}
             alt="Values Background"

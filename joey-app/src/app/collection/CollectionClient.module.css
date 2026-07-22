@@ -724,6 +724,13 @@
   opacity: 1;
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .productOverlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .productPickMeWrap {
   position: absolute;
   bottom: var(--space-md);

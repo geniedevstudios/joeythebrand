@@ -150,7 +150,7 @@ export default function ProductSuggestions({
                 </div>
               </div>
                 <div className={productStyles.suggestInfo}>
-                  <h3 className={productStyles.suggestName}>{item.name}</h3>
+                  <h3 className={productStyles.suggestName} style={{ fontSize: item.name.length > 24 ? "0.95rem" : item.name.length > 16 ? "1.1rem" : undefined }}>{item.name}</h3>
                   <p className={productStyles.suggestPrice}>{formatPrice(item.price)}</p>
                 </div>
               </article>

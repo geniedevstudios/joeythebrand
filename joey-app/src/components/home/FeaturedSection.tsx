@@ -61,7 +61,7 @@ function FeaturedSectionSkeleton() {
   );
 }
 
-export default function FeaturedSection() {
+export default function FeaturedSection({ splitMode = 'none', hideHeader = false }: { splitMode?: 'first-half' | 'second-half' | 'none'; hideHeader?: boolean } = {}) {
   const isStoreLoading = useStoreLoading();
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
   const collections = useSyncExternalStore(dataStore.subscribe, dataStore.getCollections, () => EMPTY_COLLECTIONS);
@@ -108,7 +108,15 @@ export default function FeaturedSection() {
   }, []);
   
   // Filter for featured products (no limit)
-  const featured = products.filter(p => p.featured);
+  let featured = products.filter(p => p.featured);
+  
+  if (splitMode === 'first-half') {
+    const half = Math.ceil(featured.length / 2);
+    featured = featured.slice(0, half);
+  } else if (splitMode === 'second-half') {
+    const half = Math.ceil(featured.length / 2);
+    featured = featured.slice(half);
+  }
 
   useEffect(() => {
     if (quickViewPiece) {
@@ -649,15 +657,17 @@ export default function FeaturedSection() {
   return (
     <section className={`section ${styles.featured}`} id="featured">
       <div className="container">
-        <div className={styles.headerWrapper}>
-          <span className="section-label" style={{ display: 'flex', marginBottom: 'var(--space-md)' }}>{featuredLabel}</span>
-          <div className={styles.header}>
-            <h2 className={`t-heading ${styles.heading}`} style={{ marginTop: 0 }}>Pieces that speak first.</h2>
-            <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
-              Shop for more
-            </Link>
+        {!hideHeader && (
+          <div className={styles.headerWrapper}>
+            <span className="section-label" style={{ display: 'flex', marginBottom: 'var(--space-md)' }}>{featuredLabel}</span>
+            <div className={styles.header}>
+              <h2 className={`t-heading ${styles.heading}`} style={{ marginTop: 0 }}>Pieces that speak first.</h2>
+              <Link href="/shop" className={`btn btn-outline ${styles.viewAll}`} id="featured-view-all">
+                Shop for more
+              </Link>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className={styles.grid}>
           {featured.map((item) => {
@@ -789,7 +799,7 @@ export default function FeaturedSection() {
                   const colName = getCollectionName(item);
                   return colName ? <span className={styles.category}>{colName}</span> : null;
                 })()}
-                <h3 className={styles.name}>{item.name}</h3>
+                <h3 className={styles.name} style={{ fontSize: item.name.length > 24 ? "0.95rem" : item.name.length > 16 ? "1.1rem" : undefined }}>{item.name}</h3>
                 <div className={styles.priceRow}>
                   <span className={styles.price}>{formatPrice(item.price)}</span>
                 </div>
