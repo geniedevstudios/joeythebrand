@@ -693,3 +693,9 @@ nextjs-portal,
   }
 }
 
+/* Hide iOS Safari video play button for background videos */
+video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+

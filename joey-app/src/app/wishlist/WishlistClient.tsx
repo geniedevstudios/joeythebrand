@@ -697,7 +697,7 @@ export default function WishlistClient() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill={wishlistStore.has(quickViewPiece.id) ? "var(--alaska-gray)" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" suppressHydrationWarning>
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                     </svg>
-                    {wishlistStore.has(quickViewPiece.id) ? "Saved to wishlist" : "Add to wishlist"}
+                    {wishlistStore.has(quickViewPiece.id) ? "Saved To Wishlist" : "Add To Wishlist"}
                   </button>
                 </div>
 
@@ -716,7 +716,7 @@ export default function WishlistClient() {
                 <div className={shopStyles.modalMeta}>
                   {(() => {
                     const colName = quickViewPiece.category;
-                    return colName ? <p><span>Category:</span> {colName}</p> : null;
+                    return colName && colName.toLowerCase() !== "none" ? <p><span>Category:</span> {colName}</p> : null;
                   })()}
                 </div>
                 <Link href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`} className={shopStyles.modalFullDetail} onClick={() => setQuickViewPiece(null)}>

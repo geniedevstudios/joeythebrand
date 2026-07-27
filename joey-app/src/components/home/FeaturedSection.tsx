@@ -618,7 +618,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       <svg width="16" height="16" viewBox="0 0 24 24" fill={isInWishlist(quickViewPiece.id) ? "var(--alaska-gray)" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" suppressHydrationWarning>
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                       </svg>
-                      {isInWishlist(quickViewPiece.id) ? "Saved to wishlist" : "Add to wishlist"}
+                      {isInWishlist(quickViewPiece.id) ? "Saved To Wishlist" : "Add To Wishlist"}
                     </button>
                   </div>
 
