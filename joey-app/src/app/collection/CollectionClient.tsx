@@ -178,8 +178,9 @@ function CollectionCarouselRow({
     </section>
   );
 }
-export default function CollectionClient() {
-  const collections = useSyncExternalStore(dataStore.subscribe, _getCollections, FALLBACK_FN);
+export default function CollectionClient({ initialCollections }: { initialCollections?: PublicCollection[] }) {
+  const storeCollections = useSyncExternalStore(dataStore.subscribe, _getCollections, FALLBACK_FN);
+  const collections = storeCollections.length > 0 ? storeCollections : (initialCollections || []);
   const products = useSyncExternalStore(dataStore.subscribe, _getProducts, EMPTY_ARRAY_FN);
   const isStoreLoading = useStoreLoading();
   const {
@@ -232,10 +233,10 @@ export default function CollectionClient() {
       {/* Collections Editorial List */}
       <div className={styles.editorialList}>
         <SkeletonCrossfade
-          isLoading={isStoreLoading}
+          isLoading={isStoreLoading && collections.length === 0}
           skeleton={<CollectionEditorialSkeleton />}
         >
-          {!isStoreLoading ? (
+          {!(isStoreLoading && collections.length === 0) ? (
             collectionData.length > 0 ? (
               collectionData.map((col, idx) => (
                 <CollectionCarouselRow
