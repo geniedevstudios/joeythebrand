@@ -1,10 +1,36 @@
 import type { CSSProperties } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import styles from "../events.module.css";
 import { fetchPublicEventBySlug } from "@/lib/fetchEventsServer";
 import { PAGE_HERO_SHELL_CLASS } from "@/hooks/usePageHero";
 import EventVideo from "./EventVideo";
 import BackButton from "./BackButton";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const event = await fetchPublicEventBySlug(slug);
+  
+  if (!event) {
+    return {
+      title: "Event Not Found",
+    };
+  }
+
+  const image = event.flyerUrl?.trim() || undefined;
+
+  return {
+    title: `${event.title} | Event`,
+    description: event.description || "Join us at this JOEY THE BRAND event.",
+    alternates: { canonical: `/events/${encodeURIComponent(slug)}` },
+    openGraph: {
+      title: `${event.title} — Event`,
+      description: event.description || "Join us at this JOEY THE BRAND event.",
+      type: "website",
+      images: image ? [{ url: image }] : undefined,
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
