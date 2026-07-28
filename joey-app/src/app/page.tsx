@@ -16,6 +16,9 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Home - JOEY THE BRAND",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default async function HomePage() {

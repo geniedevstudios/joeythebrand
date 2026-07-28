@@ -4,6 +4,10 @@ import AccountClient from "./AccountClient";
 export const metadata: Metadata = {
   title: "Account",
   description: "Manage your JOEY THE BRAND orders and bespoke appointments.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function AccountPage() {

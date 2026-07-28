@@ -4,6 +4,10 @@ import CheckoutClient from "./CheckoutClient";
 export const metadata: Metadata = {
   title: "Checkout",
   description: "Complete your purchase at JOEY THE BRAND.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function CheckoutPage() {
