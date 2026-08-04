@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./BespokeClient.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@/hooks/usePageHero";
@@ -311,7 +312,9 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
           <div className={styles.formWrap}>
             {!user ? (
               <div className={styles.success}>
-                <div className={styles.successIcon}>✦</div>
+                <div className={styles.successIcon}>
+                  <Image src="/blacklogo21.png" alt="JOEY THE BRAND" width={140} height={28} />
+                </div>
                 <h2 className={styles.successTitle}>Sign in to request a slot</h2>
                 <p className={styles.successBody}>
                   Bespoke appointments are tied to your account so you can track status, see when we confirm,
@@ -323,7 +326,9 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
               </div>
             ) : status === "sent" ? (
               <div className={styles.success}>
-                <div className={styles.successIcon}>✦</div>
+                <div className={styles.successIcon}>
+                  <Image src="/blacklogo21.png" alt="JOEY THE BRAND" width={140} height={28} />
+                </div>
                 <h2 className={styles.successTitle}>Your slot request is in.</h2>
                 <p className={styles.successBody}>
                   We&apos;ll review your details and update the status on your account within 24–48 hours.
