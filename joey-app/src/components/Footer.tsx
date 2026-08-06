@@ -133,7 +133,7 @@ export default function Footer() {
             © {new Date().getFullYear()} JOEY THE BRAND. All rights reserved.
           </button>
           <p className={styles.copy}>Power worn well.</p>
-          <CuratedPill devHref={devHref} />
+          <CuratedPill devHref="https://geniedev.vercel.app/services" />
         </div>
       </div>
       <CopyrightModal open={copyOpen} onClose={() => setCopyOpen(false)} />

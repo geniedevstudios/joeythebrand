@@ -225,7 +225,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
         </div>
 
         <div style={{ marginTop: "1.25rem", display: "flex", justifyContent: "center" }}>
-          <CuratedPill devHref={devHref} />
+          <CuratedPill devHref="https://geniedev.vercel.app/services" />
         </div>
       </div>
       </div>
