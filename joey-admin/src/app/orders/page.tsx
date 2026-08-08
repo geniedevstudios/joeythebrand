@@ -278,7 +278,7 @@ export default function OrdersPage() {
                       </ul>
                     </td>
                     <td className="max-w-[180px] px-5 py-4">
-                      <p className="text-xs leading-relaxed text-zinc-600 line-clamp-4">
+                      <p className="text-xs leading-relaxed text-zinc-600 whitespace-pre-wrap">
                         {order.notes?.trim() ? order.notes : "—"}
                       </p>
                     </td>
@@ -307,7 +307,7 @@ export default function OrdersPage() {
                       <span id={`order-status-label-${order.id}`} className="sr-only">
                         Update order status
                       </span>
-                      {order.shippingAddress.includes("(international)") ? (
+                      {order.shippingAddress.includes("DHL[") ? (
                         <div className="text-sm font-medium text-zinc-700 bg-zinc-100 px-3 py-2 rounded-md inline-block w-full text-center">
                           Managed by DHL
                         </div>
@@ -362,7 +362,7 @@ export default function OrdersPage() {
                           )}
                           <p className="mt-1 text-[10px] text-zinc-500">{order.dhlStatus}</p>
                         </div>
-                      ) : order.shippingAddress?.includes("(international)") ? (
+                      ) : order.shippingAddress?.includes("DHL[") ? (
                         <div className="mt-3 border-t border-zinc-100 pt-2">
                           <button
                             type="button"

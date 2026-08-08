@@ -53,9 +53,9 @@ function buildShippingAddress(
     region: string;
     stateOrProvince: string;
     postalCode: string;
-    /** ISO 3166-1 alpha-2 when international */
     country: string;
   },
+  selectedShippingOption: "dhl" | "sales" | null
 ): string {
   if (destination === "ghana") {
     return `${d.address.trim()}, ${d.city.trim()}, ${regionLabel(d.region)}, Ghana`;
@@ -68,7 +68,12 @@ function buildShippingAddress(
     d.postalCode.trim(),
     countryLine,
   ].filter(Boolean);
-  return `${parts.join(", ")} | DHL[${d.city.trim()}|${d.postalCode.trim()}|${d.country}] (international)`;
+  
+  if (selectedShippingOption === "dhl") {
+    return `${parts.join(", ")} | DHL[${d.city.trim()}|${d.postalCode.trim()}|${d.country}] (international)`;
+  } else {
+    return `${parts.join(", ")} | Custom (international)`;
+  }
 }
 
 export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: boolean }) {
@@ -81,6 +86,9 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [shippingCalculated, setShippingCalculated] = useState<boolean>(true); // true for ghana by default
   const [isCalculatingShipping, setIsCalculatingShipping] = useState<boolean>(false);
+  const [calculatedDhlPrice, setCalculatedDhlPrice] = useState<number | null>(null);
+  const [selectedShippingOption, setSelectedShippingOption] = useState<"dhl" | "sales" | null>(null);
+  const [lastCalculatedLocation, setLastCalculatedLocation] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("card");
   const [formData, setFormData] = useState({
     email: "",
@@ -97,6 +105,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [placedOrder, setPlacedOrder] = useState<any>(null);
   const {
     empty: checkoutHeroEmpty,
     shellSpinner: checkoutHeroSpinner,
@@ -123,33 +132,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   const formattedShipping = shippingDestination === "ghana" ? "TBD" : (shippingCalculated ? `GHC ${shippingCost.toLocaleString()}` : "Requires calculation");
   const formattedTotal = `GHC ${total.toLocaleString()}`;
 
-  if (items.length === 0) {
-    return (
-      <div className={styles.page}>
-        <div
-          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
-          data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
-          data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
-          data-page-hero-ready={checkoutHeroImageReady ? "true" : "false"}
-          style={checkoutHeroStyle}
-        >
-          {checkoutHeroImageLoader ? <PageHeroShellImageLoader /> : null}
-          <div className="container">
-            <span className="section-label">Checkout</span>
-            <h1 className={styles.pageTitle}>Your Order</h1>
-          </div>
-        </div>
-        <div className="container section">
-          <div className={styles.emptyCart}>
-            <p>Your cart is empty.</p>
-            <Link href="/shop" className="btn btn-primary">
-              Start Shopping
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -159,6 +142,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     setShippingDestination(dest);
     setShippingCost(0);
     setShippingCalculated(dest === "ghana");
+    setSelectedShippingOption(null);
     if (dest === "ghana") {
       setFormData((prev) => ({
         ...prev,
@@ -173,10 +157,17 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
 
   const handleCalculateShipping = async () => {
     if (!formData.country.trim() || !formData.city.trim() || !formData.address.trim()) {
-      toast.error("Please provide your street address, city, and country first.");
       return;
     }
+    const currentLocationStr = `${formData.country}|${formData.city}|${formData.address}|${formData.postalCode}`;
+    if (lastCalculatedLocation === currentLocationStr) return;
+
     setIsCalculatingShipping(true);
+    setShippingCalculated(false);
+    setCalculatedDhlPrice(null);
+    setSelectedShippingOption(null);
+    setShippingCost(0);
+
     try {
       // 1. Validate Address
       const valRes = await fetch(`/api/shipping/validate?city=${encodeURIComponent(formData.city)}&postalCode=${encodeURIComponent(formData.postalCode)}&countryCode=${encodeURIComponent(formData.country)}`);
@@ -203,13 +194,34 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
       if (!res.ok) {
         throw new Error(data.error ? `${data.error}: ${data.details}` : "Failed to calculate shipping rates");
       }
-      setShippingCost(data.price);
+
+      setCalculatedDhlPrice(data.price);
       setShippingCalculated(true);
-      toast.success("Shipping calculated via DHL Express!");
+      setLastCalculatedLocation(currentLocationStr);
+      toast.success("Shipping options updated!");
     } catch (err: any) {
       toast.error(err.message || "Failed to calculate shipping.");
     } finally {
       setIsCalculatingShipping(false);
+    }
+  };
+
+  useEffect(() => {
+    if (shippingDestination !== "international" || !dhlEnabled) return;
+    if (formData.country.trim() && formData.city.trim() && formData.address.trim()) {
+      const handler = setTimeout(() => {
+        void handleCalculateShipping();
+      }, 1000);
+      return () => clearTimeout(handler);
+    }
+  }, [formData.country, formData.city, formData.address, formData.postalCode, shippingDestination, dhlEnabled]);
+
+  const handleShippingOptionSelect = (option: "dhl" | "sales") => {
+    setSelectedShippingOption(option);
+    if (option === "dhl" && calculatedDhlPrice !== null) {
+      setShippingCost(calculatedDhlPrice);
+    } else {
+      setShippingCost(0);
     }
   };
 
@@ -251,7 +263,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
         customerName: `${formData.firstName} ${formData.lastName}`,
         customerEmail: formData.email,
         customerPhone: formData.phone,
-        shippingAddress: buildShippingAddress(shippingDestination, formData),
+        shippingAddress: buildShippingAddress(shippingDestination, formData, selectedShippingOption),
         items: items.map((item) => ({
           productId: item.productId,
           name: item.name,
@@ -270,7 +282,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
         promotionCode: appliedPromo?.code,
         status: "pending",
         userId: session?.user?.id,
-        notes: formData.notes || undefined,
+        notes: (formData.notes ? formData.notes + "\n\n" : "") + (shippingDestination === "international" && dhlEnabled ? `Selected Shipping: ${selectedShippingOption === "dhl" ? "DHL Express" : "Custom Sales Contact"}` : "") || undefined,
         // shippingCost, // save shipping cost locally if we had that field, but total is enough
       };
 
@@ -312,8 +324,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                 if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed");
 
                 cartStore.clearCart();
-                toast.success(`Order ${formatOrderNumber(placed)} placed successfully.`);
-                router.push("/account");
+                setPlacedOrder(placed);
              } catch (err) {
                 toast.error(err instanceof Error ? err.message : "Payment verification failed. Please contact support.");
                 setIsSubmitting(false);
@@ -333,6 +344,71 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
       setIsSubmitting(false);
     }
   };
+  if (placedOrder) {
+    return (
+      <div className={styles.page}>
+        <div
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+          data-page-hero-empty="false"
+          data-page-hero-loading="false"
+          data-page-hero-ready="true"
+          style={checkoutHeroStyle}
+        >
+          {checkoutHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+          <div className="container">
+            <span className="section-label">Order Confirmed</span>
+            <h1 className={styles.pageTitle}>Thank You!</h1>
+          </div>
+        </div>
+        <div className="container section">
+          <div className={styles.successScreen}>
+            <div className={styles.successIconWrap}>
+              <svg className={styles.successIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <h2 className={styles.successTitle}>Your order is complete</h2>
+            <p className={styles.successText}>
+              Order number <strong>{formatOrderNumber(placedOrder)}</strong> has been successfully placed. We've sent a confirmation email with your order details.
+            </p>
+            <div className={styles.successActions}>
+              <Link href="/account" className={`btn ${styles.submitBtnPrimary} ${styles.actionBtn}`}>View My Account</Link>
+              <Link href="/shop" className={`btn ${styles.submitBtnSecondary} ${styles.actionBtn}`}>Continue Shopping</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className={styles.page}>
+        <div
+          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
+          data-page-hero-empty={checkoutHeroEmpty ? "true" : "false"}
+          data-page-hero-loading={checkoutHeroSpinner ? "true" : "false"}
+          data-page-hero-ready={checkoutHeroImageReady ? "true" : "false"}
+          style={checkoutHeroStyle}
+        >
+          {checkoutHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+          <div className="container">
+            <span className="section-label">Checkout</span>
+            <h1 className={styles.pageTitle}>Your Order</h1>
+          </div>
+        </div>
+        <div className="container section">
+          <div className={styles.emptyCart}>
+            <p>Your cart is empty.</p>
+            <Link href="/shop" className="btn btn-primary">
+              Start Shopping
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -527,16 +603,59 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
               </div>
             )}
 
-            {shippingDestination === "international" && dhlEnabled && !shippingCalculated ? (
-              <button
-                type="button"
-                className={`${styles.submitBtn} ${styles.submitBtnSecondary}`}
-                onClick={handleCalculateShipping}
-                disabled={isCalculatingShipping}
-              >
-                {isCalculatingShipping ? "Calculating..." : "Calculate Shipping"}
-              </button>
-            ) : (shippingDestination === "ghana" || dhlEnabled) && (
+            {shippingDestination === "international" && dhlEnabled && (
+              <div className={styles.shippingOptionsSection}>
+                <h2 className={styles.sectionTitle} style={{ marginTop: "32px", borderTop: "1px solid var(--color-border)", paddingTop: "32px" }}>Shipping Options</h2>
+                {isCalculatingShipping ? (
+                  <p className={styles.calculatingText}>Calculating shipping options...</p>
+                ) : !shippingCalculated ? (
+                  <p className={styles.calculatingText}>Please complete your address to see shipping options.</p>
+                ) : (
+                  <div className={styles.shippingCardsContainer}>
+                    <label className={`${styles.shippingCard} ${selectedShippingOption === "dhl" ? styles.shippingCardActive : ""}`}>
+                      <input 
+                        type="radio" 
+                        name="shippingOption" 
+                        value="dhl" 
+                        checked={selectedShippingOption === "dhl"} 
+                        onChange={() => handleShippingOptionSelect("dhl")} 
+                        className={styles.visuallyHidden}
+                      />
+                      <div className={styles.shippingCardContent}>
+                        <div className={styles.shippingCardHeader}>
+                          <span className={styles.shippingCardTitle}>
+                            <img src="/dhl-logo.svg" alt="DHL Logo" className={styles.dhlLogoImg} /> Express
+                          </span>
+                          {calculatedDhlPrice !== null && (
+                            <span className={styles.shippingCardPrice}>GHC {calculatedDhlPrice.toLocaleString()}</span>
+                          )}
+                        </div>
+                        <p className={styles.shippingCardDesc}>Fast and reliable international delivery.</p>
+                      </div>
+                    </label>
+                    <label className={`${styles.shippingCard} ${selectedShippingOption === "sales" ? styles.shippingCardActive : ""}`}>
+                      <input 
+                        type="radio" 
+                        name="shippingOption" 
+                        value="sales" 
+                        checked={selectedShippingOption === "sales"} 
+                        onChange={() => handleShippingOptionSelect("sales")} 
+                        className={styles.visuallyHidden}
+                      />
+                      <div className={styles.shippingCardContent}>
+                        <div className={styles.shippingCardHeader}>
+                          <span className={styles.shippingCardTitle}>Custom Shipping</span>
+                          <span className={styles.shippingCardPrice}>TBD</span>
+                        </div>
+                        <p className={styles.shippingCardDesc}>Our sales person will contact you to arrange delivery.</p>
+                      </div>
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(shippingDestination === "ghana" || (dhlEnabled && selectedShippingOption !== null)) && (
               <>
                 <h2 className={styles.sectionTitle} style={{ marginTop: "32px", borderTop: "1px solid var(--color-border)", paddingTop: "32px" }}>Payment Method</h2>
                 <div className={styles.paymentMethods}>
