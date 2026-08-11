@@ -261,25 +261,28 @@ export default function OrderConfirmationEmail({
       </Head>
       <Preview>{preview}</Preview>
       <Body style={main}>
-        {/* Outer Dark Header Wrapper (like reference) */}
+        {/* Outer Dark Header Wrapper */}
         <div style={{ 
           backgroundColor: "#000000", 
           backgroundImage: `url(${baseUrl}/collection_kpq24u.jpg)`, 
           backgroundSize: "cover", 
           backgroundPosition: "center",
-          padding: "60px 0 120px 0", 
+          height: "380px", // FIXED HEIGHT forces it to stop
+          width: "100%",
+          paddingTop: "60px", 
           textAlign: "center" 
         }}>
           <Img 
             src={`${baseUrl}/white%20logo.png`} 
             alt="JOEY The brand" 
-            style={{ height: "40px", width: "auto", margin: "0 auto", display: "block" }} 
+            style={{ width: "280px", height: "auto", margin: "0 auto", display: "block" }} 
           />
         </div>
 
-        {/* Main Card */}
-        <Container style={{ ...container, marginTop: "-60px" }}>
-          <Section style={card}>
+        {/* Main Card Wrapper (Negative margin pulls it up over the fixed-height header) */}
+        <div style={{ marginTop: "-160px", width: "100%" }}>
+          <Container style={container}>
+            <Section style={card}>
             {/* Nav */}
             <Text style={nav}>
               <Link href={`${baseUrl}/shop`} style={navLink}>SHOP</Link>
@@ -387,6 +390,7 @@ export default function OrderConfirmationEmail({
             </Text>
           </Section>
         </Container>
+        </div>
       </Body>
     </Html>
   );

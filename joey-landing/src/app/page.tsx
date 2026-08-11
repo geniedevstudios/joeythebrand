@@ -254,7 +254,7 @@ export default function LandingPage() {
       {/* ── Footer ── */}
       <footer className={styles.footer} aria-label="Site footer">
         <p className={styles.footerCopy}>© {new Date().getFullYear()} JOEY THE BRAND. All rights reserved.</p>
-        <CuratedPill devHref="https://geniedev.vercel.app/services" />
+        <CuratedPill devHref="https://geniedevstudios.com/services" />
       </footer>
 
     </div>

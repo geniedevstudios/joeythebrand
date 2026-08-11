@@ -171,86 +171,92 @@ export default function BespokeBookingEmail({
       </Head>
       <Preview>{preview}</Preview>
       <Body style={main}>
+        {/* Outer Dark Header Wrapper */}
         <div style={{ 
           backgroundColor: "#000000", 
           backgroundImage: `url(${baseUrl}/collection_kpq24u.jpg)`, 
           backgroundSize: "cover", 
           backgroundPosition: "center",
-          padding: "60px 0 120px 0", 
+          height: "380px", // FIXED HEIGHT forces it to stop
+          width: "100%",
+          paddingTop: "60px", 
           textAlign: "center" 
         }} className="no-print">
           <Img 
             src={`${baseUrl}/white%20logo.png`} 
             alt="JOEY The brand" 
-            style={{ height: "40px", width: "auto", margin: "0 auto", display: "block" }} 
+            style={{ width: "280px", height: "auto", margin: "0 auto", display: "block" }} 
           />
         </div>
 
-        <Container style={{ ...container, marginTop: "-80px" }}>
-          <Section style={card}>
-            {/* Header */}
-            <Text style={headerSerif}>Appointment {isPending ? "Request" : "Confirmation"}</Text>
-            <Text style={subHeadingText}>Order No. {displayCode}</Text>
-            
-            <Text style={{ textAlign: "center", fontSize: "15px", color: "#444444", marginBottom: "32px", lineHeight: "1.5" }}>
-              {isPending ? (
-                <>Thank you for booking a bespoke session with JOEY The brand, {customerName.split(" ")[0]}. Your downpayment has been received. We will review your request and send a confirmation shortly with your booking code.</>
-              ) : (
-                <>Great news, {customerName.split(" ")[0]}! Your bespoke session has been confirmed. This email serves as your printable appointment slip.</>
-              )}
-            </Text>
-
-            <table style={table}>
-              <tbody>
-                <tr>
-                  <th style={th}>Customer Name</th>
-                  <td style={td}>{customerName}</td>
-                </tr>
-                <tr>
-                  <th style={th}>Email</th>
-                  <td style={td}>{customerEmail}</td>
-                </tr>
-                <tr>
-                  <th style={th}>Phone / WhatsApp</th>
-                  <td style={td}>{customerPhone || "—"}</td>
-                </tr>
-                <tr>
-                  <th style={th}>Service</th>
-                  <td style={td}>{service}</td>
-                </tr>
-                <tr>
-                  <th style={th}>Preferred Date</th>
-                  <td style={td}>{formattedDate}</td>
-                </tr>
-                <tr>
-                  <th style={th}>Booking Code</th>
-                  <td style={isPending ? td : tdMono}>{displayCode}</td>
-                </tr>
-                <tr>
-                  <th style={th}>Status</th>
-                  <td style={td}>{displayStatus}</td>
-                </tr>
-                {notes && (
-                  <tr>
-                    <th style={{ ...th, borderBottom: "none" }}>Customer Notes</th>
-                    <td style={{ ...td, borderBottom: "none" }}>{notes}</td>
-                  </tr>
+        {/* Main Card Wrapper (Negative margin pulls it up over the fixed-height header) */}
+        <div style={{ marginTop: "-160px", width: "100%" }}>
+          <Container style={container}>
+            <Section style={card}>
+              {/* Header */}
+              <Text style={headerSerif}>Appointment {isPending ? "Request" : "Confirmation"}</Text>
+              <Text style={subHeadingText}>Order No. {displayCode}</Text>
+              
+              <Text style={{ textAlign: "center", fontSize: "15px", color: "#444444", marginBottom: "32px", lineHeight: "1.5" }}>
+                {isPending ? (
+                  <>Thank you for booking a bespoke session with JOEY The brand, {customerName.split(" ")[0]}. Your downpayment has been received. We will review your request and send a confirmation shortly with your booking code.</>
+                ) : (
+                  <>Great news, {customerName.split(" ")[0]}! Your bespoke session has been confirmed. This email serves as your printable appointment slip.</>
                 )}
-              </tbody>
-            </table>
-
-            <div style={divider}></div>
-
-            <Section style={btnContainer} className="no-print">
-              <Button href={`${baseUrl}/account`} style={button}>
-                View in Account Dashboard
-              </Button>
-              <Text style={printHint}>
-                Tip: You can print this email directly (Ctrl+P / Cmd+P) and bring it with you.
               </Text>
+
+              <table style={table}>
+                <tbody>
+                  <tr>
+                    <th style={th}>Customer Name</th>
+                    <td style={td}>{customerName}</td>
+                  </tr>
+                  <tr>
+                    <th style={th}>Email</th>
+                    <td style={td}>{customerEmail}</td>
+                  </tr>
+                  <tr>
+                    <th style={th}>Phone / WhatsApp</th>
+                    <td style={td}>{customerPhone || "—"}</td>
+                  </tr>
+                  <tr>
+                    <th style={th}>Service</th>
+                    <td style={td}>{service}</td>
+                  </tr>
+                  <tr>
+                    <th style={th}>Preferred Date</th>
+                    <td style={td}>{formattedDate}</td>
+                  </tr>
+                  <tr>
+                    <th style={th}>Booking Code</th>
+                    <td style={isPending ? td : tdMono}>{displayCode}</td>
+                  </tr>
+                  <tr>
+                    <th style={th}>Status</th>
+                    <td style={td}>{displayStatus}</td>
+                  </tr>
+                  {notes && (
+                    <tr>
+                      <th style={{ ...th, borderBottom: "none" }}>Customer Notes</th>
+                      <td style={{ ...td, borderBottom: "none" }}>{notes}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              <div style={divider}></div>
+
+              <Section style={btnContainer} className="no-print">
+                <Button href={`${baseUrl}/account`} style={button}>
+                  View in Account Dashboard
+                </Button>
+                <Text style={printHint}>
+                  Tip: You can print this email directly (Ctrl+P / Cmd+P) and bring it with you.
+                </Text>
+              </Section>
             </Section>
-          </Section>
-        </Container>
+          </Container>
+        </div>
       </Body>
     </Html>
   );

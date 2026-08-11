@@ -1,15 +1,12 @@
 /* eslint-disable @next/next/no-page-custom-font */
 import {
   Body,
-  Column,
   Container,
   Head,
-  Hr,
   Html,
   Img,
   Link,
   Preview,
-  Row,
   Section,
   Text,
 } from "@react-email/components";
@@ -35,142 +32,122 @@ function getBaseUrl(): string {
 }
 
 const main = {
-  backgroundColor: "#f4f4f5",
-  fontFamily:
-    'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  backgroundColor: "#f9f9f9",
+  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
 };
 
 const container = {
   margin: "0 auto",
-  padding: "28px 24px 32px",
-  maxWidth: "560px",
-};
-
-const machineWrap = {
-  border: "3px solid #272B36",
-  borderRadius: "10px",
-  overflow: "hidden" as const,
-  backgroundColor: "#ffffff",
-};
-
-const headerBand = {
-  backgroundColor: "#272B36",
-  backgroundImage: "linear-gradient(135deg, #272B36 0%, #4a5568 100%)",
-  padding: "18px 22px",
-};
-
-const logoMark = {
-  display: "block",
-  height: "64px",
-  width: "auto",
-};
-
-const topCopyCol = {
-  borderLeft: "1px solid rgba(255, 255, 255, 0.22)",
-  paddingLeft: "16px",
-  marginLeft: "4px",
-  verticalAlign: "middle" as const,
-};
-
-const brandLine = {
-  margin: "0 0 8px",
-  fontSize: "15.7px",
-  fontWeight: 600 as const,
-  letterSpacing: "0.06em",
-  lineHeight: 1.35,
-  color: "#ffffff",
-};
-
-const subLine = {
-  margin: 0,
-  fontSize: "11.5px",
-  fontWeight: 400 as const,
-  opacity: 0.88,
-  letterSpacing: "0.04em",
-  lineHeight: 1.45,
-  color: "#ffffff",
-  maxWidth: "340px",
-};
-
-const perforation = {
-  height: "8px",
-  backgroundImage:
-    "repeating-linear-gradient(90deg, #272B36 0px, #272B36 5px, transparent 5px, transparent 10px)",
-  opacity: 0.35,
-  margin: 0,
-  padding: 0,
-  lineHeight: 0,
-  fontSize: 0,
+  padding: "40px 0",
+  width: "600px",
+  maxWidth: "100%",
 };
 
 const card = {
   backgroundColor: "#ffffff",
-  padding: "22px 22px 8px",
+  padding: "40px 48px",
+  boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
 };
 
-const label = {
-  color: "#71717a",
-  fontSize: "10px",
-  fontWeight: 700 as const,
-  letterSpacing: "0.1em",
+const nav = {
+  textAlign: "center" as const,
+  marginBottom: "40px",
+  fontSize: "12px",
+  letterSpacing: "2px",
+  color: "#333333",
+  fontWeight: "bold",
   textTransform: "uppercase" as const,
-  margin: "0 0 4px",
-  lineHeight: 1.4,
 };
 
-const value = {
-  color: "#18181b",
-  fontSize: "15px",
-  margin: "0 0 18px",
-  lineHeight: 1.5,
+const navLink = {
+  color: "#333333",
+  textDecoration: "none",
+  margin: "0 12px",
+};
+
+const headerSerif = {
+  fontFamily: '"Bodoni Moda", "Times New Roman", Times, serif',
+  fontSize: "36px",
+  fontWeight: "bold",
+  textAlign: "center" as const,
+  margin: "0 0 8px 0",
+  color: "#111111",
+};
+
+const subHeaderText = {
+  fontSize: "13px",
+  color: "#888888",
+  textAlign: "center" as const,
+  margin: "0 0 40px 0",
+  letterSpacing: "0.5px",
+};
+
+const metaDataLabel = {
+  fontSize: "12px",
+  color: "#999999",
+  fontStyle: "italic",
+  margin: "0 0 8px 0",
+};
+
+const metaDataValue = {
+  fontSize: "14px",
+  color: "#333333",
+  margin: "0 0 24px 0",
+  lineHeight: "1.5",
 };
 
 const link = {
-  color: "#272B36",
+  color: "#333333",
   textDecoration: "underline",
 };
 
 const messageShell = {
-  backgroundColor: "#fafafa",
-  border: "1px solid #e4e4e7",
+  backgroundColor: "#f9f9f9",
+  border: "1px solid #eeeeee",
   borderRadius: "6px",
-  padding: "16px 18px",
-  marginBottom: "20px",
+  padding: "24px",
+  marginTop: "8px",
 };
 
 const messageText = {
-  color: "#27272a",
-  fontSize: "15px",
-  lineHeight: 1.65,
+  color: "#333333",
+  fontSize: "14px",
+  lineHeight: 1.6,
   margin: 0,
   whiteSpace: "pre-wrap" as const,
 };
 
-const hr = {
-  borderColor: "#e4e4e7",
-  margin: "20px 0",
-};
-
-const footer = {
-  color: "#a1a1aa",
-  fontSize: "11px",
-  lineHeight: 1.55,
-  margin: 0,
+const footerWrap = {
+  backgroundColor: "#f9f9f9",
+  padding: "32px 48px",
   textAlign: "center" as const,
 };
 
+const footerLinks = {
+  fontSize: "11px",
+  fontWeight: "bold",
+  color: "#333333",
+  margin: "0 0 16px 0",
+};
+
+const footerAddress = {
+  fontSize: "11px",
+  color: "#888888",
+  margin: "0",
+  lineHeight: "1.6",
+};
+
 export default function ContactSiteMessage({
-  name,
-  email,
-  phone,
-  subject,
-  message,
+  name = "Jane Doe",
+  email = "jane@example.com",
+  phone = "+233 50 123 4567",
+  subject = "General Inquiry",
+  message = "Hello! I would like to inquire about...",
 }: ContactSiteMessageProps) {
   const preview = `${subject} — ${name}`;
   const phoneDisplay = formatPhoneDisplay(phone);
   const telHref = phoneDisplay.replace(/[^\d+]/g, "");
   const baseUrl = getBaseUrl();
-  const logoUrl = baseUrl ? new URL("/white%20logo.png", baseUrl).toString() : "";
 
   return (
     <Html lang="en">
@@ -182,60 +159,83 @@ export default function ContactSiteMessage({
       </Head>
       <Preview>{preview}</Preview>
       <Body style={main}>
-        <Container style={container}>
-          <Section style={machineWrap}>
-            <Section style={headerBand}>
-              <Row>
-                <Column style={{ width: "92px", verticalAlign: "middle", paddingRight: "24px" }}>
-                  <Text style={{ margin: 0, color: "#ffffff", fontWeight: 600 }}>JOEY</Text>
-                </Column>
-                <Column style={topCopyCol}>
-                  <Text style={brandLine}>JOEY The brand</Text>
-                  <Text style={subLine}>Website contact form inquiry.</Text>
-                </Column>
-              </Row>
-            </Section>
-            <Section style={perforation}>&nbsp;</Section>
+        {/* Outer Dark Header Wrapper */}
+        <div style={{ 
+          backgroundColor: "#000000", 
+          backgroundImage: `url(${baseUrl}/collection_kpq24u.jpg)`, 
+          backgroundSize: "cover", 
+          backgroundPosition: "center",
+          height: "380px",
+          width: "100%",
+          paddingTop: "60px", 
+          textAlign: "center" 
+        }}>
+          <Img 
+            src={`${baseUrl}/white%20logo.png`} 
+            alt="JOEY The brand" 
+            style={{ width: "280px", height: "auto", margin: "0 auto", display: "block" }} 
+          />
+        </div>
+
+        {/* Main Card Wrapper (Negative margin pulls it up over the fixed-height header) */}
+        <div style={{ marginTop: "-160px", width: "100%" }}>
+          <Container style={container}>
             <Section style={card}>
-              <Text style={label}>Name</Text>
-              <Text style={value}>{name}</Text>
+            {/* Nav */}
+            <Text style={nav}>
+              <Link href={`${baseUrl}/shop`} style={navLink}>SHOP</Link>
+              &nbsp;&nbsp;•&nbsp;&nbsp;
+              <Link href={`${baseUrl}/account`} style={navLink}>ACCOUNT</Link>
+              &nbsp;&nbsp;•&nbsp;&nbsp;
+              <Link href={`${baseUrl}/contact`} style={navLink}>CONTACT</Link>
+            </Text>
 
-              <Text style={label}>Email</Text>
-              <Text style={value}>
-                <Link href={`mailto:${email}`} style={link}>
-                  {email}
-                </Link>
-              </Text>
+            {/* Header */}
+            <Text style={headerSerif}>New Inquiry</Text>
+            <Text style={subHeaderText}>{subject}</Text>
 
-              {phoneDisplay ? (
-                <>
-                  <Text style={label}>Phone</Text>
-                  <Text style={value}>
-                    {telHref.length >= 7 ? (
-                      <Link href={`tel:${telHref}`} style={link}>
-                        {phoneDisplay}
-                      </Link>
-                    ) : (
-                      phoneDisplay
-                    )}
-                  </Text>
-                </>
-              ) : null}
+            {/* Content */}
+            <Text style={metaDataLabel}>From</Text>
+            <Text style={metaDataValue}>{name}</Text>
 
-              <Text style={label}>Subject</Text>
-              <Text style={value}>{subject}</Text>
+            <Text style={metaDataLabel}>Email</Text>
+            <Text style={metaDataValue}>
+              <Link href={`mailto:${email}`} style={link}>{email}</Link>
+            </Text>
 
-              <Text style={label}>Message</Text>
-              <Section style={messageShell}>
-                <Text style={messageText}>{message}</Text>
-              </Section>
+            {phoneDisplay && (
+              <>
+                <Text style={metaDataLabel}>Phone</Text>
+                <Text style={metaDataValue}>
+                  {telHref.length >= 7 ? (
+                    <Link href={`tel:${telHref}`} style={link}>{phoneDisplay}</Link>
+                  ) : (
+                    phoneDisplay
+                  )}
+                </Text>
+              </>
+            )}
+
+            <Text style={metaDataLabel}>Message</Text>
+            <Section style={messageShell}>
+              <Text style={messageText}>{message}</Text>
             </Section>
           </Section>
-          <Hr style={hr} />
-          <Text style={footer}>
-            This message was sent from the contact form on JOEY The brand.
-          </Text>
+
+          {/* Footer */}
+          <Section style={footerWrap}>
+            <Text style={footerLinks}>
+              <Link href={`${baseUrl}`} style={{ color: "#333333", textDecoration: "none" }}>JOEY The brand</Link> &nbsp;|&nbsp; 
+              <Link href={`${baseUrl}/terms`} style={{ color: "#333333", textDecoration: "none" }}>Privacy Policy</Link>
+            </Text>
+            <Text style={footerAddress}>
+              Accra, Ghana<br/>
+              © {new Date().getFullYear()} JOEY The brand. All Rights Reserved<br/>
+              This message was sent from the contact form on JOEY The brand.
+            </Text>
+          </Section>
         </Container>
+        </div>
       </Body>
     </Html>
   );

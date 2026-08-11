@@ -193,7 +193,9 @@ export default function ContactClient({ initialSiteContent }: { initialSiteConte
             <div className={styles.formCol}>
               {status === "sent" ? (
                 <div className={styles.successState}>
-                  <div className={styles.successIcon}>✦</div>
+                  <div className={styles.successIcon}>
+                    <img src="/black%20logo.png" alt="JOEY The brand" style={{ height: "80px", width: "auto", margin: "0 auto", display: "block" }} />
+                  </div>
                   <h3 className={styles.successTitle}>Message received.</h3>
                   <p className={styles.successBody}>
                     Thank you for reaching out. We&apos;ll be in touch shortly.

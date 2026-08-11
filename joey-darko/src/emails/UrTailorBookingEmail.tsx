@@ -35,81 +35,38 @@ function getBaseUrl(): string {
 }
 
 const main = {
-  backgroundColor: "#f4f4f5",
-  fontFamily:
-    'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  backgroundColor: "#000000",
+  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
 };
 
 const container = {
   margin: "0 auto",
-  padding: "28px 24px 32px",
-  maxWidth: "560px",
-};
-
-const machineWrap = {
-  border: "3px solid #272B36",
-  borderRadius: "10px",
-  overflow: "hidden" as const,
-  backgroundColor: "#ffffff",
-};
-
-const headerBand = {
-  backgroundColor: "#272B36",
-  backgroundImage: "linear-gradient(135deg, #272B36 0%, #4a5568 100%)",
-  padding: "18px 22px",
-};
-
-const logoMark = {
-  margin: 0,
-  fontFamily: '"Bodoni Moda", "Bodoni MT", Didot, "Libre Bodoni", Georgia, serif',
-  fontSize: "15px",
-  fontWeight: 500 as const,
-  letterSpacing: "0.06em",
-  lineHeight: 1.15,
-  color: "#ffffff",
-};
-
-const topCopyCol = {
-  borderLeft: "1px solid rgba(255, 255, 255, 0.22)",
-  paddingLeft: "16px",
-  marginLeft: "4px",
-  verticalAlign: "middle" as const,
-};
-
-const brandLine = {
-  margin: "0 0 8px",
-  fontSize: "15.7px",
-  fontWeight: 600 as const,
-  letterSpacing: "0.06em",
-  lineHeight: 1.35,
-  color: "#ffffff",
-};
-
-const subLine = {
-  margin: 0,
-  fontSize: "11.5px",
-  fontWeight: 400 as const,
-  opacity: 0.88,
-  letterSpacing: "0.04em",
-  lineHeight: 1.45,
-  color: "#ffffff",
-  maxWidth: "340px",
-};
-
-const perforation = {
-  height: "8px",
-  backgroundImage:
-    "repeating-linear-gradient(90deg, #272B36 0px, #272B36 5px, transparent 5px, transparent 10px)",
-  opacity: 0.35,
-  margin: 0,
-  padding: 0,
-  lineHeight: 0,
-  fontSize: 0,
+  padding: "40px 0",
+  width: "600px",
+  maxWidth: "100%",
 };
 
 const card = {
-  backgroundColor: "#ffffff",
-  padding: "22px 22px 8px",
+  backgroundColor: "#111111",
+  padding: "40px 48px",
+  border: "1px solid #333333",
+};
+
+const headerSerif = {
+  fontFamily: '"Bodoni Moda", "Times New Roman", Times, serif',
+  fontSize: "36px",
+  fontWeight: "bold",
+  textAlign: "center" as const,
+  margin: "0 0 8px 0",
+  color: "#ffffff",
+};
+
+const subHeaderText = {
+  fontSize: "13px",
+  color: "#a1a1aa",
+  textAlign: "center" as const,
+  margin: "0 0 40px 0",
+  letterSpacing: "0.5px",
 };
 
 const table = { width: "100%", borderCollapse: "collapse" as const, marginTop: "16px" };
@@ -123,13 +80,13 @@ const th = {
   textTransform: "uppercase" as const,
   letterSpacing: "0.07em",
   color: "#71717a",
-  borderBottom: "1px solid #e4e4e7",
+  borderBottom: "1px solid #333333",
 };
 const td = {
   padding: "12px 0",
-  borderBottom: "1px solid #e4e4e7",
+  borderBottom: "1px solid #333333",
   fontSize: "15px",
-  color: "#18181b",
+  color: "#ffffff",
 };
 const tdMono = {
   ...td,
@@ -145,14 +102,14 @@ const btnContainer = {
 };
 
 const button = {
-  backgroundColor: "#272B36",
-  color: "#ffffff",
+  backgroundColor: "#ffffff",
+  color: "#000000",
   padding: "12px 24px",
-  fontSize: "14px",
-  fontWeight: 600 as const,
+  fontSize: "13px",
+  fontWeight: "bold",
   textDecoration: "none",
-  letterSpacing: "0.05em",
-  borderRadius: "6px",
+  letterSpacing: "1px",
+  borderRadius: "0px", // blocky for darko
 };
 
 const printHint = {
@@ -161,6 +118,26 @@ const printHint = {
   textAlign: "center" as const,
   marginTop: "16px",
   fontStyle: "italic",
+};
+
+const footerWrap = {
+  backgroundColor: "#000000",
+  padding: "32px 48px",
+  textAlign: "center" as const,
+};
+
+const footerLinks = {
+  fontSize: "11px",
+  fontWeight: "bold",
+  color: "#ffffff",
+  margin: "0 0 16px 0",
+};
+
+const footerAddress = {
+  fontSize: "11px",
+  color: "#a1a1aa",
+  margin: "0",
+  lineHeight: "1.6",
 };
 
 export default function UrTailorBookingEmail({
@@ -181,6 +158,7 @@ export default function UrTailorBookingEmail({
     : `Your Bespoke Consultation is Confirmed — ${bookingCode}`;
   
   const baseUrl = getBaseUrl();
+  const joeyUrl = "https://joeythebrand.com";
 
   const formattedDate = preferredDate && preferredDate !== "—" 
     ? new Date(preferredDate.length === 10 ? `${preferredDate}T12:00:00` : preferredDate).toLocaleDateString('en-US', {
@@ -202,34 +180,46 @@ export default function UrTailorBookingEmail({
             @media print {
               body { background: #fff !important; }
               .no-print { display: none !important; }
-              .machineWrap { border-width: 2px !important; }
+              .dark-card { background: #fff !important; color: #000 !important; border-color: #ddd !important; }
+              .dark-text { color: #000 !important; }
+              .dark-border { border-color: #ddd !important; }
             }
           `}
         </style>
       </Head>
       <Preview>{preview}</Preview>
       <Body style={main}>
-        <Container style={container}>
-          <Section style={machineWrap} className="machineWrap">
-            <Section style={headerBand}>
-              <Row>
-                <Column style={{ width: "132px", verticalAlign: "middle", paddingRight: "16px" }}>
-                  <Text style={logoMark}>URTAILORSTAILOR</Text>
-                </Column>
-                <Column style={topCopyCol}>
-                  <Text style={brandLine}>Appointment {isPending ? "Request" : "Confirmation"}</Text>
-                  <Text style={subLine}>
-                    {isPending 
-                      ? "Your downpayment is received. We will review and confirm shortly." 
-                      : "Print or save this slip and bring it with you."}
-                  </Text>
-                </Column>
-              </Row>
-            </Section>
-            <Section style={perforation}>&nbsp;</Section>
-            
-            <Section style={card}>
-              <Text style={{ textAlign: "center", fontSize: "15px", color: "#27272a", marginBottom: "24px", lineHeight: "1.6" }}>
+        {/* Outer Dark Header Wrapper */}
+        <div style={{ 
+          backgroundColor: "#000000", 
+          backgroundImage: `url(${joeyUrl}/collection_kpq24u.jpg)`, 
+          backgroundSize: "cover", 
+          backgroundPosition: "center",
+          height: "380px",
+          width: "100%",
+          paddingTop: "60px", 
+          textAlign: "center" 
+        }} className="no-print">
+          <Text style={{ fontFamily: '"Bodoni Moda", serif', fontSize: "24px", color: "#ffffff", margin: 0, letterSpacing: "2px" }}>
+            URTAILORSTAILOR
+          </Text>
+        </div>
+
+        {/* Main Card Wrapper */}
+        <div style={{ marginTop: "-160px", width: "100%" }}>
+          <Container style={container}>
+            <Section style={card} className="dark-card">
+              
+              <Text style={headerSerif} className="dark-text">
+                Appointment {isPending ? "Request" : "Confirmed"}
+              </Text>
+              <Text style={subHeaderText} className="dark-text">
+                {isPending 
+                  ? "We will review and confirm shortly." 
+                  : "Print or save this slip and bring it with you."}
+              </Text>
+
+              <Text style={{ textAlign: "center", fontSize: "15px", color: "#e4e4e7", marginBottom: "24px", lineHeight: "1.6" }} className="dark-text">
                 {isPending ? (
                   <>Thank you for booking a bespoke session with URTAILORSTAILOR, {customerName.split(" ")[0]}. Your request is currently pending review.</>
                 ) : (
@@ -240,37 +230,37 @@ export default function UrTailorBookingEmail({
               <table style={table}>
                 <tbody>
                   <tr>
-                    <th style={th}>Customer Name</th>
-                    <td style={td}>{customerName}</td>
+                    <th style={th} className="dark-border dark-text">Customer Name</th>
+                    <td style={td} className="dark-border dark-text">{customerName}</td>
                   </tr>
                   <tr>
-                    <th style={th}>Email</th>
-                    <td style={td}>{customerEmail}</td>
+                    <th style={th} className="dark-border dark-text">Email</th>
+                    <td style={td} className="dark-border dark-text">{customerEmail}</td>
                   </tr>
                   <tr>
-                    <th style={th}>Phone / WhatsApp</th>
-                    <td style={td}>{customerPhone || "—"}</td>
+                    <th style={th} className="dark-border dark-text">Phone / WhatsApp</th>
+                    <td style={td} className="dark-border dark-text">{customerPhone || "—"}</td>
                   </tr>
                   <tr>
-                    <th style={th}>Service</th>
-                    <td style={td}>{service}</td>
+                    <th style={th} className="dark-border dark-text">Service</th>
+                    <td style={td} className="dark-border dark-text">{service}</td>
                   </tr>
                   <tr>
-                    <th style={th}>Preferred Date</th>
-                    <td style={td}>{formattedDate}</td>
+                    <th style={th} className="dark-border dark-text">Preferred Date</th>
+                    <td style={td} className="dark-border dark-text">{formattedDate}</td>
                   </tr>
                   <tr>
-                    <th style={th}>Booking Code</th>
-                    <td style={isPending ? td : tdMono}>{displayCode}</td>
+                    <th style={th} className="dark-border dark-text">Booking Code</th>
+                    <td style={isPending ? td : tdMono} className="dark-border dark-text">{displayCode}</td>
                   </tr>
                   <tr>
-                    <th style={th}>Status</th>
-                    <td style={td}>{displayStatus}</td>
+                    <th style={th} className="dark-border dark-text">Status</th>
+                    <td style={td} className="dark-border dark-text">{displayStatus}</td>
                   </tr>
                   {notes && (
                     <tr>
-                      <th style={{ ...th, borderBottom: "none" }}>Customer Notes</th>
-                      <td style={{ ...td, borderBottom: "none" }}>{notes}</td>
+                      <th style={{ ...th, borderBottom: "none" }} className="dark-text">Customer Notes</th>
+                      <td style={{ ...td, borderBottom: "none" }} className="dark-text">{notes}</td>
                     </tr>
                   )}
                 </tbody>
@@ -285,8 +275,18 @@ export default function UrTailorBookingEmail({
                 </Text>
               </Section>
             </Section>
-          </Section>
-        </Container>
+
+            {/* Footer */}
+            <Section style={footerWrap} className="no-print">
+              <Text style={footerLinks}>
+                <Link href={`${baseUrl}`} style={{ color: "#ffffff", textDecoration: "none" }}>URTAILORSTAILOR</Link>
+              </Text>
+              <Text style={footerAddress}>
+                Sent from the URTAILORSTAILOR site.<br/>
+              </Text>
+            </Section>
+          </Container>
+        </div>
       </Body>
     </Html>
   );

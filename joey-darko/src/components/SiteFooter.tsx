@@ -89,7 +89,7 @@ export default function SiteFooter() {
 
         <div className={styles.bottomBar}>
           <p className={styles.copy}>© 2026 JOEY The brand. All rights reserved.</p>
-          <CuratedPill devHref="https://geniedev.vercel.app/services" />
+          <CuratedPill devHref="https://geniedevstudios.com/services" />
         </div>
       </div>
     </footer>
