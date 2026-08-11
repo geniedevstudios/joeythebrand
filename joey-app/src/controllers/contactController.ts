@@ -45,23 +45,23 @@ export async function postContact(request: Request): Promise<NextResponse> {
 
   const { name, email, phone, subject, message } = parsed.data;
 
-  if (!process.env.BREVO_API_KEY?.trim()) {
+  if (!process.env.RESEND_API_KEY?.trim()) {
     return NextResponse.json(
-      { ok: false, error: "Email service is not configured (BREVO_API_KEY)." },
+      { ok: false, error: "Email service is not configured (RESEND_API_KEY)." },
       { status: 503 },
     );
   }
 
-  const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim();
+  const senderEmail = process.env.RESEND_CONTACT_EMAIL?.trim() || "contacts@joeythebrand.com";
   if (!senderEmail) {
     return NextResponse.json(
-      { ok: false, error: "BREVO_SENDER_EMAIL is not set (use a verified Brevo sender)." },
+      { ok: false, error: "RESEND_CONTACT_EMAIL is not set (use a verified Resend sender)." },
       { status: 503 },
     );
   }
 
   const toEmail = process.env.CONTACT_TO_EMAIL?.trim() || DEFAULT_INBOX;
-  const senderName = process.env.BREVO_SENDER_NAME?.trim() || "JOEY THE BRAND";
+  const senderName = "JOEY THE BRAND";
 
   const html = await render(
     ContactSiteMessage({
@@ -99,7 +99,7 @@ export async function postContact(request: Request): Promise<NextResponse> {
       replyToName: name,
     });
   } catch (err) {
-    console.error("[contact] Brevo send failed:", err);
+    console.error("[contact] Resend send failed:", err);
     return NextResponse.json(
       { ok: false, error: "Could not send email. Try again later." },
       { status: 502 },

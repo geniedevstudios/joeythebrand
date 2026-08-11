@@ -49,24 +49,24 @@ export async function postContact(request: Request): Promise<NextResponse> {
 
   const { name, email, phone, subject, message } = parsed.data;
 
-  const brevoApiKey = process.env.BREVO_API_KEY;
-  const brevoKeyOk = typeof brevoApiKey === "string" && brevoApiKey.trim() !== "";
-  if (!brevoKeyOk) {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const resendKeyOk = typeof resendApiKey === "string" && resendApiKey.trim() !== "";
+  if (!resendKeyOk) {
     return NextResponse.json(
       {
         ok: false,
         error:
-          "Email is not configured. Add BREVO_API_KEY (and BREVO_SENDER_EMAIL) to joey-darko/.env.local, then restart the dev server.",
+          "Email is not configured. Add RESEND_API_KEY (and RESEND_FROM_EMAIL) to joey-darko/.env.local, then restart the dev server.",
       },
       { status: 503 },
     );
   }
 
-  const senderEmailRaw = process.env.BREVO_SENDER_EMAIL;
-  const senderEmail = typeof senderEmailRaw === "string" ? senderEmailRaw.trim() : "";
+  const senderEmailRaw = process.env.RESEND_CONTACT_EMAIL;
+  const senderEmail = typeof senderEmailRaw === "string" && senderEmailRaw.trim() !== "" ? senderEmailRaw.trim() : "contacts@joeythebrand.com";
   if (!senderEmail) {
     return NextResponse.json(
-      { ok: false, error: "BREVO_SENDER_EMAIL is not set (use a verified Brevo sender)." },
+      { ok: false, error: "RESEND_CONTACT_EMAIL is not set (use a verified Resend sender)." },
       { status: 503 },
     );
   }
@@ -74,9 +74,7 @@ export async function postContact(request: Request): Promise<NextResponse> {
   const contactToRaw = process.env.CONTACT_TO_EMAIL;
   const toEmail =
     typeof contactToRaw === "string" && contactToRaw.trim() !== "" ? contactToRaw.trim() : DEFAULT_INBOX;
-  const senderNameRaw = process.env.BREVO_SENDER_NAME;
-  const senderName =
-    typeof senderNameRaw === "string" && senderNameRaw.trim() !== "" ? senderNameRaw.trim() : "URTAILORSTAILOR";
+  const senderName = "URTAILORSTAILOR";
 
   const html = await render(
     UrTailorContactMessage({
@@ -114,7 +112,7 @@ export async function postContact(request: Request): Promise<NextResponse> {
       replyToName: name,
     });
   } catch (err) {
-    console.error("[contact] Brevo send failed:", err);
+    console.error("[contact] Resend send failed:", err);
     return NextResponse.json(
       { ok: false, error: "Could not send email. Try again later." },
       { status: 502 },

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { OrderItem } from "@/lib/types";
+import { Resend } from "resend";
+import OrderConfirmationEmail from "@/emails/OrderConfirmationEmail";
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 export const runtime = "nodejs";
 
 const supabaseAdmin = createClient(
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", orderId)
-      .select("items, shipping_address, customer_name, customer_email, customer_phone")
+      .select("items, shipping_address, customer_name, customer_email, customer_phone, total, order_number, created_at")
       .single();
 
     if (orderError || !orderData) {
@@ -125,6 +128,29 @@ export async function POST(req: Request) {
     } catch (invErr) {
       console.error("Inventory Decrement Logic Error:", invErr);
       // We don't fail the whole request because the user paid and order is marked "paid"
+    }
+
+    // 4. Send Order Confirmation Email
+    try {
+      if (orderData.customer_email) {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || "orders@joeythebrand.com";
+        const displayOrderId = orderData.order_number || orderId.slice(0, 8).toUpperCase();
+        await resend.emails.send({
+          from: `JOEY The brand <${fromEmail}>`,
+          to: orderData.customer_email,
+          subject: `Order Confirmation - ${displayOrderId}`,
+          react: OrderConfirmationEmail({
+            customerName: orderData.customer_name || "Customer",
+            orderId: displayOrderId,
+            items: (orderData.items as any) || [],
+            total: orderData.total || 0,
+            shippingAddress: orderData.shipping_address || "TBD",
+            dateOrdered: orderData.created_at || new Date().toISOString(),
+          }),
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send confirmation email:", emailErr);
     }
 
     return NextResponse.json({ ok: true });

@@ -672,6 +672,12 @@ export const dataStore = {
   },
 
   confirmConsultation: async (id: string, scheduledAtIso: string): Promise<void> => {
+    const { data: booking, error: fetchErr } = await supabase
+      .from("consultation_bookings")
+      .select("source")
+      .eq("id", id)
+      .single();
+
     const { error } = await supabase
       .from("consultation_bookings")
       .update({
@@ -681,6 +687,27 @@ export const dataStore = {
       })
       .eq("id", id);
     if (error) throw new Error(error.message);
+
+    try {
+      // Determine which storefront to trigger the email from based on the source
+      const isPortfolio = booking?.source === "portfolio";
+      
+      let appUrl;
+      if (isPortfolio) {
+        appUrl = process.env.NEXT_PUBLIC_PORTFOLIO_URL || "http://localhost:3001";
+      } else {
+        appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      }
+
+      await fetch(`${appUrl}/api/admin/trigger-consultation-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+    } catch (err) {
+      console.error("Failed to trigger confirmation email:", err);
+    }
+
     dataStore.notify();
   },
 
