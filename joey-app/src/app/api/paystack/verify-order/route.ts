@@ -130,25 +130,44 @@ export async function POST(req: Request) {
       // We don't fail the whole request because the user paid and order is marked "paid"
     }
 
-    // 4. Send Order Confirmation Email
+    // 4. Send Order Confirmation Email (customer + admin)
     try {
+      const fromEmail = process.env.RESEND_FROM_EMAIL || "orders@joeythebrand.com";
+      const displayOrderId = orderData.order_number || orderId.slice(0, 8).toUpperCase();
+      const emailProps = {
+        customerName: orderData.customer_name || "Customer",
+        orderId: displayOrderId,
+        items: (orderData.items as any) || [],
+        total: orderData.total || 0,
+        shippingAddress: orderData.shipping_address || "TBD",
+        dateOrdered: orderData.created_at || new Date().toISOString(),
+      };
+      const adminOrdersUrl =
+        process.env.ADMIN_ORDERS_URL?.trim() || "https://admin.joeythebrand.com/orders";
+      const adminEmail =
+        process.env.ORDERS_ADMIN_EMAIL?.trim() ||
+        process.env.CONTACT_TO_EMAIL?.trim() ||
+        "joeythebrandonline@gmail.com";
+
       if (orderData.customer_email) {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || "orders@joeythebrand.com";
-        const displayOrderId = orderData.order_number || orderId.slice(0, 8).toUpperCase();
         await resend.emails.send({
           from: `JOEY The brand <${fromEmail}>`,
           to: orderData.customer_email,
           subject: `Order Confirmation - ${displayOrderId}`,
-          react: OrderConfirmationEmail({
-            customerName: orderData.customer_name || "Customer",
-            orderId: displayOrderId,
-            items: (orderData.items as any) || [],
-            total: orderData.total || 0,
-            shippingAddress: orderData.shipping_address || "TBD",
-            dateOrdered: orderData.created_at || new Date().toISOString(),
-          }),
+          react: OrderConfirmationEmail(emailProps),
         });
       }
+
+      await resend.emails.send({
+        from: `JOEY The brand <${fromEmail}>`,
+        to: adminEmail,
+        subject: `New Order - ${displayOrderId}`,
+        react: OrderConfirmationEmail({
+          ...emailProps,
+          isAdmin: true,
+          adminOrdersUrl,
+        }),
+      });
     } catch (emailErr) {
       console.error("Failed to send confirmation email:", emailErr);
     }

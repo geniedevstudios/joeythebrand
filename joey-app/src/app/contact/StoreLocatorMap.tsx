@@ -52,6 +52,7 @@ function MapEffect({ locations, activeStoreId }: MapProps) {
 export default function StoreLocatorMap({ locations, activeStoreId, onMarkerClick }: MapProps) {
   const defaultCenter: [number, number] = [5.6037, -0.1870];
   const [mounted, setMounted] = useState(false);
+  const cartoApiKey = process.env.NEXT_PUBLIC_CARTO_API_KEY?.trim() ?? "";
 
   useEffect(() => {
     setMounted(true);
@@ -66,11 +67,13 @@ export default function StoreLocatorMap({ locations, activeStoreId, onMarkerClic
       scrollWheelZoom={true}
       touchZoom={true}
       zoomControl={false}
-      attributionControl={false}
       style={{ height: "100%", width: "100%", zIndex: 1 }}
     >
       <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        url={`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${cartoApiKey}`}
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        subdomains="abcd"
+        maxZoom={20}
       />
       <ZoomControl position="bottomright" />
 

@@ -31,6 +31,9 @@ export type OrderConfirmationEmailProps = {
   total: number;
   shippingAddress: string;
   dateOrdered?: string;
+  /** When true, copy is worded for the store admin and CTA links to the admin orders page. */
+  isAdmin?: boolean;
+  adminOrdersUrl?: string;
 };
 
 function getBaseUrl(): string {
@@ -226,6 +229,8 @@ const footerAddress = {
   lineHeight: "1.6",
 };
 
+const DEFAULT_ADMIN_ORDERS_URL = "https://admin.joeythebrand.com/orders";
+
 export default function OrderConfirmationEmail({
   customerName = "Jane",
   orderId = "58392743",
@@ -242,14 +247,27 @@ export default function OrderConfirmationEmail({
   total = 175,
   shippingAddress = "123 Evergreen Lane\nAnytown, NY 45678",
   dateOrdered = new Date().toISOString(),
+  isAdmin = false,
+  adminOrdersUrl = DEFAULT_ADMIN_ORDERS_URL,
 }: OrderConfirmationEmailProps) {
-  const preview = `Thanks for your order, ${customerName}.`;
+  const firstName = customerName.split(" ")[0];
+  const preview = isAdmin
+    ? `New order ${orderId} from ${customerName}.`
+    : `Thanks for your order, ${customerName}.`;
   const baseUrl = getBaseUrl();
   const formattedDate = new Date(dateOrdered).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric'
   });
+  const headline = isAdmin
+    ? `New order from ${firstName}.`
+    : `Thanks for your order, ${firstName}.`;
+  const statusCopy = isAdmin
+    ? "A customer just placed this order. Open the admin panel to process it."
+    : "Your order is on its way. We will be processing it shortly.";
+  const ctaHref = isAdmin ? adminOrdersUrl : `${baseUrl}/account`;
+  const ctaLabel = isAdmin ? "View orders in admin" : "Track your order";
 
   return (
     <Html lang="en">
@@ -293,7 +311,7 @@ export default function OrderConfirmationEmail({
             </Text>
 
             {/* Header */}
-            <Text style={headerSerif}>Thanks for your order, {customerName.split(" ")[0]}.</Text>
+            <Text style={headerSerif}>{headline}</Text>
             <Text style={orderNumberText}>Order No. {orderId}</Text>
 
             {/* Meta Data */}
@@ -327,16 +345,16 @@ export default function OrderConfirmationEmail({
 
             {/* Status & CTA */}
             <Text style={statusText}>
-              Your order is on its way. We will be processing it shortly.
+              {statusCopy}
             </Text>
             <Section style={btnContainer}>
-              <Button href={`${baseUrl}/account`} style={button}>
-                Track your order
+              <Button href={ctaHref} style={button}>
+                {ctaLabel}
               </Button>
             </Section>
 
             {/* Summary Title */}
-            <Text style={sectionTitle}>Your Order Summary</Text>
+            <Text style={sectionTitle}>{isAdmin ? "Order Summary" : "Your Order Summary"}</Text>
 
             {/* Items */}
             {items.map((item, index) => (
