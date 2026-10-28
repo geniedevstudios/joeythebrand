@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { Resend } from "resend";
+import UrTailorBookingEmail from "@/emails/UrTailorBookingEmail";
+import { verifyConsultationPaystackAndNotify } from "@/lib/consultationWorkflow";
 
 export const runtime = "nodejs";
 
@@ -11,6 +14,16 @@ function safeEqualHex(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ab, bb);
 }
 
+function getBaseUrl(): string {
+  const explicit =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_PORTFOLIO_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
+  return "https://urtailorstailor.com";
+}
+
 type PaystackEvent = {
   event?: string;
   data?: {
@@ -18,6 +31,7 @@ type PaystackEvent = {
     status?: string;
     metadata?: {
       bookingId?: string;
+      booking_id?: string;
       custom_fields?: Array<{
         variable_name?: string;
         value?: string;
@@ -49,37 +63,36 @@ export async function POST(request: Request) {
 
   const reference = evt.data?.reference?.trim() || "";
   if (!reference) {
-    return NextResponse.json({ ok: true }); // nothing to reconcile
+    return NextResponse.json({ ok: true });
   }
 
-  // We only act on success-like events; still verify server-side for safety.
   if (evt.event && !/charge\.success/i.test(evt.event)) {
     return NextResponse.json({ ok: true });
   }
 
   const bookingIdFromMeta =
     evt.data?.metadata?.bookingId?.trim() ||
+    evt.data?.metadata?.booking_id?.trim() ||
     evt.data?.metadata?.custom_fields?.find((f) => f.variable_name === "booking_id")?.value?.trim() ||
     "";
 
-  const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-    headers: { Authorization: `Bearer ${secret}` },
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const baseUrl = getBaseUrl();
+
+  await verifyConsultationPaystackAndNotify({
+    supabaseAdmin: getSupabaseAdmin(),
+    emailSender: { send: (msg: any) => resend.emails.send(msg) },
+    renderEmail: (props) => UrTailorBookingEmail(props),
+    brandFromName: "URTAILORSTAILOR",
+    reference,
+    bookingId: bookingIdFromMeta || undefined,
+    defaultExpectedGhs: 1000,
+    paystackSecretKey: secret,
+    getSlipUrl: (row) =>
+      row.portfolio_access_token
+        ? `${baseUrl}/booking/slip?token=${encodeURIComponent(row.portfolio_access_token)}`
+        : `${baseUrl}/booking`,
   });
-
-  const verifyData = (await verifyRes.json()) as any;
-  const success = Boolean(verifyRes.ok && verifyData?.status && verifyData?.data?.status === "success");
-
-  const supabase = getSupabaseAdmin();
-  const update = success
-    ? { payment_status: "paid", payment_ref: reference, updated_at: new Date().toISOString() }
-    : { payment_status: verifyData?.data?.status === "failed" ? "failed" : "pending", payment_ref: reference, updated_at: new Date().toISOString() };
-
-  if (bookingIdFromMeta) {
-    await supabase.from("consultation_bookings").update(update).eq("id", bookingIdFromMeta);
-  } else {
-    await supabase.from("consultation_bookings").update(update).eq("payment_ref", reference);
-  }
 
   return NextResponse.json({ ok: true });
 }
-

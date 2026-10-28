@@ -60,6 +60,7 @@ export default function PageHeroesIndexPage() {
         const cur = content.pageHeroes[k];
         const local = heroes[k];
         const next: PageHeroMedia = {
+          ...cur,
           kind: cur.kind === "video" ? "image" : cur.kind,
           src: local.src.trim(),
           fit: local.fit,
@@ -109,7 +110,7 @@ export default function PageHeroesIndexPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {keys.map((k) => (
           <Link
             key={k}

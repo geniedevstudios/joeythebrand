@@ -29,8 +29,8 @@
 /* Grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: clamp(var(--space-md), 2vw, var(--space-lg));
 }
 
 /* Card */
@@ -644,11 +644,7 @@
   color: var(--blue-athracite);
 }
 
-@media (max-width: 1024px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   /* Mobile: swipeable 1-card-per-view carousel */
   .grid {
     display: flex;

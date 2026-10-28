@@ -25,34 +25,53 @@ function normalizeWearTag(v: unknown): WearTag {
 
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
-const mapProduct = (row: Record<string, unknown>): Product => ({
-  id: row.id as string,
-  slug: (row.slug as string) || undefined,
-  name: row.name as string,
-  category: row.category as Product["category"],
-  categoryName: row.category_name as string,
-  price: Number(row.price),
-  originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
-  image: row.image as string,
-  hoverImage: (row.hover_image as string) || undefined,
-  images: (row.images as string[]) || [],
-  description: row.description as string,
-  details: Array.isArray(row.details)
-    ? (row.details as string[]).filter((d) => typeof d === "string" && d.trim())
-    : [],
-  sizes: (row.sizes as ProductSize[]) || [],
-  isOutOfStock: Boolean(row.is_out_of_stock),
-  isLimited: Boolean(row.is_limited),
-  isBestSeller: Boolean(row.is_best_seller),
-  featured: Boolean(row.featured),
-  wearTag: normalizeWearTag(row.wear_tag),
-  quantity: Number(row.quantity ?? 0),
-  bespokeAvailable: Boolean(row.bespoke_available),
-  bespokeLeadDays: Number(row.bespoke_lead_days ?? 14),
-  weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
-  hsCode: (row.hs_code as string) || undefined,
-  variants: (row.variants as any) || [],
-});
+const mapProduct = (row: Record<string, unknown>): Product => {
+  const rawMode = String(row.fulfillment_mode ?? "").trim();
+  const fulfillmentMode =
+    rawMode === "made_to_order_only" || rawMode === "stock_then_made_to_order" || rawMode === "stock_only"
+      ? rawMode
+      : row.bespoke_available
+        ? "stock_then_made_to_order"
+        : "stock_only";
+  const leadDays = Number(row.made_to_order_lead_days ?? row.bespoke_lead_days ?? 14);
+  return {
+    id: row.id as string,
+    slug: (row.slug as string) || undefined,
+    name: row.name as string,
+    category: row.category as Product["category"],
+    categoryName: row.category_name as string,
+    price: Number(row.price),
+    originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
+    image: row.image as string,
+    hoverImage: (row.hover_image as string) || undefined,
+    images: (row.images as string[]) || [],
+    description: row.description as string,
+    details: Array.isArray(row.details)
+      ? (row.details as string[]).filter((d) => typeof d === "string" && d.trim())
+      : [],
+    sizes: (row.sizes as ProductSize[]) || [],
+    isOutOfStock: Boolean(row.is_out_of_stock),
+    isLimited: Boolean(row.is_limited),
+    isBestSeller: Boolean(row.is_best_seller),
+    featured: Boolean(row.featured),
+    wearTag: normalizeWearTag(row.wear_tag),
+    quantity: Number(row.quantity ?? 0),
+    isPublished: row.is_published !== false,
+    fulfillmentMode,
+    showOnBespokePage:
+      fulfillmentMode === "made_to_order_only" && Boolean(row.show_on_bespoke_page),
+    madeToOrderLeadDays: leadDays,
+    mtoMaxQtyPerOrder: Math.max(1, Number(row.mto_max_qty_per_order ?? 5)),
+    bespokeAvailable:
+      fulfillmentMode === "made_to_order_only" ||
+      fulfillmentMode === "stock_then_made_to_order" ||
+      Boolean(row.bespoke_available),
+    bespokeLeadDays: leadDays,
+    weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
+    hsCode: (row.hs_code as string) || undefined,
+    variants: (row.variants as any) || [],
+  };
+};
 
 const mapPromo = (row: Record<string, unknown>): PromotionCode => ({
   id: row.id as string,
@@ -78,6 +97,17 @@ const mapConsultationBooking = (row: Record<string, unknown>): ConsultationBooki
     ? String(row.booking_code).trim() || undefined
     : undefined,
   scheduledAt: (row.scheduled_at as string) || undefined,
+  proposedScheduledAt: (row.proposed_scheduled_at as string) || undefined,
+  proposedDate: (row.proposed_date as string) || undefined,
+  proposedTime: row.proposed_time != null ? String(row.proposed_time).trim() || undefined : undefined,
+  rescheduleNote: (row.reschedule_note as string) || undefined,
+  rescheduleProposedAt: (row.reschedule_proposed_at as string) || undefined,
+  customerRescheduleResponse: (row.customer_reschedule_response as string) || undefined,
+  customerRespondedAt: (row.customer_responded_at as string) || undefined,
+  cancelledAt: (row.cancelled_at as string) || undefined,
+  cancellationReason: (row.cancellation_reason as string) || undefined,
+  refundReviewRequired: Boolean(row.refund_review_required),
+  refundReviewStatus: (row.refund_review_status as string) || undefined,
   durationHours: row.duration_hours != null ? Number(row.duration_hours) : undefined,
   priceGhs: row.price_ghs != null ? Number(row.price_ghs) : undefined,
   paymentStatus: (row.payment_status as string) || "unpaid",
@@ -94,6 +124,8 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   customerPhone: row.customer_phone as string,
   shippingAddress: row.shipping_address as string,
   items: row.items as Order["items"],
+  subtotal: row.subtotal != null ? Number(row.subtotal) : undefined,
+  shippingCost: row.shipping_cost != null ? Number(row.shipping_cost) : undefined,
   total: Number(row.total),
   discount: Number(row.discount),
   promotionCode: row.promotion_code as string | undefined,
@@ -102,6 +134,13 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   status: row.status as OrderStatus,
   userId: row.user_id as string | undefined,
   notes: row.notes as string | undefined,
+  reservationExpiresAt: (row.reservation_expires_at as string) || undefined,
+  paidAt: (row.paid_at as string) || undefined,
+  stockConflictFlagged: Boolean(row.stock_conflict_flagged),
+  stockConflictDetails: row.stock_conflict_details ?? undefined,
+  hasMadeToOrderItems: Boolean(row.has_made_to_order_items),
+  isMixedFulfillment: Boolean(row.is_mixed_fulfillment),
+  maxLeadDays: row.max_lead_days != null ? Number(row.max_lead_days) : undefined,
   dhlTrackingNumber: row.dhl_tracking_number as string | undefined,
   dhlLabelUrl: row.dhl_label_url as string | undefined,
   dhlStatus: row.dhl_status as string | undefined,
@@ -447,6 +486,19 @@ export const dataStore = {
     if (updates.featured !== undefined) payload.featured = updates.featured;
     if (updates.wearTag !== undefined) payload.wear_tag = updates.wearTag;
     if (updates.quantity !== undefined) payload.quantity = updates.quantity;
+    if (updates.isPublished !== undefined) payload.is_published = updates.isPublished;
+    if (updates.fulfillmentMode !== undefined) payload.fulfillment_mode = updates.fulfillmentMode;
+    if (updates.showOnBespokePage !== undefined) {
+      payload.show_on_bespoke_page =
+        updates.fulfillmentMode === "made_to_order_only" ? Boolean(updates.showOnBespokePage) : false;
+    }
+    if (updates.madeToOrderLeadDays !== undefined) {
+      payload.made_to_order_lead_days = updates.madeToOrderLeadDays;
+      payload.bespoke_lead_days = updates.madeToOrderLeadDays;
+    }
+    if (updates.mtoMaxQtyPerOrder !== undefined) {
+      payload.mto_max_qty_per_order = updates.mtoMaxQtyPerOrder;
+    }
     if (updates.bespokeAvailable !== undefined) payload.bespoke_available = updates.bespokeAvailable;
     if (updates.bespokeLeadDays !== undefined) payload.bespoke_lead_days = updates.bespokeLeadDays;
     if (updates.weightKg !== undefined) payload.weight_kg = updates.weightKg;
@@ -462,6 +514,8 @@ export const dataStore = {
     const id = product.id || `product-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const generatedSlug = product.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     const slug = product.slug || generatedSlug;
+    const mode = product.fulfillmentMode || (product.bespokeAvailable ? "stock_then_made_to_order" : "stock_only");
+    const leadDays = product.madeToOrderLeadDays ?? product.bespokeLeadDays ?? 14;
     
     const { error } = await supabase.from("products").insert({
       id,
@@ -477,14 +531,19 @@ export const dataStore = {
       description: product.description,
       details: product.details,
       sizes: product.sizes,
-      is_out_of_stock: product.isOutOfStock,
+      is_out_of_stock: mode === "made_to_order_only" ? false : product.isOutOfStock,
       is_limited: product.isLimited,
       is_best_seller: product.isBestSeller,
       featured: product.featured,
       wear_tag: product.wearTag ?? "unisex",
-      quantity: product.quantity ?? 0,
-      bespoke_available: product.bespokeAvailable ?? false,
-      bespoke_lead_days: product.bespokeLeadDays ?? 14,
+      quantity: mode === "made_to_order_only" ? 0 : (product.quantity ?? 0),
+      is_published: product.isPublished !== false,
+      fulfillment_mode: mode,
+      show_on_bespoke_page: mode === "made_to_order_only" ? Boolean(product.showOnBespokePage) : false,
+      made_to_order_lead_days: leadDays,
+      mto_max_qty_per_order: product.mtoMaxQtyPerOrder ?? 5,
+      bespoke_available: mode !== "stock_only",
+      bespoke_lead_days: leadDays,
       weight_kg: product.weightKg ?? null,
       hs_code: product.hsCode ?? null,
       variants: product.variants ?? [],
@@ -588,6 +647,51 @@ export const dataStore = {
     dataStore.notify();
   },
 
+  updateOrderItemProductionStatus: async (
+    orderId: string,
+    itemIndex: number,
+    productionStatus: "queued" | "in_production" | "quality_check" | "ready_for_dispatch",
+  ): Promise<void> => {
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from("orders")
+      .select("items")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchError || !currentOrder) {
+      throw new Error(fetchError?.message || "Order not found");
+    }
+
+    const items = Array.isArray(currentOrder.items) ? [...currentOrder.items] : [];
+    if (itemIndex < 0 || itemIndex >= items.length) {
+      throw new Error("Invalid order item index");
+    }
+
+    items[itemIndex] = {
+      ...items[itemIndex],
+      productionStatus,
+    };
+
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        items,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId);
+
+    if (error) throw new Error(error.message);
+    dataStore.notify();
+  },
+
+  resolveOrderStockConflict: async (orderId: string, reason: string, agreement: string, leadDays: number): Promise<void> => {
+    const { error } = await supabase.rpc("resolve_order_stock_conflict", {
+      p_order_id: orderId, p_reason: reason, p_agreement: agreement, p_lead_days: leadDays,
+    });
+    if (error) throw new Error(error.message);
+    dataStore.notify();
+  },
+
   // ── Site Content ───────────────────────────────────────────────────────────
   getSiteContent: async (): Promise<SiteContent> => {
     const { data, error } = await supabase.from("site_content").select("*").single();
@@ -677,50 +781,142 @@ export const dataStore = {
       .select("source")
       .eq("id", id)
       .single();
+    if (fetchErr || !booking) {
+      throw new Error(fetchErr?.message || "Consultation booking not found.");
+    }
 
-    const { error } = await supabase
-      .from("consultation_bookings")
-      .update({
-        status: "confirmed" satisfies ConsultationStatus,
-        scheduled_at: scheduledAtIso,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-    if (error) throw new Error(error.message);
+    const isPortfolio = booking.source === "portfolio";
+    const isProd = process.env.NODE_ENV === "production";
+    const appUrl = isPortfolio
+      ? process.env.NEXT_PUBLIC_PORTFOLIO_URL?.trim() || (isProd ? "https://urtailorstailor.com" : "http://localhost:3002")
+      : process.env.NEXT_PUBLIC_APP_URL?.trim() || (isProd ? "https://joeythebrand.com" : "http://localhost:3000");
 
-    try {
-      // Determine which storefront to trigger the email from based on the source
-      const isPortfolio = booking?.source === "portfolio";
-      
-      let appUrl;
-      if (isPortfolio) {
-        appUrl = process.env.NEXT_PUBLIC_PORTFOLIO_URL || "http://localhost:3001";
-      } else {
-        appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token || "";
+    if (!accessToken) {
+      throw new Error("Admin session expired. Please sign in again.");
+    }
 
-      await fetch(`${appUrl}/api/admin/trigger-consultation-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-    } catch (err) {
-      console.error("Failed to trigger confirmation email:", err);
+    const res = await fetch(`${appUrl.replace(/\/+$/, "")}/api/admin/trigger-consultation-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        id,
+        action: "confirm",
+        scheduledAt: scheduledAtIso,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || "Failed to confirm consultation.");
     }
 
     dataStore.notify();
   },
 
-  declineConsultation: async (id: string): Promise<void> => {
-    const { error } = await supabase
+  proposeConsultationReschedule: async (
+    id: string,
+    input: {
+      proposedDate: string;
+      proposedTime: string;
+      proposedScheduledAtIso: string;
+      rescheduleNote?: string;
+    },
+  ): Promise<void> => {
+    const { data: booking, error: fetchErr } = await supabase
       .from("consultation_bookings")
-      .update({
-        status: "declined" satisfies ConsultationStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-    if (error) throw new Error(error.message);
+      .select("source")
+      .eq("id", id)
+      .single();
+    if (fetchErr || !booking) {
+      throw new Error(fetchErr?.message || "Consultation booking not found.");
+    }
+
+    const isPortfolio = booking.source === "portfolio";
+    const isProd = process.env.NODE_ENV === "production";
+    const appUrl = isPortfolio
+      ? process.env.NEXT_PUBLIC_PORTFOLIO_URL?.trim() || (isProd ? "https://urtailorstailor.com" : "http://localhost:3002")
+      : process.env.NEXT_PUBLIC_APP_URL?.trim() || (isProd ? "https://joeythebrand.com" : "http://localhost:3000");
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token || "";
+    if (!accessToken) {
+      throw new Error("Admin session expired. Please sign in again.");
+    }
+
+    const res = await fetch(`${appUrl.replace(/\/+$/, "")}/api/admin/trigger-consultation-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        id,
+        action: "reschedule",
+        proposedDate: input.proposedDate,
+        proposedTime: input.proposedTime,
+        proposedScheduledAt: input.proposedScheduledAtIso,
+        rescheduleNote: input.rescheduleNote,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || "Failed to propose reschedule.");
+    }
+
     dataStore.notify();
+  },
+
+  cancelConsultation: async (id: string, cancellationReason?: string): Promise<void> => {
+    const { data: booking, error: fetchErr } = await supabase
+      .from("consultation_bookings")
+      .select("source")
+      .eq("id", id)
+      .single();
+    if (fetchErr || !booking) {
+      throw new Error(fetchErr?.message || "Consultation booking not found.");
+    }
+
+    const isPortfolio = booking.source === "portfolio";
+    const isProd = process.env.NODE_ENV === "production";
+    const appUrl = isPortfolio
+      ? process.env.NEXT_PUBLIC_PORTFOLIO_URL?.trim() || (isProd ? "https://urtailorstailor.com" : "http://localhost:3002")
+      : process.env.NEXT_PUBLIC_APP_URL?.trim() || (isProd ? "https://joeythebrand.com" : "http://localhost:3000");
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token || "";
+    if (!accessToken) {
+      throw new Error("Admin session expired. Please sign in again.");
+    }
+
+    const res = await fetch(`${appUrl.replace(/\/+$/, "")}/api/admin/trigger-consultation-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        id,
+        action: "cancel",
+        cancellationReason,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || "Failed to cancel consultation.");
+    }
+
+    dataStore.notify();
+  },
+
+  declineConsultation: async (id: string, reason?: string): Promise<void> => {
+    return dataStore.cancelConsultation(id, reason);
   },
 
   updateConsultationPaymentStatus: async (id: string, paymentStatus: string): Promise<void> => {

@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/process-order-outbox",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/abandoned-carts",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

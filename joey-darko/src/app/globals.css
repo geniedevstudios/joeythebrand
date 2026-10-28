@@ -77,7 +77,7 @@
   background: var(--cinereous);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .container {
     padding: 0 var(--space-lg);
   }
@@ -125,6 +125,11 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+a[href^="mailto:"] {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 main {

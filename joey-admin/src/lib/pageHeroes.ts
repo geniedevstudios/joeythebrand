@@ -77,8 +77,10 @@ function parseMedia(raw: unknown): PageHeroMedia | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const kind = o.kind === "video" ? "video" : o.kind === "image" ? "image" : null;
-  const src = typeof o.src === "string" && o.src.trim() ? o.src.trim() : null;
-  if (!kind || !src) return null;
+  const src = typeof o.src === "string" ? o.src.trim() : "";
+  const mtoVideoUrl = typeof o.mtoVideoUrl === "string" && o.mtoVideoUrl.trim() ? o.mtoVideoUrl.trim() : undefined;
+  const mtoPosterUrl = typeof o.mtoPosterUrl === "string" && o.mtoPosterUrl.trim() ? o.mtoPosterUrl.trim() : undefined;
+  if (!kind || (!src && !mtoVideoUrl && !mtoPosterUrl)) return null;
   
   const tabletSrc = typeof o.tabletSrc === "string" && o.tabletSrc.trim() ? o.tabletSrc.trim() : undefined;
   const mobileSrc = typeof o.mobileSrc === "string" && o.mobileSrc.trim() ? o.mobileSrc.trim() : undefined;
@@ -89,10 +91,10 @@ function parseMedia(raw: unknown): PageHeroMedia | null {
   if (kind === "video") {
     const tabletPosterUrl = typeof o.tabletPosterUrl === "string" && o.tabletPosterUrl.trim() ? o.tabletPosterUrl.trim() : undefined;
     const mobilePosterUrl = typeof o.mobilePosterUrl === "string" && o.mobilePosterUrl.trim() ? o.mobilePosterUrl.trim() : undefined;
-    return { kind, src, tabletSrc, mobileSrc, tabletPosterUrl, mobilePosterUrl, fit, anchor };
+    return { kind, src, tabletSrc, mobileSrc, tabletPosterUrl, mobilePosterUrl, fit, anchor, mtoVideoUrl, mtoPosterUrl };
   }
   
-  return { kind, src, tabletSrc, mobileSrc, fit, anchor };
+  return { kind, src, tabletSrc, mobileSrc, fit, anchor, mtoVideoUrl, mtoPosterUrl };
 }
 
 export function mergePageHeroes(

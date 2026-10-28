@@ -164,9 +164,9 @@ export default function CartDrawer() {
                         </p>
                       </div>
 
-                      {item.isBespoke && (
+                      {(item.isMadeToOrder || item.isBespoke) && (
                         <p className={styles.bespokeTag}>
-                          Bespoke Order · ~{item.bespokeLeadDays || 14} days
+                          Made to Order · {item.leadDays || item.bespokeLeadDays || 14} days
                         </p>
                       )}
 

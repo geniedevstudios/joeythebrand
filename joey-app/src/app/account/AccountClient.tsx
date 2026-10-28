@@ -142,7 +142,9 @@ type Mode = "signin" | "signup" | "forgot" | "otp" | "newpass" | "success";
 function statusLabel(status: Order["status"]) {
   const map: Record<Order["status"], string> = {
     pending: "Pending",
+    paid_requires_resolution: "Paid — Under Review",
     processing: "Processing",
+    "in production": "In Production",
     "order packaged": "Order Packaged",
     "courier on his way to pick package": "Courier on his way to pick package",
     "courier picked package": "Courier picked package",
@@ -153,24 +155,27 @@ function statusLabel(status: Order["status"]) {
     delivered: "Delivered",
     cancelled: "Cancelled",
   };
-  return map[status];
+  return map[status] || status;
 }
 
 function consultationStatusLabel(status: ConsultationBooking["status"]) {
   const map: Record<ConsultationBooking["status"], string> = {
     pending: "Pending review",
+    reschedule_proposed: "Reschedule proposed",
     confirmed: "Confirmed",
     declined: "Declined",
+    cancelled: "Cancelled",
   };
-  return map[status];
+  return map[status] || status;
 }
 
 function formatPreferredSlot(dateIso?: string, time24?: string) {
   if (!dateIso?.trim()) return null;
-  const d = new Date(dateIso.length === 10 ? `${dateIso}T12:00:00` : dateIso);
+  const d = new Date(dateIso.length === 10 ? `${dateIso}T12:00:00Z` : dateIso);
   const dateLabel = Number.isNaN(d.getTime())
     ? dateIso
-    : d.toLocaleDateString(undefined, {
+    : d.toLocaleDateString("en-US", {
+        timeZone: "Africa/Accra",
         weekday: "short",
         year: "numeric",
         month: "short",
@@ -179,12 +184,12 @@ function formatPreferredSlot(dateIso?: string, time24?: string) {
   if (!time24?.trim()) return dateLabel;
   const time = time24.trim();
   const m = /^(\d{2}):(\d{2})$/.exec(time);
-  if (!m) return `${dateLabel} • ${time}`;
+  if (!m) return `${dateLabel} • ${time} (GMT)`;
   const h = Number(m[1]);
   const mm = m[2];
   const hour12 = ((h + 11) % 12) + 1;
   const ampm = h >= 12 ? "PM" : "AM";
-  return `${dateLabel} • ${hour12}:${mm} ${ampm}`;
+  return `${dateLabel} • ${hour12}:${mm} ${ampm} (GMT)`;
 }
 
 function OrderLineRow({ line }: { line: OrderItem }) {
@@ -249,6 +254,41 @@ function OrderLineRow({ line }: { line: OrderItem }) {
             <span aria-hidden> · </span>
             GHC {line.price.toLocaleString()} each
           </span>
+          {(line.fulfillmentType === "made_to_order" || line.isMadeToOrder || line.isBespoke) && (
+            <span
+              style={{
+                marginTop: "4px",
+                display: "inline-flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "0.75rem",
+              }}
+            >
+              <span
+                style={{
+                  background: "#f4f4f5",
+                  color: "#3f3f46",
+                  border: "1px solid #d4d4d8",
+                  padding: "2px 7px",
+                  borderRadius: "4px",
+                  fontWeight: 600,
+                }}
+              >
+                Made to Order · {line.leadDays ?? line.bespokeLeadDays ?? 14} days
+              </span>
+              {line.estimatedReadyDate ? (
+                <span style={{ color: "var(--cinereous)" }}>
+                  Est. Production Ready: <strong>{line.estimatedReadyDate}</strong>
+                </span>
+              ) : null}
+              {line.productionStatus && line.productionStatus !== "not_applicable" ? (
+                <span style={{ color: "var(--cinereous)", textTransform: "capitalize" }}>
+                  Status: <strong>{line.productionStatus.replace(/_/g, " ")}</strong>
+                </span>
+              ) : null}
+            </span>
+          )}
         </span>
       </Link>
       <span className={styles.orderLinePrice}>
@@ -1572,6 +1612,26 @@ function AccountDashboard({ userId }: { userId: string }) {
                                   )}
                                 </p>
                               ) : null}
+                              {c.status === "reschedule_proposed" && c.proposedScheduledAt ? (
+                                <p style={{ marginTop: "var(--space-sm)" }}>
+                                  <span style={{ color: "var(--cinereous)" }}>
+                                    Proposed new time:{" "}
+                                  </span>
+                                  <strong>
+                                    {formatConsultationAppointmentLocal(
+                                      c.proposedScheduledAt,
+                                    )}
+                                  </strong>
+                                  {c.rescheduleNote ? (
+                                    <span style={{ display: "block", fontSize: "0.85rem", color: "var(--cinereous)", marginTop: 4 }}>
+                                      Note from JOEY: {c.rescheduleNote}
+                                    </span>
+                                  ) : null}
+                                  <span style={{ display: "block", fontSize: "0.85rem", color: "var(--cinereous)", marginTop: 4 }}>
+                                    Please check your email for your secure link to accept this date or request another time.
+                                  </span>
+                                </p>
+                              ) : null}
                               {c.status === "pending" ? (
                                 <p
                                   style={{
@@ -1579,19 +1639,25 @@ function AccountDashboard({ userId }: { userId: string }) {
                                     color: "var(--cinereous)",
                                   }}
                                 >
-                                  We&apos;ll confirm or decline within 24–48
+                                  We&apos;ll confirm or propose a schedule within 24–48
                                   hours. You can check back here anytime.
                                 </p>
                               ) : null}
-                              {c.status === "declined" ? (
+                              {c.status === "declined" || c.status === "cancelled" ? (
                                 <p
                                   style={{
                                     fontSize: "0.85rem",
                                     color: "var(--cinereous)",
                                   }}
                                 >
-                                  This slot could not be confirmed. Please pick
-                                  another date on{" "}
+                                  {c.status === "cancelled"
+                                    ? "This appointment has been cancelled."
+                                    : "This slot could not be confirmed."}{" "}
+                                  {c.cancellationReason ? `${c.cancellationReason} ` : ""}
+                                  {c.refundReviewRequired
+                                    ? "Your deposit has been flagged for manual review by our team in accordance with our business policy. "
+                                    : ""}
+                                  Please pick another date on{" "}
                                   <Link
                                     href="/bespoke"
                                     className={styles.panelLink}

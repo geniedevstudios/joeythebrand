@@ -204,7 +204,7 @@ export default function Nav() {
                 height={112}
                 priority
                 className={`${styles.logoImg} ${styles.logoLayer} ${scrolled ? styles.logoLayerHidden : styles.logoLayerVisible}`}
-                sizes="(max-width: 900px) 45vw, 280px"
+                sizes="(max-width: 640px) 45vw, 280px"
               />
               <Image
                 src="/blacklogo21.png"
@@ -213,7 +213,7 @@ export default function Nav() {
                 height={112}
                 priority
                 className={`${styles.logoImg} ${styles.logoLayer} ${scrolled ? styles.logoLayerVisible : styles.logoLayerHidden}`}
-                sizes="(max-width: 900px) 45vw, 280px"
+                sizes="(max-width: 640px) 45vw, 280px"
               />
             </span>
           </Link>
@@ -231,7 +231,7 @@ export default function Nav() {
               <div
                 className={styles.iconWrapper}
                 onClickCapture={(e) => {
-                  const isMobileWidth = typeof window !== "undefined" && window.innerWidth <= 768;
+                  const isMobileWidth = typeof window !== "undefined" && window.innerWidth <= 640;
                   if (!isTouchNav && !isMobileWidth) return;
                   e.preventDefault();
                   e.stopPropagation();

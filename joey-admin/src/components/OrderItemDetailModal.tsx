@@ -1,33 +1,89 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
-import { OrderItem } from "@/lib/types";
+import { ItemProductionStatus, OrderItem } from "@/lib/types";
 import { isVideoUrl } from "@/lib/isVideoUrl";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import { dataStore } from "@/lib/dataStore";
+import { toast } from "sonner";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   item: OrderItem | null;
+  orderId?: string;
+  itemIndex?: number;
   orderLabel: string;
+  onProductionStatusUpdated?: () => void;
 };
 
-export default function OrderItemDetailModal({ open, onClose, item, orderLabel }: Props) {
+const PRODUCTION_STATUS_OPTIONS: Array<{
+  value: Exclude<ItemProductionStatus, "not_applicable">;
+  label: string;
+}> = [
+  { value: "queued", label: "Queued for Production" },
+  { value: "in_production", label: "In Production (Tailoring)" },
+  { value: "quality_check", label: "Quality Check & Pressing" },
+  { value: "ready_for_dispatch", label: "Ready for Dispatch" },
+];
+
+export default function OrderItemDetailModal({
+  open,
+  onClose,
+  item,
+  orderId,
+  itemIndex,
+  orderLabel,
+  onProductionStatusUpdated,
+}: Props) {
+  const [prodStatus, setProdStatus] = useState<Exclude<ItemProductionStatus, "not_applicable">>("queued");
+  const [savingProd, setSavingProd] = useState(false);
+
   useEffect(() => {
     if (!open) return;
+    if (
+      item?.productionStatus &&
+      item.productionStatus !== "not_applicable"
+    ) {
+      setProdStatus(item.productionStatus);
+    } else {
+      setProdStatus("queued");
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, item]);
 
   if (!open || !item) return null;
 
   const lineTotal = item.price * item.quantity;
+  const isMto =
+    item.fulfillmentType === "made_to_order" ||
+    Boolean(item.isMadeToOrder) ||
+    Boolean(item.isBespoke);
+  const leadDays = item.leadDays ?? item.bespokeLeadDays ?? 14;
+
+  const handleSaveProductionStatus = async (
+    nextStatus: Exclude<ItemProductionStatus, "not_applicable">,
+  ) => {
+    setProdStatus(nextStatus);
+    if (!orderId || typeof itemIndex !== "number") return;
+    setSavingProd(true);
+    try {
+      await dataStore.updateOrderItemProductionStatus(orderId, itemIndex, nextStatus);
+      toast.success("Item production status updated.");
+      onProductionStatusUpdated?.();
+    } catch (err: any) {
+      toast.error(err.message || "Could not update production status.");
+    } finally {
+      setSavingProd(false);
+    }
+  };
 
   return (
     <div
@@ -37,7 +93,6 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* Explicit full-viewport backdrop */}
       <div className="fixed inset-0 bg-black/55 backdrop-blur-sm" aria-hidden onClick={onClose} />
 
       <div
@@ -57,7 +112,7 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
+          <div className="grid gap-6 sm:grid-cols-[260px,1fr]">
             <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
               <div className="flex aspect-[3/4] w-full items-center justify-center p-4">
                 {isVideoUrl(item.image) ? (
@@ -78,6 +133,48 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
             </div>
 
             <div className="space-y-4">
+              {isMto ? (
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="inline-flex rounded-full bg-zinc-700 px-2.5 py-0.5 text-xs font-bold text-white">
+                      Made to Order · {leadDays} Days Production
+                    </span>
+                    {item.estimatedReadyDate ? (
+                      <span className="text-xs font-semibold text-zinc-800">
+                        Est. Ready: {item.estimatedReadyDate}
+                      </span>
+                    ) : null}
+                  </div>
+                  {orderId && typeof itemIndex === "number" ? (
+                    <div className="mt-3">
+                      <label className="block text-xs font-semibold text-zinc-900">
+                        Production Progress (Independent of Shipping)
+                      </label>
+                      <select
+                        value={prodStatus}
+                        disabled={savingProd}
+                        onChange={(e) =>
+                          void handleSaveProductionStatus(
+                            e.target.value as Exclude<ItemProductionStatus, "not_applicable">,
+                          )
+                        }
+                        className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm"
+                      >
+                        {PRODUCTION_STATUS_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-xs font-semibold text-emerald-900">
+                  Fulfilment: Ready to Wear (Immediate Stock)
+                </div>
+              )}
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
                   <p className="text-xs font-semibold text-zinc-700">Size</p>
@@ -124,7 +221,7 @@ export default function OrderItemDetailModal({ open, onClose, item, orderLabel }
               <div className="rounded-xl border border-zinc-200 bg-white p-4">
                 <p className="text-xs font-semibold text-zinc-700">Reference ID</p>
                 <code className="mt-2 block break-all rounded-lg bg-zinc-100 px-3 py-2 text-xs font-mono text-zinc-900">
-                  {item.productId}
+                  {item.skuKey || item.productId}
                 </code>
               </div>
 

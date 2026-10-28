@@ -43,6 +43,8 @@
   color: var(--wood);
   text-decoration: none;
   font-weight: 400;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   border-bottom: 1px solid transparent;
   transition:
     color var(--transition-fast),
@@ -78,23 +80,9 @@
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 560px) {
+@media (min-width: 641px) {
   .gridFields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .fieldFull {
-    grid-column: 1 / -1;
-  }
-
-  .fieldPhone {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (min-width: 900px) {
-  .gridFields {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   }
 
   .fieldPhone {
@@ -127,6 +115,7 @@
 
 .input {
   width: 100%;
+  min-width: 0;
   padding: 0.4rem 0 0.5rem;
   border: none;
   border-bottom: 1px solid rgba(39, 43, 54, 0.22);

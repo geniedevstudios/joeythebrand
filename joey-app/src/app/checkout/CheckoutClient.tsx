@@ -106,6 +106,15 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<any>(null);
+  const [partialStockConflict, setPartialStockConflict] = useState<{
+    productId: string;
+    skuKey: string;
+    itemName: string;
+    requestedQty: number;
+    availableStock: number;
+    mtoMaxQtyPerOrder: number;
+    leadDays: number;
+  } | null>(null);
   const {
     empty: checkoutHeroEmpty,
     shellSpinner: checkoutHeroSpinner,
@@ -257,46 +266,57 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     setIsSubmitting(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const shippingAddress = buildShippingAddress(
+        shippingDestination,
+        formData,
+        selectedShippingOption,
+      );
+      const notes =
+        (formData.notes ? formData.notes + "\n\n" : "") +
+          (shippingDestination === "international" && dhlEnabled
+            ? `Selected Shipping: ${selectedShippingOption === "dhl" ? "DHL Express" : "Custom Sales Contact"}`
+            : "") || undefined;
 
-      const order: Omit<Order, "id" | "createdAt" | "updatedAt" | "orderNumber" | "paymentStatus" | "paymentRef"> = {
-        customerName: `${formData.firstName} ${formData.lastName}`,
-        customerEmail: formData.email,
-        customerPhone: formData.phone,
-        shippingAddress: buildShippingAddress(shippingDestination, formData, selectedShippingOption),
-        items: items.map((item) => ({
-          productId: item.productId,
-          name: item.name,
-          color: item.color,
-          colorHex: item.colorHex,
-          combo: item.combo,
-          size: item.size,
-          fit: item.fit,
-          wearTag: item.wearTag,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image,
-        })),
-        total,
-        discount,
-        promotionCode: appliedPromo?.code,
-        status: "pending",
-        userId: session?.user?.id,
-        notes: (formData.notes ? formData.notes + "\n\n" : "") + (shippingDestination === "international" && dhlEnabled ? `Selected Shipping: ${selectedShippingOption === "dhl" ? "DHL Express" : "Custom Sales Contact"}` : "") || undefined,
-        // shippingCost, // save shipping cost locally if we had that field, but total is enough
-      };
+      // 1. Server-Authoritative Order Creation + Atomic SKU Reservation
+      const { order: placed, paystackReference, amountPesewas } =
+        await dataStore.placeOrder({
+          customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+          customerEmail: formData.email.trim(),
+          customerPhone: formData.phone.trim(),
+          shippingDestination,
+          shippingOption: selectedShippingOption,
+          shippingAddress,
+          destinationDetails:
+            shippingDestination === "international"
+              ? {
+                  city: formData.city.trim(),
+                  postalCode: formData.postalCode.trim(),
+                  countryCode: formData.country.trim(),
+                }
+              : undefined,
+          promotionCode: appliedPromo?.code,
+          notes,
+          items: items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            comboId: item.comboId,
+            size: item.size,
+            fit: item.fit,
+            quantity: item.quantity,
+            fulfillmentChoice:
+              item.fulfillmentChoice ||
+              (item.isMadeToOrder || item.isBespoke ? "made_to_order" : undefined),
+          })),
+        });
 
-      // 1. Initial Order Creation (Unpaid)
-      const placed = await dataStore.placeOrder(order);
-
-      // 2. Trigger Paystack
+      // 2. Trigger Paystack using Server-Authoritative Amount & Reference
       const handler = paystack.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
-        email: formData.email,
-        amount: Math.round(total * 100), // Ensure integer Kobo
+        email: formData.email.trim(),
+        amount: amountPesewas,
         currency: "GHS",
         channels: [paymentMethod],
-        ref: `ORDER-${items[0]?.name.replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "-")}-${placed.id.slice(-8)}`,
+        ref: paystackReference,
         metadata: {
           custom_fields: [
             {
@@ -307,40 +327,58 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
           ],
         },
         callback: function (paystackRes: { reference?: string }) {
-          // 3. Verify on backend
-          // We wrap the async logic to keep the callback signature simple for Paystack's validator
+          // 3. Verify on backend (shared atomic reconciliation + durable outbox)
           (async () => {
-             try {
-                const verifyRes = await fetch("/api/paystack/verify-order", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    reference: paystackRes.reference,
-                    orderId: placed.id,
-                  }),
-                });
+            try {
+              const verifyRes = await fetch("/api/paystack/verify-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  reference: paystackRes.reference || paystackReference,
+                  orderId: placed.id,
+                }),
+              });
 
-                const verifyData = await verifyRes.json();
-                if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed");
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) {
+                throw new Error(verifyData.error || "Verification failed");
+              }
 
-                cartStore.clearCart();
-                setPlacedOrder(placed);
-             } catch (err) {
-                toast.error(err instanceof Error ? err.message : "Payment verification failed. Please contact support.");
-                setIsSubmitting(false);
-             }
+              cartStore.clearCart();
+              setPlacedOrder(placed);
+            } catch (err) {
+              toast.error(
+                err instanceof Error
+                  ? err.message
+                  : "Payment verification failed. Please contact support.",
+              );
+              setIsSubmitting(false);
+            }
           })();
         },
         onClose: function () {
+          // Requirement 1: Do NOT release active reservations merely because the Paystack modal closes.
+          // Payment may still complete asynchronously via mobile money or bank webhook.
           setIsSubmitting(false);
-          toast.info("Payment cancelled. You can try again from your account page if the order was saved.");
+          toast.info(
+            "Payment window closed. Your item reservation remains active briefly if you are completing payment on your device.",
+          );
         },
       });
 
       handler.openIframe();
-    } catch (error) {
-      console.error("Order error:", error);
-      toast.error("Failed to initiate order. Please try again.");
+    } catch (error: any) {
+      if (
+        error?.code === "PARTIAL_STOCK_CHOICE_REQUIRED" &&
+        Array.isArray(error?.partialStockConflicts) &&
+        error.partialStockConflicts.length > 0
+      ) {
+        setPartialStockConflict(error.partialStockConflicts[0]);
+      } else {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to initiate order. Please try again.",
+        );
+      }
       setIsSubmitting(false);
     }
   };
@@ -719,9 +757,9 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                   <span className={styles.itemSize}>
                     {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
                   </span>
-                  {item.isBespoke && (
-                    <span style={{ fontSize: "11px", color: "#7c3aed", background: "#f5f3ff", padding: "2px 7px", borderRadius: "4px", marginTop: "3px", display: "inline-block", fontWeight: 600 }}>
-                      Bespoke Order · ~{item.bespokeLeadDays || 14} days
+                  {(item.isMadeToOrder || item.isBespoke || item.fulfillmentChoice === "made_to_order") && (
+                    <span style={{ fontSize: "11px", color: "#3f3f46", background: "#f4f4f5", border: "1px solid #e4e4e7", padding: "2px 7px", borderRadius: "4px", marginTop: "3px", display: "inline-block", fontWeight: 600 }}>
+                      Made to Order · {item.leadDays || item.bespokeLeadDays || 14} days
                     </span>
                   )}
                 </div>
@@ -729,6 +767,47 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
               </div>
             ))}
           </div>
+
+          {(() => {
+            const hasMto = items.some(
+              (i) => i.isMadeToOrder || i.isBespoke || i.fulfillmentChoice === "made_to_order",
+            );
+            const hasRtw = items.some(
+              (i) => !(i.isMadeToOrder || i.isBespoke || i.fulfillmentChoice === "made_to_order"),
+            );
+            const maxLead = items.reduce(
+              (m, i) =>
+                i.isMadeToOrder || i.isBespoke || i.fulfillmentChoice === "made_to_order"
+                  ? Math.max(m, i.leadDays || i.bespokeLeadDays || 14)
+                  : m,
+              0,
+            );
+            if (!hasMto) return null;
+            return (
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "12px 14px",
+                  borderRadius: "8px",
+                  background: "#f4f4f5",
+                  border: "1px solid #d4d4d8",
+                  color: "#3f3f46",
+                  fontSize: "12.5px",
+                  lineHeight: 1.5,
+                }}
+              >
+                {hasRtw ? (
+                  <>
+                    <strong>Combined Shipment:</strong> Your cart includes both Ready to Wear and Made to Order pieces. By default, your order will ship together once Made to Order production is complete ({maxLead || 14} days from verified payment).
+                  </>
+                ) : (
+                  <>
+                    <strong>Made to Order Production:</strong> Production lead time ({maxLead || 14} days) begins once payment is verified, prior to shipping.
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           <div className={styles.totals}>
             <div className={styles.totalRow}>
@@ -767,6 +846,110 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
           </div>
         </div>
       </div>
+
+      {partialStockConflict ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="partial-stock-modal-title"
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "12px",
+              maxWidth: "480px",
+              width: "100%",
+              padding: "28px",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
+            }}
+          >
+            <h3
+              id="partial-stock-modal-title"
+              style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "10px", color: "#111" }}
+            >
+              Choose Your Fulfilment Option
+            </h3>
+            <p style={{ fontSize: "0.92rem", color: "#444", lineHeight: 1.55, marginBottom: "20px" }}>
+              You requested <strong>{partialStockConflict.requestedQty}</strong> of{" "}
+              <strong>{partialStockConflict.itemName}</strong>, but only{" "}
+              <strong>{partialStockConflict.availableStock}</strong> unit(s) are currently in Ready to Wear stock. How would you like to proceed?
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  const target = items.find((i) => i.productId === partialStockConflict.productId);
+                  if (target) {
+                    cartStore.setItemQuantityAndFulfillment(
+                      target.id,
+                      partialStockConflict.availableStock,
+                      "ready_to_wear",
+                      partialStockConflict.leadDays,
+                      partialStockConflict.availableStock,
+                    );
+                  }
+                  setPartialStockConflict(null);
+                  toast.success(
+                    `Updated to ${partialStockConflict.availableStock} Ready to Wear unit(s). Click Place Order to continue.`,
+                  );
+                }}
+              >
+                Buy Remaining {partialStockConflict.availableStock} Ready to Wear
+              </button>
+              {partialStockConflict.requestedQty <= partialStockConflict.mtoMaxQtyPerOrder ? (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => {
+                    const target = items.find((i) => i.productId === partialStockConflict.productId);
+                    if (target) {
+                      cartStore.setItemQuantityAndFulfillment(
+                        target.id,
+                        partialStockConflict.requestedQty,
+                        "made_to_order",
+                        partialStockConflict.leadDays,
+                        partialStockConflict.mtoMaxQtyPerOrder,
+                      );
+                    }
+                    setPartialStockConflict(null);
+                    toast.success(
+                      `Switched all ${partialStockConflict.requestedQty} unit(s) to Made to Order (${partialStockConflict.leadDays} days). Click Place Order to continue.`,
+                    );
+                  }}
+                >
+                  Order All {partialStockConflict.requestedQty} as Made to Order ({partialStockConflict.leadDays} days)
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setPartialStockConflict(null)}
+                style={{
+                  marginTop: "6px",
+                  background: "none",
+                  border: "none",
+                  color: "#666",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

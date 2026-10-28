@@ -226,34 +226,53 @@ let storeInitializing = true;
 
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
-const mapProduct = (row: Record<string, unknown>): Product => ({
-  id: row.id as string,
-  slug: (row.slug as string) || undefined,
-  name: row.name as string,
-  category: row.category as Product["category"],
-  categoryName: row.category_name as string,
-  price: Number(row.price),
-  originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
-  image: row.image as string,
-  hoverImage: (row.hover_image as string) || undefined,
-  images: (row.images as string[]) || [],
-  description: row.description as string,
-  details: Array.isArray(row.details)
-    ? (row.details as string[]).filter((d) => typeof d === "string" && d.trim())
-    : [],
-  sizes: (row.sizes as ProductSize[]) || DEFAULT_SIZES,
-  isOutOfStock: Boolean(row.is_out_of_stock),
-  isLimited: Boolean(row.is_limited),
-  isBestSeller: Boolean(row.is_best_seller),
-  featured: Boolean(row.featured),
-  wearTag: normalizeWearTag(row.wear_tag),
-  quantity: Number(row.quantity ?? 0),
-  bespokeAvailable: Boolean(row.bespoke_available),
-  bespokeLeadDays: Number(row.bespoke_lead_days ?? 14),
-  weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
-  hsCode: (row.hs_code as string) || undefined,
-  variants: (row.variants as any) || [],
-});
+const mapProduct = (row: Record<string, unknown>): Product => {
+  const rawMode = String(row.fulfillment_mode ?? "").trim();
+  const fulfillmentMode =
+    rawMode === "made_to_order_only" || rawMode === "stock_then_made_to_order" || rawMode === "stock_only"
+      ? rawMode
+      : row.bespoke_available
+        ? "stock_then_made_to_order"
+        : "stock_only";
+  const leadDays = Number(row.made_to_order_lead_days ?? row.bespoke_lead_days ?? 14);
+  return {
+    id: row.id as string,
+    slug: (row.slug as string) || undefined,
+    name: row.name as string,
+    category: row.category as Product["category"],
+    categoryName: row.category_name as string,
+    price: Number(row.price),
+    originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
+    image: row.image as string,
+    hoverImage: (row.hover_image as string) || undefined,
+    images: (row.images as string[]) || [],
+    description: row.description as string,
+    details: Array.isArray(row.details)
+      ? (row.details as string[]).filter((d) => typeof d === "string" && d.trim())
+      : [],
+    sizes: (row.sizes as ProductSize[]) || DEFAULT_SIZES,
+    isOutOfStock: Boolean(row.is_out_of_stock),
+    isLimited: Boolean(row.is_limited),
+    isBestSeller: Boolean(row.is_best_seller),
+    featured: Boolean(row.featured),
+    wearTag: normalizeWearTag(row.wear_tag),
+    quantity: Number(row.quantity ?? 0),
+    isPublished: row.is_published !== false,
+    fulfillmentMode,
+    showOnBespokePage:
+      fulfillmentMode === "made_to_order_only" && Boolean(row.show_on_bespoke_page),
+    madeToOrderLeadDays: leadDays,
+    mtoMaxQtyPerOrder: Math.max(1, Number(row.mto_max_qty_per_order ?? 5)),
+    bespokeAvailable:
+      fulfillmentMode === "made_to_order_only" ||
+      fulfillmentMode === "stock_then_made_to_order" ||
+      Boolean(row.bespoke_available),
+    bespokeLeadDays: leadDays,
+    weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
+    hsCode: (row.hs_code as string) || undefined,
+    variants: (row.variants as any) || [],
+  };
+};
 
 const mapPromo = (row: Record<string, unknown>): PromotionCode => ({
   id: row.id as string,
@@ -314,11 +333,18 @@ const mapConsultationBooking = (row: Record<string, unknown>): ConsultationBooki
     ? String(row.booking_code).trim() || undefined
     : undefined,
   scheduledAt: (row.scheduled_at as string) || undefined,
+  proposedScheduledAt: (row.proposed_scheduled_at as string) || undefined,
+  proposedDate: (row.proposed_date as string) || undefined,
+  proposedTime: row.proposed_time != null ? String(row.proposed_time).trim() || undefined : undefined,
+  rescheduleNote: (row.reschedule_note as string) || undefined,
+  customerRescheduleResponse: (row.customer_reschedule_response as string) || undefined,
+  cancellationReason: (row.cancellation_reason as string) || undefined,
+  refundReviewRequired: Boolean(row.refund_review_required),
   createdAt: row.created_at as string,
   updatedAt: row.updated_at as string,
 });
 
-const mapOrder = (row: Record<string, unknown>): Order => ({
+export const mapOrder = (row: Record<string, unknown>): Order => ({
   id: row.id as string,
   orderNumber: String(row.order_number ?? "").trim() || undefined,
   customerName: row.customer_name as string,
@@ -326,6 +352,8 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   customerPhone: row.customer_phone as string,
   shippingAddress: row.shipping_address as string,
   items: row.items as Order["items"],
+  subtotal: row.subtotal != null ? Number(row.subtotal) : undefined,
+  shippingCost: row.shipping_cost != null ? Number(row.shipping_cost) : undefined,
   total: Number(row.total),
   discount: Number(row.discount),
   promotionCode: row.promotion_code as string | undefined,
@@ -334,6 +362,13 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   status: row.status as OrderStatus,
   userId: row.user_id as string | undefined,
   notes: row.notes as string | undefined,
+  reservationExpiresAt: (row.reservation_expires_at as string) || undefined,
+  paidAt: (row.paid_at as string) || undefined,
+  stockConflictFlagged: Boolean(row.stock_conflict_flagged),
+  stockConflictDetails: row.stock_conflict_details ?? undefined,
+  hasMadeToOrderItems: Boolean(row.has_made_to_order_items),
+  isMixedFulfillment: Boolean(row.is_mixed_fulfillment),
+  maxLeadDays: row.max_lead_days != null ? Number(row.max_lead_days) : undefined,
   dhlTrackingNumber: row.dhl_tracking_number as string | undefined,
   dhlLabelUrl: row.dhl_label_url as string | undefined,
   dhlStatus: row.dhl_status as string | undefined,
@@ -347,6 +382,7 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
 // ─── Local cache + subscriber pattern (for useSyncExternalStore consumers) ───
 
 let products: Product[] = [];
+let publishedProducts: Product[] = [];
 let collectionsList: PublicCollection[] = [];
 let siteContent: SiteContent = DEFAULT_SITE_CONTENT;
 let subscribers: (() => void)[] = [];
@@ -361,7 +397,8 @@ export const dataStore = {
   },
   notify: () => subscribers.forEach((fn) => fn()),
 
-  getProducts: () => products,
+  getProducts: () => publishedProducts,
+  getAllProductsIncludingBespoke: () => products,
   getProduct: (id: string) => products.find((p) => p.id === id),
   getCollections: () => collectionsList,
   getSiteContent: () => siteContent,
@@ -384,13 +421,32 @@ export const dataStore = {
     dataStore.notify();
 
     try {
-      const { data: rows } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: true });
+      let rows: Record<string, unknown>[] | null = null;
+      if (typeof window !== "undefined") {
+        const res = await fetch("/api/products/public", { cache: "no-store" });
+        if (res.ok) {
+          const json = (await res.json()) as { products?: Record<string, unknown>[] };
+          rows = json.products ?? null;
+        }
+      }
+      if (!rows) {
+        const { data } = await supabase
+          .from("products")
+          .select("*")
+          .or("is_published.eq.true,and(fulfillment_mode.eq.made_to_order_only,show_on_bespoke_page.eq.true)")
+          .order("created_at", { ascending: true });
+        rows = data as Record<string, unknown>[] | null;
+      }
 
       if (rows) {
-        products = rows.map(mapProduct);
+        products = rows
+          .map(mapProduct)
+          .filter(
+            (p) =>
+              p.isPublished !== false ||
+              (p.fulfillmentMode === "made_to_order_only" && p.showOnBespokePage),
+          );
+        publishedProducts = products.filter((p) => p.isPublished !== false);
         dataStore.notify();
       }
     } catch {
@@ -439,12 +495,31 @@ export const dataStore = {
   /** Re-fetch products from Supabase into the in-memory cache (used by realtime + manual refresh). */
   refreshProducts: async () => {
     try {
-      const { data: rows } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: true });
+      let rows: Record<string, unknown>[] | null = null;
+      if (typeof window !== "undefined") {
+        const res = await fetch("/api/products/public", { cache: "no-store" });
+        if (res.ok) {
+          const json = (await res.json()) as { products?: Record<string, unknown>[] };
+          rows = json.products ?? null;
+        }
+      }
+      if (!rows) {
+        const { data } = await supabase
+          .from("products")
+          .select("*")
+          .or("is_published.eq.true,and(fulfillment_mode.eq.made_to_order_only,show_on_bespoke_page.eq.true)")
+          .order("created_at", { ascending: true });
+        rows = data as Record<string, unknown>[] | null;
+      }
       if (rows) {
-        products = rows.map(mapProduct);
+        products = rows
+          .map(mapProduct)
+          .filter(
+            (p) =>
+              p.isPublished !== false ||
+              (p.fulfillmentMode === "made_to_order_only" && p.showOnBespokePage),
+          );
+        publishedProducts = products.filter((p) => p.isPublished !== false);
         dataStore.notify();
       }
     } catch {
@@ -491,32 +566,71 @@ export const dataStore = {
     return promo;
   },
 
-  // ── Async: place order ─────────────────────────────────────────────────────
-  placeOrder: async (
-    order: Omit<Order, "id" | "createdAt" | "updatedAt" | "orderNumber" | "paymentStatus" | "paymentRef">,
-  ): Promise<Order> => {
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        customer_name: order.customerName,
-        customer_email: order.customerEmail,
-        customer_phone: order.customerPhone,
-        shipping_address: order.shippingAddress,
-        items: order.items,
-        total: order.total,
-        discount: order.discount,
-        promotion_code: order.promotionCode ?? null,
-        status: order.status,
-        payment_status: "unpaid",
-        user_id: order.userId ?? null,
-        notes: order.notes?.trim() ? order.notes.trim() : null,
-      })
-      .select()
-      .single();
+  // ── Async: place order (server-authoritative via /api/orders/create) ────────
+  placeOrder: async (input: {
+    idempotencyKey?: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    shippingDestination: "ghana" | "international";
+    shippingOption?: "dhl" | "sales" | null;
+    shippingAddress: string;
+    destinationDetails?: {
+      city: string;
+      postalCode?: string;
+      countryCode: string;
+    };
+    promotionCode?: string;
+    notes?: string;
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      comboId?: string;
+      size: string;
+      fit?: string;
+      quantity: number;
+      fulfillmentChoice?: "ready_to_wear" | "made_to_order";
+    }>;
+  }): Promise<{
+    order: Order;
+    paystackReference: string;
+    amountPesewas: number;
+  }> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token || "";
+    if (!token) {
+      throw new Error("Please sign in to place an order.");
+    }
 
-    if (error) throw new Error(error.message);
+    const res = await fetch("/api/orders/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(input),
+    });
 
-    return mapOrder(data as Record<string, unknown>);
+    const data = await res.json();
+    if (!res.ok) {
+      const err = new Error(data.error || "Could not create order.") as Error & {
+        code?: string;
+        partialStockConflicts?: unknown[];
+        details?: unknown;
+      };
+      err.code = data.code;
+      err.partialStockConflicts = data.partialStockConflicts;
+      err.details = data.details;
+      throw err;
+    }
+
+    return {
+      order: data.order as Order,
+      paystackReference: String(data.paystackReference),
+      amountPesewas: Number(data.amountPesewas),
+    };
   },
 
   /** Orders linked to the signed-in customer (requires RLS: user can read own rows). */

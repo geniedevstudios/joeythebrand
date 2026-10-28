@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { openConsultationPrintWindow, type SlipPayload } from "@/lib/printConsultation";
+import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
 import styles from "./bookingDrawer.module.css";
 
 type ApiSlip = SlipPayload;
@@ -9,21 +10,26 @@ type ApiSlipResponse = ({ ok: true } & ApiSlip) | { ok: false; error: string };
 
 function formatDateShort(iso?: string) {
   if (!iso?.trim()) return "—";
-  const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
+  const d = new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    timeZone: "Africa/Accra",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function formatPreferredSlot(dateIso?: string, time24?: string) {
   const date = formatDateShort(dateIso);
   if (!time24?.trim() || date === "—") return date;
   const m = /^(\d{2}):(\d{2})$/.exec(time24.trim());
-  if (!m) return `${date} • ${time24.trim()}`;
+  if (!m) return `${date} • ${time24.trim()} (GMT)`;
   const h = Number(m[1]);
   const mm = m[2];
   const hour12 = ((h + 11) % 12) + 1;
   const ampm = h >= 12 ? "PM" : "AM";
-  return `${date} • ${hour12}:${mm} ${ampm}`;
+  return `${date} • ${hour12}:${mm} ${ampm} (GMT)`;
 }
 
 export default function BookingStatusCard({ token }: { token: string }) {
@@ -98,14 +104,41 @@ export default function BookingStatusCard({ token }: { token: string }) {
     );
   }
 
-  if (slip.status === "declined") {
+  if (slip.status === "reschedule_proposed") {
     return (
       <div className={styles.statusCard}>
         <div className={styles.statusHeader}>
-          <span className={styles.badgeDeclined}>Not confirmed</span>
+          <span className={styles.badgePending}>Reschedule Proposed</span>
           <span className={styles.serviceTag}>{slip.service}</span>
         </div>
-        <p className={styles.statusLead}>We weren&apos;t able to confirm this slot.</p>
+        <p className={styles.statusLead}>
+          Proposed slot: <strong>{formatConsultationAppointmentLocal(slip.proposedScheduledAt)}</strong>
+        </p>
+        {slip.rescheduleNote ? (
+          <p className={styles.loadMuted}>Note: {slip.rescheduleNote}</p>
+        ) : null}
+        <p className={styles.loadMuted}>Check your email for the secure response link.</p>
+      </div>
+    );
+  }
+
+  if (slip.status === "declined" || slip.status === "cancelled") {
+    return (
+      <div className={styles.statusCard}>
+        <div className={styles.statusHeader}>
+          <span className={styles.badgeDeclined}>
+            {slip.status === "cancelled" ? "Cancelled" : "Not confirmed"}
+          </span>
+          <span className={styles.serviceTag}>{slip.service}</span>
+        </div>
+        <p className={styles.statusLead}>
+          {slip.status === "cancelled"
+            ? "This consultation was cancelled."
+            : "We weren't able to confirm this slot."}
+        </p>
+        {slip.refundReviewRequired ? (
+          <p className={styles.loadMuted}>Deposit flagged for manual review by our team.</p>
+        ) : null}
         <a href={`https://wa.me/233504148009`} className={styles.waLink} target="_blank" rel="noopener noreferrer">
           WhatsApp Joey to reschedule
         </a>
@@ -124,7 +157,7 @@ export default function BookingStatusCard({ token }: { token: string }) {
       </p>
       <div className={styles.appointmentTime}>
         <strong>Scheduled Time:</strong><br />
-        {slip.scheduledAt ? new Date(slip.scheduledAt).toLocaleString() : "—"}<br />
+        {slip.scheduledAt ? formatConsultationAppointmentLocal(slip.scheduledAt) : "—"}<br />
         <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>
           {slip.durationHours}h Session · ₵{slip.priceGhs?.toLocaleString()} · {slip.paymentStatus === 'paid' ? "Paid" : "Unpaid"}
         </span>

@@ -273,13 +273,7 @@
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .bentoContainer {
-    height: 500px;
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .bentoContainer {
     height: auto;
     grid-template-columns: 1fr;

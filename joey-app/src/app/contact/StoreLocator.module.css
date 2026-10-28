@@ -7,7 +7,7 @@
   position: relative;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .wrapper {
     flex-direction: column-reverse;
   }
@@ -23,7 +23,7 @@
   max-height: 700px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .sidebar {
     flex: 1 1 auto;
     border-right: none;
@@ -151,7 +151,7 @@
   background: #eaeaea; /* placeholder before map loads */
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .mapContainer {
     flex: none;
     height: 50vh;

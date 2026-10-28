@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { openConsultationPrintWindow, type SlipPayload } from "@/lib/printConsultation";
+import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
 import styles from "../booking.module.css";
 
 type ApiSlip = SlipPayload;
@@ -10,9 +11,14 @@ type ApiSlipResponse = ({ ok: true } & ApiSlip) | { ok: false; error: string };
 
 function formatDateShort(iso?: string) {
   if (!iso?.trim()) return "—";
-  const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
+  const d = new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    timeZone: "Africa/Accra",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export default function SlipClient() {
@@ -162,15 +168,52 @@ export default function SlipClient() {
     );
   }
 
-  if (slip.status === "declined") {
+  if (slip.status === "reschedule_proposed") {
     return (
       <section className={styles.slipSection}>
         <div className="container">
           <div className={styles.slipCard}>
-            <h1 className={`t-display ${styles.slipTitle}`}>Request not confirmed</h1>
+            <h1 className={`t-display ${styles.slipTitle}`}>Reschedule proposed</h1>
             <p className={styles.slipLead}>
-              We weren&apos;t able to confirm this slot. Please reach us on WhatsApp to find another time.
+              We proposed a new time for your session:{" "}
+              <strong>{formatConsultationAppointmentLocal(slip.proposedScheduledAt)}</strong>.
             </p>
+            {slip.rescheduleNote ? (
+              <p className={styles.slipMuted}>Note from Joey: {slip.rescheduleNote}</p>
+            ) : null}
+            <p className={styles.slipMuted}>
+              Please check your email for your secure single-use link to accept this date or request another time.
+            </p>
+            <button type="button" className={styles.btnOutline} onClick={() => void load()}>
+              Refresh status
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (slip.status === "declined" || slip.status === "cancelled") {
+    return (
+      <section className={styles.slipSection}>
+        <div className="container">
+          <div className={styles.slipCard}>
+            <h1 className={`t-display ${styles.slipTitle}`}>
+              {slip.status === "cancelled" ? "Booking cancelled" : "Request not confirmed"}
+            </h1>
+            <p className={styles.slipLead}>
+              {slip.status === "cancelled"
+                ? "This consultation booking has been cancelled."
+                : "We weren't able to confirm this slot. Please reach us on WhatsApp to find another time."}
+            </p>
+            {slip.cancellationReason ? (
+              <p className={styles.slipMuted}>Reason: {slip.cancellationReason}</p>
+            ) : null}
+            {slip.refundReviewRequired ? (
+              <p className={styles.slipMuted}>
+                Your deposit has been flagged for manual review by our team in accordance with our business policy.
+              </p>
+            ) : null}
             <a href="https://wa.me/233504148009" className={styles.btnPrimary} target="_blank" rel="noopener noreferrer">
               WhatsApp Joey
             </a>
@@ -194,7 +237,7 @@ export default function SlipClient() {
             </li>
             <li>
               <span className={styles.slipListLabel}>Scheduled</span>{" "}
-              {slip.scheduledAt ? new Date(slip.scheduledAt).toLocaleString() : "—"}
+              {slip.scheduledAt ? formatConsultationAppointmentLocal(slip.scheduledAt) : "—"}
             </li>
           </ul>
           <div className={styles.submitRow}>

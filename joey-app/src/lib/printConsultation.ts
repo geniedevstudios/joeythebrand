@@ -29,7 +29,15 @@ function formatScheduled(iso?: string) {
  */
 export function openConsultationPrintWindow(b: ConsultationBooking): void {
   const statusLabel =
-    b.status === "pending" ? "Pending review" : b.status === "confirmed" ? "Confirmed" : "Declined";
+    b.status === "pending"
+      ? "Pending review"
+      : b.status === "reschedule_proposed"
+        ? "Reschedule proposed"
+        : b.status === "confirmed"
+          ? "Confirmed"
+          : b.status === "cancelled"
+            ? "Cancelled"
+            : "Declined";
 
   const logoSrc =
     typeof window === "undefined" ? "/white%20logo.png" : `${window.location.origin}/white%20logo.png`;

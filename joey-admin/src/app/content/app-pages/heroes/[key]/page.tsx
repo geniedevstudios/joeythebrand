@@ -27,6 +27,8 @@ export default function SingleHeroPage() {
   const [mobileSrc, setMobileSrc] = useState("");
   const [fit, setFit] = useState<"cover" | "contain">("cover");
   const [anchor, setAnchor] = useState<"top" | "center" | "bottom">("top");
+  const [mtoVideoUrl, setMtoVideoUrl] = useState("");
+  const [mtoPosterUrl, setMtoPosterUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,6 +43,8 @@ export default function SingleHeroPage() {
       setMobileSrc(h.mobileSrc ?? "");
       setFit((h.fit ?? "cover") as any);
       setAnchor((h.anchor ?? "top") as any);
+      setMtoVideoUrl(h.mtoVideoUrl ?? "");
+      setMtoPosterUrl(h.mtoPosterUrl ?? "");
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +66,12 @@ export default function SingleHeroPage() {
         mobileSrc: mobileSrc.trim(),
         fit,
         anchor,
+        ...(heroKey === "bespoke"
+          ? {
+              mtoVideoUrl: mtoVideoUrl.trim() || undefined,
+              mtoPosterUrl: mtoPosterUrl.trim() || undefined,
+            }
+          : {}),
       };
 
       await dataStore.updateSiteContent({
@@ -179,6 +189,39 @@ export default function SingleHeroPage() {
             />
           </div>
         </div>
+
+        {heroKey === "bespoke" ? (
+          <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+            <div className="border-b border-zinc-200 px-6 py-5 bg-white">
+              <h3 className="text-base font-semibold leading-6 text-zinc-900">
+                Made to Order section — Background Video
+              </h3>
+              <p className="mt-1 text-xs text-zinc-600">
+                Displayed behind the &ldquo;Made to Order Pieces&rdquo; header beneath the consultation form on /bespoke.
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <AssetUrlField
+                id="bespoke-mto-video"
+                label="Video URL (MP4 / WebM)"
+                value={mtoVideoUrl}
+                onChange={setMtoVideoUrl}
+                uploadFolder="heroes/bespoke-mto-video"
+                accept="video/*"
+                placeholder="Upload MP4/WebM or paste video URL"
+              />
+              <AssetUrlField
+                id="bespoke-mto-poster"
+                label="Poster image URL (optional)"
+                value={mtoPosterUrl}
+                onChange={setMtoPosterUrl}
+                uploadFolder="heroes/bespoke-mto-poster"
+                accept="image/*"
+                placeholder="Still image shown while video loads (or as fallback)"
+              />
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex justify-end">
           <button

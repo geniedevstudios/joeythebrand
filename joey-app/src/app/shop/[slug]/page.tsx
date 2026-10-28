@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import { createClient } from "@supabase/supabase-js";
 import ProductClient from "./ProductClient";
 import { supabase } from "@/lib/supabase";
+
+function getServerSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !key) return supabase;
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 const SITE_URL = "https://joeythebrand.com";
 
@@ -19,18 +31,23 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   let productImage = "";
   let categoryName = "";
   try {
-    const { data } = await supabase
+    const db = getServerSupabase();
+    const { data } = await db
       .from("products")
-      .select("name, description, image, category_name")
+      .select("name, description, image, category_name, is_published, fulfillment_mode, show_on_bespoke_page")
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .maybeSingle();
-      
-    if (data?.name) {
-      productName = data.name;
+
+    const isVisible =
+      data &&
+      (data.is_published !== false ||
+        (data.fulfillment_mode === "made_to_order_only" && data.show_on_bespoke_page));
+    if (isVisible) {
+      if (data?.name) productName = data.name;
+      if (data?.description) productDesc = String(data.description || "");
+      if (data?.image) productImage = String(data.image || "");
+      if (data?.category_name) categoryName = String(data.category_name || "");
     }
-    if (data?.description) productDesc = String(data.description || "");
-    if (data?.image) productImage = String(data.image || "");
-    if (data?.category_name) categoryName = String(data.category_name || "");
   } catch {
     // fallback to slug
   }
@@ -82,12 +99,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   let product: ProductRow | null = null;
 
   try {
-    const { data } = await supabase
+    const db = getServerSupabase();
+    const { data } = await db
       .from("products")
-      .select("id, slug, name, description, image, price, quantity, category_name")
+      .select("id, slug, name, description, image, price, quantity, category_name, is_published, fulfillment_mode, show_on_bespoke_page")
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .maybeSingle();
-    product = (data as unknown as ProductRow | null) ?? null;
+    const isVisible =
+      data &&
+      ((data as any).is_published !== false ||
+        ((data as any).fulfillment_mode === "made_to_order_only" && (data as any).show_on_bespoke_page));
+    product = isVisible ? ((data as unknown as ProductRow | null) ?? null) : null;
   } catch {
     product = null;
   }

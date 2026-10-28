@@ -1,3 +1,4 @@
+import { isDhlOperator } from "@/lib/dhlRequestAuth";
 import { NextResponse } from "next/server";
 import { createShipment } from "@/lib/dhl";
 import { dataStore } from "@/lib/dataStore";
@@ -42,6 +43,7 @@ function parseAddress(shippingAddress: string) {
 
 export async function POST(request: Request) {
   try {
+    if (!(await isDhlOperator(request))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { orderId, packageDimensions } = await request.json();
     if (!orderId) {
       return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
@@ -55,6 +57,10 @@ export async function POST(request: Request) {
 
     if (error || !order) {
       throw new Error(error?.message || "Order not found");
+    }
+
+    if (order.stock_conflict_flagged || order.status === "paid_requires_resolution" || order.payment_status !== "paid" || order.status !== "order packaged") {
+      return NextResponse.json({ error: "Order is not eligible for shipment." }, { status: 409 });
     }
 
     if (order.dhl_tracking_number) {

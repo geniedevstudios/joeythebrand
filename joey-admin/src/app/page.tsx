@@ -398,9 +398,9 @@ export default function Dashboard() {
         </div>
 
         {/* Main grid */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-12">
           {/* Feature card */}
-          <section className="min-w-0 lg:col-span-6">
+          <section className="min-w-0 sm:col-span-6">
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_70px_rgba(0,0,0,0.45)]">
               <div
                 className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#d6ff2a]/10 blur-3xl"
@@ -474,7 +474,7 @@ export default function Dashboard() {
           </section>
 
           {/* Stat cards: row 1 = New orders + Total products; row 2 = Active promotions + Consultations */}
-          <section className="min-w-0 lg:col-span-6">
+          <section className="min-w-0 sm:col-span-6">
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {stats.slice(1).map((item) => (
                 <div
@@ -509,7 +509,7 @@ export default function Dashboard() {
           </section>
 
           {/* Recent orders */}
-          <section className="min-w-0 lg:col-span-7">
+          <section className="min-w-0 sm:col-span-7">
             <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_70px_rgba(0,0,0,0.45)]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -582,7 +582,7 @@ export default function Dashboard() {
           </section>
 
           {/* Inventory + promotions */}
-          <section className="min-w-0 lg:col-span-5">
+          <section className="min-w-0 sm:col-span-5">
             <div className="space-y-5">
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_70px_rgba(0,0,0,0.45)]">

@@ -57,7 +57,7 @@ export default function InventoryAlertsModal({ isOpen, onClose, alerts }: Invent
               <div className="flex items-center gap-6">
                 <div className="text-right">
                   <p className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">Stock</p>
-                  <p className={`font-bold ${item.status === 'out' ? 'text-red-600' : item.status === 'low' ? 'text-amber-600' : 'text-purple-600'}`}>
+                  <p className={`font-bold ${item.status === 'out' ? 'text-red-600' : item.status === 'low' ? 'text-amber-600' : 'text-zinc-700'}`}>
                     {item.status === "bespoke" ? "Made to Order" : item.quantity}
                   </p>
                 </div>
@@ -122,7 +122,7 @@ export default function InventoryAlertsModal({ isOpen, onClose, alerts }: Invent
             <div className="pb-8">
               {renderSection("Out of Stock", outOfStock, <PackageX className="h-5 w-5 text-red-600" />, "No out-of-stock items.")}
               {renderSection("Low Stock", lowStock, <AlertTriangle className="h-5 w-5 text-amber-600" />, "No low stock items.")}
-              {renderSection("Bespoke (Made to Order)", bespoke, <Scissors className="h-5 w-5 text-purple-600" />, "No bespoke items.")}
+              {renderSection("Made to Order", bespoke, <Scissors className="h-5 w-5 text-zinc-700" />, "No made-to-order items.")}
             </div>
           )}
         </div>

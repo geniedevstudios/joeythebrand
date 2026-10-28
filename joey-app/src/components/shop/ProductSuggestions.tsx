@@ -107,10 +107,13 @@ export default function ProductSuggestions({
                     </div>
                     <div className={productStyles.suggestPickMeWrap}>
                       {(() => {
-                        const isBespoke = !!(item.bespokeAvailable && item.quantity <= 0);
+                        const isBespoke = !!(
+                          item.fulfillmentMode === "made_to_order_only" ||
+                          (item.bespokeAvailable && item.quantity <= 0)
+                        );
                         return isBespoke ? (
                           <Link href={`/shop/${item.slug || item.id}`} className={productStyles.suggestPickMeBtn}>
-                            Bespoke
+                            Made to Order
                           </Link>
                         ) : item.isOutOfStock ? (
                           <span className={`${productStyles.suggestPickMeBtn} ${shopStyles.soldOutBtn}`}>
@@ -128,9 +131,12 @@ export default function ProductSuggestions({
 
                 <div className={shopStyles.badgeStack} aria-hidden="true">
                   {(() => {
-                    const isBespoke = !!(item.bespokeAvailable && item.quantity <= 0);
+                    const isBespoke = !!(
+                      item.fulfillmentMode === "made_to_order_only" ||
+                      (item.bespokeAvailable && item.quantity <= 0)
+                    );
                     return isBespoke ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                      <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                     ) : item.isOutOfStock ? (
                       <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                     ) : (
@@ -139,7 +145,7 @@ export default function ProductSuggestions({
                           <span className={shopStyles.saleBadge}>SALE</span>
                         )}
                         {item.isLimited && item.category !== "sample-sale" && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
                         )}
                         {item.isBestSeller && (
                           <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>

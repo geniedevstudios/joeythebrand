@@ -5,6 +5,7 @@
   right: 0;
   z-index: 100;
   height: var(--nav-height);
+  overflow: visible;
   transition: background var(--transition-slow), box-shadow var(--transition-base);
   isolation: isolate;
 }
@@ -92,12 +93,15 @@
 .inner {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 var(--space-xl);
+  padding: 0 clamp(var(--space-md), 2.4vw, var(--space-xl));
   height: 100%;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
+  column-gap: clamp(0.5rem, 1.4vw, 1.25rem);
   position: relative;
+  overflow: visible;
 }
 
 /* Logo */
@@ -105,20 +109,25 @@
   color: inherit;
   position: absolute;
   left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
   white-space: nowrap;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 150px;
+  height: clamp(108px, 14vw, 150px);
+  max-width: min(220px, 28vw);
+  z-index: 2;
+  pointer-events: auto;
 }
 
 .logo:hover { opacity: 0.65; }
 
 .logoImg {
-  height: 150px;
+  height: clamp(108px, 14vw, 150px);
   width: auto;
+  max-width: 100%;
   display: block;
   object-fit: contain;
 }
@@ -128,8 +137,9 @@
   display: grid;
   grid-template: 1fr / 1fr;
   place-items: center;
-  height: 150px;
+  height: clamp(108px, 14vw, 150px);
   min-width: 0;
+  max-width: 100%;
 }
 
 .logoLayer {
@@ -153,15 +163,35 @@
 .rightLinks {
   display: flex;
   align-items: center;
-  gap: var(--space-xl);
+  gap: clamp(0.6rem, 1.5vw, var(--space-xl));
+  min-width: 0;
+}
+
+.leftLinks {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.rightLinks {
+  grid-column: 2;
+  justify-self: end;
+}
+
+.nav.scrolled .logo,
+.nav.scrolled .logoImg,
+.nav.scrolled .logoStack {
+  height: 64px;
+  max-width: min(180px, 30vw);
 }
 
 .navLink {
   font-family: var(--font-label);
-  font-size: 0.8rem;
+  font-size: clamp(0.7rem, 0.95vw, 0.8rem);
   letter-spacing: 0.14em;
   color: inherit;
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
   position: relative;
   transition: opacity var(--transition-fast);
 }
@@ -339,6 +369,8 @@
 /* Hamburger */
 .hamburger {
   display: none;
+  grid-column: 1;
+  justify-self: start;
   flex-direction: column;
   gap: 5px;
   background: none;
@@ -514,7 +546,7 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .leftLinks {
     display: none;
   }
@@ -536,10 +568,15 @@
 
   /* Ensure logo stays centered on mobile */
   .logo {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
     height: 120px;
+    max-width: min(220px, 46vw);
+  }
+
+  .nav.scrolled .logo,
+  .nav.scrolled .logoImg,
+  .nav.scrolled .logoStack {
+    height: 56px;
+    max-width: min(160px, 44vw);
   }
 
   .logoImg {
@@ -552,7 +589,6 @@
 
   .inner {
     padding: 0 var(--space-xl);
-    justify-content: space-between;
   }
 
   /* Adjust icon slot for mobile if needed */

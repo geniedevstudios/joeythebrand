@@ -54,7 +54,7 @@
   color: #1a1a1a !important;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .row {
     grid-template-columns: 1fr;
   }

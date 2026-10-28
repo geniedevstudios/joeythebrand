@@ -213,7 +213,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
   return (
     <>
       <header className="relative z-30 border-b border-white/10 bg-[#0b0d10] px-3 sm:px-5 md:px-6">
-        <div className="flex min-h-24 w-full min-w-0 items-center justify-between gap-2 py-2 sm:gap-3 lg:justify-start lg:gap-4">
+        <div className="flex min-h-24 w-full min-w-0 items-center justify-between gap-2 py-2 sm:justify-start sm:gap-4">
           <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
             <div className="flex shrink-0 items-center">
               <Image
@@ -223,7 +223,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                 height={112}
                 className="h-14 w-auto max-w-[9rem] object-contain opacity-95 sm:h-16 sm:max-w-[12rem] md:h-[4.5rem] md:max-w-[15rem] lg:h-20 lg:max-w-[22rem] xl:max-w-[26rem]"
                 priority
-                sizes="(max-width: 640px) 9rem, (max-width: 1024px) 15rem, 26rem"
+                sizes="(max-width: 640px) 9rem, 26rem"
               />
             </div>
             <div className="hidden min-w-0 sm:block">
@@ -233,7 +233,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
           </div>
 
           <nav
-            className="hidden min-h-[3rem] min-w-0 flex-1 items-center justify-center lg:flex"
+            className="hidden min-h-[3rem] min-w-0 flex-1 items-center justify-center sm:flex"
             aria-label="Admin navigation"
           >
             <div className="flex w-max min-w-0 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
@@ -332,7 +332,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
 
             <button
               type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] lg:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] sm:hidden"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
               aria-controls="admin-mobile-nav"
@@ -378,7 +378,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
       </header>
 
       {menuOpen ? (
-        <div className="fixed inset-0 z-[100] lg:hidden" id="admin-mobile-nav" role="dialog" aria-modal="true" aria-label="Admin menu">
+        <div className="fixed inset-0 z-[100] sm:hidden" id="admin-mobile-nav" role="dialog" aria-modal="true" aria-label="Admin menu">
           <button
             type="button"
             className="absolute inset-0 bg-black/60"

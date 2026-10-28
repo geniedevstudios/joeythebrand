@@ -299,7 +299,7 @@ export default function WishlistClient() {
                   {(() => {
                     const isBespoke = !!(fullProduct.bespokeAvailable && fullProduct.quantity <= 0);
                     return isBespoke ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                      <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                     ) : fullProduct.isOutOfStock ? (
                       <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                     ) : (
@@ -308,7 +308,7 @@ export default function WishlistClient() {
                           <span className={shopStyles.saleBadge}>SALE</span>
                         )}
                         {fullProduct.isLimited && fullProduct.category !== "sample-sale" && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
                         )}
                         {fullProduct.isBestSeller && (
                           <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
@@ -381,7 +381,7 @@ export default function WishlistClient() {
                     {(() => {
                       const isBespoke = quickViewStockStatus.isBespokeProduct;
                       return isBespoke ? (
-                        <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                        <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                       ) : quickViewStockStatus.isSelectedOutOfStock ? (
                         <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                       ) : (
@@ -390,7 +390,7 @@ export default function WishlistClient() {
                             <span className={shopStyles.saleBadge}>SALE</span>
                           )}
                           {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
-                            <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                            <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
                           )}
                           {quickViewPiece.isBestSeller && (
                             <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
@@ -618,11 +618,7 @@ export default function WishlistClient() {
 
                 {(() => {
                   const isBespoke = quickViewStockStatus.isBespokeProduct;
-                  return isBespoke ? (
-                    <p className={shopStyles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff" }}>
-                      🧵 Bespoke order. Expect ~{quickViewStockStatus.bespokeLeadDays || 14} days for production.
-                    </p>
-                  ) : quickViewStockStatus.isSelectedOutOfStock ? (
+                  return !isBespoke && quickViewStockStatus.isSelectedOutOfStock ? (
                     <p className={shopStyles.customNotice} style={{ color: "#c00", background: "#fee" }}>
                       This item is currently out of stock.
                     </p>
@@ -670,7 +666,7 @@ export default function WishlistClient() {
                         {quickViewStockStatus.isSelectedOutOfStock && !isBespoke
                           ? "Out of Stock"
                           : isBespoke
-                            ? (quickAddStatus === "idle" ? "Order Bespoke" : quickAddStatus === "adding" ? "Adding..." : "Added ✓")
+                            ? (quickAddStatus === "idle" ? "Order Made to Order" : quickAddStatus === "adding" ? "Adding..." : "Added ✓")
                             : (quickAddStatus === "idle" ? "Add To Cart" : quickAddStatus === "adding" ? "Adding..." : "Added ✓")}
                       </button>
                     );
@@ -704,10 +700,10 @@ export default function WishlistClient() {
                 {(() => {
                   const isBespoke = quickViewStockStatus.isBespokeProduct;
                   return isBespoke ? (
-                    <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "16px", marginBottom: "2px", fontSize: "0.95rem", color: "rgba(20, 20, 20, 0.78)", background: "#f5f3ff", borderColor: "#c4b5fd", padding: "8px", borderRadius: "6px" }}>
-                      <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "18px", height: "18px", color: "#7c3aed" }} />
-                      <span style={{ color: "#5b21b6" }}>
-                        bespoke piece would be handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
+                    <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "14px", marginBottom: "2px", fontSize: "0.78rem", color: "var(--alaska-gray)", whiteSpace: "nowrap" }}>
+                      <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "14px", height: "14px", color: "var(--alaska-gray)" }} />
+                      <span>
+                        Made to Order piece handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
                       </span>
                     </div>
                   ) : null;

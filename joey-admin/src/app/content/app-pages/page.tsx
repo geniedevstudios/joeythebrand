@@ -27,7 +27,7 @@ export default function AppPagesContent() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         {cards.map((c) => (
           <Link
             key={c.id}
@@ -45,7 +45,7 @@ export default function AppPagesContent() {
         <p className="mt-1 text-sm text-zinc-900">
           Each page hero has its own editor.
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {PAGE_HERO_KEYS.filter((k) => k !== "home").map((k) => (
             <Link
               key={k}

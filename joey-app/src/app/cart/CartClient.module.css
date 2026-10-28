@@ -577,7 +577,7 @@
 }
 
 /* Mobile responsive */
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .mainLayout {
     grid-template-columns: 1fr;
     gap: var(--space-2xl);

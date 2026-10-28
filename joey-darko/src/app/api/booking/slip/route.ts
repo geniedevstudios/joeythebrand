@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("consultation_bookings")
       .select(
-        "id, customer_name, customer_email, customer_phone, service, preferred_date, preferred_time, notes, status, booking_code, scheduled_at, created_at, duration_hours, price_ghs, payment_status, payment_ref",
+        "*",
       )
       .eq("portfolio_access_token", token)
       .eq("source", "portfolio")
@@ -46,6 +46,10 @@ export async function GET(request: Request) {
       notes: (row.notes as string) || undefined,
       bookingCode: row.booking_code ? String(row.booking_code).trim() || undefined : undefined,
       scheduledAt: (row.scheduled_at as string) || undefined,
+      proposedScheduledAt: (row.proposed_scheduled_at as string) || undefined,
+      rescheduleNote: (row.reschedule_note as string) || undefined,
+      cancellationReason: (row.cancellation_reason as string) || undefined,
+      refundReviewRequired: Boolean(row.refund_review_required),
       durationHours: (row.duration_hours as number) || undefined,
       priceGhs: (row.price_ghs as number) || undefined,
       paymentStatus: (row.payment_status as string) || "unpaid",

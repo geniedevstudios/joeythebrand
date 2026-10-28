@@ -265,6 +265,8 @@
 .contactItem {
   font-size: 0.875rem;
   color: var(--cloudy-sky);
+  overflow-wrap: anywhere;
+  word-break: break-word;
   transition: color var(--transition-fast);
   line-height: 1.5;
 }
@@ -358,7 +360,7 @@ a.contactItem:hover { color: #fff; }
   color: #fff;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .newsletter {
     max-width: none;
   }

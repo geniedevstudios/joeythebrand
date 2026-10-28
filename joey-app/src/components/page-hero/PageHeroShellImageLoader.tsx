@@ -14,7 +14,7 @@ export default function PageHeroShellImageLoader() {
         height={112}
         priority
         className={styles.logo}
-        sizes="(max-width: 768px) 70vw, 320px"
+        sizes="(max-width: 640px) 70vw, 320px"
       />
       <div className={styles.spinner} />
     </div>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Jost, Playfair_Display, Bodoni_Moda, Great_Vibes } from "next/font/google";
+import { Jost, Playfair_Display, Great_Vibes } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -19,23 +19,23 @@ const BRAND_NAME = "JOEY THE BRAND";
 const jost = Jost({
   subsets: ["latin"],
   variable: "--font-label",
+  display: "swap",
+  preload: false,
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-display",
-});
-
-const bodoni = Bodoni_Moda({
-  subsets: ["latin"],
-  variable: "--font-logo",
-  weight: ["400", "500", "700"],
+  display: "swap",
+  preload: false,
 });
 
 const cursive = Great_Vibes({
   subsets: ["latin"],
   variable: "--font-cursive",
-  weight: ["400"],
+  weight: "400",
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -129,7 +129,7 @@ export default async function RootLayout({
           })}
         </Script>
       </head>
-      <body className={`${jost.variable} ${playfair.variable} ${bodoni.variable} ${cursive.variable} antialiased`}>
+      <body className={`${jost.variable} ${playfair.variable} ${cursive.variable} antialiased`}>
         <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-WGFJSVJM"

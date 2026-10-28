@@ -1,13 +1,19 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
+import BespokeBookingEmail from "@/emails/BespokeBookingEmail";
+import { verifyConsultationPaystackAndNotify } from "@/lib/consultationWorkflow";
+import { verifyAndReconcileOrderPayment } from "@/lib/orderWorkflow";
 
 export const runtime = "nodejs";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 function safeEqualHex(a: string, b: string): boolean {
   const ab = Buffer.from(a, "hex");
@@ -22,6 +28,9 @@ type PaystackEvent = {
     reference?: string;
     metadata?: {
       orderId?: string;
+      order_id?: string;
+      bookingId?: string;
+      booking_id?: string;
       custom_fields?: Array<{
         variable_name?: string;
         value?: string;
@@ -51,7 +60,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Only reconcile success events; verify server-side anyway.
   if (evt.event && !/charge\.success/i.test(evt.event)) {
     return NextResponse.json({ ok: true });
   }
@@ -59,45 +67,50 @@ export async function POST(request: Request) {
   const reference = evt.data?.reference?.trim() || "";
   if (!reference) return NextResponse.json({ ok: true });
 
-  const orderIdFromMeta =
-    evt.data?.metadata?.orderId?.trim() ||
-    evt.data?.metadata?.custom_fields?.find((f) => f.variable_name === "order_id")?.value?.trim() ||
+  const supabaseAdmin = getSupabaseAdmin();
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const bookingIdFromMeta =
+    evt.data?.metadata?.bookingId?.trim() ||
+    evt.data?.metadata?.booking_id?.trim() ||
+    evt.data?.metadata?.custom_fields?.find((f) => f.variable_name === "booking_id")?.value?.trim() ||
     "";
 
-  const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-    headers: { Authorization: `Bearer ${secret}` },
-  });
-  const verifyData = (await verifyRes.json()) as {
-    status?: boolean;
-    data?: { status?: string };
-  };
-
-  if (!(verifyRes.ok && verifyData?.status && verifyData?.data?.status === "success")) {
+  // 1. Consultation booking webhook reconciliation
+  if (bookingIdFromMeta || reference.startsWith("BSP-")) {
+    await verifyConsultationPaystackAndNotify({
+      supabaseAdmin,
+      emailSender: { send: (msg: any) => resend.emails.send(msg) },
+      renderEmail: (props) => BespokeBookingEmail(props),
+      brandFromName: "JOEY The brand",
+      reference,
+      bookingId: bookingIdFromMeta || undefined,
+      defaultExpectedGhs: 1110,
+      paystackSecretKey: secret,
+    });
     return NextResponse.json({ ok: true });
   }
 
-  if (orderIdFromMeta) {
-    await supabaseAdmin
-      .from("orders")
-      .update({
-        payment_status: "paid",
-        payment_ref: reference,
-        status: "processing",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", orderIdFromMeta);
-  } else {
-    await supabaseAdmin
-      .from("orders")
-      .update({
-        payment_status: "paid",
-        payment_ref: reference,
-        status: "processing",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("payment_ref", reference);
-  }
+  // 2. Order payment webhook reconciliation (shared atomic stock + durable outbox)
+  const orderIdFromMeta =
+    evt.data?.metadata?.orderId?.trim() ||
+    evt.data?.metadata?.order_id?.trim() ||
+    evt.data?.metadata?.custom_fields?.find((f) => f.variable_name === "order_id")?.value?.trim() ||
+    "";
+
+  await verifyAndReconcileOrderPayment({
+    supabaseAdmin,
+    emailSender: {
+      send: (msg: any, options?: { idempotencyKey?: string }) =>
+        resend.emails.send(
+          msg,
+          options?.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : undefined,
+        ),
+    },
+    reference,
+    orderId: orderIdFromMeta || undefined,
+    paystackSecretKey: secret,
+  });
 
   return NextResponse.json({ ok: true });
 }
-

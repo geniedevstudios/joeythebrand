@@ -138,8 +138,8 @@ export default function PromotionsPage() {
       </div>
 
       {tab === "codes" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="sm:col-span-1">
             <form onSubmit={handleCreatePromo} className="bg-white rounded-xl shadow-sm border border-zinc-200 p-6 space-y-4 sticky top-6">
               <h3 className="text-lg font-semibold text-zinc-900 flex items-center">
                 <Tag className="w-5 h-5 mr-2" />
@@ -196,7 +196,7 @@ export default function PromotionsPage() {
             </form>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="sm:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
               {promotions.length === 0 ? (
                 <div className="p-12 text-center text-zinc-900">

@@ -2,13 +2,30 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { Resend } from "resend";
 import UrTailorBookingEmail from "@/emails/UrTailorBookingEmail";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { verifyConsultationPaystackAndNotify } from "@/lib/consultationWorkflow";
 
 export const runtime = "nodejs";
 
+function getBaseUrl(): string {
+  const explicit =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_PORTFOLIO_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
+  return "https://urtailorstailor.com";
+}
+
+function getResendSender() {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  return {
+    send: (msg: any) => resend.emails.send(msg),
+  };
+}
+
 /**
- * Verifies a Paystack transaction and updates the booking status to 'paid'.
+ * Verifies a Paystack transaction and updates the booking status to 'paid',
+ * then dispatches customer and admin pending consultation notifications.
  * Expects { reference: string, bookingId: string }
  */
 export async function POST(request: Request) {
@@ -19,87 +36,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing reference or bookingId" }, { status: 400 });
     }
 
-    if (!process.env.PAYSTACK_SECRET_KEY) {
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    if (!secret) {
       return NextResponse.json({ error: "Paystack is not configured." }, { status: 500 });
     }
 
-    // 1) Verify with Paystack
-    const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      },
+    const baseUrl = getBaseUrl();
+    const result = await verifyConsultationPaystackAndNotify({
+      supabaseAdmin: getSupabaseAdmin(),
+      emailSender: getResendSender(),
+      renderEmail: (props) => UrTailorBookingEmail(props),
+      brandFromName: "URTAILORSTAILOR",
+      reference: String(reference).trim(),
+      bookingId: String(bookingId).trim(),
+      defaultExpectedGhs: 1000,
+      paystackSecretKey: secret,
+      getSlipUrl: (row) =>
+        row.portfolio_access_token
+          ? `${baseUrl}/booking/slip?token=${encodeURIComponent(row.portfolio_access_token)}`
+          : `${baseUrl}/booking`,
     });
 
-    const paystackData = await paystackRes.json();
-
-    if (!paystackRes.ok || !paystackData.status || paystackData.data.status !== "success") {
-      const providerStatus =
-        paystackData && typeof paystackData === "object" && paystackData.data && typeof paystackData.data === "object"
-          ? (paystackData.data.status as unknown)
-          : null;
-
-      const paymentStatus = providerStatus === "failed" ? "failed" : "pending";
-
-      const supabase = getSupabaseAdmin();
-      await supabase
-        .from("consultation_bookings")
-        .update({
-          payment_status: paymentStatus,
-          payment_ref: reference,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", bookingId);
-
-      return NextResponse.json({ 
-        error: "Payment verification failed", 
-        details: paystackData.message || "Unknown error" 
-      }, { status: 400 });
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error, details: result.details },
+        { status: result.status },
+      );
     }
 
-    // 2) Update Supabase and fetch details
-    const supabase = getSupabaseAdmin();
-    const { data: bookingData, error } = await supabase
-      .from("consultation_bookings")
-      .update({
-        payment_status: "paid",
-        payment_ref: reference,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", bookingId)
-      .select("customer_name, customer_email, customer_phone, service, preferred_date, booking_code, notes")
-      .single();
-
-    if (error || !bookingData) {
-      console.error("Supabase update error after payment:", error);
-      return NextResponse.json({ error: "Payment verified but database update failed." }, { status: 500 });
-    }
-
-    try {
-      if (bookingData.customer_email) {
-        const fromEmail = process.env.RESEND_APPOINTMENTS_EMAIL || "appointments@joeythebrand.com";
-        await resend.emails.send({
-          from: `URTAILORSTAILOR <${fromEmail}>`,
-          to: bookingData.customer_email,
-          subject: `Bespoke Appointment Request - Pending Review`,
-          react: UrTailorBookingEmail({
-            customerName: bookingData.customer_name || "Customer",
-            customerEmail: bookingData.customer_email,
-            customerPhone: bookingData.customer_phone || "",
-            service: bookingData.service || "Bespoke Service",
-            preferredDate: bookingData.preferred_date || "",
-            bookingCode: bookingData.booking_code || bookingId.slice(-8),
-            status: "pending",
-            notes: bookingData.notes || "",
-          }),
-        });
-      }
-    } catch (emailErr) {
-      console.error("Failed to send bespoke confirmation email:", emailErr);
-    }
-
-    return NextResponse.json({ ok: true, amount: paystackData.data.amount });
+    return NextResponse.json({
+      ok: true,
+      amount: result.amount,
+      alreadyPaid: result.alreadyPaid,
+    });
   } catch (err) {
     console.error("Paystack verify error:", err);
-    return NextResponse.json({ error: "Internal server error during verification." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error during verification." },
+      { status: 500 },
+    );
   }
 }

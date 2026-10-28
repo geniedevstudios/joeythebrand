@@ -73,7 +73,7 @@
 }
 
 /* Odd rows: media left, copy right (DOM order). Even rows: copy left, media right */
-@media (min-width: 769px) {
+@media (min-width: 641px) {
   .card:nth-child(even) .mediaLink {
     grid-column: 2;
   }
@@ -158,7 +158,7 @@
 
 
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .card {
     grid-template-columns: 1fr;
     gap: var(--space-lg);

@@ -334,7 +334,7 @@ export default function NewsletterPage() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+      <div className="grid gap-8 sm:grid-cols-2 sm:items-start">
         <div className="space-y-6">
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm space-y-5">
             <div>
@@ -599,7 +599,7 @@ export default function NewsletterPage() {
           </div>
         </div>
 
-        <div className="lg:sticky lg:top-6 space-y-2">
+        <div className="sm:sticky sm:top-6 space-y-2">
           <h2 className="text-sm font-semibold text-zinc-800">Email preview</h2>
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 shadow-inner">
             <div

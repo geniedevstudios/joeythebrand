@@ -111,8 +111,8 @@
 /* Layout */
 .layout {
   display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
-  gap: var(--space-3xl);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(var(--space-lg), 3vw, var(--space-3xl));
   margin-top: var(--space-2xl);
   align-items: start;
 }
@@ -121,29 +121,31 @@
 .galleryCol {
   display: flex;
   flex-direction: column;
+  width: 100%;
   min-width: 0;
   min-height: 0;
 }
 
 .mainImageWrap {
   position: relative;
+  width: 100%;
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--skintone);
-  /* Match garment photography proportions (and skeleton) */
-  aspect-ratio: 3/4;
+  aspect-ratio: 3 / 4;
 }
 
-/* Fill the ratio box — <video> ignores % height unless the box is explicitly filled */
+/* Beat global `img { height: auto; max-width: 100% }` so the photo fills the ratio box */
 .mainImageWrap > :is(img, video),
 .mainImage:is(img, video) {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  max-width: none;
+  max-height: none;
   object-fit: cover;
   display: block;
-  max-width: 100%;
 }
 
 .badgeStack {
@@ -162,12 +164,29 @@
   background: var(--wood);
   color: #fff;
   font-family: var(--font-label);
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  padding: 6px 14px;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 6px 12px;
   border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
+}
+
+.mtoBadge {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: #595D66;
+  color: #fff;
+  font-family: var(--font-label);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 14px 7px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 /* Thumbnail strip */
@@ -175,12 +194,15 @@
   display: flex;
   gap: var(--space-sm);
   margin-top: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .thumb {
   position: relative;
-  width: calc(25% - 6px);
-  aspect-ratio: 3/4;
+  flex: 0 0 auto;
+  width: clamp(56px, 18%, 88px);
+  aspect-ratio: 3 / 4;
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--skintone);
@@ -188,7 +210,6 @@
   cursor: pointer;
   transition: border-color var(--transition-fast);
   padding: 0;
-  flex-shrink: 0;
 }
 
 .thumb :is(img, video) {
@@ -196,6 +217,8 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  max-width: none;
+  max-height: none;
   object-fit: cover;
   display: block;
   transition: transform 0.3s ease;
@@ -261,9 +284,10 @@
 .infoSticky {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: clamp(var(--space-md), 1.6vw, var(--space-lg));
   position: sticky;
   top: calc(var(--nav-height) + var(--space-2xl));
+  min-width: 0;
 }
 
 .categoryLabel {
@@ -356,7 +380,7 @@
 .sizeGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-sm);
+  gap: 8px;
   margin-top: 4px;
 }
 
@@ -364,13 +388,51 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 10px 16px;
+  padding: 8px 12px;
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--alaska-gray);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-width: 60px;
+  min-width: 44px;
+}
+
+.fitGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  max-width: 16.5rem;
+  margin-top: 4px;
+}
+
+.fitBtn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--alaska-gray);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 0;
+  width: 100%;
+}
+
+.fitBtnActive {
+  background: var(--blue-athracite);
+  border-color: var(--blue-athracite);
+  color: #fff;
+}
+
+.fitBtnActive:hover {
+  color: #fff;
+}
+
+.fitBtn:hover:not(.fitBtnActive) {
+  border-color: var(--cinereous);
+  color: var(--blue-athracite);
 }
 
 .sizeBtn:hover {
@@ -396,7 +458,7 @@
 }
 
 .qtySection {
-  margin-bottom: var(--space-xl);
+  margin-bottom: 0;
 }
 
 .qtyHeader {
@@ -436,14 +498,14 @@
 }
 
 .qtyBtn {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   color: var(--alaska-gray);
   cursor: pointer;
   transition: color var(--transition-fast);
@@ -454,9 +516,9 @@
 }
 
 .qtyVal {
-  width: 44px;
+  width: 36px;
   text-align: center;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--blue-athracite);
 }
 
@@ -465,23 +527,38 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-xl);
 }
 
 .actionBtns {
   display: flex;
-  gap: var(--space-sm);
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
 }
 
-.actionBtns .btn-primary {
-  flex: 1;
+.cartBtn,
+.wishlistBtn,
+.actionBtns :global(.btn) {
+  width: auto;
+  padding: 11px 18px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.cartBtn,
+.actionBtns :global(.btn-primary) {
+  flex: 1 1 11rem;
+  min-width: 0;
 }
 
 .wishlistBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  white-space: nowrap;
+  flex: 0 1 auto;
 }
 
 .supportLinks {
@@ -620,8 +697,8 @@
 
 .suggestionsGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-xl);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: clamp(var(--space-md), 2vw, var(--space-xl));
 }
 
 .suggestCard {
@@ -1170,25 +1247,7 @@
   color: var(--dark-wood);
 }
 
-@media (max-width: 1024px) {
-  .layout {
-    gap: var(--space-2xl);
-  }
-
-  .suggestionsGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .modalContent {
-    max-width: 720px;
-  }
-
-  .infoSticky {
-    top: calc(var(--nav-height) + var(--space-lg));
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .layout {
     grid-template-columns: 1fr;
     gap: var(--space-xl);
@@ -1215,7 +1274,18 @@
   }
 
   .thumb {
-    width: calc(25% - 5px);
+    width: clamp(52px, 20vw, 72px);
+  }
+
+  .actionBtns {
+    flex-direction: column;
+  }
+
+  .cartBtn,
+  .wishlistBtn,
+  .actionBtns :global(.btn) {
+    width: 100%;
+    flex: 1 1 auto;
   }
 
   .suggestionsSection {
@@ -1301,19 +1371,20 @@
     justify-content: center;
   }
 
-  .sizeBtn {
-    padding: 8px 12px;
-    font-size: 0.85rem;
-    min-width: 50px;
+  .sizeBtn,
+  .fitBtn {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    min-width: 40px;
   }
 
   .qtyBtn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
   }
 
   .qtyVal {
-    width: 40px;
+    width: 32px;
   }
 }
 
@@ -1351,9 +1422,10 @@
     gap: 6px;
   }
 
-  .sizeBtn {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    min-width: 44px;
+  .sizeBtn,
+  .fitBtn {
+    padding: 6px 9px;
+    font-size: 0.78rem;
+    min-width: 40px;
   }
 }

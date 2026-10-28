@@ -248,11 +248,7 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 1024px) {
-  .valuesGrid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .manifestoGrid { grid-template-columns: 1fr; }
   .founderGrid { grid-template-columns: 1fr; }
   .founderImage { object-position: top; }

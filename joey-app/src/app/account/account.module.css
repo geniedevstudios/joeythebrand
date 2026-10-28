@@ -308,7 +308,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: var(--space-2xl);
   align-items: start;
 }
@@ -632,9 +632,8 @@
   margin: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .grid {
-    grid-template-columns: 1fr;
     gap: var(--space-xl);
   }
 

@@ -70,8 +70,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
           <>
             {usablePoster ? (
               <picture>
-                {media.mobilePosterUrl ? <source media="(max-width: 767px)" srcSet={media.mobilePosterUrl} /> : null}
-                {media.tabletPosterUrl ? <source media="(max-width: 1024px)" srcSet={media.tabletPosterUrl} /> : null}
+                {media.mobilePosterUrl ? <source media="(max-width: 640px)" srcSet={media.mobilePosterUrl} /> : null}
                 <img
                   key={usablePoster}
                   src={usablePoster}
@@ -108,7 +107,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
               }}
               onError={revealHeroVideo}
             >
-              {media.mobileSrc ? <source media="(max-width: 767px)" src={media.mobileSrc} /> : null}
+              {media.mobileSrc ? <source media="(max-width: 640px)" src={media.mobileSrc} /> : null}
               {media.tabletSrc ? <source media="(max-width: 1024px)" src={media.tabletSrc} /> : null}
               <source src={media.src} />
             </video>
@@ -116,7 +115,7 @@ export default function HeroSection({ initialSiteContent }: { initialSiteContent
         ) : media.src.trim() ? (
           /* Admin has set an image — render it */
           <picture>
-            {media.mobileSrc ? <source media="(max-width: 767px)" srcSet={media.mobileSrc} /> : null}
+            {media.mobileSrc ? <source media="(max-width: 640px)" srcSet={media.mobileSrc} /> : null}
             {media.tabletSrc ? <source media="(max-width: 1024px)" srcSet={media.tabletSrc} /> : null}
             <img
               key={media.src}

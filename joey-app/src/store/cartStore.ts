@@ -16,6 +16,12 @@ export type CartItem = {
   image2?: string;
   quantity: number;
   maxStock: number;
+  availablePhysicalStock?: number;
+  mtoMaxQtyPerOrder?: number;
+  canFallbackToMadeToOrder?: boolean;
+  fulfillmentChoice?: "ready_to_wear" | "made_to_order";
+  isMadeToOrder?: boolean;
+  leadDays?: number;
   isBespoke?: boolean;
   bespokeLeadDays?: number;
   weightKg?: number;
@@ -189,6 +195,39 @@ export const cartStore = {
     cart = cart.filter((i) => i.id !== id);
     saveCart(cart);
     cartStore.notify();
+  },
+
+  setItemQuantityAndFulfillment: (
+    id: string,
+    quantity: number,
+    fulfillmentChoice: "ready_to_wear" | "made_to_order",
+    leadDays?: number,
+    maxStock?: number,
+  ) => {
+    const existingIndex = cart.findIndex((i) => i.id === id);
+    if (existingIndex > -1) {
+      const updatedCart = [...cart];
+      const existing = updatedCart[existingIndex];
+      const isMto = fulfillmentChoice === "made_to_order";
+      const nextMax =
+        maxStock ??
+        (isMto
+          ? existing.mtoMaxQtyPerOrder ?? 5
+          : existing.availablePhysicalStock ?? existing.maxStock ?? 5);
+      updatedCart[existingIndex] = {
+        ...existing,
+        quantity: Math.max(1, Math.min(nextMax, quantity)),
+        maxStock: nextMax,
+        fulfillmentChoice,
+        isMadeToOrder: isMto,
+        isBespoke: isMto,
+        leadDays: isMto ? leadDays ?? existing.leadDays ?? existing.bespokeLeadDays ?? 14 : existing.leadDays,
+        bespokeLeadDays: isMto ? leadDays ?? existing.bespokeLeadDays ?? existing.leadDays ?? 14 : existing.bespokeLeadDays,
+      };
+      cart = updatedCart;
+      saveCart(cart);
+      cartStore.notify();
+    }
   },
 
   clearCart: () => {

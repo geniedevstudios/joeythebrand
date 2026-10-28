@@ -246,16 +246,14 @@ export default function EventsClient({
   }, []);
 
   const activeVideoUrl = useMemo(() => {
-    if (width < 768 && liveTopVideoMobileUrl?.trim()) return liveTopVideoMobileUrl.trim();
-    if (width < 1024 && liveTopVideoTabletUrl?.trim()) return liveTopVideoTabletUrl.trim();
+    if (width < 640 && liveTopVideoMobileUrl?.trim()) return liveTopVideoMobileUrl.trim();
     return liveTopVideoUrl?.trim();
-  }, [width, liveTopVideoMobileUrl, liveTopVideoTabletUrl, liveTopVideoUrl]);
+  }, [width, liveTopVideoMobileUrl, liveTopVideoUrl]);
 
   const activePosterUrl = useMemo(() => {
-    if (width < 768 && liveTopVideoMobilePosterUrl?.trim()) return liveTopVideoMobilePosterUrl.trim();
-    if (width < 1024 && liveTopVideoTabletPosterUrl?.trim()) return liveTopVideoTabletPosterUrl.trim();
+    if (width < 640 && liveTopVideoMobilePosterUrl?.trim()) return liveTopVideoMobilePosterUrl.trim();
     return liveTopVideoPosterUrl?.trim();
-  }, [width, liveTopVideoMobilePosterUrl, liveTopVideoTabletPosterUrl, liveTopVideoPosterUrl]);
+  }, [width, liveTopVideoMobilePosterUrl, liveTopVideoPosterUrl]);
 
   const topUsablePoster = useMemo(
     () => usableVideoPoster(activeVideoUrl, activePosterUrl),

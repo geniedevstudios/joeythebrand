@@ -41,7 +41,7 @@
   flex: 1;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .card {
     max-height: min(92vh, none);
   }
@@ -81,7 +81,7 @@
   background: var(--color-border);
 }
 
-@media (min-width: 769px) {
+@media (min-width: 641px) {
   .media {
     min-height: 360px;
   }
@@ -177,7 +177,7 @@
   right: 12px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 641px) {
   .prevButton {
     left: 32px;
   }

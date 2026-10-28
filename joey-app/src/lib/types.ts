@@ -10,6 +10,20 @@ export interface ProductSize {
 
 export type ProductVariantType = "color" | "fit_combo";
 
+export type ProductFulfillmentMode =
+  | "stock_only"
+  | "stock_then_made_to_order"
+  | "made_to_order_only";
+
+export type ItemFulfillmentType = "ready_to_wear" | "made_to_order";
+
+export type ItemProductionStatus =
+  | "not_applicable"
+  | "queued"
+  | "in_production"
+  | "quality_check"
+  | "ready_for_dispatch";
+
 export interface ProductCombo {
   id: string;
   name: string;
@@ -18,6 +32,8 @@ export interface ProductCombo {
   images: string[];
   quantity?: number;
   isOutOfStock?: boolean;
+  fulfillmentMode?: ProductFulfillmentMode;
+  leadDays?: number;
   bespokeAvailable?: boolean;
   bespokeLeadDays?: number;
   nameFormat?: "plus" | "brackets";
@@ -36,6 +52,8 @@ export interface ProductVariant {
   nameFormat?: "plus" | "brackets";
   quantity?: number;
   isOutOfStock?: boolean;
+  fulfillmentMode?: ProductFulfillmentMode;
+  leadDays?: number;
   bespokeAvailable?: boolean;
   bespokeLeadDays?: number;
   productNameOverride?: string;
@@ -62,6 +80,11 @@ export interface Product {
   featured: boolean;
   wearTag: WearTag;
   quantity: number;
+  isPublished?: boolean;
+  fulfillmentMode?: ProductFulfillmentMode;
+  showOnBespokePage?: boolean;
+  madeToOrderLeadDays?: number;
+  mtoMaxQtyPerOrder?: number;
   bespokeAvailable?: boolean;
   bespokeLeadDays?: number;
   weightKg?: number;
@@ -111,6 +134,8 @@ export interface Order {
   customerPhone: string;
   shippingAddress: string;
   items: OrderItem[];
+  subtotal?: number;
+  shippingCost?: number;
   total: number;
   discount: number;
   promotionCode?: string;
@@ -120,6 +145,13 @@ export interface Order {
   /** Set when the customer was signed in at checkout (Supabase auth.users id). */
   userId?: string;
   notes?: string;
+  reservationExpiresAt?: string;
+  paidAt?: string;
+  stockConflictFlagged?: boolean;
+  stockConflictDetails?: unknown;
+  hasMadeToOrderItems?: boolean;
+  isMixedFulfillment?: boolean;
+  maxLeadDays?: number;
   dhlTrackingNumber?: string;
   dhlLabelUrl?: string;
   dhlStatus?: string;
@@ -142,13 +174,21 @@ export interface OrderItem {
   image: string;
   variantId?: string;
   comboId?: string;
+  skuKey?: string;
+  fulfillmentType?: ItemFulfillmentType;
+  isMadeToOrder?: boolean;
+  leadDays?: number;
+  estimatedReadyDate?: string;
+  productionStatus?: ItemProductionStatus;
   isBespoke?: boolean;
   bespokeLeadDays?: number;
 }
 
 export type OrderStatus = 
   | "pending" 
+  | "paid_requires_resolution"
   | "processing" 
+  | "in production"
   | "order packaged" 
   | "courier on his way to pick package" 
   | "courier picked package" 
@@ -158,8 +198,13 @@ export type OrderStatus =
   | "delivered" 
   | "cancelled";
 
-/** Bespoke / consultation request lifecycle (admin confirms or declines). */
-export type ConsultationStatus = "pending" | "confirmed" | "declined";
+/** Bespoke / consultation request lifecycle (admin confirms, proposes reschedule, or cancels). */
+export type ConsultationStatus =
+  | "pending"
+  | "reschedule_proposed"
+  | "confirmed"
+  | "declined"
+  | "cancelled";
 
 export type ConsultationSource = "shop" | "portfolio";
 
@@ -182,6 +227,14 @@ export interface ConsultationBooking {
   bookingCode?: string;
   /** Admin-set appointment instant (ISO), shown to customer when confirmed. */
   scheduledAt?: string;
+  /** Proposed reschedule instant (ISO), separate from confirmed scheduledAt. */
+  proposedScheduledAt?: string;
+  proposedDate?: string;
+  proposedTime?: string;
+  rescheduleNote?: string;
+  customerRescheduleResponse?: string;
+  cancellationReason?: string;
+  refundReviewRequired?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -224,7 +277,9 @@ export type PageHeroMedia =
       tabletSrc?: string; 
       mobileSrc?: string; 
       fit?: PageHeroFit; 
-      anchor?: PageHeroAnchor 
+      anchor?: PageHeroAnchor;
+      mtoVideoUrl?: string;
+      mtoPosterUrl?: string;
     }
   | { 
       kind: "video"; 
@@ -234,7 +289,9 @@ export type PageHeroMedia =
       tabletPosterUrl?: string;
       mobilePosterUrl?: string;
       fit?: PageHeroFit; 
-      anchor?: PageHeroAnchor 
+      anchor?: PageHeroAnchor;
+      mtoVideoUrl?: string;
+      mtoPosterUrl?: string;
     };
 
 /** CTA for the optional full-screen promotion modal (admin → Promotions → Popup). */

@@ -1101,6 +1101,9 @@ export default function ProductsPage() {
                       Status
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
+                      Visibility
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Stock
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
@@ -1158,7 +1161,11 @@ export default function ProductsPage() {
                               ?.name || product.categoryName}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        {product.isOutOfStock ? (
+                        {product.fulfillmentMode === "made_to_order_only" ? (
+                          <span className="inline-flex rounded-full bg-zinc-200 px-2 text-xs font-semibold leading-5 text-zinc-800">
+                            Made to Order Only
+                          </span>
+                        ) : product.isOutOfStock ? (
                           <span className="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">
                             Out of Stock
                           </span>
@@ -1177,14 +1184,24 @@ export default function ProductsPage() {
                             Best Seller
                           </span>
                         )}
-                        {product.bespokeAvailable && (
-                          <span className="ml-2 inline-flex rounded-full bg-purple-100 px-2 text-xs font-semibold leading-5 text-purple-800">
-                            Bespoke
-                          </span>
-                        )}
+                        {product.fulfillmentMode !== "made_to_order_only" &&
+                          (product.fulfillmentMode === "stock_then_made_to_order" || product.bespokeAvailable) && (
+                            <span className="ml-2 inline-flex rounded-full bg-zinc-200 px-2 text-xs font-semibold leading-5 text-zinc-800">
+                              Made to Order Fallback
+                            </span>
+                          )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-700">
+                        {product.fulfillmentMode === "made_to_order_only" && product.showOnBespokePage
+                          ? product.isPublished === false
+                            ? "Published (/bespoke Only)"
+                            : "Published (Shop + /bespoke)"
+                          : product.isPublished === false
+                            ? "Draft"
+                            : "Published"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">
-                        {product.quantity}
+                        {product.fulfillmentMode === "made_to_order_only" ? "MTO" : product.quantity}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-zinc-900">
                         GHC {product.price.toLocaleString()}

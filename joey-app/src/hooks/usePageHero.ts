@@ -63,8 +63,7 @@ export function useResponsiveSrc(m: PageHeroMedia): string {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  if (width < 768 && m.mobileSrc?.trim()) return m.mobileSrc.trim();
-  if (width < 1024 && m.tabletSrc?.trim()) return m.tabletSrc.trim();
+  if (width < 640 && m.mobileSrc?.trim()) return m.mobileSrc.trim();
   return (m.src ?? "").trim();
 }
 

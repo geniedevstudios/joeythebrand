@@ -16,7 +16,7 @@ export default function HomePage() {
           alt=""
           fill
           priority
-          sizes="(max-width: 768px) 0px, 100vw"
+          sizes="(max-width: 640px) 0px, 100vw"
           className={`${styles.heroBg} ${styles.desktopOnly}`}
         />
         <Image
@@ -24,7 +24,7 @@ export default function HomePage() {
           alt=""
           fill
           priority
-          sizes="(max-width: 768px) 100vw, 0px"
+          sizes="(max-width: 640px) 100vw, 0px"
           className={`${styles.heroBg} ${styles.mobileOnly}`}
         />
         <div className={styles.heroJoeyWrap} aria-hidden>
@@ -32,7 +32,7 @@ export default function HomePage() {
             src="/firstimage.png"
             alt=""
             fill
-            sizes="(max-width: 768px) 85vw, 420px"
+            sizes="(max-width: 640px) 85vw, 420px"
             className={styles.heroJoeyImg}
           />
         </div>
@@ -62,7 +62,7 @@ export default function HomePage() {
                 alt="Joey"
                 width={565}
                 height={862}
-                sizes="(max-width: 900px) 100vw, 48vw"
+                sizes="(max-width: 640px) 100vw, 48vw"
                 className={styles.introPhoto}
               />
               <div className={styles.introMediaWash} aria-hidden />

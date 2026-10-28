@@ -244,7 +244,7 @@
   font-style: italic;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .searchBarWrap {
     margin-top: var(--space-lg);
   }
@@ -366,8 +366,8 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-xl);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: clamp(var(--space-md), 2vw, var(--space-xl));
 }
 
 /* Card */
@@ -383,6 +383,7 @@
   aspect-ratio: 3/4;
   border-radius: var(--radius-md);
   background: var(--skintone);
+  container-type: inline-size;
 }
 
 .imageWrap {
@@ -537,9 +538,16 @@
 
 .name {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
   font-weight: 400;
   color: var(--blue-athracite);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.name a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .desc {
@@ -607,6 +615,74 @@
 .pickMeBtn:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: #fff;
+}
+
+@container (max-width: 280px) {
+  .overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(39, 43, 54, 0) 58%,
+      rgba(39, 43, 54, 0.42) 100%
+    );
+  }
+
+  .badgeStack {
+    top: 6px;
+    left: 6px;
+  }
+
+  .saleBadge {
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    transform: none;
+    font-size: 0.52rem;
+    letter-spacing: 0.1em;
+    padding: 3px 7px;
+    max-width: 7.2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .actionButtons {
+    top: 6px;
+    right: 6px;
+    gap: 4px;
+  }
+
+  .iconBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .iconBtn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .pickMeWrap {
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+  }
+
+  .pickMeBtn {
+    padding: 5px 0;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+  }
+
+  .colorIndicatorWrap {
+    bottom: 34px;
+    right: 6px;
+    padding: 3px 2px;
+    gap: 2px;
+  }
+
+  .colorSwatch {
+    width: 10px;
+    height: 10px;
+  }
 }
 
 /* Empty */
@@ -1036,13 +1112,7 @@
   color: var(--dark-wood);
 }
 
-@media (max-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .pageTitle {
     font-size: clamp(3rem, 15vw, 6rem);
   }

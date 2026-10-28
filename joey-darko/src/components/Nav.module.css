@@ -255,7 +255,7 @@
   color: var(--color-text-light);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .desktopLinks {
     display: none;
   }

@@ -234,8 +234,9 @@
 .bespokeTag {
   font-family: var(--font-label);
   font-size: 0.65rem;
-  color: #7c3aed;
-  background: #f5f3ff;
+  color: var(--alaska-gray);
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 600;
@@ -517,7 +518,7 @@
   color: var(--blue-athracite);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .drawer {
     width: 100vw;
   }

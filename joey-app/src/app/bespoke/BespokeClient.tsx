@@ -1,17 +1,32 @@
 "use client";
-import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
+import { useState, useEffect, useSyncExternalStore, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Clock } from "lucide-react";
 import styles from "./BespokeClient.module.css";
+import shopStyles from "../shop/ShopClient.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@/hooks/usePageHero";
-import type { SiteContent } from "@/lib/types";
+import type { Product, SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import CustomDatePicker from "@/components/CustomDatePicker";
+import ProductMedia from "@/components/shop/ProductMedia";
+import SizeGuideModal from "@/components/SizeGuideModal";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import {
+  getVariantStockStatus,
+  getIsSoloUnavailable,
+  isCuratedBespokeMtoProduct,
+} from "@/lib/variantUtils";
 import { authStore } from "@/store/authStore";
+import { cartStore } from "@/store/cartStore";
+import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+
+const EMPTY_PRODUCTS: Product[] = [];
+const EMPTY_WISHLIST: WishlistItem[] = [];
 
 const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Styling"];
 const serviceOptions = services.map((s) => ({ value: s, label: s }));
@@ -39,8 +54,124 @@ const timeOptions = (() => {
   return out;
 })();
 
-export default function BespokeClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {
+export default function BespokeClient({
+  initialSiteContent,
+  initialMtoProducts = EMPTY_PRODUCTS,
+}: {
+  initialSiteContent: SiteContent;
+  initialMtoProducts?: Product[];
+}) {
   const user = useSyncExternalStore(authStore.subscribe, authStore.getUser, () => null);
+  const storeProducts = useSyncExternalStore(
+    dataStore.subscribe,
+    dataStore.getAllProductsIncludingBespoke,
+    () => initialMtoProducts,
+  );
+  const wishlistItems = useSyncExternalStore(
+    wishlistStore.subscribe,
+    wishlistStore.getItems,
+    () => EMPTY_WISHLIST,
+  );
+  const storeSiteContent = useSyncExternalStore(
+    dataStore.subscribe,
+    dataStore.getSiteContent,
+    () => initialSiteContent,
+  );
+  const mtoVideoUrl =
+    storeSiteContent.pageHeroes?.bespoke?.mtoVideoUrl?.trim() ||
+    initialSiteContent.pageHeroes?.bespoke?.mtoVideoUrl?.trim() ||
+    storeSiteContent.founderVideoUrl?.trim() ||
+    initialSiteContent.founderVideoUrl?.trim() ||
+    "";
+  const mtoVideoPoster =
+    storeSiteContent.pageHeroes?.bespoke?.mtoPosterUrl?.trim() ||
+    initialSiteContent.pageHeroes?.bespoke?.mtoPosterUrl?.trim() ||
+    storeSiteContent.founderVideoPosterUrl?.trim() ||
+    initialSiteContent.founderVideoPosterUrl?.trim() ||
+    "";
+
+  const curatedMtoProducts = useMemo(() => {
+    const fromStore = storeProducts.filter(isCuratedBespokeMtoProduct);
+    if (fromStore.length > 0) return fromStore;
+    return initialMtoProducts.filter(isCuratedBespokeMtoProduct);
+  }, [storeProducts, initialMtoProducts]);
+  const [activeMtoIdx, setActiveMtoIdx] = useState(0);
+  const [prevMtoIdx, setPrevMtoIdx] = useState<number | null>(null);
+  const [mtoHoverPaused, setMtoHoverPaused] = useState(false);
+  const [selectedShowcaseColorId, setSelectedShowcaseColorId] = useState<string>("main-color");
+  const [mobileColorById, setMobileColorById] = useState<Record<string, string>>({});
+
+  const switchMtoSlide = useCallback(
+    (nextIdxOrUpdater: number | ((current: number) => number)) => {
+      setActiveMtoIdx((current) => {
+        const len = curatedMtoProducts.length;
+        if (len <= 1) return 0;
+        const resolved =
+          typeof nextIdxOrUpdater === "function"
+            ? nextIdxOrUpdater(current)
+            : nextIdxOrUpdater;
+        const normalized = ((resolved % len) + len) % len;
+        if (normalized !== current) {
+          setPrevMtoIdx(current);
+          setSelectedShowcaseColorId("main-color");
+        }
+        return normalized;
+      });
+    },
+    [curatedMtoProducts.length],
+  );
+
+  useEffect(() => {
+    if (prevMtoIdx === null) return;
+    const t = window.setTimeout(() => {
+      setPrevMtoIdx(null);
+    }, 950);
+    return () => window.clearTimeout(t);
+  }, [prevMtoIdx, activeMtoIdx]);
+
+  // Quick View Modal state for MTO showcase
+  const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
+  const [quickViewColorVariantId, setQuickViewColorVariantId] = useState<string>("main-color");
+  const [quickViewMode, setQuickViewMode] = useState<"solo" | "paired">("solo");
+  const [quickViewComboId, setQuickViewComboId] = useState<string>("");
+  const [quickViewFit, setQuickViewFit] = useState<string>("Standard");
+  const [selectedSize, setSelectedSize] = useState<string>("");
+  const [qty, setQty] = useState<number>(1);
+  const [activeImage, setActiveImage] = useState<string>("");
+  const [addStatus, setAddStatus] = useState<"idle" | "adding" | "added">("idle");
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+
+  useEffect(() => {
+    if (curatedMtoProducts.length <= 1 || mtoHoverPaused || Boolean(quickViewPiece)) return;
+    const timer = window.setInterval(() => {
+      switchMtoSlide((prev) => prev + 1);
+    }, 7000);
+    return () => window.clearInterval(timer);
+  }, [curatedMtoProducts.length, mtoHoverPaused, activeMtoIdx, quickViewPiece, switchMtoSlide]);
+
+  useEffect(() => {
+    if (quickViewPiece) {
+      document.body.style.overflow = "hidden";
+      setQty(1);
+      setSelectedSize("");
+      setQuickViewColorVariantId(selectedShowcaseColorId || "main-color");
+      setQuickViewMode("solo");
+      setQuickViewComboId("");
+      if (quickViewPiece.wearTag === "womens") {
+        setQuickViewFit("Standard");
+      } else if (quickViewPiece.wearTag === "unisex") {
+        setQuickViewFit("Men");
+      } else {
+        setQuickViewFit("Standard");
+      }
+    } else {
+      document.body.style.overflow = "";
+      setActiveImage("");
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [quickViewPiece, selectedShowcaseColorId]);
   const [, setBookingIdForPayment] = useState<string | null>(null);
   const [payConfirmOpen, setPayConfirmOpen] = useState(false);
   const [slotStep, setSlotStep] = useState<"date" | "time">("date");
@@ -512,6 +643,992 @@ export default function BespokeClient({ initialSiteContent }: { initialSiteConte
           </div>
         </div>
       </div>
+
+      {curatedMtoProducts.length > 0 ? (
+        <section className={styles.mtoSection} aria-labelledby="bespoke-mto-heading">
+          <div className={styles.mtoBanner}>
+            <div className={styles.mtoBannerMedia} aria-hidden="true">
+              {mtoVideoUrl ? (
+                <video
+                  key={mtoVideoUrl}
+                  className={styles.mtoBannerVideo}
+                  src={mtoVideoUrl}
+                  poster={mtoVideoPoster && mtoVideoPoster !== mtoVideoUrl ? mtoVideoPoster : undefined}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                />
+              ) : mtoVideoPoster ? (
+                <img
+                  src={mtoVideoPoster}
+                  alt=""
+                  className={styles.mtoBannerVideo}
+                  draggable={false}
+                />
+              ) : null}
+              <div className={styles.mtoBannerScrim} />
+            </div>
+
+            <div className={styles.mtoHeader}>
+              <span className={styles.mtoKicker}>— Crafted On Order</span>
+              <h2 id="bespoke-mto-heading" className={`t-display ${styles.mtoTitle}`}>
+                Made to Order Pieces
+              </h2>
+              <p className={styles.mtoSubtitle}>
+                Exclusive designs created by JOEY THE BRAND and handcrafted specifically for your order. Select your size and options, complete full payment at checkout, and your piece will be produced within the stated lead time.
+              </p>
+            </div>
+          </div>
+
+          <div
+            className={styles.mtoShowcase}
+            onMouseEnter={() => setMtoHoverPaused(true)}
+            onMouseLeave={() => setMtoHoverPaused(false)}
+          >
+            {(() => {
+              const safeIdx =
+                curatedMtoProducts.length > 0
+                  ? Math.min(activeMtoIdx, curatedMtoProducts.length - 1)
+                  : 0;
+              const p = curatedMtoProducts[safeIdx];
+              if (!p) return null;
+
+              const leadDays = p.madeToOrderLeadDays ?? p.bespokeLeadDays ?? 14;
+              const inWishlist = wishlistItems.some((w) => w.id === p.id);
+              const colorVariants = (p.variants || []).filter((v) => v.type === "color");
+              const activeShowcaseColor =
+                colorVariants.find((v) => v.id === selectedShowcaseColorId) ||
+                colorVariants[0] ||
+                null;
+              const displayImage =
+                (activeShowcaseColor &&
+                  activeShowcaseColor.id !== "main-color" &&
+                  (activeShowcaseColor.images?.[0] || activeShowcaseColor.thumbnailUrl)) ||
+                p.image;
+              const displayTitle =
+                (activeShowcaseColor &&
+                  activeShowcaseColor.id !== "main-color" &&
+                  activeShowcaseColor.productNameOverride?.trim()) ||
+                p.name;
+              const availableSizes = (p.sizes || [])
+                .filter((s) => s.available !== false)
+                .map((s) => s.name);
+              const defaultSize = availableSizes[0] || "Standard";
+              const sizeSummary =
+                availableSizes.length > 2
+                  ? `${availableSizes[0]} – ${availableSizes[availableSizes.length - 1]}`
+                  : availableSizes.length > 0
+                    ? availableSizes.join(", ")
+                    : "Standard & Custom";
+
+              const firstDetail = (p.details || []).find((d) => d?.trim())?.trim() || "";
+              let detailLabel = "Craftsmanship";
+              let detailValue = firstDetail || "100% Handcrafted";
+              if (firstDetail.includes(":")) {
+                const [lbl, ...rest] = firstDetail.split(":");
+                if (lbl.trim() && rest.join(":").trim()) {
+                  detailLabel = lbl.trim();
+                  detailValue = rest.join(":").trim();
+                }
+              }
+
+              const productHref = `/shop/${p.slug || p.id}`;
+
+              const handleQuickAddShowcaseToCart = () => {
+                const stockStatus = getVariantStockStatus(p, activeShowcaseColor, null, "solo");
+                const defaultFit =
+                  p.wearTag === "womens"
+                    ? "Standard"
+                    : p.wearTag === "unisex"
+                      ? "Men"
+                      : undefined;
+                cartStore.addItem({
+                  productId: p.id,
+                  name: displayTitle,
+                  color: activeShowcaseColor?.name || undefined,
+                  colorHex: activeShowcaseColor?.colorHex,
+                  size: defaultSize,
+                  fit: defaultFit,
+                  wearTag: p.wearTag,
+                  price: stockStatus.unitPrice,
+                  image: displayImage,
+                  image2: activeShowcaseColor?.images?.[1] || p.images?.[0] || displayImage,
+                  quantity: 1,
+                  maxStock: stockStatus.mtoMaxQtyPerOrder,
+                  availablePhysicalStock: 0,
+                  mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
+                  fulfillmentChoice: "made_to_order",
+                  isMadeToOrder: true,
+                  leadDays: stockStatus.leadDays,
+                  isBespoke: true,
+                  bespokeLeadDays: stockStatus.leadDays,
+                  variantId:
+                    stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
+                });
+                toast.success(`${displayTitle} (${defaultSize}) added to your cart!`);
+              };
+
+              const prevProduct =
+                prevMtoIdx !== null && prevMtoIdx !== safeIdx
+                  ? curatedMtoProducts[prevMtoIdx] || null
+                  : null;
+
+              return (
+                <div className={styles.mtoShowcaseInner}>
+                  {/* Left Column: Title, Price, Bottom Slide Dots */}
+                  <div className={styles.mtoShowcaseLeft}>
+                    <div />
+                    <div className={styles.mtoTitleStage}>
+                      {prevProduct ? (
+                        <div
+                          key={`prev-title-${prevProduct.id}`}
+                          className={`${styles.mtoTitleBlock} ${styles.mtoTitleBlockExit}`}
+                          aria-hidden="true"
+                        >
+                          <span className={styles.mtoProductTag}>
+                            {prevProduct.categoryName || "Made to Order"}
+                          </span>
+                          <div className={styles.mtoShowcaseNameLink}>
+                            <h3 className={styles.mtoShowcaseName}>{prevProduct.name}</h3>
+                          </div>
+                          <p className={styles.mtoShowcasePrice}>
+                            GHC {prevProduct.price.toLocaleString()}
+                            {prevProduct.originalPrice ? (
+                              <span className={styles.mtoShowcaseOriginalPrice}>
+                                GHC {prevProduct.originalPrice.toLocaleString()}
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      <div
+                        key={`curr-title-${p.id}-${activeShowcaseColor?.id || "main"}`}
+                        className={`${styles.mtoTitleBlock} ${styles.mtoTitleBlockEnter}`}
+                      >
+                        <span className={styles.mtoProductTag}>
+                          {p.categoryName || "Made to Order"}
+                        </span>
+                        <Link href={productHref} className={styles.mtoShowcaseNameLink}>
+                          <h3 className={styles.mtoShowcaseName}>{displayTitle}</h3>
+                        </Link>
+                        <p className={styles.mtoShowcasePrice}>
+                          GHC {p.price.toLocaleString()}
+                          {p.originalPrice ? (
+                            <span className={styles.mtoShowcaseOriginalPrice}>
+                              GHC {p.originalPrice.toLocaleString()}
+                            </span>
+                          ) : null}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className={styles.mtoBarsRow} role="tablist" aria-label="Made to Order pieces">
+                      {curatedMtoProducts.map((item, idx) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={idx === safeIdx}
+                          aria-label={`View ${item.name}`}
+                          className={`${styles.mtoBarBtn} ${
+                            idx === safeIdx ? styles.mtoBarBtnActive : ""
+                          }`}
+                          onClick={() => switchMtoSlide(idx)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Center Column: White Circle + Dual-Buffered Sliding Product Image */}
+                  <div className={styles.mtoShowcaseCenter}>
+                    <div
+                      key={`circle-${p.id}`}
+                      className={styles.mtoCircleBackdrop}
+                      aria-hidden="true"
+                    />
+                    <div className={styles.mtoMediaStage}>
+                      {prevProduct ? (
+                        <div
+                          key={`prev-media-${prevProduct.id}`}
+                          className={`${styles.mtoMediaLink} ${styles.mtoMediaExit}`}
+                          aria-hidden="true"
+                        >
+                          <ProductMedia
+                            src={prevProduct.image}
+                            alt=""
+                            className={styles.mtoShowcaseMedia}
+                          />
+                        </div>
+                      ) : null}
+
+                      <Link
+                        key={`curr-media-${p.id}-${activeShowcaseColor?.id || "main"}`}
+                        href={productHref}
+                        className={`${styles.mtoMediaLink} ${styles.mtoMediaEnter}`}
+                        aria-label={`View ${displayTitle}`}
+                      >
+                        <ProductMedia
+                          src={displayImage}
+                          alt={displayTitle}
+                          className={styles.mtoShowcaseMedia}
+                        />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Specs, Vertical Action Icons (Heart, Quick View, Variant Colors), Bottom-Right + Add to Cart */}
+                  <div className={styles.mtoShowcaseRight}>
+                    <div />
+                    <div className={styles.mtoRightTop}>
+                      <div
+                        key={`specs-${p.id}`}
+                        className={styles.mtoSpecsList}
+                      >
+                        <div className={styles.mtoSpecItem}>
+                          <span className={styles.mtoSpecLabel}>{detailLabel}</span>
+                          <span className={styles.mtoSpecValue}>{detailValue}</span>
+                        </div>
+
+                        <div className={styles.mtoSpecItem}>
+                          <span className={styles.mtoSpecLabel}>Sizing</span>
+                          <span className={styles.mtoSpecValue}>{sizeSummary}</span>
+                        </div>
+
+                        <div className={styles.mtoSpecItem}>
+                          <span className={styles.mtoSpecLabel}>Production Lead Time</span>
+                          <span className={styles.mtoSpecValue}>{leadDays} Days</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.mtoSideActions}>
+                        {/* 1. Heart (Wishlist) Button */}
+                        <button
+                          type="button"
+                          className={`${styles.mtoCircleIconBtn} ${
+                            inWishlist ? styles.mtoCircleIconBtnActive : ""
+                          }`}
+                          aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                          title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                          onClick={() => {
+                            const wasIn = wishlistStore.has(p.id);
+                            wishlistStore.toggleItem({
+                              id: p.id,
+                              name: p.name,
+                              price: `GHC ${p.price.toLocaleString()}`,
+                              image: p.image,
+                              hoverImage: p.hoverImage,
+                              category: p.categoryName || "",
+                            });
+                            toast.success(
+                              wasIn
+                                ? `${p.name} removed from wishlist`
+                                : `${p.name} added to wishlist`,
+                            );
+                          }}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill={inWishlist ? "currentColor" : "none"}
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                        </button>
+
+                        {/* 2. View (Quick View) Button */}
+                        <button
+                          type="button"
+                          className={styles.mtoCircleIconBtn}
+                          aria-label={`Quick view ${p.name}`}
+                          title="Quick View"
+                          onClick={() => setQuickViewPiece(p)}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="6" cy="15" r="4" />
+                            <circle cx="18" cy="15" r="4" />
+                            <path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2" />
+                            <path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2" />
+                            <path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2" />
+                          </svg>
+                        </button>
+
+                        {/* 3. Variant Colors (if available) */}
+                        {colorVariants.length > 0 &&
+                          colorVariants.map((v) => {
+                            const isSelectedColor =
+                              (activeShowcaseColor?.id || "main-color") === v.id;
+                            const swatchImg =
+                              v.thumbnailUrl ||
+                              v.images?.[0] ||
+                              (v.id === "main-color" ? p.image : null);
+                            return (
+                              <button
+                                key={v.id}
+                                type="button"
+                                className={`${styles.mtoColorVariantBtn} ${
+                                  isSelectedColor ? styles.mtoColorVariantBtnActive : ""
+                                }`}
+                                title={v.name || "Select color"}
+                                aria-label={`Select color ${v.name || v.id}`}
+                                style={{
+                                  backgroundColor: v.colorHex || "#ccc",
+                                  backgroundImage: swatchImg ? `url(${swatchImg})` : "none",
+                                }}
+                                onClick={() => setSelectedShowcaseColorId(v.id)}
+                              />
+                            );
+                          })}
+                      </div>
+                    </div>
+
+                    <div className={styles.mtoPlusWrap}>
+                      <button
+                        type="button"
+                        className={styles.mtoPlusBtn}
+                        aria-label={`Add ${displayTitle} to cart`}
+                        title="Add to Cart"
+                        onClick={handleQuickAddShowcaseToCart}
+                      >
+                        <svg
+                          width="22"
+                          height="22"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Phones: stacked lookbook — tap the photo for product details */}
+          <div className={styles.mtoLookbook}>
+            {curatedMtoProducts.map((p) => {
+              const inWishlist = wishlistItems.some((w) => w.id === p.id);
+              const colorVariants = (p.variants || []).filter((v) => v.type === "color");
+              const selectedColorId = mobileColorById[p.id] || "main-color";
+              const activeColor =
+                colorVariants.find((v) => v.id === selectedColorId) ||
+                colorVariants[0] ||
+                null;
+              const displayImage =
+                (activeColor &&
+                  activeColor.id !== "main-color" &&
+                  (activeColor.images?.[0] || activeColor.thumbnailUrl)) ||
+                p.image;
+              const displayTitle =
+                (activeColor &&
+                  activeColor.id !== "main-color" &&
+                  activeColor.productNameOverride?.trim()) ||
+                p.name;
+              const displayPrice =
+                Number(activeColor?.price) > 0 ? Number(activeColor.price) : p.price;
+              const productHref = `/shop/${p.slug || p.id}`;
+
+              return (
+                <article key={p.id} className={styles.mtoLookPanel}>
+                  <Link
+                    href={productHref}
+                    className={styles.mtoLookLink}
+                    aria-label={`View ${displayTitle}`}
+                  >
+                    <ProductMedia
+                      src={displayImage}
+                      alt={displayTitle}
+                      className={styles.mtoLookMedia}
+                      loading="lazy"
+                    />
+                    <span className={styles.mtoLookScrim} aria-hidden="true" />
+                    <span className={styles.mtoLookCaption}>
+                      <span className={styles.mtoLookName}>{displayTitle}</span>
+                      <span className={styles.mtoLookPrice}>
+                        GHC {displayPrice.toLocaleString()}
+                        {p.originalPrice ? (
+                          <span className={styles.mtoLookOriginalPrice}>
+                            GHC {p.originalPrice.toLocaleString()}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className={styles.mtoLookCta}>View piece</span>
+                    </span>
+                  </Link>
+
+                  <div className={styles.mtoLookActions}>
+                    <button
+                      type="button"
+                      className={`${styles.mtoCircleIconBtn} ${styles.mtoLookIconBtn} ${
+                        inWishlist ? styles.mtoCircleIconBtnActive : ""
+                      }`}
+                      aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                      title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                      onClick={() => {
+                        const wasIn = wishlistStore.has(p.id);
+                        wishlistStore.toggleItem({
+                          id: p.id,
+                          name: p.name,
+                          price: `GHC ${p.price.toLocaleString()}`,
+                          image: p.image,
+                          hoverImage: p.hoverImage,
+                          category: p.categoryName || "",
+                        });
+                        toast.success(
+                          wasIn
+                            ? `${p.name} removed from wishlist`
+                            : `${p.name} added to wishlist`,
+                        );
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill={inWishlist ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${styles.mtoCircleIconBtn} ${styles.mtoLookIconBtn}`}
+                      aria-label={`Quick view ${displayTitle}`}
+                      title="Quick View"
+                      onClick={() => setQuickViewPiece(p)}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="6" cy="15" r="4" />
+                        <circle cx="18" cy="15" r="4" />
+                        <path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2" />
+                        <path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2" />
+                        <path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2" />
+                      </svg>
+                    </button>
+
+                    {colorVariants.length > 0 ? (
+                      <div className={styles.mtoLookSwatches} role="group" aria-label="Colors">
+                        {colorVariants.map((v) => {
+                          const isSelected = (activeColor?.id || "main-color") === v.id;
+                          const swatchImg =
+                            v.thumbnailUrl ||
+                            v.images?.[0] ||
+                            (v.id === "main-color" ? p.image : null);
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              className={`${styles.mtoLookSwatch} ${
+                                isSelected ? styles.mtoLookSwatchActive : ""
+                              }`}
+                              title={v.name || "Select color"}
+                              aria-label={`Select color ${v.name || v.id}`}
+                              aria-pressed={isSelected}
+                              style={{
+                                backgroundColor: v.colorHex || "#ccc",
+                                backgroundImage: swatchImg ? `url(${swatchImg})` : "none",
+                              }}
+                              onClick={() =>
+                                setMobileColorById((prev) => ({ ...prev, [p.id]: v.id }))
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Quick View Modal for MTO Showcase */}
+      {quickViewPiece ? (
+        <div
+          className={shopStyles.modalBackdrop}
+          onClick={() => setQuickViewPiece(null)}
+          aria-hidden="true"
+        >
+          <div
+            className={shopStyles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bespoke-qv-title"
+          >
+            <button
+              type="button"
+              className={shopStyles.modalClose}
+              onClick={() => setQuickViewPiece(null)}
+              aria-label="Close modal"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <div className={shopStyles.modalGrid}>
+              {(() => {
+                const qvColorVariants = (quickViewPiece.variants || []).filter(
+                  (v) => v.type === "color",
+                );
+                const qvActiveVariant =
+                  qvColorVariants.find((v) => v.id === quickViewColorVariantId) ||
+                  qvColorVariants[0] ||
+                  null;
+                const qvFitParent = (quickViewPiece.variants || []).find(
+                  (v) => v.type === "fit_combo",
+                );
+                const qvCombos =
+                  qvColorVariants.length > 0
+                    ? qvActiveVariant?.combos || []
+                    : qvFitParent?.combos || [];
+                const qvActiveCombo =
+                  quickViewMode === "paired"
+                    ? qvCombos.find((c) => c.id === quickViewComboId) || qvCombos[0] || null
+                    : null;
+
+                const qvGalleryImages = (() => {
+                  if (quickViewMode === "paired" && qvActiveCombo?.images?.length) {
+                    return qvActiveCombo.images.filter(Boolean);
+                  }
+                  if (
+                    qvActiveVariant &&
+                    qvActiveVariant.id !== "main-color" &&
+                    qvActiveVariant.images?.length
+                  ) {
+                    return qvActiveVariant.images.filter(Boolean);
+                  }
+                  const base = [quickViewPiece.image, ...(quickViewPiece.images || [])].filter(
+                    Boolean,
+                  );
+                  return [...new Set(base)];
+                })();
+
+                const quickViewStockStatus = getVariantStockStatus(
+                  quickViewPiece,
+                  qvActiveVariant,
+                  qvActiveCombo,
+                  quickViewMode,
+                );
+                const isInQvWishlist = wishlistItems.some((w) => w.id === quickViewPiece.id);
+
+                const qvAvailableSizes = (() => {
+                  if (quickViewPiece.wearTag === "womens") {
+                    if (quickViewFit === "Thick") return ["S", "M", "L", "XL", "Custom"];
+                    return (quickViewPiece.sizes || [])
+                      .filter((s) => s.available !== false)
+                      .map((s) => s.name);
+                  }
+                  if (quickViewPiece.wearTag === "unisex") {
+                    if (quickViewFit === "Women") return ["S", "M", "L", "XL", "Custom"];
+                    return ["S", "M", "L", "XL", "XXL", "Custom"];
+                  }
+                  const list = (quickViewPiece.sizes || [])
+                    .filter((s) => s.available !== false)
+                    .map((s) => s.name);
+                  return list.length > 0 ? list : ["S", "M", "L", "XL", "Custom"];
+                })();
+
+                const handleQvAddToCart = () => {
+                  if (!selectedSize && qvAvailableSizes.length > 0) {
+                    toast.error("Please pick a size before adding to cart.");
+                    return;
+                  }
+                  setAddStatus("adding");
+                  setTimeout(() => {
+                    const resolvedName = qvActiveCombo?.productNameOverride
+                      ? qvActiveCombo.productNameOverride
+                      : qvActiveVariant &&
+                          qvActiveVariant.id !== "main-color" &&
+                          qvActiveVariant.productNameOverride
+                        ? qvActiveVariant.productNameOverride
+                        : quickViewPiece.name;
+                    cartStore.addItem({
+                      productId: quickViewPiece.id,
+                      name: resolvedName,
+                      color: qvActiveVariant?.name,
+                      colorHex: qvActiveVariant?.colorHex,
+                      combo: qvActiveCombo ? qvActiveCombo.name : undefined,
+                      size: selectedSize || qvAvailableSizes[0] || "Standard",
+                      fit:
+                        quickViewPiece.wearTag === "womens" ||
+                        quickViewPiece.wearTag === "unisex"
+                          ? quickViewFit
+                          : undefined,
+                      wearTag: quickViewPiece.wearTag,
+                      price: quickViewStockStatus.unitPrice,
+                      image:
+                        qvActiveCombo?.thumbnailUrl ||
+                        qvGalleryImages[0] ||
+                        quickViewPiece.image,
+                      image2:
+                        qvActiveCombo?.images?.[0] ||
+                        qvGalleryImages[1] ||
+                        quickViewPiece.images?.[0],
+                      quantity: qty,
+                      maxStock: quickViewStockStatus.maxStock,
+                      availablePhysicalStock: quickViewStockStatus.availablePhysicalStock,
+                      mtoMaxQtyPerOrder: quickViewStockStatus.mtoMaxQtyPerOrder,
+                      fulfillmentChoice: "made_to_order",
+                      isMadeToOrder: true,
+                      leadDays: quickViewStockStatus.leadDays,
+                      isBespoke: true,
+                      bespokeLeadDays: quickViewStockStatus.leadDays,
+                      variantId:
+                        quickViewStockStatus.variantId !== "base"
+                          ? quickViewStockStatus.variantId
+                          : undefined,
+                      comboId:
+                        quickViewStockStatus.comboId !== "base"
+                          ? quickViewStockStatus.comboId
+                          : undefined,
+                    });
+                    setAddStatus("added");
+                    toast.success(`${resolvedName} added to your cart!`);
+                    setTimeout(() => {
+                      setAddStatus("idle");
+                      setQuickViewPiece(null);
+                    }, 1200);
+                  }, 300);
+                };
+
+                return (
+                  <>
+                    <div className={shopStyles.modalGallery}>
+                      <div className={shopStyles.modalImageWrap} style={{ position: "relative" }}>
+                        <ProductMedia
+                          src={activeImage || qvGalleryImages[0] || quickViewPiece.image}
+                          alt={quickViewPiece.name}
+                          className={shopStyles.modalImage}
+                        />
+                        <div
+                          className={shopStyles.badgeStack}
+                          aria-hidden="true"
+                          style={{ left: "var(--space-md)" }}
+                        >
+                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>
+                            MADE TO ORDER
+                          </span>
+                        </div>
+                      </div>
+                      {qvGalleryImages.length > 1 ? (
+                        <div className={shopStyles.modalThumbnails}>
+                          {qvGalleryImages.map((img: string, idx: number) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              className={`${shopStyles.thumbBtn} ${
+                                (activeImage || qvGalleryImages[0]) === img
+                                  ? shopStyles.thumbActive
+                                  : ""
+                              }`}
+                              onClick={() => setActiveImage(img)}
+                              aria-label={`View image ${idx + 1}`}
+                            >
+                              <ProductMedia
+                                src={img}
+                                alt={`Thumbnail ${idx + 1}`}
+                                className={shopStyles.thumbImage}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {qvColorVariants.length > 0 ? (
+                        <div className={shopStyles.colorSelectorSection}>
+                          <span className={shopStyles.colorSelectorLabel}>Color:</span>
+                          <div className={shopStyles.colorSelectorSwatches}>
+                            {qvColorVariants.map((v: any) => {
+                              const swatchUrl =
+                                v.thumbnailUrl ||
+                                v.images?.[0] ||
+                                (v.id === "main-color" ? quickViewPiece.image : null);
+                              return (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  className={`${shopStyles.colorSelectorBtn} ${
+                                    quickViewColorVariantId === v.id
+                                      ? shopStyles.colorSelectorBtnActive
+                                      : ""
+                                  }`}
+                                  style={{
+                                    backgroundColor: v.colorHex || "#ccc",
+                                    backgroundImage: swatchUrl ? `url(${swatchUrl})` : "none",
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                  }}
+                                  onClick={() => {
+                                    setQuickViewColorVariantId(v.id);
+                                    setActiveImage("");
+                                    const isSoloUnavail = getIsSoloUnavailable(v, quickViewPiece);
+                                    const hasCombos = v.combos && v.combos.length > 0;
+                                    if (isSoloUnavail && hasCombos) {
+                                      setQuickViewMode("paired");
+                                      setQuickViewComboId(v.combos[0].id);
+                                    } else if (!hasCombos) {
+                                      setQuickViewMode("solo");
+                                      setQuickViewComboId("");
+                                    }
+                                  }}
+                                  title={v.name || "Color"}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className={shopStyles.modalInfo}>
+                      <h2 id="bespoke-qv-title" className={`t-display ${shopStyles.modalTitle}`}>
+                        {qvActiveCombo?.productNameOverride
+                          ? qvActiveCombo.productNameOverride
+                          : qvActiveVariant &&
+                              qvActiveVariant.id !== "main-color" &&
+                              qvActiveVariant.productNameOverride
+                            ? qvActiveVariant.productNameOverride
+                            : quickViewPiece.name}
+                      </h2>
+                      <div className={shopStyles.modalPriceRow}>
+                        <span className={shopStyles.modalPrice}>
+                          GHC {quickViewStockStatus.unitPrice.toLocaleString()}
+                        </span>
+                        {!qvActiveCombo && quickViewPiece.originalPrice ? (
+                          <span className={shopStyles.modalOriginalPrice}>
+                            GHC {quickViewPiece.originalPrice.toLocaleString()}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className={shopStyles.modalDesc}>{quickViewPiece.description}</p>
+
+                      {(quickViewPiece.wearTag === "womens" ||
+                        quickViewPiece.wearTag === "unisex") && (
+                        <div className={shopStyles.modalSizeRow} style={{ marginBottom: "1rem" }}>
+                          <span className={shopStyles.qtyLabel}>
+                            {quickViewPiece.wearTag === "unisex" ? "Gender:" : "Fit:"}
+                          </span>
+                          <div className={shopStyles.modalFitSelector}>
+                            {(quickViewPiece.wearTag === "unisex"
+                              ? ["Men", "Women"]
+                              : ["Standard", "Thick"]
+                            ).map((fit) => (
+                              <button
+                                key={fit}
+                                type="button"
+                                className={`${shopStyles.fitBtn} ${
+                                  quickViewFit === fit ? shopStyles.fitBtnActive : ""
+                                }`}
+                                onClick={() => {
+                                  setQuickViewFit(fit);
+                                  setSelectedSize("");
+                                }}
+                              >
+                                {fit}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={shopStyles.modalSizeRow}>
+                        <span className={shopStyles.qtyLabel}>Size:</span>
+                        <div className={shopStyles.sizeGrid}>
+                          {qvAvailableSizes.map((sz: string) => (
+                            <button
+                              key={sz}
+                              type="button"
+                              className={`${shopStyles.sizeBtn} ${
+                                selectedSize === sz ? shopStyles.sizeActive : ""
+                              }`}
+                              onClick={() => setSelectedSize((prev) => (prev === sz ? "" : sz))}
+                            >
+                              {formatSizeLabel(sz, quickViewFit, quickViewPiece.wearTag)}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          className={shopStyles.sizeGuideBtn}
+                          onClick={() => setSizeGuideOpen(true)}
+                        >
+                          Size Guide
+                        </button>
+                      </div>
+
+                      <div className={shopStyles.modalQtyRow}>
+                        <div className={shopStyles.qtyLeft}>
+                          <span className={shopStyles.qtyLabel}>Quantity:</span>
+                          <div className={shopStyles.qtyControl}>
+                            <button
+                              type="button"
+                              className={shopStyles.qtyBtn}
+                              onClick={() => setQty(Math.max(1, qty - 1))}
+                            >
+                              -
+                            </button>
+                            <span className={shopStyles.qtyVal}>{qty}</span>
+                            <button
+                              type="button"
+                              className={shopStyles.qtyBtn}
+                              onClick={() => {
+                                if (qty < quickViewStockStatus.maxStock) {
+                                  setQty(qty + 1);
+                                } else {
+                                  toast.error(
+                                    `Maximum ${quickViewStockStatus.maxStock} Made to Order pieces per order.`,
+                                  );
+                                }
+                              }}
+                              disabled={qty >= quickViewStockStatus.maxStock}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={shopStyles.modalActions}>
+                        <button
+                          type="button"
+                          className={`btn btn-primary ${shopStyles.modalAddBtn}`}
+                          onClick={handleQvAddToCart}
+                          disabled={addStatus !== "idle"}
+                        >
+                          {addStatus === "idle"
+                            ? "Order Made to Order"
+                            : addStatus === "adding"
+                              ? "Adding..."
+                              : "Added ✓"}
+                        </button>
+                        <button
+                          type="button"
+                          className={shopStyles.modalWishlistBtn}
+                          onClick={() => {
+                            const wasIn = wishlistStore.has(quickViewPiece.id);
+                            wishlistStore.toggleItem({
+                              id: quickViewPiece.id,
+                              name: quickViewPiece.name,
+                              price: `GHC ${quickViewPiece.price.toLocaleString()}`,
+                              image: quickViewPiece.image,
+                              hoverImage: quickViewPiece.hoverImage,
+                              category: quickViewPiece.categoryName || "",
+                            });
+                            toast.success(
+                              wasIn
+                                ? `${quickViewPiece.name} removed from wishlist`
+                                : `${quickViewPiece.name} added to wishlist`,
+                            );
+                          }}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill={isInQvWishlist ? "var(--alaska-gray)" : "none"}
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                          {isInQvWishlist ? "Saved To Wishlist" : "Add To Wishlist"}
+                        </button>
+                      </div>
+
+                      <div
+                        role="status"
+                        aria-live="polite"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          marginTop: "14px",
+                          marginBottom: "2px",
+                          fontSize: "0.78rem",
+                          color: "var(--alaska-gray)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <Clock
+                          aria-hidden
+                          style={{
+                            flex: "0 0 auto",
+                            opacity: 0.85,
+                            width: "14px",
+                            height: "14px",
+                            color: "var(--alaska-gray)",
+                          }}
+                        />
+                        <span>
+                          Made to Order piece handcrafted for you within{" "}
+                          {quickViewStockStatus.leadDays || 14} days
+                        </span>
+                      </div>
+
+                      <Link
+                        href={`/shop/${quickViewPiece.slug || quickViewPiece.id}`}
+                        className={shopStyles.modalFullDetail}
+                      >
+                        View Full Details →
+                      </Link>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <SizeGuideModal
+        open={sizeGuideOpen}
+        onClose={() => setSizeGuideOpen(false)}
+        kind="unisex"
+      />
 
       {payConfirmOpen ? (
         <div

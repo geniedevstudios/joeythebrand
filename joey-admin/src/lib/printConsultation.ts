@@ -36,7 +36,15 @@ function formatScheduled(iso?: string) {
 /** Print-friendly consultation slip from the admin dashboard. */
 export function openConsultationPrintWindow(b: ConsultationBooking): void {
   const statusLabel =
-    b.status === "pending" ? "Pending review" : b.status === "confirmed" ? "Confirmed" : "Declined";
+    b.status === "pending"
+      ? "Pending review"
+      : b.status === "reschedule_proposed"
+        ? "Reschedule proposed"
+        : b.status === "confirmed"
+          ? "Confirmed"
+          : b.status === "cancelled"
+            ? "Cancelled"
+            : "Declined";
 
   const pairs: { label: string; value: string; mono?: boolean }[] = [
     { label: "Channel", value: b.source === "portfolio" ? "Portfolio site" : "Shop (app)" },

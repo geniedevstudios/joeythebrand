@@ -85,13 +85,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
-@media (max-width: 1024px) {
-  .collectionShotsGrid {
-    gap: var(--space-lg) !important;
-    padding: var(--space-md);
-  }
-}
-
 @media (max-width: 640px) {
   .collectionShotsGrid {
     grid-template-columns: 1fr !important;
@@ -310,7 +303,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .collectionDetailEditorialRow {
     flex-direction: column-reverse;
     text-align: center;
@@ -647,7 +640,7 @@
   transition-delay: 0.3s;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .carouselRow, .rowReverse {
     flex-direction: column;
   }
@@ -822,7 +815,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .collectionRowSection {
     --zig-cut: clamp(0.85rem, 9vmin, 2.1rem);
     --section-pad-y: clamp(var(--space-2xl), 11vmin, var(--space-3xl));
@@ -1169,7 +1162,7 @@
   border-color: var(--blue-athracite);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .modalGrid {
     grid-template-columns: 1fr;
     gap: 0;

@@ -65,7 +65,7 @@
   margin-top: -1.25rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .heroInner {
     padding-bottom: clamp(6rem, 28vw, 9rem);
   }
@@ -227,7 +227,7 @@
   max-width: 34rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .introInner {
     grid-template-columns: 1fr;
     min-height: unset;

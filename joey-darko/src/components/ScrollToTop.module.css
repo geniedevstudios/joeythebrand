@@ -62,7 +62,7 @@
   margin-top: -2px; /* Small adjustment for visual centering */
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .scrollBtn {
     bottom: var(--space-lg);
     left: var(--space-lg);

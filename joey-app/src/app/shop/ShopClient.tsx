@@ -536,14 +536,17 @@ export default function ShopClient() {
 
                         <div className={styles.pickMeWrap}>
                           {(() => {
-                            const isBespoke = !!(p.bespokeAvailable && p.quantity <= 0);
+                            const isBespoke = !!(
+                              p.fulfillmentMode === "made_to_order_only" ||
+                              (p.bespokeAvailable && p.quantity <= 0)
+                            );
                             return isBespoke ? (
                               <Link
                                 href={`/shop/${p.slug || p.id}`}
                                 className={styles.pickMeBtn}
                                 aria-label={`View ${p.name}`}
                               >
-                                Bespoke
+                                Made to Order
                               </Link>
                             ) : p.isOutOfStock ? (
                               <span className={`${styles.pickMeBtn} ${styles.soldOutBtn}`}>
@@ -565,9 +568,12 @@ export default function ShopClient() {
 
                     <div className={styles.badgeStack} aria-hidden="true">
                       {(() => {
-                        const isBespoke = !!(p.bespokeAvailable && p.quantity <= 0);
+                        const isBespoke = !!(
+                          p.fulfillmentMode === "made_to_order_only" ||
+                          (p.bespokeAvailable && p.quantity <= 0)
+                        );
                         return isBespoke ? (
-                          <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                          <span className={styles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                         ) : p.isOutOfStock ? (
                           <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                         ) : (
@@ -576,7 +582,7 @@ export default function ShopClient() {
                               <span className={styles.saleBadge}>SALE</span>
                             )}
                             {p.isLimited && p.category !== "sample-sale" && (
-                              <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                              <span className={styles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
                             )}
                             {p.isBestSeller && (
                               <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
@@ -630,7 +636,7 @@ export default function ShopClient() {
                     {(() => {
                       const isBespoke = quickViewStockStatus.isBespokeProduct;
                       return isBespoke ? (
-                        <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                        <span className={styles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                       ) : quickViewStockStatus.isSelectedOutOfStock ? (
                         <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                       ) : (
@@ -639,7 +645,7 @@ export default function ShopClient() {
                             <span className={styles.saleBadge}>SALE</span>
                           )}
                           {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
-                            <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                            <span className={styles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
                           )}
                           {quickViewPiece.isBestSeller && (
                             <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
@@ -869,11 +875,7 @@ export default function ShopClient() {
 
                 {(() => {
                   const isBespoke = quickViewStockStatus.isBespokeProduct;
-                  return isBespoke ? (
-                    <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff" }}>
-                      🧵 Bespoke order. Expect ~{quickViewStockStatus.bespokeLeadDays || 14} days for production.
-                    </p>
-                  ) : quickViewPiece.isOutOfStock ? (
+                  return !isBespoke && quickViewPiece.isOutOfStock ? (
                     <p className={styles.customNotice} style={{ color: "#c00", background: "#fee" }}>
                       This item is currently out of stock.
                     </p>
@@ -921,7 +923,7 @@ export default function ShopClient() {
                         {quickViewStockStatus.isSelectedOutOfStock && !isBespoke
                           ? "Out of Stock"
                           : isBespoke
-                            ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added ✓")
+                            ? (addStatus === "idle" ? "Order Made to Order" : addStatus === "adding" ? "Adding..." : "Added ✓")
                             : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added ✓")}
                       </button>
                     );
@@ -940,10 +942,10 @@ export default function ShopClient() {
                 {(() => {
                   const isBespoke = quickViewStockStatus.isBespokeProduct;
                   return isBespoke ? (
-                    <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "16px", marginBottom: "2px", fontSize: "0.95rem", color: "rgba(20, 20, 20, 0.78)", background: "#f5f3ff", borderColor: "#c4b5fd", padding: "8px", borderRadius: "6px" }}>
-                      <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "18px", height: "18px", color: "#7c3aed" }} />
-                      <span style={{ color: "#5b21b6" }}>
-                        bespoke piece would be handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
+                    <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "14px", marginBottom: "2px", fontSize: "0.78rem", color: "var(--alaska-gray)", whiteSpace: "nowrap" }}>
+                      <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "14px", height: "14px", color: "var(--alaska-gray)" }} />
+                      <span>
+                        Made to Order piece handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
                       </span>
                     </div>
                   ) : null;

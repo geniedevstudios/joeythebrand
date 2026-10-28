@@ -13,6 +13,10 @@ export type SlipPayload = {
   notes?: string;
   bookingCode?: string;
   scheduledAt?: string;
+  proposedScheduledAt?: string;
+  rescheduleNote?: string;
+  cancellationReason?: string;
+  refundReviewRequired?: boolean;
   durationHours?: number;
   priceGhs?: number;
   paymentStatus?: string;
@@ -52,7 +56,15 @@ function formatScheduled(iso?: string) {
 
 export function openConsultationPrintWindow(b: SlipPayload): void {
   const statusLabel =
-    b.status === "pending" ? "Pending approval" : b.status === "confirmed" ? "Confirmed" : "Declined";
+    b.status === "pending"
+      ? "Pending approval"
+      : b.status === "reschedule_proposed"
+        ? "Reschedule proposed"
+        : b.status === "confirmed"
+          ? "Confirmed"
+          : b.status === "cancelled"
+            ? "Cancelled"
+            : "Declined";
 
   const pairs: { label: string; value: string; mono?: boolean }[] = [
     { label: "Customer name", value: b.customerName },

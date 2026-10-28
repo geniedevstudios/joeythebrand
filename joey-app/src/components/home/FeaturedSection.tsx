@@ -302,7 +302,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       {(() => {
                         const isBespoke = quickViewStockStatus.isBespokeProduct;
                         return isBespoke ? (
-                          <span className={styles.tag} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                          <span className={styles.tag} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                         ) : quickViewStockStatus.isSelectedOutOfStock ? (
                           <span className={styles.tag} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                         ) : (
@@ -311,7 +311,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                               <span className={styles.tag}>SALE</span>
                             )}
                             {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
-                              <span className={styles.tag} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                              <span className={styles.tag} style={{ background: "#595D66" }}>LIMITED</span>
                             )}
                             {quickViewPiece.isBestSeller && (
                               <span className={styles.tag} style={{ background: "#f59e0b" }}>BEST SELLER</span>
@@ -544,11 +544,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
 
                   {(() => {
                     const isBespoke = quickViewStockStatus.isBespokeProduct;
-                    return isBespoke ? (
-                      <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff" }}>
-                        🧵 Bespoke order. Expect ~{quickViewStockStatus.bespokeLeadDays || 14} days for production.
-                      </p>
-                    ) : quickViewStockStatus.isSelectedOutOfStock ? (
+                    return !isBespoke && quickViewStockStatus.isSelectedOutOfStock ? (
                       <p className={styles.customNotice} style={{ color: "#c00", background: "#fee" }}>
                         This item is currently out of stock.
                       </p>
@@ -604,7 +600,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                           {quickViewStockStatus.isSelectedOutOfStock && !isBespoke
                             ? "Out of Stock"
                             : isBespoke
-                              ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added ✓")
+                              ? (addStatus === "idle" ? "Order Made to Order" : addStatus === "adding" ? "Adding..." : "Added ✓")
                               : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added ✓")}
                         </button>
                       );
@@ -625,10 +621,10 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                   {(() => {
                     const isBespoke = quickViewStockStatus.isBespokeProduct;
                     return isBespoke ? (
-                      <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "16px", marginBottom: "2px", fontSize: "0.95rem", color: "rgba(20, 20, 20, 0.78)", background: "#f5f3ff", borderColor: "#c4b5fd", padding: "8px", borderRadius: "6px" }}>
-                        <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "18px", height: "18px", color: "#7c3aed" }} />
-                        <span style={{ color: "#5b21b6" }}>
-                          bespoke piece would be handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
+                      <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "14px", marginBottom: "2px", fontSize: "0.78rem", color: "var(--alaska-gray)", whiteSpace: "nowrap" }}>
+                        <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "14px", height: "14px", color: "var(--alaska-gray)" }} />
+                        <span>
+                          Made to Order piece handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
                         </span>
                       </div>
                     ) : null;
@@ -775,7 +771,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                   {(() => {
                     const isBespoke = !!(item.bespokeAvailable && item.quantity <= 0);
                     return isBespoke ? (
-                      <span className={styles.tag} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                      <span className={styles.tag} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                     ) : item.isOutOfStock ? (
                       <span className={styles.tag} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                     ) : (
@@ -784,7 +780,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                           <span className={styles.tag}>SALE</span>
                         )}
                         {item.isLimited && item.category !== "sample-sale" && (
-                          <span className={styles.tag} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                          <span className={styles.tag} style={{ background: "#595D66" }}>LIMITED</span>
                         )}
                         {item.isBestSeller && (
                           <span className={styles.tag} style={{ background: "#f59e0b" }}>BEST SELLER</span>

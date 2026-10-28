@@ -19,7 +19,7 @@ import styles from "./ProductClient.module.css";
 import shopStyles from "../ShopClient.module.css";
 const EMPTY_ARRAY: any[] = [];
 const _getEmptyArray = () => EMPTY_ARRAY;
-const _getProducts = () => dataStore.getProducts();
+const _getProducts = () => dataStore.getAllProductsIncludingBespoke();
 const _getWishlistItems = () => wishlistStore.getItems();
 
 function ProductDetailSkeletonBody() {
@@ -323,27 +323,37 @@ export default function ProductClient({ slug }: { slug: string }) {
   const currentCombo = activeCombo;
   const currentColor = activeColorVariant;
 
-  const colorBespokeAvailable = currentColor?.bespokeAvailable ?? (currentColor?.combos?.length > 0 ? currentColor.combos.some((c: any) => c.bespokeAvailable) : product.bespokeAvailable);
-  const parentOutOfStock = product.isOutOfStock || (typeof product.quantity === "number" ? product.quantity <= 0 : !!product.bespokeAvailable);
-  const isComboOutOfStock = currentCombo?.isOutOfStock || (typeof currentCombo?.quantity === "number" ? currentCombo.quantity <= 0 : !!currentCombo?.bespokeAvailable);
-  const isColorOutOfStock = currentColor?.isOutOfStock || (typeof currentColor?.quantity === "number" ? currentColor.quantity <= 0 : (currentColor?.combos?.length > 0 && colorBespokeAvailable ? true : parentOutOfStock));
-  const isSelectedOutOfStock = activeMode === "paired" && currentCombo
-    ? isComboOutOfStock
-    : (activeMode === "solo" && currentColor?.id !== "main-color" ? isColorOutOfStock : product.isOutOfStock);
+  const baseStockStatus = getVariantStockStatus(product, currentColor, currentCombo, activeMode);
+  const needsPartialStockChoice =
+    baseStockStatus.canFallbackToMadeToOrder &&
+    baseStockStatus.availablePhysicalStock > 0 &&
+    qty > baseStockStatus.availablePhysicalStock;
 
-  const isSelectedBespokeAvailable = activeMode === "paired" && currentCombo
-    ? currentCombo.bespokeAvailable ?? product.bespokeAvailable
-    : (activeMode === "solo" && currentColor?.id !== "main-color" ? colorBespokeAvailable : product.bespokeAvailable);
+  const isBespokeProduct = baseStockStatus.isMadeToOrderProduct || needsPartialStockChoice;
+  const isSelectedOutOfStock = baseStockStatus.isSelectedOutOfStock;
+  const currentMaxStock = baseStockStatus.maxStock;
+  const currentBespokeLeadDays = baseStockStatus.leadDays;
 
-  const isBespokeProduct = !!(isSelectedBespokeAvailable && isSelectedOutOfStock);
-  const currentMaxStock = isBespokeProduct ? 999 : (activeMode === "paired" && currentCombo && typeof currentCombo.quantity === "number" ? currentCombo.quantity : (activeMode === "solo" && currentColor?.id !== "main-color" && typeof currentColor?.quantity === "number" ? currentColor.quantity : product.quantity));
-  const currentBespokeLeadDays = activeMode === "paired" && currentCombo && currentCombo.bespokeAvailable
-    ? currentCombo.bespokeLeadDays ?? product.bespokeLeadDays ?? 14
-    : (activeMode === "solo" && currentColor?.id !== "main-color" && currentColor?.bespokeAvailable ? currentColor.bespokeLeadDays ?? product.bespokeLeadDays ?? 14 : product.bespokeLeadDays ?? 14);
-
-  const handleAddToCart = () => {
+  const handleAddToCart = (explicitFulfillmentChoice?: "ready_to_wear" | "made_to_order", explicitQty?: number) => {
     if (!selectedSize && (product.sizes?.length ?? 0) > 0) {
       toast.error("Please pick a size before adding to cart.");
+      return;
+    }
+
+    const finalQty = explicitQty ?? qty;
+    const isMtoOrder =
+      explicitFulfillmentChoice === "made_to_order" ||
+      baseStockStatus.isMadeToOrderProduct;
+
+    if (
+      !explicitFulfillmentChoice &&
+      baseStockStatus.canFallbackToMadeToOrder &&
+      baseStockStatus.availablePhysicalStock > 0 &&
+      finalQty > baseStockStatus.availablePhysicalStock
+    ) {
+      toast.error(
+        `Only ${baseStockStatus.availablePhysicalStock} Ready to Wear unit(s) in stock. Choose one of the fulfilment options below.`,
+      );
       return;
     }
     
@@ -354,21 +364,27 @@ export default function ProductClient({ slug }: { slug: string }) {
         cartStore.addItem({
           productId: product.id,
           name: activeCombo?.productNameOverride ? activeCombo.productNameOverride : (activeColorVariant?.id !== "main-color" && activeColorVariant?.productNameOverride ? activeColorVariant.productNameOverride : product.name),
-          color: activeColorVariant?.id !== "main-color" ? activeColorVariant?.name : undefined,
+          color: activeColorVariant?.id !== "main-color" ? activeColorVariant?.name : activeColorVariant?.name || undefined,
           colorHex: activeColorVariant?.colorHex,
           combo: activeCombo ? activeCombo.name : undefined,
           size: selectedSize || "Standard",
           fit: (product.wearTag === "womens" || product.wearTag === "unisex") ? selectedFit : undefined,
           wearTag: product.wearTag,
-          price: activeCombo ? (activeCombo.price || product.price) : product.price,
+          price: baseStockStatus.unitPrice,
           image: activeCombo?.thumbnailUrl || galleryImages[0] || product.image,
           image2: activeCombo?.images?.[0] || galleryImages[1] || product.images?.[0],
-          quantity: qty,
-          maxStock: currentMaxStock,
-          isBespoke: isBespokeProduct || undefined,
-          bespokeLeadDays: isBespokeProduct ? currentBespokeLeadDays : undefined,
-          variantId: activeColorVariant?.id !== "main-color" ? activeColorVariant?.id : undefined,
-          comboId: activeCombo ? activeCombo.id : undefined,
+          quantity: finalQty,
+          maxStock: isMtoOrder ? baseStockStatus.mtoMaxQtyPerOrder : baseStockStatus.availablePhysicalStock,
+          availablePhysicalStock: baseStockStatus.availablePhysicalStock,
+          mtoMaxQtyPerOrder: baseStockStatus.mtoMaxQtyPerOrder,
+          canFallbackToMadeToOrder: baseStockStatus.canFallbackToMadeToOrder,
+          fulfillmentChoice: isMtoOrder ? "made_to_order" : "ready_to_wear",
+          isMadeToOrder: isMtoOrder || undefined,
+          leadDays: isMtoOrder ? currentBespokeLeadDays : undefined,
+          isBespoke: isMtoOrder || undefined,
+          bespokeLeadDays: isMtoOrder ? currentBespokeLeadDays : undefined,
+          variantId: baseStockStatus.variantId !== "base" ? baseStockStatus.variantId : undefined,
+          comboId: baseStockStatus.comboId !== "base" ? baseStockStatus.comboId : undefined,
         });
         
         setAddStatus("added");
@@ -417,28 +433,7 @@ export default function ProductClient({ slug }: { slug: string }) {
 
       <div className="container">
         <div className={styles.layout}>
-          <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-            {isBespokeProduct && (
-              <div style={{ 
-                writingMode: "vertical-rl", 
-                transform: "rotate(180deg)", 
-                background: "#8b5cf6", 
-                color: "#fff", 
-                fontFamily: "var(--font-label)", 
-                fontSize: "0.75rem", 
-                letterSpacing: "0.12em", 
-                padding: "16px 8px", 
-                borderRadius: "var(--radius-full)", 
-                display: "inline-flex", 
-                alignItems: "center",
-                whiteSpace: "nowrap",
-                marginTop: "16px",
-                flexShrink: 0
-              }}>
-                BESPOKE ORDER
-              </div>
-            )}
-            <div className={styles.galleryCol} style={{ flex: 1, minWidth: 0 }}>
+            <div className={styles.galleryCol}>
               <div className={styles.mainImageWrap}>
                 <ProductMedia 
                   src={activeImage || galleryImages[0] || product.image} 
@@ -446,22 +441,22 @@ export default function ProductClient({ slug }: { slug: string }) {
                   className={styles.mainImage} 
                 />
                 <div className={styles.badgeStack} aria-hidden="true">
-                  {!isBespokeProduct && (
-                    isSelectedOutOfStock ? (
-                      <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                    ) : (
-                      <>
-                        {product.category === "sample-sale" && (
-                          <span className={styles.saleBadge}>SALE</span>
-                        )}
-                        {product.isLimited && product.category !== "sample-sale" && (
-                          <span className={styles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
-                        )}
-                        {product.isBestSeller && (
-                          <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                        )}
-                      </>
-                    )
+                  {isBespokeProduct ? (
+                    <span className={styles.mtoBadge}>Made to order</span>
+                  ) : isSelectedOutOfStock ? (
+                    <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
+                  ) : (
+                    <>
+                      {product.category === "sample-sale" && (
+                        <span className={styles.saleBadge}>SALE</span>
+                      )}
+                      {product.isLimited && product.category !== "sample-sale" && (
+                        <span className={styles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
+                      )}
+                      {product.isBestSeller && (
+                        <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -626,8 +621,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                 )}
               </div>
             )}
-          </div>
-          </div>
+            </div>
 
           <div className={styles.infoCol}>
             <div className={styles.infoSticky}>
@@ -653,18 +647,18 @@ export default function ProductClient({ slug }: { slug: string }) {
               </div>
 
               {product.wearTag === "womens" && (
-                <div className={styles.sizeSection} style={{ marginBottom: "1.5rem" }}>
+                <div className={styles.sizeSection}>
                   <div className={styles.sizeHeader}>
                     <span className={styles.sizeLabel}>Fit</span>
                   </div>
-                  <div className={styles.sizeGrid}>
+                  <div className={styles.fitGrid} role="group" aria-label="Fit">
                     {["Standard", "Thick"].map((fit) => (
                       <button
                         key={fit}
+                        type="button"
                         onClick={() => { setSelectedFit(fit); setSelectedSize(""); }}
-                        className={`${styles.sizeBtn} ${selectedFit === fit ? styles.sizeBtnActive : ""}`}
+                        className={`${styles.fitBtn} ${selectedFit === fit ? styles.fitBtnActive : ""}`}
                         aria-pressed={selectedFit === fit}
-                        style={{ flex: 1 }}
                       >
                         {fit} Fit
                       </button>
@@ -674,18 +668,18 @@ export default function ProductClient({ slug }: { slug: string }) {
               )}
 
               {product.wearTag === "unisex" && (
-                <div className={styles.sizeSection} style={{ marginBottom: "1.5rem" }}>
+                <div className={styles.sizeSection}>
                   <div className={styles.sizeHeader}>
                     <span className={styles.sizeLabel}>Gender / Fit</span>
                   </div>
-                  <div className={styles.sizeGrid}>
+                  <div className={styles.fitGrid} role="group" aria-label="Gender / Fit">
                     {["Men", "Women"].map((fit) => (
                       <button
                         key={fit}
+                        type="button"
                         onClick={() => { setSelectedFit(fit); setSelectedSize(""); }}
-                        className={`${styles.sizeBtn} ${selectedFit === fit ? styles.sizeBtnActive : ""}`}
+                        className={`${styles.fitBtn} ${selectedFit === fit ? styles.fitBtnActive : ""}`}
                         aria-pressed={selectedFit === fit}
-                        style={{ flex: 1 }}
                       >
                         {fit}
                       </button>
@@ -724,11 +718,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                 )}
               </div>
 
-              {isBespokeProduct ? (
-                <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff", marginTop: "12px" }}>
-                  🧵 This piece is bespoke. Expect approximately {currentBespokeLeadDays} days for production after your order is confirmed.
-                </p>
-              ) : isSelectedOutOfStock ? (
+              {!isBespokeProduct && isSelectedOutOfStock ? (
                 <p className={styles.customNotice} style={{ color: "#c00", background: "#fee", marginTop: "12px" }}>
                   This item is currently out of stock.
                 </p>
@@ -744,34 +734,79 @@ export default function ProductClient({ slug }: { slug: string }) {
                   <button 
                     className={styles.qtyBtn} 
                     onClick={() => {
-                      if (isBespokeProduct || qty < currentMaxStock) {
+                      if (qty < currentMaxStock) {
                         setQty(qty + 1);
                       } else {
-                        toast.error(`Only ${currentMaxStock} items available in stock.`);
+                        toast.error(
+                          isBespokeProduct
+                            ? `Maximum ${currentMaxStock} Made to Order pieces per order.`
+                            : `Only ${currentMaxStock} items available in stock.`,
+                        );
                       }
                     }}
-                    disabled={!isBespokeProduct && qty >= currentMaxStock}
+                    disabled={qty >= currentMaxStock}
                   >
                     +
                   </button>
                 </div>
               </div>
 
+              {needsPartialStockChoice ? (
+                <div
+                  style={{
+                    marginTop: "14px",
+                    marginBottom: "14px",
+                    padding: "14px 16px",
+                    borderRadius: "8px",
+                    background: "#f4f4f5",
+                    border: "1px solid #d4d4d8",
+                    color: "#27272a",
+                    fontSize: "0.88rem",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <p style={{ margin: "0 0 10px 0" }}>
+                    Only <strong>{baseStockStatus.availablePhysicalStock}</strong> unit(s) available in Ready to Wear stock. Choose how you would like to order:
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      style={{ padding: "8px 14px", fontSize: "0.8rem" }}
+                      onClick={() => {
+                        setQty(baseStockStatus.availablePhysicalStock);
+                        handleAddToCart("ready_to_wear", baseStockStatus.availablePhysicalStock);
+                      }}
+                    >
+                      Buy Remaining {baseStockStatus.availablePhysicalStock} Ready to Wear
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ padding: "8px 14px", fontSize: "0.8rem" }}
+                      onClick={() => handleAddToCart("made_to_order", qty)}
+                    >
+                      Order All {qty} as Made to Order ({currentBespokeLeadDays} days)
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               <div className={styles.actions}>
                 <div className={styles.actionBtns}>
                   <button 
-                    className="btn btn-primary btn-lg" 
-                    onClick={handleAddToCart}
+                    className={`btn btn-primary ${styles.cartBtn}`}
+                    onClick={() => handleAddToCart()}
                     disabled={addStatus !== "idle" || (isSelectedOutOfStock && !isBespokeProduct)}
                   >
                     {isSelectedOutOfStock && !isBespokeProduct
                       ? "Out of Stock"
                       : isBespokeProduct
-                        ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added ✓")
+                        ? (addStatus === "idle" ? "Order Made to Order" : addStatus === "adding" ? "Adding..." : "Added ✓")
                         : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added ✓")}
                   </button>
                   <button 
-                    className={`btn btn-outline btn-lg ${styles.wishlistBtn}`}
+                    className={`btn btn-outline ${styles.wishlistBtn}`}
                     onClick={() => toggleWishlist(product)}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -782,10 +817,10 @@ export default function ProductClient({ slug }: { slug: string }) {
                 </div>
 
                 {isBespokeProduct ? (
-                  <div className={styles.lowStockNotice} role="status" aria-live="polite" style={{ background: "#f5f3ff", borderColor: "#c4b5fd" }}>
-                    <Clock className={styles.lowStockIcon} aria-hidden style={{ color: "#7c3aed" }} />
-                    <span style={{ color: "#5b21b6" }}>
-                      bespoke piece would be handcrafted for you within {currentBespokeLeadDays} days
+                  <div className={styles.lowStockNotice} role="status" aria-live="polite" style={{ fontSize: "0.78rem", gap: "6px", color: "var(--alaska-gray)", whiteSpace: "nowrap" }}>
+                    <Clock className={styles.lowStockIcon} aria-hidden style={{ width: "14px", height: "14px", color: "var(--alaska-gray)" }} />
+                    <span>
+                      Made to Order piece handcrafted for you within {currentBespokeLeadDays} days
                     </span>
                   </div>
                 ) : typeof currentMaxStock === "number" &&
@@ -864,9 +899,12 @@ export default function ProductClient({ slug }: { slug: string }) {
                 <ProductMedia src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
                 <div className={shopStyles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
                   {(() => {
-                    const isBespoke = !!(quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0);
+                    const isBespoke = !!(
+                      quickViewItem.fulfillmentMode === "made_to_order_only" ||
+                      (quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0)
+                    );
                     return isBespoke ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>BESPOKE ORDER</span>
+                      <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
                     ) : quickViewItem.isOutOfStock ? (
                       <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
                     ) : (
@@ -875,7 +913,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                           <span className={shopStyles.saleBadge}>SALE</span>
                         )}
                         {quickViewItem.isLimited && quickViewItem.category !== "sample-sale" && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#8b5cf6" }}>LIMITED</span>
+                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
                         )}
                         {quickViewItem.isBestSeller && (
                           <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
@@ -1012,13 +1050,13 @@ export default function ProductClient({ slug }: { slug: string }) {
               {(quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") && (
                 <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
                   <span className={styles.qtyLabel}>{quickViewItem.wearTag === "unisex" ? "Gender:" : "Fit:"}</span>
-                  <div className={styles.sizeGrid} style={{ flex: 1 }}>
+                  <div className={styles.fitGrid}>
                     {(quickViewItem.wearTag === "unisex" ? ["Men", "Women"] : ["Standard", "Thick"]).map((fit) => (
                       <button 
-                        key={fit} 
-                        className={`${styles.sizeBtn} ${quickViewFit === fit ? styles.sizeBtnActive : ""}`}
+                        key={fit}
+                        type="button"
+                        className={`${styles.fitBtn} ${quickViewFit === fit ? styles.fitBtnActive : ""}`}
                         onClick={() => { setQuickViewFit(fit); setQuickViewSize(""); }}
-                        style={{ flex: 1 }}
                       >
                         {fit}
                       </button>
@@ -1057,11 +1095,7 @@ export default function ProductClient({ slug }: { slug: string }) {
               {(() => {
                 const quickViewStockStatus = getVariantStockStatus(quickViewItem, quickViewActiveColorVariant, quickViewActiveCombo, quickViewMode || "solo");
                 const isBespoke = quickViewStockStatus.isBespokeProduct;
-                return isBespoke ? (
-                  <p className={styles.customNotice} style={{ color: "#5b21b6", background: "#f5f3ff", marginTop: "12px" }}>
-                    🧵 Bespoke order. Expect ~{quickViewStockStatus.bespokeLeadDays || 14} days for production.
-                  </p>
-                ) : quickViewStockStatus.isSelectedOutOfStock ? (
+                return !isBespoke && quickViewStockStatus.isSelectedOutOfStock ? (
                   <p className={styles.customNotice} style={{ color: "#c00", background: "#fee", marginTop: "12px" }}>
                     This item is currently out of stock.
                   </p>
@@ -1148,7 +1182,7 @@ export default function ProductClient({ slug }: { slug: string }) {
                       {quickViewStockStatus.isSelectedOutOfStock && !isBespoke
                         ? "Out of Stock"
                         : isBespoke
-                          ? (addStatus === "idle" ? "Order Bespoke" : addStatus === "adding" ? "Adding..." : "Added ✓")
+                          ? (addStatus === "idle" ? "Order Made to Order" : addStatus === "adding" ? "Adding..." : "Added ✓")
                           : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added ✓")}
                     </button>
                   );
@@ -1168,10 +1202,10 @@ export default function ProductClient({ slug }: { slug: string }) {
                 const quickViewStockStatus = getVariantStockStatus(quickViewItem, quickViewActiveColorVariant, quickViewActiveCombo, quickViewMode || "solo");
                 const isBespoke = quickViewStockStatus.isBespokeProduct;
                 return isBespoke ? (
-                  <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "16px", marginBottom: "2px", fontSize: "0.95rem", color: "rgba(20, 20, 20, 0.78)", background: "#f5f3ff", borderColor: "#c4b5fd", padding: "8px", borderRadius: "6px" }}>
-                    <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "18px", height: "18px", color: "#7c3aed" }} />
-                    <span style={{ color: "#5b21b6" }}>
-                      bespoke piece would be handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
+                  <div role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "14px", marginBottom: "2px", fontSize: "0.78rem", color: "var(--alaska-gray)", whiteSpace: "nowrap" }}>
+                    <Clock aria-hidden style={{ flex: "0 0 auto", opacity: 0.85, width: "14px", height: "14px", color: "var(--alaska-gray)" }} />
+                    <span>
+                      Made to Order piece handcrafted for you within {quickViewStockStatus.bespokeLeadDays || 14} days
                     </span>
                   </div>
                 ) : null;

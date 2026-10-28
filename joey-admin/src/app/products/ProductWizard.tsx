@@ -9,6 +9,7 @@ import type {
   WearTag,
   ProductVariant,
   ProductCombo,
+  ProductFulfillmentMode,
 } from "@/lib/types";
 import { X, ArrowLeft, ArrowRight, Plus, Trash2, Check, Package, Layers, PlusCircle } from "lucide-react";
 import AssetUrlField from "@/components/AssetUrlField";
@@ -82,10 +83,14 @@ export default function ProductWizard({
   const [sizeSelections, setSizeSelections] = useState<Record<string, boolean>>({});
   
   const [badgeType, setBadgeType] = useState<string>("none");
+  const [fulfillmentMode, setFulfillmentMode] = useState<ProductFulfillmentMode>("stock_only");
+  const [showOnBespokePage, setShowOnBespokePage] = useState<boolean>(false);
+  const [isPublished, setIsPublished] = useState<boolean>(true);
   const [featured, setFeatured] = useState(false);
   
   const [quantity, setQuantity] = useState<number | "">(0);
   const [bespokeLeadDays, setBespokeLeadDays] = useState<number | "">(14);
+  const [mtoMaxQtyPerOrder, setMtoMaxQtyPerOrder] = useState<number | "">(5);
   const [weightKg, setWeightKg] = useState<number | "">(0.5);
   const [hsCode, setHsCode] = useState("");
 
@@ -129,16 +134,25 @@ export default function ProductWizard({
         (editingProduct.sizes || []).forEach(s => { sel[s.name] = s.available; });
         setSizeSelections(sel);
 
+        const resolvedMode: ProductFulfillmentMode =
+          editingProduct.fulfillmentMode ||
+          (editingProduct.bespokeAvailable ? "stock_then_made_to_order" : "stock_only");
+        setFulfillmentMode(resolvedMode);
+        setShowOnBespokePage(
+          resolvedMode === "made_to_order_only" && Boolean(editingProduct.showOnBespokePage),
+        );
+        setIsPublished(editingProduct.isPublished !== false);
+
         setBadgeType(
-          editingProduct.isOutOfStock ? "isOutOfStock" :
+          editingProduct.isOutOfStock && resolvedMode === "stock_only" ? "isOutOfStock" :
           editingProduct.isLimited ? "isLimited" :
-          editingProduct.isBestSeller ? "isBestSeller" :
-          editingProduct.bespokeAvailable ? "bespokeAvailable" : "none"
+          editingProduct.isBestSeller ? "isBestSeller" : "none"
         );
         setFeatured(editingProduct.featured || false);
 
         setQuantity(editingProduct.quantity ?? 0);
-        setBespokeLeadDays(editingProduct.bespokeLeadDays ?? 14);
+        setBespokeLeadDays(editingProduct.madeToOrderLeadDays ?? editingProduct.bespokeLeadDays ?? 14);
+        setMtoMaxQtyPerOrder(editingProduct.mtoMaxQtyPerOrder ?? 5);
         setWeightKg(editingProduct.weightKg ?? 0.5);
         setHsCode(editingProduct.hsCode || "");
 
@@ -191,7 +205,7 @@ export default function ProductWizard({
           setVariantType(null);
         }
       } else {
-        setCurrentStep(1);
+        setCurrentStep(0);
         setName("");
         setSlug("");
         setPrice("");
@@ -205,9 +219,13 @@ export default function ProductWizard({
         setSizeButtonsMode("standard");
         setSizeSelections({});
         setBadgeType("none");
+        setFulfillmentMode("stock_only");
+        setShowOnBespokePage(false);
+        setIsPublished(true);
         setFeatured(false);
         setQuantity(0);
         setBespokeLeadDays(14);
+        setMtoMaxQtyPerOrder(5);
         setWeightKg(0.5);
         setHsCode("");
         setVariants([]);
@@ -252,10 +270,17 @@ export default function ProductWizard({
 
     const finalDetails = detailsLines.map(s => s.trim()).filter(Boolean);
 
-    const isOutOfStock = badgeType === "isOutOfStock";
+    const isOutOfStock = fulfillmentMode === "made_to_order_only" ? false : badgeType === "isOutOfStock";
     const isLimited = badgeType === "isLimited";
     const isBestSeller = badgeType === "isBestSeller";
-    const bespokeAvailable = badgeType === "bespokeAvailable";
+    const bespokeAvailable = fulfillmentMode !== "stock_only";
+    const finalLeadDays = fulfillmentMode === "stock_only" ? (Number(bespokeLeadDays) || 14) : Number(bespokeLeadDays);
+    const finalMtoMaxQty = fulfillmentMode === "stock_only" ? (Number(mtoMaxQtyPerOrder) || 5) : Number(mtoMaxQtyPerOrder);
+    if (fulfillmentMode !== "stock_only" && (!Number.isInteger(finalLeadDays) || finalLeadDays < 1 || finalLeadDays > 180 || !Number.isInteger(finalMtoMaxQty) || finalMtoMaxQty < 1 || finalMtoMaxQty > 50)) {
+      setError("Enter whole numbers: production time 1–180 calendar days and per-order limit 1–50."); setIsSaving(false); return;
+    }
+    const finalQuantity = Number(quantity) || 0;
+    const finalShowOnBespoke = fulfillmentMode === "made_to_order_only" ? showOnBespokePage : false;
 
     const col = collections.find((c) => c.slug === category);
     const categoryName = category === "none" ? "" : col?.name || category;
@@ -299,9 +324,14 @@ export default function ProductWizard({
           featured,
           sizes: sizesForEditor,
           wearTag,
-          quantity: Number(quantity) || 0,
+          quantity: finalQuantity,
+          isPublished,
+          fulfillmentMode,
+          showOnBespokePage: finalShowOnBespoke,
+          madeToOrderLeadDays: finalLeadDays,
+          mtoMaxQtyPerOrder: finalMtoMaxQty,
           bespokeAvailable,
-          bespokeLeadDays: Number(bespokeLeadDays) || 14,
+          bespokeLeadDays: finalLeadDays,
           weightKg: Number(weightKg) || 0,
           hsCode: hsCode.trim(),
           variants: processedVariants,
@@ -324,9 +354,14 @@ export default function ProductWizard({
           isBestSeller,
           featured,
           wearTag,
-          quantity: Number(quantity) || 0,
+          quantity: finalQuantity,
+          isPublished,
+          fulfillmentMode,
+          showOnBespokePage: finalShowOnBespoke,
+          madeToOrderLeadDays: finalLeadDays,
+          mtoMaxQtyPerOrder: finalMtoMaxQty,
           bespokeAvailable,
-          bespokeLeadDays: Number(bespokeLeadDays) || 14,
+          bespokeLeadDays: finalLeadDays,
           weightKg: Number(weightKg) || 0,
           hsCode: hsCode.trim(),
           variants: processedVariants,
@@ -350,14 +385,9 @@ export default function ProductWizard({
     
     return (
       <div className="w-full max-w-sm mx-auto mb-8">
-        {currentStep > 1 && currentStep <= 6 && (
+        {currentStep > 0 && currentStep <= 6 && (
           <button type="button" onClick={() => {
-            if (currentStep === 6 && variantType) {
-              setVariantType(null);
-              setVariants([]);
-            } else {
-              setCurrentStep(currentStep - 1);
-            }
+            setCurrentStep(currentStep - 1);
           }} className="mb-4 flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
@@ -370,6 +400,24 @@ export default function ProductWizard({
       </div>
     );
   };
+
+  const renderSellingMode = () => (
+    <div className="space-y-5 max-w-xl mx-auto w-full">
+      <h2 className="text-2xl font-bold">How is this product sold?</h2>
+      {([
+        ["stock_only", "Ready to Wear only", "Sell the pieces you have in stock."],
+        ["stock_then_made_to_order", "Ready to Wear with Made to Order fallback", "Sell stock first; offer made to order when it runs out."],
+        ["made_to_order_only", "Made to Order only", "Make each piece after the customer orders."],
+      ] as const).map(([value, title, description]) => (
+        <label key={value} className="block border rounded-xl p-4 cursor-pointer">
+          <input type="radio" name="sellingMode" checked={fulfillmentMode === value} onChange={() => setFulfillmentMode(value)} />
+          <span className="font-semibold ml-2">{title}</span><p className="text-sm mt-1">{description}</p>
+        </label>
+      ))}
+      {fulfillmentMode !== "made_to_order_only" && showOnBespokePage && <p className="text-amber-800">Saving this mode removes this design from the bespoke section. Switching back before saving keeps your selection.</p>}
+      <button type="button" onClick={() => setCurrentStep(1)} className="rounded-full bg-zinc-950 text-white px-8 py-3">Next</button>
+    </div>
+  );
 
   const renderStep1 = () => (
     <div className="space-y-6 flex-1 flex flex-col">
@@ -394,10 +442,21 @@ export default function ProductWizard({
             <label className="block text-sm font-medium text-zinc-700">Price (GHC)</label>
             <input type="number" value={price} onChange={e => setPrice(e.target.value ? Number(e.target.value) : "")} placeholder="0.00" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 shadow-sm" required min={0} step={0.01} />
           </div>
+          {fulfillmentMode !== "made_to_order_only" && (
           <div>
-            <label className="block text-sm font-medium text-zinc-700">Quantity in Stock</label>
-            <input type="number" value={quantity} onChange={e => setQuantity(e.target.value ? Number(e.target.value) : "")} placeholder="0" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 shadow-sm" min={0} />
+            <label className="block text-sm font-medium text-zinc-700">
+              Quantity in Stock
+            </label>
+            <input
+              type="number"
+              value={quantity}
+              onChange={e => setQuantity(e.target.value ? Number(e.target.value) : "")}
+              placeholder="0"
+              className="mt-1 block w-full rounded-md border border-zinc-300 p-2 shadow-sm disabled:bg-zinc-100 disabled:text-zinc-500"
+              min={0}
+            />
           </div>
+          )}
         </div>
 
         <div>
@@ -567,35 +626,61 @@ export default function ProductWizard({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700">Badge / Status</label>
+            <label className="block text-sm font-medium text-zinc-700">Promotional Badge</label>
             <AdminStyledSelect
               name="badgeType"
               defaultValue={badgeType}
               onValueChange={setBadgeType}
               options={[
                 { value: "none", label: "None" },
-                { value: "isOutOfStock", label: "Out of Stock" },
+                ...(fulfillmentMode === "stock_only"
+                  ? [{ value: "isOutOfStock", label: "Out of Stock" }]
+                  : []),
                 { value: "isLimited", label: "Limited Edition" },
                 { value: "isBestSeller", label: "Best Seller" },
-                { value: "bespokeAvailable", label: "Bespoke Available" },
               ]}
               wrapperClassName="mt-1"
             />
           </div>
-          {badgeType === "bespokeAvailable" && (
-            <div>
-              <label className="block text-sm font-medium text-zinc-700">Lead Time (Days)</label>
-              <input type="number" value={bespokeLeadDays} onChange={e => setBespokeLeadDays(e.target.value ? Number(e.target.value) : "")} className="mt-1 block w-full rounded-md border border-zinc-300 p-2 shadow-sm" />
-            </div>
-          )}
         </div>
+
+        {(fulfillmentMode === "stock_then_made_to_order" || fulfillmentMode === "made_to_order_only") && (
+          <div className="grid grid-cols-2 gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-800">Production Time (Calendar Days)</label>
+              <input
+                type="number"
+                min={1}
+                max={180}
+                value={bespokeLeadDays}
+                onChange={e => setBespokeLeadDays(e.target.value ? Number(e.target.value) : "")}
+                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white p-2 shadow-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-800">Maximum quantity per order (not total production capacity)</label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={mtoMaxQtyPerOrder}
+                onChange={e => setMtoMaxQtyPerOrder(e.target.value ? Number(e.target.value) : "")}
+                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white p-2 shadow-sm"
+              />
+            </div>
+
+          </div>
+        )}
         
-        <label className="flex items-center gap-2 mt-4 cursor-pointer">
-          <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} className="rounded border-zinc-300" />
-          <span className="text-sm font-medium">Feature on Homepage</span>
-        </label>
+        <div className="flex flex-wrap gap-6 mt-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} className="rounded border-zinc-300" />
+            <span className="text-sm font-medium">Feature on Homepage</span>
+          </label>
+
+        </div>
       </div>
       <div className="mt-auto pt-4 flex justify-center">
         <button type="button" onClick={() => setCurrentStep(4)} className="flex w-48 justify-center rounded-full bg-zinc-950 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 transition-colors">
@@ -687,7 +772,7 @@ export default function ProductWizard({
             <h2 className="text-2xl font-bold text-zinc-900">Select Variant Type</h2>
             <p className="text-zinc-500 mt-2">How does this product vary?</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto w-full mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto w-full mt-4">
             <button type="button" onClick={() => { 
               setVariantType("colors"); 
               const existingColors = variants.filter(v => v.type === "color");
@@ -758,7 +843,7 @@ export default function ProductWizard({
                       </div>
                     </div>
                     <div className="flex gap-4">
-                      <div className="flex-1">
+                      {fulfillmentMode !== "made_to_order_only" && (<div className="flex-1">
                         <label className="block text-sm font-medium text-zinc-700">Quantity (Base Item)</label>
                         <input type="number" value={v.quantity ?? ""} onChange={e => {
                           const next = [...variants];
@@ -766,17 +851,7 @@ export default function ProductWizard({
                           next[idx].quantity = Number(e.target.value);
                           setVariants(next);
                         }} placeholder="0" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-zinc-700">Stock Status (Base Item)</label>
-                        <AdminStyledSelect name={`stock-col-${v.id}`} defaultValue={v.bespokeAvailable ? "bespoke" : v.isOutOfStock ? "out" : "in"} onValueChange={(val) => {
-                           const next = [...variants];
-                           const idx = next.findIndex(val => val.id === v.id);
-                           next[idx].bespokeAvailable = val === "bespoke";
-                           next[idx].isOutOfStock = val === "out";
-                           setVariants(next);
-                        }} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }, { value: "bespoke", label: "Bespoke" }]} wrapperClassName="mt-1" />
-                      </div>
+                      </div>)}
                     </div>
                   </div>
                   
@@ -843,7 +918,7 @@ export default function ProductWizard({
                                  </div>
                                  <div className="flex gap-4 items-start">
                                    <div className="flex-1">
-                                     <label className="block text-xs font-medium text-zinc-700">Price Add</label>
+                                     <label className="block text-xs font-medium text-zinc-700">Price Override (GHC)</label>
                                      <input type="number" value={combo.price} onChange={e => {
                                         const next = [...variants];
                                         const vIdx = next.findIndex(val => val.id === v.id);
@@ -852,7 +927,7 @@ export default function ProductWizard({
                                         setVariants(next);
                                      }} placeholder="0.00" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
                                    </div>
-                                   <div className="flex-1">
+                                   {fulfillmentMode !== "made_to_order_only" && (<div className="flex-1">
                                      <label className="block text-xs font-medium text-zinc-700">Qty</label>
                                      <input type="number" value={combo.quantity ?? 0} onChange={e => {
                                         const next = [...variants];
@@ -861,18 +936,7 @@ export default function ProductWizard({
                                         next[vIdx].combos![cIdx2].quantity = Number(e.target.value);
                                         setVariants(next);
                                      }} className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                                   </div>
-                                   <div className="flex-1">
-                                     <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
-                                     <AdminStyledSelect name={`stock-mat-${combo.id}`} defaultValue={combo.bespokeAvailable ? "bespoke" : combo.isOutOfStock ? "out" : "in"} onValueChange={(val) => {
-                                        const next = [...variants];
-                                        const vIdx = next.findIndex(val => val.id === v.id);
-                                        const cIdx2 = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                                        next[vIdx].combos![cIdx2].bespokeAvailable = val === "bespoke";
-                                        next[vIdx].combos![cIdx2].isOutOfStock = val === "out";
-                                        setVariants(next);
-                                     }} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }, { value: "bespoke", label: "Bespoke" }]} wrapperClassName="mt-1" />
-                                   </div>
+                                   </div>)}
                                    <button type="button" onClick={() => {
                                      const next = [...variants];
                                      const vIdx = next.findIndex(val => val.id === v.id);
@@ -958,7 +1022,7 @@ export default function ProductWizard({
                                   setVariants(next);
                                }} placeholder="0.00" className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
                              </div>
-                             <div className="flex-1">
+                             {fulfillmentMode !== "made_to_order_only" && (<div className="flex-1">
                                <label className="block text-xs font-medium text-zinc-700">Qty</label>
                                <input type="number" value={combo.quantity ?? 0} onChange={e => {
                                   const next = [...variants];
@@ -967,18 +1031,7 @@ export default function ProductWizard({
                                   next[vIdx].combos![cIdx].quantity = Number(e.target.value);
                                   setVariants(next);
                                }} className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm" />
-                             </div>
-                             <div className="flex-1">
-                               <label className="block text-xs font-medium text-zinc-700">Stock Status</label>
-                               <AdminStyledSelect name={`stock-fit-${combo.id}`} defaultValue={combo.bespokeAvailable ? "bespoke" : combo.isOutOfStock ? "out" : "in"} onValueChange={(val) => {
-                                  const next = [...variants];
-                                  const vIdx = next.findIndex(val => val.id === "fit-combo");
-                                  const cIdx = next[vIdx].combos!.findIndex(c => c.id === combo.id);
-                                  next[vIdx].combos![cIdx].bespokeAvailable = val === "bespoke";
-                                  next[vIdx].combos![cIdx].isOutOfStock = val === "out";
-                                  setVariants(next);
-                               }} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }, { value: "bespoke", label: "Bespoke" }]} wrapperClassName="mt-1" />
-                             </div>
+                             </div>)}
                              <button type="button" onClick={() => {
                                const next = [...variants];
                                const vIdx = next.findIndex(val => val.id === "fit-combo");
@@ -1033,6 +1086,106 @@ export default function ProductWizard({
     );
   };
 
+  const renderPublication = () => {
+    const isBespokeOnly =
+      fulfillmentMode === "made_to_order_only" && showOnBespokePage && !isPublished;
+    const isBothShopAndBespoke =
+      fulfillmentMode === "made_to_order_only" && showOnBespokePage && isPublished;
+
+    return (
+      <div className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-4">
+        <div className="text-sm font-semibold text-zinc-900">
+          Where should this product appear?
+        </div>
+
+        {fulfillmentMode === "made_to_order_only" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label
+              className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer transition-colors ${
+                isBespokeOnly
+                  ? "border-zinc-900 bg-zinc-100"
+                  : "border-zinc-200 bg-white hover:border-zinc-300"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                <input
+                  type="radio"
+                  name="mtoPlacement"
+                  checked={isBespokeOnly}
+                  onChange={() => {
+                    setShowOnBespokePage(true);
+                    setIsPublished(false);
+                  }}
+                />
+                /bespoke Page Only
+              </span>
+              <span className="text-xs text-zinc-600">
+                Appears beneath the consultation form on /bespoke (hidden from main /shop grid).
+              </span>
+            </label>
+
+            <label
+              className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer transition-colors ${
+                isBothShopAndBespoke
+                  ? "border-zinc-900 bg-zinc-100"
+                  : "border-zinc-200 bg-white hover:border-zinc-300"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                <input
+                  type="radio"
+                  name="mtoPlacement"
+                  checked={isBothShopAndBespoke}
+                  onChange={() => {
+                    setShowOnBespokePage(true);
+                    setIsPublished(true);
+                  }}
+                />
+                Both /shop &amp; /bespoke
+              </span>
+              <span className="text-xs text-zinc-600">
+                Appears in the main Shop catalogue and in the /bespoke Made to Order section.
+              </span>
+            </label>
+
+            <label
+              className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer transition-colors ${
+                !showOnBespokePage && isPublished
+                  ? "border-zinc-900 bg-white"
+                  : "border-zinc-200 bg-white hover:border-zinc-300"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                <input
+                  type="radio"
+                  name="mtoPlacement"
+                  checked={!showOnBespokePage && isPublished}
+                  onChange={() => {
+                    setShowOnBespokePage(false);
+                    setIsPublished(true);
+                  }}
+                />
+                Main /shop Only
+              </span>
+              <span className="text-xs text-zinc-600">
+                Appears only in the main Shop catalogue.
+              </span>
+            </label>
+          </div>
+        ) : (
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-zinc-800">
+            <input
+              type="checkbox"
+              checked={isPublished}
+              onChange={(e) => setIsPublished(e.target.checked)}
+              className="rounded border-zinc-300"
+            />
+            Publish on main Shop storefront
+          </label>
+        )}
+      </div>
+    );
+  };
   const renderStep7 = () => {
     if (editingProduct) {
       return (
@@ -1042,27 +1195,35 @@ export default function ProductWizard({
             <p className="text-zinc-500 mt-2">Select a section to modify the product's details.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl px-4">
-            <button type="button" onClick={() => setCurrentStep(1)} className="p-8 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all text-left flex flex-col gap-3 group">
-               <Package className="h-10 w-10 text-zinc-400 group-hover:text-zinc-900 transition-colors"/>
-               <span className="font-bold text-xl text-zinc-900">General Information</span>
-               <span className="text-sm text-zinc-500">Edit product name, pricing, sizes, description, and images.</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl px-4">
+            <button type="button" onClick={() => setCurrentStep(0)} className="p-6 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all text-left flex flex-col gap-3 group">
+               <Package className="h-8 w-8 text-zinc-400 group-hover:text-zinc-900 transition-colors"/>
+               <span className="font-bold text-lg text-zinc-900">Selling Mode</span>
+               <span className="text-xs text-zinc-500">
+                 Current: {fulfillmentMode === "made_to_order_only" ? "Made to Order Only" : fulfillmentMode === "stock_then_made_to_order" ? "RTW + MTO Fallback" : "Ready to Wear Only"}
+               </span>
+            </button>
+            <button type="button" onClick={() => setCurrentStep(1)} className="p-6 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all text-left flex flex-col gap-3 group">
+               <Package className="h-8 w-8 text-zinc-400 group-hover:text-zinc-900 transition-colors"/>
+               <span className="font-bold text-lg text-zinc-900">General Information</span>
+               <span className="text-xs text-zinc-500">Edit product name, pricing, sizes, lead time, and images.</span>
             </button>
             {hasVariants ? (
-              <button type="button" onClick={() => setCurrentStep(6)} className="p-8 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all text-left flex flex-col gap-3 group">
-                 <Layers className="h-10 w-10 text-zinc-400 group-hover:text-zinc-900 transition-colors"/>
-                 <span className="font-bold text-xl text-zinc-900">Variants</span>
-                 <span className="text-sm text-zinc-500">Manage colors, fits, variant pricing, and stock.</span>
+              <button type="button" onClick={() => setCurrentStep(6)} className="p-6 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all text-left flex flex-col gap-3 group">
+                 <Layers className="h-8 w-8 text-zinc-400 group-hover:text-zinc-900 transition-colors"/>
+                 <span className="font-bold text-lg text-zinc-900">Variants</span>
+                 <span className="text-xs text-zinc-500">Manage colors, fits, variant pricing, and stock.</span>
               </button>
             ) : (
-              <button type="button" onClick={() => { setHasVariants(true); setCurrentStep(6); }} className="p-8 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all text-left flex flex-col gap-3 group">
-                 <PlusCircle className="h-10 w-10 text-zinc-400 group-hover:text-zinc-900 transition-colors"/>
-                 <span className="font-bold text-xl text-zinc-900">Add Variants</span>
-                 <span className="text-sm text-zinc-500">Convert this product to use colors or fit options.</span>
+              <button type="button" onClick={() => { setHasVariants(true); setCurrentStep(6); }} className="p-6 bg-zinc-50 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all text-left flex flex-col gap-3 group">
+                 <PlusCircle className="h-8 w-8 text-zinc-400 group-hover:text-zinc-900 transition-colors"/>
+                 <span className="font-bold text-lg text-zinc-900">Add Variants</span>
+                 <span className="text-xs text-zinc-500">Convert this product to use colors or fit options.</span>
               </button>
             )}
           </div>
 
+          {renderPublication()}
           <div className="mt-12 pt-8 w-full max-w-2xl px-4 border-t border-zinc-100 flex flex-col items-center">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-sm w-full mb-4">
@@ -1085,6 +1246,7 @@ export default function ProductWizard({
       </div>
       
       <div className="max-w-2xl mx-auto w-full space-y-6 pb-8">
+        {renderPublication()}
         <div className="bg-zinc-50 rounded-xl p-6 border border-zinc-200">
            <h3 className="font-bold text-lg mb-4 flex justify-between items-center">
              Basic Info 
@@ -1115,7 +1277,7 @@ export default function ProductWizard({
         <div className="bg-zinc-50 rounded-xl p-6 border border-zinc-200">
            <h3 className="font-bold text-lg mb-4 flex justify-between items-center">
              Variants
-             <button type="button" onClick={() => setCurrentStep(6)} className="text-sm font-medium text-blue-600 hover:underline">Edit</button>
+             <button type="button" onClick={() => setCurrentStep(hasVariants ? 6 : 5)} className="text-sm font-medium text-blue-600 hover:underline">Edit</button>
            </h3>
            <div className="text-sm">
              {hasVariants ? (
@@ -1144,7 +1306,7 @@ export default function ProductWizard({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] min-h-[600px] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl relative p-8">
+      <div className="flex max-h-[90dvh] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl relative p-8">
         
         <div className="absolute top-4 right-4 flex items-center gap-4 z-10">
           <button type="button" onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-colors">
@@ -1159,6 +1321,7 @@ export default function ProductWizard({
         </div>
 
         <div className="flex-1 overflow-y-auto w-full flex flex-col">
+          {currentStep === 0 && renderSellingMode()}
           {currentStep === 1 && renderStep1()}
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
