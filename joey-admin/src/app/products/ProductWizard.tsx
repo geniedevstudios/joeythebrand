@@ -547,8 +547,13 @@ export default function ProductWizard({
             <label className="block text-sm font-medium text-zinc-700">Wear Tag</label>
             <AdminStyledSelect
               name="wearTag"
-              defaultValue={wearTag}
-              onValueChange={(v) => setWearTag(v as WearTag)}
+              value={wearTag}
+              onValueChange={(v) => {
+                const next = v as WearTag;
+                setWearTag(next);
+                if (next === "womens") setSizeButtonsMode("uk");
+                if (next === "mens") setSizeButtonsMode("standard");
+              }}
               options={[
                 { value: "unisex", label: "Unisex" },
                 { value: "mens", label: "Men's" },
@@ -561,10 +566,12 @@ export default function ProductWizard({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-zinc-700">Sizes</label>
+            <label className="block text-sm font-medium text-zinc-700">
+              {wearTag === "womens" ? "Standard Fit sizes" : "Sizes"}
+            </label>
             <AdminStyledSelect
               name="sizeMode"
-              defaultValue={sizeButtonsMode}
+              value={sizeButtonsMode}
               onValueChange={(v) => setSizeButtonsMode(v as "standard" | "uk")}
               options={[
                 { value: "standard", label: "Standard (XS - Custom)" },
@@ -572,6 +579,11 @@ export default function ProductWizard({
               ]}
             />
           </div>
+          {wearTag === "womens" ? (
+            <p className="mb-2 text-xs text-zinc-500">
+              Shoppers pick Standard Fit (these sizes) or Thick Fit (S, M, L, XL, Custom). Both are saved on the order.
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-3">
             {sizesForEditor.map((sz) => (
               <label key={sz.name} className="flex items-center gap-2">

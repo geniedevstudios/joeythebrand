@@ -9,10 +9,11 @@ import styles from "./WishlistClient.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import ProductMedia from "@/components/shop/ProductMedia";
-import { dataStore, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore } from "@/lib/dataStore";
 import shopStyles from "../shop/ShopClient.module.css";
 import productStyles from "../shop/[slug]/ProductClient.module.css";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import { getStorefrontSizes } from "@/lib/wearSizes";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import ProductSuggestions from "@/components/shop/ProductSuggestions";
 import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
@@ -135,20 +136,7 @@ export default function WishlistClient() {
     toast.info("Please select a size to add to cart");
   };
 
-  const getAvailableSizes = (prod: any, fit?: string) => {
-    if (prod?.wearTag === "womens") {
-      if (fit === "Thick") return ["S", "M", "L", "XL", "Custom"];
-      return WOMENS_DEFAULT_SIZES.map(s => s.name);
-    }
-    if (prod?.wearTag === "unisex") {
-      if (fit === "Women") return ["S", "M", "L", "XL", "Custom"];
-      return ["S", "M", "L", "XL", "XXL", "Custom"];
-    }
-    if (!prod?.sizes || prod.sizes.length === 0) {
-      return DEFAULT_SIZES.map(s => s.name);
-    }
-    return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
-  };
+  const getAvailableSizes = (prod: any, fit?: string) => getStorefrontSizes(prod, fit);
 
   const quickViewColorVariants = useMemo(() => {
     if (!quickViewPiece || !quickViewPiece.variants) return [];

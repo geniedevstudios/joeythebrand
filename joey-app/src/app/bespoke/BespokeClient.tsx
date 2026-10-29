@@ -13,6 +13,7 @@ import CustomDatePicker from "@/components/CustomDatePicker";
 import ProductMedia from "@/components/shop/ProductMedia";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import { getStorefrontSizes } from "@/lib/wearSizes";
 import {
   getVariantStockStatus,
   getIsSoloUnavailable,
@@ -1252,22 +1253,7 @@ export default function BespokeClient({
                 );
                 const isInQvWishlist = wishlistItems.some((w) => w.id === quickViewPiece.id);
 
-                const qvAvailableSizes = (() => {
-                  if (quickViewPiece.wearTag === "womens") {
-                    if (quickViewFit === "Thick") return ["S", "M", "L", "XL", "Custom"];
-                    return (quickViewPiece.sizes || [])
-                      .filter((s) => s.available !== false)
-                      .map((s) => s.name);
-                  }
-                  if (quickViewPiece.wearTag === "unisex") {
-                    if (quickViewFit === "Women") return ["S", "M", "L", "XL", "Custom"];
-                    return ["S", "M", "L", "XL", "XXL", "Custom"];
-                  }
-                  const list = (quickViewPiece.sizes || [])
-                    .filter((s) => s.available !== false)
-                    .map((s) => s.name);
-                  return list.length > 0 ? list : ["S", "M", "L", "XL", "Custom"];
-                })();
+                const qvAvailableSizes = getStorefrontSizes(quickViewPiece, quickViewFit);
 
                 const handleQvAddToCart = () => {
                   if (!selectedSize && qvAvailableSizes.length > 0) {

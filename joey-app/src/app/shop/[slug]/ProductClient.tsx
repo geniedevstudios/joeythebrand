@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Clock } from "lucide-react";
 import { wishlistStore } from "@/store/wishlistStore";
-import { dataStore, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore } from "@/lib/dataStore";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import ProductMedia from "@/components/shop/ProductMedia";
@@ -14,6 +14,7 @@ import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageL
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import ProductSuggestions from "@/components/shop/ProductSuggestions";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import { getStorefrontSizes } from "@/lib/wearSizes";
 import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
 import styles from "./ProductClient.module.css";
 import shopStyles from "../ShopClient.module.css";
@@ -221,28 +222,7 @@ export default function ProductClient({ slug }: { slug: string }) {
     return { suggestedProducts: pool.slice(0, 5), suggestionPhrase: phrase };
   }, [product, products]);
 
-  const getAvailableSizes = (prod: any, fit?: string) => {
-    // For women's apparel, the range depends on the fit.
-    if (prod?.wearTag === "womens") {
-      if (fit === "Thick") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      return WOMENS_DEFAULT_SIZES.map(s => s.name);
-    }
-
-    if (prod?.wearTag === "unisex") {
-      if (fit === "Women") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      // Men's or default
-      return ["S", "M", "L", "XL", "XXL", "Custom"];
-    }
-
-    if (!prod?.sizes || prod.sizes.length === 0) {
-      return DEFAULT_SIZES.map(s => s.name);
-    }
-    return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
-  };
+  const getAvailableSizes = (prod: any, fit?: string) => getStorefrontSizes(prod, fit);
 
   const quickViewColorVariants = useMemo(() => {
     if (!quickViewItem || !quickViewItem.variants) return [];
@@ -335,7 +315,7 @@ export default function ProductClient({ slug }: { slug: string }) {
   const currentBespokeLeadDays = baseStockStatus.leadDays;
 
   const handleAddToCart = (explicitFulfillmentChoice?: "ready_to_wear" | "made_to_order", explicitQty?: number) => {
-    if (!selectedSize && (product.sizes?.length ?? 0) > 0) {
+    if (!selectedSize && getStorefrontSizes(product, selectedFit).length > 0) {
       toast.error("Please pick a size before adding to cart.");
       return;
     }

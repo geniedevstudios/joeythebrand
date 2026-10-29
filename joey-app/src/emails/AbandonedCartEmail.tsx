@@ -13,6 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
+import { EMAIL_LOGO_URL, getEmailBaseUrl } from "@/lib/emailAssets";
 
 export type AbandonedCartItem = {
   name: string;
@@ -33,15 +34,6 @@ export type AbandonedCartEmailProps = {
   cartUrl?: string;
 };
 
-function getBaseUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
-
-  return "https://joeythebrand.com";
-}
 
 const main = {
   backgroundColor: "#f9f9f9",
@@ -150,7 +142,7 @@ export default function AbandonedCartEmail({
   cartUrl,
 }: AbandonedCartEmailProps) {
   const firstName = customerName.split(" ")[0] || "there";
-  const baseUrl = getBaseUrl();
+  const baseUrl = getEmailBaseUrl();
   const checkoutUrl = cartUrl || `${baseUrl}/cart`;
   const subtotal = items.reduce(
     (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
@@ -181,8 +173,10 @@ export default function AbandonedCartEmail({
           }}
         >
           <Img
-            src={`${baseUrl}/white%20logo.png`}
+            src={EMAIL_LOGO_URL}
             alt="JOEY The brand"
+            width={240}
+            height={240}
             style={{ width: "240px", height: "auto", margin: "0 auto", display: "block" }}
           />
         </div>

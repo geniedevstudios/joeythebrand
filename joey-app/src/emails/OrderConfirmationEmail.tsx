@@ -13,6 +13,7 @@ import {
   Button,
 } from "@react-email/components";
 import * as React from "react";
+import { EMAIL_LOGO_URL, getEmailBaseUrl } from "@/lib/emailAssets";
 
 export type OrderItem = {
   name: string;
@@ -49,15 +50,6 @@ export type OrderConfirmationEmailProps = {
   stockConflictFlagged?: boolean;
 };
 
-function getBaseUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
-
-  return "https://joeythebrand.com";
-}
 
 const main = {
   backgroundColor: "#f9f9f9",
@@ -299,7 +291,7 @@ export default function OrderConfirmationEmail({
       ? `ACTION REQUIRED: Order ${orderId} Paid (Stock Conflict Hold)`
       : `New order ${orderId} from ${customerName}.`
     : `Thanks for your order, ${customerName}.`;
-  const baseUrl = getBaseUrl();
+  const baseUrl = getEmailBaseUrl();
   const formattedDate = new Date(dateOrdered).toLocaleDateString("en-US", {
     timeZone: "Africa/Accra",
     month: "long",
@@ -354,8 +346,10 @@ export default function OrderConfirmationEmail({
           }}
         >
           <Img
-            src={`${baseUrl}/white%20logo.png`}
+            src={EMAIL_LOGO_URL}
             alt="JOEY The brand"
+            width={280}
+            height={280}
             style={{ width: "280px", height: "auto", margin: "0 auto", display: "block" }}
           />
         </div>

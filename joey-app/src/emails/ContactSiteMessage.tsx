@@ -11,6 +11,7 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
+import { EMAIL_LOGO_URL, getEmailBaseUrl } from "@/lib/emailAssets";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 
 export type ContactSiteMessageProps = {
@@ -21,15 +22,6 @@ export type ContactSiteMessageProps = {
   message: string;
 };
 
-function getBaseUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
-
-  return "https://joeythebrand.com";
-}
 
 const main = {
   backgroundColor: "#f9f9f9",
@@ -147,7 +139,7 @@ export default function ContactSiteMessage({
   const preview = `${subject} — ${name}`;
   const phoneDisplay = formatPhoneDisplay(phone);
   const telHref = phoneDisplay.replace(/[^\d+]/g, "");
-  const baseUrl = getBaseUrl();
+  const baseUrl = getEmailBaseUrl();
 
   return (
     <Html lang="en">
@@ -170,10 +162,12 @@ export default function ContactSiteMessage({
           paddingTop: "60px", 
           textAlign: "center" 
         }}>
-          <Img 
-            src={`${baseUrl}/white%20logo.png`} 
-            alt="JOEY The brand" 
-            style={{ width: "280px", height: "auto", margin: "0 auto", display: "block" }} 
+          <Img
+            src={EMAIL_LOGO_URL}
+            alt="JOEY The brand"
+            width={280}
+            height={280}
+            style={{ width: "280px", height: "auto", margin: "0 auto", display: "block" }}
           />
         </div>
 

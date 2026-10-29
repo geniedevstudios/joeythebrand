@@ -7,8 +7,8 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { dataStore } from "@/lib/dataStore";
 import { wishlistStore } from "@/store/wishlistStore";
-import { DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import { getStorefrontSizes } from "@/lib/wearSizes";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { Product } from "@/lib/types";
 import type { WishlistItem } from "@/store/wishlistStore";
@@ -198,28 +198,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
     toast.success(wasInWishlist ? `${product.name} removed from wishlist` : `${product.name} added to wishlist`);
   };
 
-  const getAvailableSizes = (prod: Product, fit?: string) => {
-    // For women's apparel, the range depends on the fit.
-    if (prod?.wearTag === "womens") {
-      if (fit === "Thick") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      return WOMENS_DEFAULT_SIZES.map(s => s.name);
-    }
-
-    if (prod?.wearTag === "unisex") {
-      if (fit === "Women") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      // Men's or default
-      return ["S", "M", "L", "XL", "XXL", "Custom"];
-    }
-
-    if (!prod?.sizes || prod.sizes.length === 0) {
-      return DEFAULT_SIZES.map((s) => s.name);
-    }
-    return prod.sizes.filter((s) => s.available).map((s) => s.name);
-  };
+  const getAvailableSizes = (prod: Product, fit?: string) => getStorefrontSizes(prod, fit);
 
   const handleAddToCart = () => {
     if (!quickViewPiece) return;

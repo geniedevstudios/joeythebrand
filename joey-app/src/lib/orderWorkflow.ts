@@ -6,6 +6,7 @@ import {
   getVariantStockStatus,
   resolveProductFulfillmentMode,
 } from "./variantUtils";
+import { isSizeAllowedForProduct } from "./wearSizes";
 import type {
   ItemFulfillmentType,
   OrderItem,
@@ -355,14 +356,21 @@ export async function createServerAuthoritativeOrder(params: {
       }
     }
 
-    // Validate size
+    // Validate size against the chart for this wear tag + fit.
+    // Women's Standard uses UK names (or alpha equivalents); Thick uses S–XL.
     const sizes = Array.isArray(pRow.sizes) ? pRow.sizes : [];
     const reqSize = String(reqItem.size || "Standard").trim();
-    if (sizes.length > 0) {
-      const matchedSize = sizes.find(
-        (s: any) => String(s.name).toLowerCase() === reqSize.toLowerCase(),
+    if (
+      sizes.length > 0 ||
+      String(pRow.wear_tag || "").toLowerCase() === "womens" ||
+      String(reqItem.fit || "") === "Thick"
+    ) {
+      const allowed = isSizeAllowedForProduct(
+        { wear_tag: pRow.wear_tag, sizes },
+        reqSize,
+        reqItem.fit,
       );
-      if (!matchedSize || matchedSize.available === false) {
+      if (!allowed) {
         return {
           ok: false,
           status: 400,

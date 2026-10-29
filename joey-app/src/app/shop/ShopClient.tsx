@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import styles from "./ShopClient.module.css";
 import CollectionsSection from "@/components/home/CollectionsSection";
 import { wishlistStore } from "@/store/wishlistStore";
-import { dataStore, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore } from "@/lib/dataStore";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import { getStorefrontSizes } from "@/lib/wearSizes";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
@@ -219,28 +220,7 @@ export default function ShopClient() {
     }, 400);
   };
 
-  const getAvailableSizes = (prod: any, fit?: string) => {
-    // For women's apparel, the range depends on the fit.
-    if (prod?.wearTag === "womens") {
-      if (fit === "Thick") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      return WOMENS_DEFAULT_SIZES.map(s => s.name);
-    }
-
-    if (prod?.wearTag === "unisex") {
-      if (fit === "Women") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      // Men's or default
-      return ["S", "M", "L", "XL", "XXL", "Custom"];
-    }
-
-    if (!prod?.sizes || prod.sizes.length === 0) {
-      return DEFAULT_SIZES.map(s => s.name);
-    }
-    return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
-  };
+  const getAvailableSizes = (prod: any, fit?: string) => getStorefrontSizes(prod, fit);
 
   const filtered = useMemo(() => {
     let list = products;

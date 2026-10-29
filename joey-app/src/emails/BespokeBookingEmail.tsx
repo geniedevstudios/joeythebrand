@@ -10,6 +10,7 @@ import {
   Button,
 } from "@react-email/components";
 import * as React from "react";
+import { EMAIL_LOGO_URL, getEmailBaseUrl } from "@/lib/emailAssets";
 import {
   formatConsultationAppointmentLocal,
   formatPreferredSlotAccra,
@@ -56,15 +57,6 @@ export type BespokeBookingEmailProps = {
 const DEFAULT_ADMIN_CONSULTATIONS_URL =
   "https://admin.joeythebrand.com/content/consultations";
 
-function getBaseUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
-
-  return "https://joeythebrand.com";
-}
 
 const main = {
   backgroundColor: "#f9f9f9",
@@ -207,7 +199,7 @@ export default function BespokeBookingEmail({
   adminConsultationsUrl = DEFAULT_ADMIN_CONSULTATIONS_URL,
 }: BespokeBookingEmailProps) {
   const firstName = customerName.split(" ")[0] || "Customer";
-  const baseUrl = getBaseUrl();
+  const baseUrl = getEmailBaseUrl();
 
   const isPending = status === "pending";
   const isRescheduleProposed = status === "reschedule_proposed";
@@ -343,8 +335,10 @@ export default function BespokeBookingEmail({
           className="no-print"
         >
           <Img
-            src={`${baseUrl}/white%20logo.png`}
+            src={EMAIL_LOGO_URL}
             alt="JOEY The brand"
+            width={280}
+            height={280}
             style={{ width: "280px", height: "auto", margin: "0 auto", display: "block" }}
           />
         </div>

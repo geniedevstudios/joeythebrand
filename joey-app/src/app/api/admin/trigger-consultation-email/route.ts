@@ -6,6 +6,7 @@ import {
   handleAdminConsultationAction,
   verifyAdminRequest,
 } from "@/lib/consultationWorkflow";
+import { getEmailBaseUrl } from "@/lib/emailAssets";
 
 export const runtime = "nodejs";
 
@@ -29,15 +30,6 @@ function getSupabaseAnon() {
   );
 }
 
-function getBaseUrl(): string {
-  const explicit =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
-  return "https://joeythebrand.com";
-}
 
 export async function OPTIONS() {
   return new NextResponse(null, { headers: corsHeaders });
@@ -81,7 +73,7 @@ export async function POST(req: Request) {
       emailSender: { send: (msg: any) => resend.emails.send(msg) },
       renderEmail: (props) => BespokeBookingEmail(props),
       brandFromName: "JOEY The brand",
-      baseUrl: getBaseUrl(),
+      baseUrl: getEmailBaseUrl(),
       reschedulePath: "/bespoke/reschedule",
       adminEmail: auth.adminEmail,
       bookingId: id,

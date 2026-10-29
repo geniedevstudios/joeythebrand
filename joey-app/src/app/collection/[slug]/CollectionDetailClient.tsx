@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { dataStore, DEFAULT_SIZES, WOMENS_DEFAULT_SIZES } from "@/lib/dataStore";
+import { dataStore } from "@/lib/dataStore";
 import styles from "../CollectionClient.module.css";
 import shopStyles from "@/app/shop/ShopClient.module.css";
 import eventStyles from "@/app/events/events.module.css";
@@ -18,27 +18,11 @@ import type { Product, PublicCollection } from "@/lib/types";
 import { ShopProductGridSkeleton } from "@/components/shop/ShopProductGridSkeleton";
 import ProductMedia from "@/components/shop/ProductMedia";
 import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import { getStorefrontSizes } from "@/lib/wearSizes";
 
 
 const formatPrice = (price: number) => `GHC ${price.toLocaleString()}`;
-
-function formatSizeLabel(raw: string, fit?: string, wearTag?: string): string {
-  const s = String(raw || "").trim();
-  
-  // For women's Standard fit, map alpha sizes to UK/US numeric labels
-  if (fit === "Standard" && wearTag === "womens") {
-    if (s === "XS") return "UK 6 / US 2";
-    if (s === "S") return "UK 8 / US 4";
-    if (s === "M") return "UK 10 / US 6";
-    if (s === "L") return "UK 12 / US 8";
-    if (s === "XL") return "UK 14 / US 10";
-    if (s === "XXL") return "UK 16 / US 12";
-  }
-
-  const m = /^UK(\d+)\s*\/\s*US(\d+)$/i.exec(s);
-  if (m) return `UK ${m[1]} / US ${m[2]}`;
-  return s;
-}
 
 type WearFilter = "all" | "mens" | "womens";
 
@@ -204,28 +188,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
       });
     }, 400);
   };
-  const getAvailableSizes = (prod: any, fit?: string) => {
-    // For women's apparel, the range depends on the fit.
-    if (prod?.wearTag === "womens") {
-      if (fit === "Thick") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      return WOMENS_DEFAULT_SIZES.map(s => s.name);
-    }
-
-    if (prod?.wearTag === "unisex") {
-      if (fit === "Women") {
-        return ["S", "M", "L", "XL", "Custom"];
-      }
-      // Men's or default
-      return ["S", "M", "L", "XL", "XXL", "Custom"];
-    }
-
-    if (!prod?.sizes || prod.sizes.length === 0) {
-      return DEFAULT_SIZES.map(s => s.name);
-    }
-    return prod.sizes.filter((s: any) => s.available).map((s: any) => s.name);
-  };
+  const getAvailableSizes = (prod: any, fit?: string) => getStorefrontSizes(prod, fit);
   if (!collection) {
     if (isStoreLoading) {
       return (

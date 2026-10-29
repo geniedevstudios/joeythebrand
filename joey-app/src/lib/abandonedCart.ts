@@ -1,5 +1,6 @@
 import * as React from "react";
 import AbandonedCartEmail from "../emails/AbandonedCartEmail";
+import { getEmailBaseUrl } from "./emailAssets";
 import { DEFAULT_ORDERS_SENDER } from "./orderWorkflow";
 import type { OrderEmailSender } from "./orderWorkflow";
 
@@ -41,13 +42,6 @@ function getIdleMinutes(): number {
   return DEFAULT_IDLE_MINUTES;
 }
 
-function getBaseUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
-  return "https://joeythebrand.com";
-}
 
 export async function processAbandonedCartReminders(params: {
   supabaseAdmin: {
@@ -62,7 +56,7 @@ export async function processAbandonedCartReminders(params: {
   const limit = params.limit ?? 25;
   const cutoff = idleCutoffIso(idleMinutes);
   const fromEmail = process.env.ORDERS_FROM_EMAIL?.trim() || DEFAULT_ORDERS_SENDER;
-  const cartUrl = `${getBaseUrl()}/cart`;
+  const cartUrl = `${getEmailBaseUrl()}/cart`;
 
   const { data: rows, error } = await params.supabaseAdmin
     .from("carts")
