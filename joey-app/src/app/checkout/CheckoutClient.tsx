@@ -134,6 +134,19 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     }
   }, []);
 
+  useEffect(() => {
+    if (items.length === 0) return;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      await fetch("/api/checkout/watch", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    })();
+  }, [items.length]);
+
   const subtotalRaw = items.reduce((acc, current) => acc + (current.price * current.quantity), 0);
   const discount = appliedPromo?.discount || 0;
   const total = subtotalRaw - discount + shippingCost;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { processAbandonedCartReminders } from "@/lib/abandonedCart";
+import { processUnpaidOrderReminders } from "@/lib/unpaidCheckout";
 
 export const runtime = "nodejs";
 
@@ -39,8 +40,9 @@ async function handleAbandonedCarts(req: Request) {
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
+    const supabaseAdmin = getSupabaseAdmin();
     const result = await processAbandonedCartReminders({
-      supabaseAdmin: getSupabaseAdmin(),
+      supabaseAdmin,
       emailSender: {
         send: (msg, options) =>
           resend.emails.send(
@@ -50,8 +52,12 @@ async function handleAbandonedCarts(req: Request) {
       },
       limit: 25,
     });
+    const unpaid = await processUnpaidOrderReminders({
+      supabaseAdmin,
+      limit: 25,
+    });
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, abandonedCart: result, unpaidCheckout: unpaid });
   } catch (err) {
     return NextResponse.json(
       {

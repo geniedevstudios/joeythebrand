@@ -97,6 +97,19 @@ export async function processAbandonedCartReminders(params: {
       continue;
     }
 
+    const { data: unpaidNudge } = await params.supabaseAdmin
+      .from("orders")
+      .select("id")
+      .eq("user_id", cart.user_id)
+      .neq("payment_status", "paid")
+      .not("unpaid_nudge_sent_at", "is", null)
+      .limit(1)
+      .maybeSingle();
+    if (unpaidNudge?.id) {
+      skipped += 1;
+      continue;
+    }
+
     const { data: userRes, error: userErr } = await params.supabaseAdmin.auth.admin.getUserById(
       cart.user_id,
     );

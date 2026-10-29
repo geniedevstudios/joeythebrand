@@ -823,6 +823,16 @@ export async function verifyAndReconcileOrderPayment(params: {
     console.error("Outbox immediate flush error (will be retried by outbox worker):", err);
   }
 
+  try {
+    const { cancelUnpaidOrderReminder } = await import("./unpaidCheckout");
+    await cancelUnpaidOrderReminder({
+      supabaseAdmin: params.supabaseAdmin,
+      orderId: orderRow.id,
+    });
+  } catch (err) {
+    console.error("Cancel unpaid checkout reminder failed:", err);
+  }
+
   return {
     ok: true,
     status: 200,

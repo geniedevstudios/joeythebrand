@@ -5,6 +5,7 @@ import {
   type CreateOrderLineRequest,
 } from "@/lib/orderWorkflow";
 import { mapOrder } from "@/lib/dataStore";
+import { scheduleUnpaidOrderReminder } from "@/lib/unpaidCheckout";
 
 export const runtime = "nodejs";
 
@@ -92,6 +93,15 @@ export async function POST(req: Request) {
         },
         { status: result.status },
       );
+    }
+
+    if (!result.idempotent) {
+      void scheduleUnpaidOrderReminder({
+        supabaseAdmin: getSupabaseAdmin(),
+        order: result.order,
+      }).catch((err) => {
+        console.error("Unpaid checkout reminder schedule failed:", err);
+      });
     }
 
     return NextResponse.json({
