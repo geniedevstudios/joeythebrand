@@ -94,6 +94,13 @@ const itemProp = {
   margin: "0 0 4px 0",
 };
 
+const itemImage = {
+  width: "96px",
+  height: "auto",
+  display: "block",
+  borderRadius: "6px",
+};
+
 export default function UnpaidCheckoutEmail({
   customerName = "there",
   customerEmail,
@@ -192,13 +199,20 @@ export default function UnpaidCheckoutEmail({
 
             {items.map((item, index) => (
               <Row key={`${item.name}-${index}`} style={{ paddingBottom: "16px" }}>
-                <Column>
+                <Column style={{ width: "120px" }} valign="middle">
+                  {item.image ? (
+                    <Img src={item.image} alt={item.name} width={96} height={120} style={itemImage} />
+                  ) : (
+                    <div style={{ width: "96px", height: "120px", backgroundColor: "#f4f4f4" }} />
+                  )}
+                </Column>
+                <Column style={{ paddingLeft: "16px" }} valign="top">
                   <Text style={itemTitle}>{item.name}</Text>
                   {item.size ? <Text style={itemProp}>Size: {item.size}</Text> : null}
                   {item.color ? <Text style={itemProp}>Color: {item.color}</Text> : null}
                   <Text style={itemProp}>Qty: {item.quantity}</Text>
                 </Column>
-                <Column style={{ width: "90px" }}>
+                <Column style={{ width: "90px" }} valign="bottom">
                   <Text style={{ ...itemTitle, textAlign: "right" }}>
                     GHC {(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
                   </Text>
