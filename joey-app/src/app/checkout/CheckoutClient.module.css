@@ -48,8 +48,8 @@
 
 .checkoutLayout {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: var(--space-3xl);
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: clamp(1.5rem, 4vw, var(--space-3xl));
   margin-top: var(--space-3xl);
 }
 
@@ -79,7 +79,7 @@
 .destinationFieldset {
   border: none;
   padding: 0;
-  margin: 0 0 var(--space-md);
+  margin: 0 0 var(--space-sm);
 }
 
 .destinationLegend {
@@ -87,33 +87,41 @@
   padding: 0;
 }
 
-.destinationOptions {
+.choiceRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-sm);
+  gap: 6px;
 }
 
-.destinationOption {
+.choiceRow > :only-child {
+  grid-column: 1 / -1;
+}
+
+.choiceChip {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm);
+  gap: 1px;
   margin: 0;
-  padding: var(--space-md) var(--space-md);
+  padding: 6px 10px;
+  min-width: 0;
+  min-height: 40px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full, 999px);
   background: var(--color-bg);
   cursor: pointer;
-  font-size: 0.9rem;
   color: var(--blue-athracite);
+  text-align: center;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.destinationOption:hover {
+.choiceChip:hover:not(.choiceChipDisabled) {
   border-color: var(--alaska-gray);
 }
 
-.destinationOption input {
+.choiceChip input {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -121,10 +129,40 @@
   pointer-events: none;
 }
 
-.destinationOptionActive {
+.choiceChipActive {
   border-color: var(--blue-athracite);
   background: var(--color-surface);
-  font-weight: 500;
+}
+
+.choiceChipDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.choiceChipTitle {
+  font-family: var(--font-label);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1.2;
+}
+
+.choiceChipMeta {
+  font-size: 0.62rem;
+  color: var(--cinereous);
+  line-height: 1.2;
+}
+
+.choiceHint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--cinereous);
+  line-height: 1.4;
 }
 
 .fieldHint {
@@ -153,17 +191,18 @@
 }
 
 .submitBtn {
-  margin-top: var(--space-lg);
+  margin-top: var(--space-md);
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-md) var(--space-xl);
+  padding: 8px 16px;
+  min-height: 40px;
   font-family: var(--font-label);
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full, 999px);
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
@@ -310,66 +349,10 @@
   margin-bottom: var(--space-lg);
 }
 
-/* Payment Methods */
-.paymentMethods {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 32px;
-}
-
-.paymentOption {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  background: white;
-}
-
-.paymentOption:hover {
-  border-color: var(--blue-athracite);
-}
-
-.paymentOptionActive {
-  border-color: var(--blue-athracite);
-  background: var(--skintone);
-}
-
-.paymentOption input[type="radio"] {
-  accent-color: var(--blue-athracite);
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.paymentOptionContent {
-  display: flex;
-  flex-direction: column;
-}
-
-.paymentOptionTitle {
-  font-family: var(--font-body);
-  font-size: 1rem;
-  color: var(--blue-athracite);
-  font-weight: 500;
-}
-
-.paymentOptionDesc {
-  font-family: var(--font-label);
-  font-size: 0.75rem;
-  color: var(--cinereous);
-  margin-top: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
   .checkoutLayout {
     grid-template-columns: 1fr;
+    gap: var(--space-xl);
   }
 
   .summarySection {
@@ -378,156 +361,20 @@
   }
 }
 
-@media (max-width: 480px) {
-  .destinationOptions {
-    grid-template-columns: 1fr;
-  }
-
+@media (max-width: 640px) {
   .formRow {
     grid-template-columns: 1fr;
   }
 }
 
-/* Coming Soon – International Shipping Banner */
-.comingSoonBanner {
-  text-align: center;
-  padding: 40px 24px;
-  margin: 8px 0 0;
-  border: 1px dashed var(--color-border);
-  border-radius: 12px;
-  background: var(--color-bg-secondary);
-}
-
-.comingSoonIcon {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-  color: var(--cinereous);
-  opacity: 0.55;
-}
-
-.comingSoonTitle {
-  font-family: var(--font-display, var(--font-heading, inherit));
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  margin: 0 0 10px;
-  color: var(--color-text);
-}
-
-.comingSoonText {
-  font-size: 0.92rem;
-  color: var(--cinereous);
-  line-height: 1.55;
-  margin: 0 auto 14px;
-  max-width: 380px;
-}
-
-.comingSoonContact {
-  font-size: 0.85rem;
-  color: var(--cinereous);
-  margin: 0;
-}
-
-.comingSoonLink {
-  color: var(--blue-athracite);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  font-weight: 500;
-}
-
-.comingSoonLink:hover {
-  color: var(--color-text);
-}
-
-/* Shipping Options */
 .shippingOptionsSection {
-  margin-top: 16px;
-}
-
-.calculatingText {
-  font-size: 0.9rem;
-  color: var(--cinereous);
   margin-top: 8px;
-  font-style: italic;
-}
-
-.shippingCardsContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.shippingCard {
-  display: flex;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  cursor: pointer;
-  background-color: var(--color-surface);
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.shippingCard:hover {
-  border-color: var(--alaska-gray);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-}
-
-.shippingCardActive {
-  border-color: var(--blue-athracite);
-  background-color: var(--skintone);
-}
-
-.visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.shippingCardContent {
-  width: 100%;
-}
-
-.shippingCardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.shippingCardTitle {
-  font-family: var(--font-body);
-  font-size: 1rem;
-  color: var(--blue-athracite);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .dhlLogoImg {
-  height: 20px;
+  height: 11px;
   width: auto;
   object-fit: contain;
-}
-
-.shippingCardPrice {
-  font-weight: 600;
-  color: var(--blue-athracite);
-}
-
-.shippingCardDesc {
-  font-size: 0.85rem;
-  color: var(--cinereous);
-  margin: 0;
 }
 
 /* Success Screen */

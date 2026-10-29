@@ -724,16 +724,9 @@ export default function BespokeClient({
                     ? availableSizes.join(", ")
                     : "Standard & Custom";
 
-              const firstDetail = (p.details || []).find((d) => d?.trim())?.trim() || "";
-              let detailLabel = "Craftsmanship";
-              let detailValue = firstDetail || "100% Handcrafted";
-              if (firstDetail.includes(":")) {
-                const [lbl, ...rest] = firstDetail.split(":");
-                if (lbl.trim() && rest.join(":").trim()) {
-                  detailLabel = lbl.trim();
-                  detailValue = rest.join(":").trim();
-                }
-              }
+              const productDescription = (p.description || "").trim();
+              const detailLabel = "Craftsmanship";
+              const detailValue = productDescription || "100% Handcrafted";
 
               const productHref = `/shop/${p.slug || p.id}`;
 

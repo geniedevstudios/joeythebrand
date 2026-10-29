@@ -84,9 +84,9 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
 
   const [shippingDestination, setShippingDestination] = useState<ShippingDestination>("ghana");
   const [shippingCost, setShippingCost] = useState<number>(0);
-  const [shippingCalculated, setShippingCalculated] = useState<boolean>(true); // true for ghana by default
   const [isCalculatingShipping, setIsCalculatingShipping] = useState<boolean>(false);
   const [calculatedDhlPrice, setCalculatedDhlPrice] = useState<number | null>(null);
+  const [dhlQuoteError, setDhlQuoteError] = useState<string | null>(null);
   const [selectedShippingOption, setSelectedShippingOption] = useState<"dhl" | "sales" | null>(null);
   const [lastCalculatedLocation, setLastCalculatedLocation] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("card");
@@ -138,7 +138,14 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   const discount = appliedPromo?.discount || 0;
   const total = subtotalRaw - discount + shippingCost;
   const formattedSubtotal = `GHC ${subtotalRaw.toLocaleString()}`;
-  const formattedShipping = shippingDestination === "ghana" ? "TBD" : (shippingCalculated ? `GHC ${shippingCost.toLocaleString()}` : "Requires calculation");
+  const formattedShipping =
+    shippingDestination === "ghana" || selectedShippingOption !== "dhl"
+      ? "TBD"
+      : calculatedDhlPrice != null
+        ? `GHC ${shippingCost.toLocaleString()}`
+        : isCalculatingShipping
+          ? "Calculating…"
+          : "TBD";
   const formattedTotal = `GHC ${total.toLocaleString()}`;
 
 
@@ -150,8 +157,10 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   const handleDestinationChange = (dest: ShippingDestination) => {
     setShippingDestination(dest);
     setShippingCost(0);
-    setShippingCalculated(dest === "ghana");
-    setSelectedShippingOption(null);
+    setCalculatedDhlPrice(null);
+    setDhlQuoteError(null);
+    setLastCalculatedLocation("");
+    setSelectedShippingOption(dest === "international" ? "sales" : null);
     if (dest === "ghana") {
       setFormData((prev) => ({
         ...prev,
@@ -172,21 +181,20 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     if (lastCalculatedLocation === currentLocationStr) return;
 
     setIsCalculatingShipping(true);
-    setShippingCalculated(false);
+    setDhlQuoteError(null);
     setCalculatedDhlPrice(null);
-    setSelectedShippingOption(null);
-    setShippingCost(0);
+    if (selectedShippingOption === "dhl") {
+      setSelectedShippingOption("sales");
+      setShippingCost(0);
+    }
 
     try {
-      // 1. Validate Address
       const valRes = await fetch(`/api/shipping/validate?city=${encodeURIComponent(formData.city)}&postalCode=${encodeURIComponent(formData.postalCode)}&countryCode=${encodeURIComponent(formData.country)}`);
       if (!valRes.ok) {
         const valData = await valRes.json();
-        // The user wanted us to strictly block checkout if DHL doesn't recognize the address
-        throw new Error(`Invalid Address: ${valData.details || valData.error || "Please check your city, postal code, and country."}`);
+        throw new Error(valData.details || valData.error || "DHL could not verify this address.");
       }
 
-      // 2. Fetch Rates
       const res = await fetch("/api/shipping/rates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,11 +214,15 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
       }
 
       setCalculatedDhlPrice(data.price);
-      setShippingCalculated(true);
       setLastCalculatedLocation(currentLocationStr);
-      toast.success("Shipping options updated!");
+      toast.success("DHL rate ready. Choose DHL Express or Custom Shipping.");
     } catch (err: any) {
-      toast.error(err.message || "Failed to calculate shipping.");
+      const message = err.message || "Failed to calculate shipping.";
+      setDhlQuoteError(message);
+      setLastCalculatedLocation(currentLocationStr);
+      setSelectedShippingOption("sales");
+      setShippingCost(0);
+      toast.error("DHL is unavailable. You can still check out with custom shipping.");
     } finally {
       setIsCalculatingShipping(false);
     }
@@ -262,6 +274,14 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
         toast.error('Please enter your state or province (use "N/A" if it does not apply).');
         return;
       }
+      if (!selectedShippingOption) {
+        toast.error("Please choose a shipping method.");
+        return;
+      }
+      if (selectedShippingOption === "dhl" && calculatedDhlPrice == null) {
+        toast.error("DHL is not available for this address. Choose Custom Shipping.");
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -274,7 +294,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
       );
       const notes =
         (formData.notes ? formData.notes + "\n\n" : "") +
-          (shippingDestination === "international" && dhlEnabled
+          (shippingDestination === "international"
             ? `Selected Shipping: ${selectedShippingOption === "dhl" ? "DHL Express" : "Custom Sales Contact"}`
             : "") || undefined;
 
@@ -467,8 +487,43 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
 
       <div className={`container ${styles.checkoutLayout}`}>
         <div className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>Contact Information</h2>
           <form onSubmit={handleSubmit} className={styles.form}>
+            <h2 className={styles.sectionTitle}>Delivery</h2>
+            <fieldset className={styles.destinationFieldset}>
+              <legend className={`form-label ${styles.destinationLegend}`}>
+                Where should we send your order?
+              </legend>
+              <div className={styles.choiceRow}>
+                <label
+                  className={`${styles.choiceChip} ${shippingDestination === "ghana" ? styles.choiceChipActive : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="shippingDestination"
+                    value="ghana"
+                    checked={shippingDestination === "ghana"}
+                    onChange={() => handleDestinationChange("ghana")}
+                  />
+                  <span className={styles.choiceChipTitle}>Within Ghana</span>
+                  <span className={styles.choiceChipMeta}>City &amp; region</span>
+                </label>
+                <label
+                  className={`${styles.choiceChip} ${shippingDestination === "international" ? styles.choiceChipActive : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="shippingDestination"
+                    value="international"
+                    checked={shippingDestination === "international"}
+                    onChange={() => handleDestinationChange("international")}
+                  />
+                  <span className={styles.choiceChipTitle}>Outside Ghana</span>
+                  <span className={styles.choiceChipMeta}>International</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <h2 className={styles.sectionTitle}>Contact Information</h2>
             <div className="form-group">
               <label className="form-label" htmlFor="email">Email Address</label>
               <input
@@ -505,38 +560,6 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
               {shippingDestination === "ghana" ? "Delivery Details" : "Shipping Address"}
             </h2>
 
-            <fieldset className={styles.destinationFieldset}>
-              <legend className={`form-label ${styles.destinationLegend}`}>
-                Where should we {shippingDestination === "ghana" ? "deliver" : "ship"} your order?
-              </legend>
-              <div className={styles.destinationOptions}>
-                <label
-                  className={`${styles.destinationOption} ${shippingDestination === "ghana" ? styles.destinationOptionActive : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="shippingDestination"
-                    value="ghana"
-                    checked={shippingDestination === "ghana"}
-                    onChange={() => handleDestinationChange("ghana")}
-                  />
-                  <span>Within Ghana</span>
-                </label>
-                <label
-                  className={`${styles.destinationOption} ${shippingDestination === "international" ? styles.destinationOptionActive : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="shippingDestination"
-                    value="international"
-                    checked={shippingDestination === "international"}
-                    onChange={() => handleDestinationChange("international")}
-                  />
-                  <span>Outside Ghana</span>
-                </label>
-              </div>
-            </fieldset>
-
             <div className="form-group">
               <label className="form-label" htmlFor="address">Street Address</label>
               <input id="address" name="address" type="text" className="form-input"
@@ -561,26 +584,6 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                     required={shippingDestination === "ghana"}
                   />
                 </div>
-              </div>
-            ) : !dhlEnabled ? (
-              <div className={styles.comingSoonBanner}>
-                <div className={styles.comingSoonIcon}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M2 12h20" />
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                  </svg>
-                </div>
-                <h3 className={styles.comingSoonTitle}>International Shipping — Coming Soon</h3>
-                <p className={styles.comingSoonText}>
-                  We&apos;re setting up international delivery via DHL Express. 
-                  You&apos;ll be able to ship to destinations worldwide very soon!
-                </p>
-                <p className={styles.comingSoonContact}>
-                  Need it shipped now?{" "}
-                  <Link href="/contact" className={styles.comingSoonLink}>Contact us</Link>{" "}
-                  and we&apos;ll arrange it manually.
-                </p>
               </div>
             ) : (
               <>
@@ -624,108 +627,106 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                       listMaxHeight={320}
                     />
                     <p className={styles.countryShippingHint}>
-                      Delivering within Ghana? Choose <strong>Within Ghana</strong> above — you'll use city and region instead.
+                      Delivering within Ghana? Choose <strong>Within Ghana</strong> at the top.
                     </p>
                   </div>
                 </div>
               </>
             )}
 
-            {(shippingDestination === "ghana" || dhlEnabled) && (
-              <div className="form-group">
-                <label className="form-label" htmlFor="notes">
-                  Order Notes <span style={{ fontWeight: 300, color: "var(--cinereous)" }}>(optional)</span>
-                </label>
-                <textarea id="notes" name="notes" className="form-input" rows={3}
-                  placeholder="Any special instructions for your order"
-                  value={formData.notes} onChange={handleChange} />
-              </div>
-            )}
-
-            {shippingDestination === "international" && dhlEnabled && (
+            {shippingDestination === "international" && (
               <div className={styles.shippingOptionsSection}>
-                <h2 className={styles.sectionTitle} style={{ marginTop: "32px", borderTop: "1px solid var(--color-border)", paddingTop: "32px" }}>Shipping Options</h2>
-                {isCalculatingShipping ? (
-                  <p className={styles.calculatingText}>Calculating shipping options...</p>
-                ) : !shippingCalculated ? (
-                  <p className={styles.calculatingText}>Please complete your address to see shipping options.</p>
-                ) : (
-                  <div className={styles.shippingCardsContainer}>
-                    <label className={`${styles.shippingCard} ${selectedShippingOption === "dhl" ? styles.shippingCardActive : ""}`}>
-                      <input 
-                        type="radio" 
-                        name="shippingOption" 
-                        value="dhl" 
-                        checked={selectedShippingOption === "dhl"} 
-                        onChange={() => handleShippingOptionSelect("dhl")} 
-                        className={styles.visuallyHidden}
+                <h2 className={styles.sectionTitle}>Shipping Method</h2>
+                <div className={styles.choiceRow}>
+                  {dhlEnabled ? (
+                    <label
+                      className={`${styles.choiceChip} ${selectedShippingOption === "dhl" ? styles.choiceChipActive : ""} ${calculatedDhlPrice == null ? styles.choiceChipDisabled : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="shippingOption"
+                        value="dhl"
+                        checked={selectedShippingOption === "dhl"}
+                        disabled={calculatedDhlPrice == null}
+                        onChange={() => handleShippingOptionSelect("dhl")}
                       />
-                      <div className={styles.shippingCardContent}>
-                        <div className={styles.shippingCardHeader}>
-                          <span className={styles.shippingCardTitle}>
-                            <img src="/dhl-logo.svg" alt="DHL Logo" className={styles.dhlLogoImg} /> Express
-                          </span>
-                          {calculatedDhlPrice !== null && (
-                            <span className={styles.shippingCardPrice}>GHC {calculatedDhlPrice.toLocaleString()}</span>
-                          )}
-                        </div>
-                        <p className={styles.shippingCardDesc}>Fast and reliable international delivery.</p>
-                      </div>
+                      <span className={styles.choiceChipTitle}>
+                        <img src="/dhl-logo.svg" alt="" className={styles.dhlLogoImg} /> DHL
+                      </span>
+                      <span className={styles.choiceChipMeta}>
+                        {isCalculatingShipping
+                          ? "Getting rate…"
+                          : calculatedDhlPrice != null
+                            ? `GHC ${calculatedDhlPrice.toLocaleString()}`
+                            : "Unavailable"}
+                      </span>
                     </label>
-                    <label className={`${styles.shippingCard} ${selectedShippingOption === "sales" ? styles.shippingCardActive : ""}`}>
-                      <input 
-                        type="radio" 
-                        name="shippingOption" 
-                        value="sales" 
-                        checked={selectedShippingOption === "sales"} 
-                        onChange={() => handleShippingOptionSelect("sales")} 
-                        className={styles.visuallyHidden}
-                      />
-                      <div className={styles.shippingCardContent}>
-                        <div className={styles.shippingCardHeader}>
-                          <span className={styles.shippingCardTitle}>Custom Shipping</span>
-                          <span className={styles.shippingCardPrice}>TBD</span>
-                        </div>
-                        <p className={styles.shippingCardDesc}>Our sales person will contact you to arrange delivery.</p>
-                      </div>
-                    </label>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {(shippingDestination === "ghana" || (dhlEnabled && selectedShippingOption !== null)) && (
-              <>
-                <h2 className={styles.sectionTitle} style={{ marginTop: "32px", borderTop: "1px solid var(--color-border)", paddingTop: "32px" }}>Payment Method</h2>
-                <div className={styles.paymentMethods}>
-                  <label className={`${styles.paymentOption} ${paymentMethod === "card" ? styles.paymentOptionActive : ""}`}>
-                    <input 
-                      type="radio" 
-                      name="paymentMethod" 
-                      value="card" 
-                      checked={paymentMethod === "card"} 
-                      onChange={() => setPaymentMethod("card")} 
+                  ) : null}
+                  <label
+                    className={`${styles.choiceChip} ${selectedShippingOption === "sales" ? styles.choiceChipActive : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="shippingOption"
+                      value="sales"
+                      checked={selectedShippingOption === "sales"}
+                      onChange={() => handleShippingOptionSelect("sales")}
                     />
-                    <div className={styles.paymentOptionContent}>
-                      <span className={styles.paymentOptionTitle}>Debit / Credit Card</span>
-                      <span className={styles.paymentOptionDesc}>Visa, Mastercard, Verve</span>
-                    </div>
-                  </label>
-                  <label className={`${styles.paymentOption} ${paymentMethod === "mobile_money" ? styles.paymentOptionActive : ""}`}>
-                    <input 
-                      type="radio" 
-                      name="paymentMethod" 
-                      value="mobile_money" 
-                      checked={paymentMethod === "mobile_money"} 
-                      onChange={() => setPaymentMethod("mobile_money")} 
-                    />
-                    <div className={styles.paymentOptionContent}>
-                      <span className={styles.paymentOptionTitle}>Mobile Money</span>
-                      <span className={styles.paymentOptionDesc}>MTN, Telecel, AirtelTigo</span>
-                    </div>
+                    <span className={styles.choiceChipTitle}>Custom Shipping</span>
+                    <span className={styles.choiceChipMeta}>Sales will arrange · TBD</span>
                   </label>
                 </div>
-                
+                {isCalculatingShipping ? (
+                  <p className={styles.choiceHint}>Getting a DHL rate for this address…</p>
+                ) : dhlQuoteError || !dhlEnabled ? (
+                  <p className={styles.choiceHint}>
+                    {dhlEnabled
+                      ? "DHL could not quote this address. Custom Shipping still works — we will contact you to arrange delivery."
+                      : "DHL Express is not live yet. Choose Custom Shipping and we will arrange delivery with you."}
+                  </p>
+                ) : selectedShippingOption === "sales" ? (
+                  <p className={styles.choiceHint}>Our salesperson will contact you to arrange delivery.</p>
+                ) : null}
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="notes">
+                Order Notes <span style={{ fontWeight: 300, color: "var(--cinereous)" }}>(optional)</span>
+              </label>
+              <textarea id="notes" name="notes" className="form-input" rows={3}
+                placeholder="Any special instructions for your order"
+                value={formData.notes} onChange={handleChange} />
+            </div>
+
+            {(shippingDestination === "ghana" || selectedShippingOption !== null) && (
+              <>
+                <h2 className={styles.sectionTitle}>Payment Method</h2>
+                <div className={styles.choiceRow}>
+                  <label className={`${styles.choiceChip} ${paymentMethod === "card" ? styles.choiceChipActive : ""}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="card"
+                      checked={paymentMethod === "card"}
+                      onChange={() => setPaymentMethod("card")}
+                    />
+                    <span className={styles.choiceChipTitle}>Card</span>
+                    <span className={styles.choiceChipMeta}>Visa, Mastercard</span>
+                  </label>
+                  <label className={`${styles.choiceChip} ${paymentMethod === "mobile_money" ? styles.choiceChipActive : ""}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="mobile_money"
+                      checked={paymentMethod === "mobile_money"}
+                      onChange={() => setPaymentMethod("mobile_money")}
+                    />
+                    <span className={styles.choiceChipTitle}>Mobile Money</span>
+                    <span className={styles.choiceChipMeta}>MTN, Telecel, AirtelTigo</span>
+                  </label>
+                </div>
+
                 <button
                   type="submit"
                   className={`${styles.submitBtn} ${styles.submitBtnPrimary}`}
@@ -821,10 +822,10 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                 <span>-GHC {discount.toLocaleString()}</span>
               </div>
             )}
-            {shippingDestination === "ghana" ? (
+            {shippingDestination === "ghana" || selectedShippingOption === "sales" ? (
               <div style={{ padding: "16px 0", borderBottom: "1px solid var(--color-border)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <span>Delivery</span>
+                  <span>{shippingDestination === "ghana" ? "Delivery" : "Shipping"}</span>
                   <span>{formattedShipping}</span>
                 </div>
                 <div style={{ fontSize: "13px", color: "var(--cinereous)", background: "var(--color-bg-secondary)", padding: "12px", borderRadius: "6px", display: "flex", gap: "8px", alignItems: "flex-start", lineHeight: 1.4 }}>
@@ -832,18 +833,16 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                   <span>Our salesperson will liaise with you on the delivery process.</span>
                 </div>
               </div>
-            ) : dhlEnabled ? (
+            ) : (
               <div className={styles.totalRow}>
                 <span>Shipping</span>
                 <span>{formattedShipping}</span>
               </div>
-            ) : null}
-            {(shippingDestination === "ghana" || dhlEnabled) && (
-              <div className={`${styles.totalRow} ${styles.totalFinal}`}>
-                <span>Total</span>
-                <span>{formattedTotal}</span>
-              </div>
             )}
+            <div className={`${styles.totalRow} ${styles.totalFinal}`}>
+              <span>Total</span>
+              <span>{formattedTotal}</span>
+            </div>
           </div>
         </div>
       </div>

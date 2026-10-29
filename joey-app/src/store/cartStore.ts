@@ -105,17 +105,23 @@ if (typeof window !== "undefined") {
           if (!error) {
             const dbCart: CartItem[] = data?.items || [];
             const localCart = loadCart();
-            
-            let merged = [...dbCart];
+            const mergedById = new Map<string, CartItem>();
+            for (const item of dbCart) {
+              mergedById.set(item.id, { ...item });
+            }
             for (const localItem of localCart) {
-              const existing = merged.find(i => i.id === localItem.id);
+              const existing = mergedById.get(localItem.id);
               if (existing) {
-                existing.quantity = Math.min(existing.maxStock ?? 999, existing.quantity + localItem.quantity);
+                const max = existing.maxStock ?? localItem.maxStock ?? 999;
+                existing.quantity = Math.min(
+                  max,
+                  Math.max(existing.quantity, localItem.quantity),
+                );
               } else {
-                merged.push(localItem);
+                mergedById.set(localItem.id, { ...localItem });
               }
             }
-            cart = merged;
+            cart = [...mergedById.values()];
             saveCart(cart); // push merged back to DB and local
             cartStore.notify();
           }
