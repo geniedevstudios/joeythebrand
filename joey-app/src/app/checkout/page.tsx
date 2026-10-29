@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 
 export default function CheckoutPage() {
   const dhlEnabled = !!(
-    process.env.DHL_API_KEY &&
-    process.env.DHL_API_SECRET &&
-    process.env.DHL_ACCOUNT_NUMBER
+    process.env.DHL_API_KEY?.trim() &&
+    process.env.DHL_API_SECRET?.trim() &&
+    process.env.DHL_ACCOUNT_NUMBER?.trim()
   );
   return (
     <div style={{ paddingTop: "var(--nav-height)" }}>

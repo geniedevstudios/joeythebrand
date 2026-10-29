@@ -1,8 +1,18 @@
-export const DHL_API_BASE = process.env.DHL_API_BASE_URL || "https://express.api.dhl.com/mydhlapi/test";
+function envTrim(name: string): string {
+  return (process.env[name] || "").trim().replace(/^["']|["']$/g, "");
+}
+
+export const DHL_API_BASE = (
+  envTrim("DHL_API_BASE_URL") || "https://express.api.dhl.com/mydhlapi/test"
+).replace(/\/+$/, "");
+
+function dhlEnvironmentLabel(base: string) {
+  return /\/test$/i.test(base) ? "TEST" : "PRODUCTION";
+}
 
 function getAuthHeader() {
-  const key = process.env.DHL_API_KEY;
-  const secret = process.env.DHL_API_SECRET;
+  const key = envTrim("DHL_API_KEY");
+  const secret = envTrim("DHL_API_SECRET");
   if (!key || !secret) {
     throw new Error("DHL API credentials missing in environment (DHL_API_KEY or DHL_API_SECRET)");
   }
@@ -28,12 +38,29 @@ function parseDhlError(body: string, statusText: string): string {
       title?: string;
       message?: string;
       additionalDetails?: string[] | string;
+      reasons?: { msg?: string; message?: string }[];
     };
+    const reasonText = (parsed.reasons || [])
+      .map((r) => r.msg || r.message)
+      .filter(Boolean)
+      .join("; ");
     const extra = Array.isArray(parsed.additionalDetails)
       ? parsed.additionalDetails.join("; ")
       : parsed.additionalDetails;
-    const parts = [parsed.detail, parsed.title, parsed.message, extra].filter(Boolean);
-    if (parts.length) return parts.join(" — ");
+    const parts = [parsed.detail, parsed.title, parsed.message, reasonText, extra].filter(Boolean);
+    if (parts.length) {
+      const summary = parts.join(" — ");
+      if (/unauthorized/i.test(summary)) {
+        const env = dhlEnvironmentLabel(DHL_API_BASE);
+        return (
+          `Unauthorized on DHL ${env} (${DHL_API_BASE}). ` +
+          `Test keys only work with https://express.api.dhl.com/mydhlapi/test. ` +
+          `Live keys only work with https://express.api.dhl.com/mydhlapi. ` +
+          `Re-copy DHL_API_KEY and DHL_API_SECRET from developer.dhl.com (no quotes or spaces) and match DHL_API_BASE_URL to that same environment.`
+        );
+      }
+      return summary;
+    }
   } catch {
     /* not JSON */
   }
@@ -131,7 +158,7 @@ function shipperRateAddress() {
 }
 
 export async function getShippingRates(req: DHLRateRequest) {
-  const account = process.env.DHL_ACCOUNT_NUMBER;
+  const account = envTrim("DHL_ACCOUNT_NUMBER");
   if (!account) throw new Error("DHL Account Number not configured");
 
   const countryCode = normalizeCountry(req.destination.countryCode);
@@ -213,7 +240,7 @@ export interface DHLShipmentRequest {
 }
 
 export async function createShipment(req: DHLShipmentRequest) {
-  const account = process.env.DHL_ACCOUNT_NUMBER;
+  const account = envTrim("DHL_ACCOUNT_NUMBER");
   if (!account) throw new Error("DHL Account Number not configured");
 
   const totalWeight = req.items.reduce((acc, item) => acc + (item.weightKg * item.quantity), 0) || 1.0;
@@ -324,7 +351,7 @@ export async function createShipment(req: DHLShipmentRequest) {
 }
 
 export async function schedulePickup(trackingNumber: string, weight: number = 0.5, dimensions: { length: number; width: number; height: number; } = { length: 30, width: 20, height: 10 }) {
-  const account = process.env.DHL_ACCOUNT_NUMBER;
+  const account = envTrim("DHL_ACCOUNT_NUMBER");
   if (!account) throw new Error("DHL Account Number not configured");
 
   const shipperPostal = postalForDhl(
