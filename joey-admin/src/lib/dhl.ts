@@ -9,6 +9,53 @@ function getAuthHeader() {
   return `Basic ${Buffer.from(`${key}:${secret}`).toString("base64")}`;
 }
 
+function dhlHeaders(jsonBody = true): HeadersInit {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    Authorization: getAuthHeader(),
+    "Message-Reference": crypto.randomUUID(),
+    "Message-Reference-Date": new Date().toUTCString(),
+  };
+  if (jsonBody) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
+function parseDhlError(body: string, statusText: string): string {
+  try {
+    const parsed = JSON.parse(body) as {
+      detail?: string;
+      title?: string;
+      message?: string;
+      additionalDetails?: string[] | string;
+    };
+    const extra = Array.isArray(parsed.additionalDetails)
+      ? parsed.additionalDetails.join("; ")
+      : parsed.additionalDetails;
+    const parts = [parsed.detail, parsed.title, parsed.message, extra].filter(Boolean);
+    if (parts.length) return parts.join(" — ");
+  } catch {
+    /* not JSON */
+  }
+  const trimmed = body.replace(/\s+/g, " ").trim();
+  return trimmed.slice(0, 400) || statusText;
+}
+
+function dhlTimestamp(hour = 12) {
+  const hh = String(hour).padStart(2, "0");
+  return `${getNextBusinessDay()}T${hh}:00:00GMT+00:00`;
+}
+
+function normalizeCountry(code: string) {
+  return code.trim().toUpperCase();
+}
+
+function postalForDhl(countryCode: string, postalCode?: string): string | undefined {
+  const trimmed = (postalCode || "").trim();
+  if (!trimmed) return undefined;
+  if (normalizeCountry(countryCode) === "GH") return undefined;
+  return trimmed.slice(0, 12);
+}
+
 async function fetchWithRetry(url: string, options: RequestInit, retries = 2, timeoutMs = 15000): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
     const controller = new AbortController();
@@ -74,33 +121,39 @@ export async function getShippingRates(req: DHLRateRequest) {
   const account = process.env.DHL_ACCOUNT_NUMBER;
   if (!account) throw new Error("DHL Account Number not configured");
 
-  const plannedShippingDate = getNextBusinessDay();
+  const countryCode = normalizeCountry(req.destination.countryCode);
+  const postalCode = postalForDhl(countryCode, req.destination.postalCode);
+  const shipperPostal = postalForDhl(
+    SHIPPER_DETAILS.postalAddress.countryCode,
+    SHIPPER_DETAILS.postalAddress.postalCode,
+  );
 
   const payload = {
     customerDetails: {
       shipperDetails: {
-        postalCode: SHIPPER_DETAILS.postalAddress.postalCode,
         cityName: SHIPPER_DETAILS.postalAddress.cityName,
         countryCode: SHIPPER_DETAILS.postalAddress.countryCode,
-        addressLine1: SHIPPER_DETAILS.postalAddress.addressLine1
+        addressLine1: SHIPPER_DETAILS.postalAddress.addressLine1,
+        ...(shipperPostal ? { postalCode: shipperPostal } : {}),
       },
       receiverDetails: {
-        postalCode: req.destination.postalCode || "",
         cityName: req.destination.city.substring(0, 45),
-        countryCode: req.destination.countryCode
+        countryCode,
+        addressLine1: req.destination.city.substring(0, 45),
+        ...(postalCode ? { postalCode } : {}),
       }
     },
-    accounts: [{ typeCode: "shipper", number: account }],
-    productCode: "P",
-    plannedShippingDateAndTime: `${plannedShippingDate}T12:00:00 GMT+00:00`,
+    accounts: [{ typeCode: "shipper" as const, number: account }],
+    plannedShippingDateAndTime: dhlTimestamp(12),
     unitOfMeasurement: "metric",
     isCustomsDeclarable: true,
+    nextBusinessDay: true,
     monetaryAmount: [
       { typeCode: "declaredValue", value: 100, currency: "GHS" }
     ],
     packages: [
       {
-        weight: req.weightKg || 1.0,
+        weight: Math.max(0.5, Number(req.weightKg) || 0.5),
         dimensions: req.packageDimensions || { length: 30, width: 20, height: 10 }
       }
     ]
@@ -108,24 +161,14 @@ export async function getShippingRates(req: DHLRateRequest) {
 
   const res = await fetchWithRetry(`${DHL_API_BASE}/rates`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: getAuthHeader(),
-      Connection: "close",
-    },
+    headers: dhlHeaders(),
     body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
     const errorBody = await res.text();
     console.error("DHL Rates Error:", errorBody);
-    let errorDetail = res.statusText;
-    try {
-      const parsed = JSON.parse(errorBody);
-      if (parsed.detail) errorDetail = parsed.detail;
-      else if (parsed.message) errorDetail = parsed.message;
-    } catch (e) { }
-    throw new Error(`DHL Error: ${errorDetail}`);
+    throw new Error(`DHL Error: ${parseDhlError(errorBody, res.statusText)}`);
   }
 
   const data = await res.json();
@@ -168,13 +211,17 @@ export async function createShipment(req: DHLShipmentRequest) {
   const account = process.env.DHL_ACCOUNT_NUMBER;
   if (!account) throw new Error("DHL Account Number not configured");
 
-  const plannedShippingDate = getNextBusinessDay();
-
   const totalWeight = req.items.reduce((acc, item) => acc + (item.weightKg * item.quantity), 0) || 1.0;
   const declaredValue = req.items.reduce((acc, item) => acc + (item.price * item.quantity), 0) || 100;
+  const countryCode = normalizeCountry(req.destination.countryCode);
+  const postalCode = postalForDhl(countryCode, req.destination.postalCode);
+  const shipperPostal = postalForDhl(
+    SHIPPER_DETAILS.postalAddress.countryCode,
+    SHIPPER_DETAILS.postalAddress.postalCode,
+  );
 
   const payload = {
-    plannedShippingDateAndTime: `${plannedShippingDate}T12:00:00 GMT+00:00`,
+    plannedShippingDateAndTime: dhlTimestamp(12),
     pickup: {
       isRequested: false // The user wants to manually schedule this later
     },
@@ -190,13 +237,21 @@ export async function createShipment(req: DHLShipmentRequest) {
       ]
     },
     customerDetails: {
-      shipperDetails: SHIPPER_DETAILS,
+      shipperDetails: {
+        postalAddress: {
+          cityName: SHIPPER_DETAILS.postalAddress.cityName,
+          countryCode: SHIPPER_DETAILS.postalAddress.countryCode,
+          addressLine1: SHIPPER_DETAILS.postalAddress.addressLine1,
+          ...(shipperPostal ? { postalCode: shipperPostal } : {}),
+        },
+        contactInformation: SHIPPER_DETAILS.contactInformation,
+      },
       receiverDetails: {
         postalAddress: {
-          postalCode: req.destination.postalCode || "",
           cityName: req.destination.city.substring(0, 45),
-          countryCode: req.destination.countryCode,
-          addressLine1: req.destination.addressLine1.substring(0, 45)
+          countryCode,
+          addressLine1: req.destination.addressLine1.substring(0, 45),
+          ...(postalCode ? { postalCode } : {}),
         },
         contactInformation: {
           email: req.customerEmail || "customer@example.com",
@@ -245,18 +300,14 @@ export async function createShipment(req: DHLShipmentRequest) {
 
   const res = await fetchWithRetry(`${DHL_API_BASE}/shipments`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: getAuthHeader(),
-      Connection: "close",
-    },
+    headers: dhlHeaders(),
     body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
     const errorBody = await res.text();
     console.error("DHL Shipment Error:", errorBody);
-    throw new Error(`Failed to create DHL shipment: ${res.statusText} - ${errorBody}`);
+    throw new Error(`Failed to create DHL shipment: ${parseDhlError(errorBody, res.statusText)}`);
   }
 
   const data = await res.json();
@@ -272,16 +323,27 @@ export async function schedulePickup(trackingNumber: string, weight: number = 0.
   const account = process.env.DHL_ACCOUNT_NUMBER;
   if (!account) throw new Error("DHL Account Number not configured");
 
-  const pickupDate = getNextBusinessDay();
+  const shipperPostal = postalForDhl(
+    SHIPPER_DETAILS.postalAddress.countryCode,
+    SHIPPER_DETAILS.postalAddress.postalCode,
+  );
 
   const payload = {
-    plannedPickupDateAndTime: `${pickupDate}T10:00:00 GMT+00:00`,
+    plannedPickupDateAndTime: dhlTimestamp(10),
     closeTime: "16:00",
     location: "Reception",
     locationType: "business",
-    accounts: [{ typeCode: "shipper", number: account }],
+    accounts: [{ typeCode: "shipper" as const, number: account }],
     customerDetails: {
-      shipperDetails: SHIPPER_DETAILS
+      shipperDetails: {
+        postalAddress: {
+          cityName: SHIPPER_DETAILS.postalAddress.cityName,
+          countryCode: SHIPPER_DETAILS.postalAddress.countryCode,
+          addressLine1: SHIPPER_DETAILS.postalAddress.addressLine1,
+          ...(shipperPostal ? { postalCode: shipperPostal } : {}),
+        },
+        contactInformation: SHIPPER_DETAILS.contactInformation,
+      }
     },
     shipmentDetails: [{
       shipmentTrackingNumber: trackingNumber,
@@ -295,18 +357,14 @@ export async function schedulePickup(trackingNumber: string, weight: number = 0.
 
   const res = await fetchWithRetry(`${DHL_API_BASE}/pickups`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: getAuthHeader(),
-      Connection: "close",
-    },
+    headers: dhlHeaders(),
     body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
     const errorBody = await res.text();
     console.error("DHL Pickup Error:", errorBody);
-    throw new Error(`Failed to schedule pickup: ${res.statusText} - ${errorBody}`);
+    throw new Error(`Failed to schedule pickup: ${parseDhlError(errorBody, res.statusText)}`);
   }
 
   const data = await res.json();
@@ -318,11 +376,7 @@ export async function schedulePickup(trackingNumber: string, weight: number = 0.
 export async function trackShipment(trackingNumber: string) {
   const res = await fetchWithRetry(`${DHL_API_BASE}/shipments/${trackingNumber}/tracking`, {
     method: "GET",
-    headers: {
-      "Accept": "application/json",
-      Authorization: getAuthHeader(),
-      Connection: "close",
-    }
+    headers: dhlHeaders(false),
   });
 
   if (!res.ok) {
@@ -370,20 +424,18 @@ export async function validateAddress({
   postalCode: string;
   countryCode: string;
 }) {
+  const normalizedCountry = normalizeCountry(countryCode);
   const params = new URLSearchParams({
     type: "delivery",
-    countryCode,
+    countryCode: normalizedCountry,
     cityName: city,
-    postalCode
   });
+  const dhlPostal = postalForDhl(normalizedCountry, postalCode);
+  if (dhlPostal) params.append("postalCode", dhlPostal);
 
   const res = await fetchWithRetry(`${DHL_API_BASE}/address-validate?${params.toString()}`, {
     method: "GET",
-    headers: {
-      "Accept": "application/json",
-      Authorization: getAuthHeader(),
-      Connection: "close",
-    }
+    headers: dhlHeaders(false),
   });
 
   if (!res.ok) {

@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       destination: {
         city: destination.city,
         postalCode: destination.postalCode,
-        countryCode: destination.countryCode
+        countryCode: String(destination.countryCode || "").toUpperCase(),
+        addressLine1: destination.addressLine1 || destination.city,
       },
       weightKg: totalWeight
     });

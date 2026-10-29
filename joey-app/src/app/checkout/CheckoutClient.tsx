@@ -192,9 +192,10 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           destination: {
-            countryCode: formData.country,
+            countryCode: formData.country.trim().toUpperCase(),
             city: formData.city,
             postalCode: formData.postalCode,
+            addressLine1: formData.address,
           },
           items: items.map(i => ({ weightKg: i.weightKg || 0.5, quantity: i.quantity }))
         })
