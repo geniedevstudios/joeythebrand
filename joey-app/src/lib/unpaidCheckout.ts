@@ -152,28 +152,31 @@ export async function cancelScheduledNudgeIds(ids: NudgeIds | null | undefined):
 
 export async function scheduleUnpaidOrderReminder(params: {
   supabaseAdmin: { from: (table: string) => any };
-  order: OrderRow;
+  order: Record<string, any>;
 }): Promise<void> {
+  const order = params.order;
   if (
-    params.order.unpaid_nudge_sent_at ||
-    String(params.order.payment_status || "").toLowerCase() === "paid"
+    !order?.id ||
+    !order.customer_email ||
+    order.unpaid_nudge_sent_at ||
+    String(order.payment_status || "").toLowerCase() === "paid"
   ) {
     return;
   }
   const resend = getResend();
   if (!resend) return;
 
-  const items = parseItems(params.order.items);
+  const items = parseItems(order.items);
   const ids = await sendPair({
     resend,
-    customerName: params.order.customer_name,
-    customerEmail: params.order.customer_email,
-    customerPhone: params.order.customer_phone,
-    orderNumber: params.order.order_number || undefined,
+    customerName: String(order.customer_name || "there"),
+    customerEmail: String(order.customer_email),
+    customerPhone: String(order.customer_phone || ""),
+    orderNumber: order.order_number || undefined,
     items,
-    total: Number(params.order.total || 0),
+    total: Number(order.total || 0),
     scheduledAt: scheduledAtIso(getIdleMinutes()),
-    idempotencyPrefix: `joey-unpaid-order-${params.order.id}`,
+    idempotencyPrefix: `joey-unpaid-order-${order.id}`,
   });
 
   await params.supabaseAdmin
@@ -182,7 +185,7 @@ export async function scheduleUnpaidOrderReminder(params: {
       unpaid_nudge_sent_at: new Date().toISOString(),
       unpaid_nudge_resend_ids: ids,
     })
-    .eq("id", params.order.id)
+    .eq("id", order.id)
     .is("unpaid_nudge_sent_at", null);
 }
 
