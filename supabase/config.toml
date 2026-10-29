@@ -1,5 +1,18 @@
 # Supabase CLI — https://supabase.com/docs/guides/cli/config
 project_id = "awtyjnehjnstnumzbzij"
 
+# Hosted Auth Site URL lives in the dashboard (Authentication → URL Configuration).
+# Keep it on https://www.joeythebrand.com — {{ .SiteURL }} in signup emails uses that value.
+# Localhost belongs in Redirect URLs only, not Site URL.
+
+[auth]
+site_url = "https://www.joeythebrand.com"
+additional_redirect_urls = [
+  "https://www.joeythebrand.com/**",
+  "https://joeythebrand.com/**",
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
+]
+
 [auth.email]
 otp_length = 6

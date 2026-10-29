@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getEmailBaseUrl } from "@/lib/emailAssets";
 
 export type User = {
   id: string;
@@ -96,17 +97,14 @@ export const authStore = {
     email: string,
     password: string,
   ): Promise<{ needsEmailVerification: boolean }> => {
-    const emailRedirectTo =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/account`
-        : undefined;
+    const emailRedirectTo = `${getEmailBaseUrl()}/account`;
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name },
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        emailRedirectTo,
       },
     });
 
@@ -152,6 +150,7 @@ export const authStore = {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
+      options: { emailRedirectTo: `${getEmailBaseUrl()}/account` },
     });
     if (error) throw new Error(error.message);
   },
