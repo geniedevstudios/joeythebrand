@@ -60,11 +60,16 @@ function normalizeCountry(code: string) {
   return code.trim().toUpperCase();
 }
 
+/** GhanaPost GPS (e.g. GD-141-1647) is not a DHL postal code. MyDHL still requires the key. */
 function postalForDhl(countryCode: string, postalCode?: string): string | undefined {
+  const country = normalizeCountry(countryCode);
   const trimmed = (postalCode || "").trim();
-  if (!trimmed) return undefined;
-  if (normalizeCountry(countryCode) === "GH") return undefined;
-  return trimmed.slice(0, 12);
+  if (country === "GH") {
+    const isGps = /^[A-Z]{2}-/i.test(trimmed);
+    if (trimmed && !isGps) return trimmed.slice(0, 12);
+    return "00000";
+  }
+  return trimmed ? trimmed.slice(0, 12) : undefined;
 }
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = 2, timeoutMs = 15000): Promise<Response> {
