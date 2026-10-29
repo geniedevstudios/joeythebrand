@@ -50,7 +50,7 @@ function parseDhlError(body: string, statusText: string): string {
     const parts = [parsed.detail, parsed.title, parsed.message, reasonText, extra].filter(Boolean);
     if (parts.length) {
       const summary = parts.join(" — ");
-      if (/unauthorized/i.test(summary)) {
+      if (/unauthorized|invalid credentials/i.test(summary)) {
         const env = dhlEnvironmentLabel(DHL_API_BASE);
         return (
           `Unauthorized on DHL ${env} (${DHL_API_BASE}). ` +
