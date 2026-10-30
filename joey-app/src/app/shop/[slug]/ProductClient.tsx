@@ -1106,9 +1106,21 @@ export default function ProductClient({ slug }: { slug: string }) {
                   </div>
                 </div>
 
-                {typeof quickViewItem.quantity === "number" && quickViewItem.quantity > 0 && quickViewItem.quantity < 6 && (
-                  <span className={styles.lowStockWarning}>Only {quickViewItem.quantity} left</span>
-                )}
+                {(() => {
+                  const qvStock = getVariantStockStatus(
+                    quickViewItem,
+                    quickViewActiveColorVariant,
+                    quickViewActiveCombo,
+                    quickViewMode || "solo",
+                  );
+                  return !qvStock.isBespokeProduct &&
+                    qvStock.availablePhysicalStock > 0 &&
+                    qvStock.availablePhysicalStock < 6 ? (
+                    <span className={styles.lowStockWarning}>
+                      Only {qvStock.availablePhysicalStock} left
+                    </span>
+                  ) : null;
+                })()}
               </div>
 
               <div className={styles.modalActions}>

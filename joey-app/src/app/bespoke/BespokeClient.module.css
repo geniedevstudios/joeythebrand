@@ -417,6 +417,15 @@
   padding-bottom: var(--space-3xl);
 }
 
+.mtoShowcaseStack {
+  display: flex;
+  flex-direction: column;
+}
+
+.mtoShowcaseStack .mtoShowcase + .mtoShowcase {
+  border-top: 1px solid rgba(39, 43, 54, 0.08);
+}
+
 /* Editorial Circle Showcase (matches reference image 2) */
 .mtoShowcase {
   position: relative;
@@ -1001,6 +1010,7 @@
 }
 
 @media (max-width: 640px) {
+  .mtoShowcaseStack,
   .mtoShowcase {
     display: none;
   }

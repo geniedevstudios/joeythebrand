@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useSyncExternalStore, useCallback, useMemo } from "react";
+import { useState, useEffect, useSyncExternalStore, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Clock } from "lucide-react";
@@ -7,7 +7,7 @@ import styles from "./BespokeClient.module.css";
 import shopStyles from "../shop/ShopClient.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@/hooks/usePageHero";
-import type { Product, SiteContent } from "@/lib/types";
+import type { Product, ProductVariant, SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import ProductMedia from "@/components/shop/ProductMedia";
@@ -55,6 +55,316 @@ const timeOptions = (() => {
   return out;
 })();
 
+function uniqueMediaUrls(urls: Array<string | undefined | null>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of urls) {
+    const u = String(raw || "").trim();
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    out.push(u);
+  }
+  return out;
+}
+
+function mtoGalleryForColor(product: Product, colorId: string): string[] {
+  const colors = (product.variants || []).filter((v) => v.type === "color");
+  const color = colors.find((v) => v.id === colorId);
+  if (color && color.id !== "main-color") {
+    const variantShots = uniqueMediaUrls([color.thumbnailUrl, ...(color.images || [])]);
+    if (variantShots.length > 0) return variantShots;
+  }
+  return uniqueMediaUrls([product.image, product.hoverImage, ...(product.images || [])]);
+}
+
+function MtoShowcaseRow({
+  product: p,
+  wishlistItems,
+  imageRotatePaused,
+  onQuickView,
+}: {
+  product: Product;
+  wishlistItems: WishlistItem[];
+  imageRotatePaused: boolean;
+  onQuickView: (product: Product, colorId: string) => void;
+}) {
+  const [colorId, setColorId] = useState("main-color");
+  const [imgIdx, setImgIdx] = useState(0);
+  const [prevSrc, setPrevSrc] = useState<string | null>(null);
+
+  const colorVariants = (p.variants || []).filter((v: ProductVariant) => v.type === "color");
+  const activeShowcaseColor =
+    colorVariants.find((v) => v.id === colorId) || colorVariants[0] || null;
+  const gallery = useMemo(
+    () => mtoGalleryForColor(p, activeShowcaseColor?.id || "main-color"),
+    [p.id, p.image, p.hoverImage, p.images, activeShowcaseColor?.id],
+  );
+  const galleryRef = useRef(gallery);
+  galleryRef.current = gallery;
+
+  useEffect(() => {
+    setImgIdx(0);
+    setPrevSrc(null);
+  }, [p.id, activeShowcaseColor?.id]);
+
+  const safeImgIdx = gallery.length > 0 ? Math.min(imgIdx, gallery.length - 1) : 0;
+  const displayImage = gallery[safeImgIdx] || p.image;
+
+  useEffect(() => {
+    if (prevSrc === null) return;
+    const t = window.setTimeout(() => setPrevSrc(null), 950);
+    return () => window.clearTimeout(t);
+  }, [prevSrc, displayImage]);
+
+  useEffect(() => {
+    if (gallery.length <= 1 || imageRotatePaused) return;
+    const timer = window.setInterval(() => {
+      const shots = galleryRef.current;
+      if (shots.length <= 1) return;
+      setImgIdx((current) => {
+        const idx = ((current % shots.length) + shots.length) % shots.length;
+        setPrevSrc(shots[idx] || null);
+        return (idx + 1) % shots.length;
+      });
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [p.id, gallery.length, imageRotatePaused]);
+
+  const leadDays = p.madeToOrderLeadDays ?? p.bespokeLeadDays ?? 14;
+  const inWishlist = wishlistItems.some((w) => w.id === p.id);
+  const displayTitle =
+    (activeShowcaseColor &&
+      activeShowcaseColor.id !== "main-color" &&
+      activeShowcaseColor.productNameOverride?.trim()) ||
+    p.name;
+  const availableSizes = (p.sizes || [])
+    .filter((s) => s.available !== false)
+    .map((s) => s.name);
+  const defaultSize = availableSizes[0] || "Standard";
+  const sizeSummary =
+    availableSizes.length > 2
+      ? `${availableSizes[0]} – ${availableSizes[availableSizes.length - 1]}`
+      : availableSizes.length > 0
+        ? availableSizes.join(", ")
+        : "Standard & Custom";
+  const productDescription = (p.description || "").trim();
+  const productHref = `/shop/${p.slug || p.id}`;
+
+  const handleQuickAddShowcaseToCart = () => {
+    const stockStatus = getVariantStockStatus(p, activeShowcaseColor, null, "solo");
+    const defaultFit =
+      p.wearTag === "womens" ? "Standard" : p.wearTag === "unisex" ? "Men" : undefined;
+    cartStore.addItem({
+      productId: p.id,
+      name: displayTitle,
+      color: activeShowcaseColor?.name || undefined,
+      colorHex: activeShowcaseColor?.colorHex,
+      size: defaultSize,
+      fit: defaultFit,
+      wearTag: p.wearTag,
+      price: stockStatus.unitPrice,
+      image: displayImage,
+      image2: gallery[1] || p.images?.[0] || displayImage,
+      quantity: 1,
+      maxStock: stockStatus.mtoMaxQtyPerOrder,
+      availablePhysicalStock: 0,
+      mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
+      fulfillmentChoice: "made_to_order",
+      isMadeToOrder: true,
+      leadDays: stockStatus.leadDays,
+      isBespoke: true,
+      bespokeLeadDays: stockStatus.leadDays,
+      variantId: stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
+    });
+    toast.success(`${displayTitle} (${defaultSize}) added to your cart!`);
+  };
+
+  return (
+    <div className={styles.mtoShowcase}>
+      <div className={styles.mtoShowcaseInner}>
+        <div className={styles.mtoShowcaseLeft}>
+          <div />
+          <div className={styles.mtoTitleStage}>
+            <div className={`${styles.mtoTitleBlock} ${styles.mtoTitleBlockEnter}`}>
+              <span className={styles.mtoProductTag}>{p.categoryName || "Made to Order"}</span>
+              <Link href={productHref} className={styles.mtoShowcaseNameLink}>
+                <h3 className={styles.mtoShowcaseName}>{displayTitle}</h3>
+              </Link>
+              <p className={styles.mtoShowcasePrice}>
+                GHC {p.price.toLocaleString()}
+                {p.originalPrice ? (
+                  <span className={styles.mtoShowcaseOriginalPrice}>
+                    GHC {p.originalPrice.toLocaleString()}
+                  </span>
+                ) : null}
+              </p>
+            </div>
+          </div>
+          <div />
+        </div>
+
+        <div className={styles.mtoShowcaseCenter}>
+          <div className={styles.mtoCircleBackdrop} aria-hidden="true" />
+          <div className={styles.mtoMediaStage}>
+            {prevSrc && prevSrc !== displayImage ? (
+              <div
+                key={`prev-media-${p.id}-${prevSrc}`}
+                className={`${styles.mtoMediaLink} ${styles.mtoMediaExit}`}
+                aria-hidden="true"
+              >
+                <ProductMedia src={prevSrc} alt="" className={styles.mtoShowcaseMedia} />
+              </div>
+            ) : null}
+
+            <Link
+              key={`curr-media-${p.id}-${displayImage}`}
+              href={productHref}
+              className={`${styles.mtoMediaLink} ${styles.mtoMediaEnter}`}
+              aria-label={`View ${displayTitle}`}
+            >
+              <ProductMedia
+                src={displayImage}
+                alt={displayTitle}
+                className={styles.mtoShowcaseMedia}
+              />
+            </Link>
+          </div>
+        </div>
+
+        <div className={styles.mtoShowcaseRight}>
+          <div />
+          <div className={styles.mtoRightTop}>
+            <div className={styles.mtoSpecsList}>
+              <div className={styles.mtoSpecItem}>
+                <span className={styles.mtoSpecLabel}>Craftsmanship</span>
+                <span className={styles.mtoSpecValue}>{productDescription || "100% Handcrafted"}</span>
+              </div>
+              <div className={styles.mtoSpecItem}>
+                <span className={styles.mtoSpecLabel}>Sizing</span>
+                <span className={styles.mtoSpecValue}>{sizeSummary}</span>
+              </div>
+              <div className={styles.mtoSpecItem}>
+                <span className={styles.mtoSpecLabel}>Production Lead Time</span>
+                <span className={styles.mtoSpecValue}>{leadDays} Days</span>
+              </div>
+            </div>
+
+            <div className={styles.mtoSideActions}>
+              <button
+                type="button"
+                className={`${styles.mtoCircleIconBtn} ${
+                  inWishlist ? styles.mtoCircleIconBtnActive : ""
+                }`}
+                aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                onClick={() => {
+                  const wasIn = wishlistStore.has(p.id);
+                  wishlistStore.toggleItem({
+                    id: p.id,
+                    name: p.name,
+                    price: `GHC ${p.price.toLocaleString()}`,
+                    image: p.image,
+                    hoverImage: p.hoverImage,
+                    category: p.categoryName || "",
+                  });
+                  toast.success(
+                    wasIn ? `${p.name} removed from wishlist` : `${p.name} added to wishlist`,
+                  );
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill={inWishlist ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                className={styles.mtoCircleIconBtn}
+                aria-label={`Quick view ${p.name}`}
+                title="Quick View"
+                onClick={() => onQuickView(p, activeShowcaseColor?.id || "main-color")}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="6" cy="15" r="4" />
+                  <circle cx="18" cy="15" r="4" />
+                  <path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2" />
+                  <path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2" />
+                  <path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2" />
+                </svg>
+              </button>
+
+              {colorVariants.length > 0 &&
+                colorVariants.map((v) => {
+                  const isSelectedColor = (activeShowcaseColor?.id || "main-color") === v.id;
+                  const swatchImg =
+                    v.thumbnailUrl || v.images?.[0] || (v.id === "main-color" ? p.image : null);
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      className={`${styles.mtoColorVariantBtn} ${
+                        isSelectedColor ? styles.mtoColorVariantBtnActive : ""
+                      }`}
+                      title={v.name || "Select color"}
+                      aria-label={`Select color ${v.name || v.id}`}
+                      style={{
+                        backgroundColor: v.colorHex || "#ccc",
+                        backgroundImage: swatchImg ? `url(${swatchImg})` : "none",
+                      }}
+                      onClick={() => setColorId(v.id)}
+                    />
+                  );
+                })}
+            </div>
+          </div>
+
+          <div className={styles.mtoPlusWrap}>
+            <button
+              type="button"
+              className={styles.mtoPlusBtn}
+              aria-label={`Add ${displayTitle} to cart`}
+              title="Add to Cart"
+              onClick={handleQuickAddShowcaseToCart}
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BespokeClient({
   initialSiteContent,
   initialMtoProducts = EMPTY_PRODUCTS,
@@ -96,39 +406,7 @@ export default function BespokeClient({
     if (fromStore.length > 0) return fromStore;
     return initialMtoProducts.filter(isCuratedBespokeMtoProduct);
   }, [storeProducts, initialMtoProducts]);
-  const [activeMtoIdx, setActiveMtoIdx] = useState(0);
-  const [prevMtoIdx, setPrevMtoIdx] = useState<number | null>(null);
-  const [mtoHoverPaused, setMtoHoverPaused] = useState(false);
-  const [selectedShowcaseColorId, setSelectedShowcaseColorId] = useState<string>("main-color");
   const [mobileColorById, setMobileColorById] = useState<Record<string, string>>({});
-
-  const switchMtoSlide = useCallback(
-    (nextIdxOrUpdater: number | ((current: number) => number)) => {
-      setActiveMtoIdx((current) => {
-        const len = curatedMtoProducts.length;
-        if (len <= 1) return 0;
-        const resolved =
-          typeof nextIdxOrUpdater === "function"
-            ? nextIdxOrUpdater(current)
-            : nextIdxOrUpdater;
-        const normalized = ((resolved % len) + len) % len;
-        if (normalized !== current) {
-          setPrevMtoIdx(current);
-          setSelectedShowcaseColorId("main-color");
-        }
-        return normalized;
-      });
-    },
-    [curatedMtoProducts.length],
-  );
-
-  useEffect(() => {
-    if (prevMtoIdx === null) return;
-    const t = window.setTimeout(() => {
-      setPrevMtoIdx(null);
-    }, 950);
-    return () => window.clearTimeout(t);
-  }, [prevMtoIdx, activeMtoIdx]);
 
   // Quick View Modal state for MTO showcase
   const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
@@ -143,19 +421,10 @@ export default function BespokeClient({
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   useEffect(() => {
-    if (curatedMtoProducts.length <= 1 || mtoHoverPaused || Boolean(quickViewPiece)) return;
-    const timer = window.setInterval(() => {
-      switchMtoSlide((prev) => prev + 1);
-    }, 7000);
-    return () => window.clearInterval(timer);
-  }, [curatedMtoProducts.length, mtoHoverPaused, activeMtoIdx, quickViewPiece, switchMtoSlide]);
-
-  useEffect(() => {
     if (quickViewPiece) {
       document.body.style.overflow = "hidden";
       setQty(1);
       setSelectedSize("");
-      setQuickViewColorVariantId(selectedShowcaseColorId || "main-color");
       setQuickViewMode("solo");
       setQuickViewComboId("");
       if (quickViewPiece.wearTag === "womens") {
@@ -172,7 +441,7 @@ export default function BespokeClient({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [quickViewPiece, selectedShowcaseColorId]);
+  }, [quickViewPiece]);
   const [, setBookingIdForPayment] = useState<string | null>(null);
   const [payConfirmOpen, setPayConfirmOpen] = useState(false);
   const [slotStep, setSlotStep] = useState<"date" | "time">("date");
@@ -683,342 +952,19 @@ export default function BespokeClient({
             </div>
           </div>
 
-          <div
-            className={styles.mtoShowcase}
-            onMouseEnter={() => setMtoHoverPaused(true)}
-            onMouseLeave={() => setMtoHoverPaused(false)}
-          >
-            {(() => {
-              const safeIdx =
-                curatedMtoProducts.length > 0
-                  ? Math.min(activeMtoIdx, curatedMtoProducts.length - 1)
-                  : 0;
-              const p = curatedMtoProducts[safeIdx];
-              if (!p) return null;
-
-              const leadDays = p.madeToOrderLeadDays ?? p.bespokeLeadDays ?? 14;
-              const inWishlist = wishlistItems.some((w) => w.id === p.id);
-              const colorVariants = (p.variants || []).filter((v) => v.type === "color");
-              const activeShowcaseColor =
-                colorVariants.find((v) => v.id === selectedShowcaseColorId) ||
-                colorVariants[0] ||
-                null;
-              const displayImage =
-                (activeShowcaseColor &&
-                  activeShowcaseColor.id !== "main-color" &&
-                  (activeShowcaseColor.images?.[0] || activeShowcaseColor.thumbnailUrl)) ||
-                p.image;
-              const displayTitle =
-                (activeShowcaseColor &&
-                  activeShowcaseColor.id !== "main-color" &&
-                  activeShowcaseColor.productNameOverride?.trim()) ||
-                p.name;
-              const availableSizes = (p.sizes || [])
-                .filter((s) => s.available !== false)
-                .map((s) => s.name);
-              const defaultSize = availableSizes[0] || "Standard";
-              const sizeSummary =
-                availableSizes.length > 2
-                  ? `${availableSizes[0]} – ${availableSizes[availableSizes.length - 1]}`
-                  : availableSizes.length > 0
-                    ? availableSizes.join(", ")
-                    : "Standard & Custom";
-
-              const productDescription = (p.description || "").trim();
-              const detailLabel = "Craftsmanship";
-              const detailValue = productDescription || "100% Handcrafted";
-
-              const productHref = `/shop/${p.slug || p.id}`;
-
-              const handleQuickAddShowcaseToCart = () => {
-                const stockStatus = getVariantStockStatus(p, activeShowcaseColor, null, "solo");
-                const defaultFit =
-                  p.wearTag === "womens"
-                    ? "Standard"
-                    : p.wearTag === "unisex"
-                      ? "Men"
-                      : undefined;
-                cartStore.addItem({
-                  productId: p.id,
-                  name: displayTitle,
-                  color: activeShowcaseColor?.name || undefined,
-                  colorHex: activeShowcaseColor?.colorHex,
-                  size: defaultSize,
-                  fit: defaultFit,
-                  wearTag: p.wearTag,
-                  price: stockStatus.unitPrice,
-                  image: displayImage,
-                  image2: activeShowcaseColor?.images?.[1] || p.images?.[0] || displayImage,
-                  quantity: 1,
-                  maxStock: stockStatus.mtoMaxQtyPerOrder,
-                  availablePhysicalStock: 0,
-                  mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
-                  fulfillmentChoice: "made_to_order",
-                  isMadeToOrder: true,
-                  leadDays: stockStatus.leadDays,
-                  isBespoke: true,
-                  bespokeLeadDays: stockStatus.leadDays,
-                  variantId:
-                    stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
-                });
-                toast.success(`${displayTitle} (${defaultSize}) added to your cart!`);
-              };
-
-              const prevProduct =
-                prevMtoIdx !== null && prevMtoIdx !== safeIdx
-                  ? curatedMtoProducts[prevMtoIdx] || null
-                  : null;
-
-              return (
-                <div className={styles.mtoShowcaseInner}>
-                  {/* Left Column: Title, Price, Bottom Slide Dots */}
-                  <div className={styles.mtoShowcaseLeft}>
-                    <div />
-                    <div className={styles.mtoTitleStage}>
-                      {prevProduct ? (
-                        <div
-                          key={`prev-title-${prevProduct.id}`}
-                          className={`${styles.mtoTitleBlock} ${styles.mtoTitleBlockExit}`}
-                          aria-hidden="true"
-                        >
-                          <span className={styles.mtoProductTag}>
-                            {prevProduct.categoryName || "Made to Order"}
-                          </span>
-                          <div className={styles.mtoShowcaseNameLink}>
-                            <h3 className={styles.mtoShowcaseName}>{prevProduct.name}</h3>
-                          </div>
-                          <p className={styles.mtoShowcasePrice}>
-                            GHC {prevProduct.price.toLocaleString()}
-                            {prevProduct.originalPrice ? (
-                              <span className={styles.mtoShowcaseOriginalPrice}>
-                                GHC {prevProduct.originalPrice.toLocaleString()}
-                              </span>
-                            ) : null}
-                          </p>
-                        </div>
-                      ) : null}
-
-                      <div
-                        key={`curr-title-${p.id}-${activeShowcaseColor?.id || "main"}`}
-                        className={`${styles.mtoTitleBlock} ${styles.mtoTitleBlockEnter}`}
-                      >
-                        <span className={styles.mtoProductTag}>
-                          {p.categoryName || "Made to Order"}
-                        </span>
-                        <Link href={productHref} className={styles.mtoShowcaseNameLink}>
-                          <h3 className={styles.mtoShowcaseName}>{displayTitle}</h3>
-                        </Link>
-                        <p className={styles.mtoShowcasePrice}>
-                          GHC {p.price.toLocaleString()}
-                          {p.originalPrice ? (
-                            <span className={styles.mtoShowcaseOriginalPrice}>
-                              GHC {p.originalPrice.toLocaleString()}
-                            </span>
-                          ) : null}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className={styles.mtoBarsRow} role="tablist" aria-label="Made to Order pieces">
-                      {curatedMtoProducts.map((item, idx) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          role="tab"
-                          aria-selected={idx === safeIdx}
-                          aria-label={`View ${item.name}`}
-                          className={`${styles.mtoBarBtn} ${
-                            idx === safeIdx ? styles.mtoBarBtnActive : ""
-                          }`}
-                          onClick={() => switchMtoSlide(idx)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Center Column: White Circle + Dual-Buffered Sliding Product Image */}
-                  <div className={styles.mtoShowcaseCenter}>
-                    <div
-                      key={`circle-${p.id}`}
-                      className={styles.mtoCircleBackdrop}
-                      aria-hidden="true"
-                    />
-                    <div className={styles.mtoMediaStage}>
-                      {prevProduct ? (
-                        <div
-                          key={`prev-media-${prevProduct.id}`}
-                          className={`${styles.mtoMediaLink} ${styles.mtoMediaExit}`}
-                          aria-hidden="true"
-                        >
-                          <ProductMedia
-                            src={prevProduct.image}
-                            alt=""
-                            className={styles.mtoShowcaseMedia}
-                          />
-                        </div>
-                      ) : null}
-
-                      <Link
-                        key={`curr-media-${p.id}-${activeShowcaseColor?.id || "main"}`}
-                        href={productHref}
-                        className={`${styles.mtoMediaLink} ${styles.mtoMediaEnter}`}
-                        aria-label={`View ${displayTitle}`}
-                      >
-                        <ProductMedia
-                          src={displayImage}
-                          alt={displayTitle}
-                          className={styles.mtoShowcaseMedia}
-                        />
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Specs, Vertical Action Icons (Heart, Quick View, Variant Colors), Bottom-Right + Add to Cart */}
-                  <div className={styles.mtoShowcaseRight}>
-                    <div />
-                    <div className={styles.mtoRightTop}>
-                      <div
-                        key={`specs-${p.id}`}
-                        className={styles.mtoSpecsList}
-                      >
-                        <div className={styles.mtoSpecItem}>
-                          <span className={styles.mtoSpecLabel}>{detailLabel}</span>
-                          <span className={styles.mtoSpecValue}>{detailValue}</span>
-                        </div>
-
-                        <div className={styles.mtoSpecItem}>
-                          <span className={styles.mtoSpecLabel}>Sizing</span>
-                          <span className={styles.mtoSpecValue}>{sizeSummary}</span>
-                        </div>
-
-                        <div className={styles.mtoSpecItem}>
-                          <span className={styles.mtoSpecLabel}>Production Lead Time</span>
-                          <span className={styles.mtoSpecValue}>{leadDays} Days</span>
-                        </div>
-                      </div>
-
-                      <div className={styles.mtoSideActions}>
-                        {/* 1. Heart (Wishlist) Button */}
-                        <button
-                          type="button"
-                          className={`${styles.mtoCircleIconBtn} ${
-                            inWishlist ? styles.mtoCircleIconBtnActive : ""
-                          }`}
-                          aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                          title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                          onClick={() => {
-                            const wasIn = wishlistStore.has(p.id);
-                            wishlistStore.toggleItem({
-                              id: p.id,
-                              name: p.name,
-                              price: `GHC ${p.price.toLocaleString()}`,
-                              image: p.image,
-                              hoverImage: p.hoverImage,
-                              category: p.categoryName || "",
-                            });
-                            toast.success(
-                              wasIn
-                                ? `${p.name} removed from wishlist`
-                                : `${p.name} added to wishlist`,
-                            );
-                          }}
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill={inWishlist ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            strokeWidth="1.7"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                        </button>
-
-                        {/* 2. View (Quick View) Button */}
-                        <button
-                          type="button"
-                          className={styles.mtoCircleIconBtn}
-                          aria-label={`Quick view ${p.name}`}
-                          title="Quick View"
-                          onClick={() => setQuickViewPiece(p)}
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.7"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <circle cx="6" cy="15" r="4" />
-                            <circle cx="18" cy="15" r="4" />
-                            <path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2" />
-                            <path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2" />
-                            <path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2" />
-                          </svg>
-                        </button>
-
-                        {/* 3. Variant Colors (if available) */}
-                        {colorVariants.length > 0 &&
-                          colorVariants.map((v) => {
-                            const isSelectedColor =
-                              (activeShowcaseColor?.id || "main-color") === v.id;
-                            const swatchImg =
-                              v.thumbnailUrl ||
-                              v.images?.[0] ||
-                              (v.id === "main-color" ? p.image : null);
-                            return (
-                              <button
-                                key={v.id}
-                                type="button"
-                                className={`${styles.mtoColorVariantBtn} ${
-                                  isSelectedColor ? styles.mtoColorVariantBtnActive : ""
-                                }`}
-                                title={v.name || "Select color"}
-                                aria-label={`Select color ${v.name || v.id}`}
-                                style={{
-                                  backgroundColor: v.colorHex || "#ccc",
-                                  backgroundImage: swatchImg ? `url(${swatchImg})` : "none",
-                                }}
-                                onClick={() => setSelectedShowcaseColorId(v.id)}
-                              />
-                            );
-                          })}
-                      </div>
-                    </div>
-
-                    <div className={styles.mtoPlusWrap}>
-                      <button
-                        type="button"
-                        className={styles.mtoPlusBtn}
-                        aria-label={`Add ${displayTitle} to cart`}
-                        title="Add to Cart"
-                        onClick={handleQuickAddShowcaseToCart}
-                      >
-                        <svg
-                          width="22"
-                          height="22"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="12" y1="5" x2="12" y2="19" />
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+          <div className={styles.mtoShowcaseStack}>
+            {curatedMtoProducts.map((p) => (
+              <MtoShowcaseRow
+                key={p.id}
+                product={p}
+                wishlistItems={wishlistItems}
+                imageRotatePaused={quickViewPiece?.id === p.id}
+                onQuickView={(product, colorId) => {
+                  setQuickViewColorVariantId(colorId);
+                  setQuickViewPiece(product);
+                }}
+              />
+            ))}
           </div>
 
           {/* Phones: stacked lookbook — tap the photo for product details */}
@@ -1117,7 +1063,10 @@ export default function BespokeClient({
                       className={`${styles.mtoCircleIconBtn} ${styles.mtoLookIconBtn}`}
                       aria-label={`Quick view ${displayTitle}`}
                       title="Quick View"
-                      onClick={() => setQuickViewPiece(p)}
+                      onClick={() => {
+                        setQuickViewColorVariantId(selectedColorId);
+                        setQuickViewPiece(p);
+                      }}
                     >
                       <svg
                         width="16"

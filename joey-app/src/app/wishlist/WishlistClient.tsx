@@ -636,8 +636,12 @@ export default function WishlistClient() {
                     </div>
                   </div>
 
-                  {quickViewPiece.quantity > 0 && quickViewPiece.quantity < 6 && (
-                    <span className={shopStyles.lowStockWarning}>Only {quickViewPiece.quantity} left</span>
+                  {!quickViewStockStatus.isBespokeProduct &&
+                  quickViewStockStatus.availablePhysicalStock > 0 &&
+                  quickViewStockStatus.availablePhysicalStock < 6 && (
+                    <span className={shopStyles.lowStockWarning}>
+                      Only {quickViewStockStatus.availablePhysicalStock} left
+                    </span>
                   )}
                 </div>
 

@@ -560,8 +560,12 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       </div>
                     </div>
 
-                    {quickViewPiece.quantity > 0 && quickViewPiece.quantity < 6 && (
-                      <span className={styles.lowStockWarning}>Only {quickViewPiece.quantity} left</span>
+                    {!quickViewStockStatus.isBespokeProduct &&
+                    quickViewStockStatus.availablePhysicalStock > 0 &&
+                    quickViewStockStatus.availablePhysicalStock < 6 && (
+                      <span className={styles.lowStockWarning}>
+                        Only {quickViewStockStatus.availablePhysicalStock} left
+                      </span>
                     )}
                   </div>
 

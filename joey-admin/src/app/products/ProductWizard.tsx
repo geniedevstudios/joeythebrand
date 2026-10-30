@@ -102,6 +102,11 @@ export default function ProductWizard({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [newProductUploadKey] = useState(`draft-${Date.now()}`);
+  const stepScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    stepScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [currentStep]);
 
   const productUploadFolder = editingProduct?.id
     ? `products/${editingProduct.id}`
@@ -1332,7 +1337,7 @@ export default function ProductWizard({
           {renderProgressBar()}
         </div>
 
-        <div className="flex-1 overflow-y-auto w-full flex flex-col">
+        <div ref={stepScrollRef} className="flex-1 overflow-y-auto w-full flex flex-col">
           {currentStep === 0 && renderSellingMode()}
           {currentStep === 1 && renderStep1()}
           {currentStep === 2 && renderStep2()}
