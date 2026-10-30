@@ -140,7 +140,6 @@ function MtoShowcaseRow({
   const availableSizes = (p.sizes || [])
     .filter((s) => s.available !== false)
     .map((s) => s.name);
-  const defaultSize = availableSizes[0] || "Standard";
   const sizeSummary =
     availableSizes.length > 2
       ? `${availableSizes[0]} – ${availableSizes[availableSizes.length - 1]}`
@@ -150,33 +149,9 @@ function MtoShowcaseRow({
   const productDescription = (p.description || "").trim();
   const productHref = `/shop/${p.slug || p.id}`;
 
-  const handleQuickAddShowcaseToCart = () => {
-    const stockStatus = getVariantStockStatus(p, activeShowcaseColor, null, "solo");
-    const defaultFit =
-      p.wearTag === "womens" ? "Standard" : p.wearTag === "unisex" ? "Men" : undefined;
-    cartStore.addItem({
-      productId: p.id,
-      name: displayTitle,
-      color: activeShowcaseColor?.name || undefined,
-      colorHex: activeShowcaseColor?.colorHex,
-      size: defaultSize,
-      fit: defaultFit,
-      wearTag: p.wearTag,
-      price: stockStatus.unitPrice,
-      image: displayImage,
-      image2: gallery[1] || p.images?.[0] || displayImage,
-      quantity: 1,
-      maxStock: stockStatus.mtoMaxQtyPerOrder,
-      availablePhysicalStock: 0,
-      mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
-      fulfillmentChoice: "made_to_order",
-      isMadeToOrder: true,
-      leadDays: stockStatus.leadDays,
-      isBespoke: true,
-      bespokeLeadDays: stockStatus.leadDays,
-      variantId: stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
-    });
-    toast.success(`${displayTitle} (${defaultSize}) added to your cart!`);
+  const openSizePicker = () => {
+    toast.error("Please pick a size before adding to cart.");
+    onQuickView(p, activeShowcaseColor?.id || "main-color");
   };
 
   return (
@@ -340,9 +315,9 @@ function MtoShowcaseRow({
             <button
               type="button"
               className={styles.mtoPlusBtn}
-              aria-label={`Add ${displayTitle} to cart`}
-              title="Add to Cart"
-              onClick={handleQuickAddShowcaseToCart}
+              aria-label={`Choose a size to add ${displayTitle} to cart`}
+              title="Choose size"
+              onClick={openSizePicker}
             >
               <svg
                 width="22"
