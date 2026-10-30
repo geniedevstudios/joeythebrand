@@ -12,8 +12,9 @@ import { fetchSiteContent } from "@/lib/fetchSiteContentServer";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
+import { getPublicSiteUrl } from "@/lib/emailAssets";
 
-const SITE_URL = "https://joeythebrand.com";
+const SITE_URL = getPublicSiteUrl();
 const BRAND_NAME = "JOEY THE BRAND";
 
 const jost = Jost({

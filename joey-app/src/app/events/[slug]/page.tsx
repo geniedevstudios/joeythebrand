@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import styles from "../events.module.css";
 import { fetchPublicEventBySlug } from "@/lib/fetchEventsServer";
+import { getPublicSiteUrl } from "@/lib/emailAssets";
 import { PAGE_HERO_SHELL_CLASS } from "@/hooks/usePageHero";
 import EventVideo from "./EventVideo";
 import BackButton from "./BackButton";
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = "https://joeythebrand.com";
+const SITE_URL = getPublicSiteUrl();
 
 function toAbsoluteUrl(url: string): string {
   const u = String(url || "").trim();

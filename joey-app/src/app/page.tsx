@@ -10,6 +10,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { fetchSiteContentForHome } from "@/lib/fetchSiteContentServer";
 import { fetchCollectionsForHome } from "@/lib/fetchCollectionsServer";
 import { DEFAULT_SITE_CONTENT } from "@/lib/dataStore";
+import { getPublicSiteUrl } from "@/lib/emailAssets";
 
 /** Fresh hero from Supabase on each request so admin edits show without a stale shell. */
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export default async function HomePage() {
             "@context": "https://schema.org",
             "@type": "Brand",
             name: "Joey The Brand",
-            url: "https://joeythebrand.com",
+            url: getPublicSiteUrl(),
             sameAs: ["https://instagram.com/joeythebrand"],
           }),
         }}

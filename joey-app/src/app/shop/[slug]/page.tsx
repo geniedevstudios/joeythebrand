@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import ProductClient from "./ProductClient";
 import { supabase } from "@/lib/supabase";
+import { getPublicSiteUrl } from "@/lib/emailAssets";
 
 function getServerSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -14,7 +15,7 @@ function getServerSupabase() {
   });
 }
 
-const SITE_URL = "https://joeythebrand.com";
+const SITE_URL = getPublicSiteUrl();
 
 function toAbsoluteUrl(url: string): string {
   const u = String(url || "").trim();

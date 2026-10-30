@@ -1,7 +1,7 @@
 const PRODUCTION_SITE = "https://www.joeythebrand.com";
 
-/** Public origin for email links and images. Never localhost, never a redirecting apex host. */
-export function getEmailBaseUrl(): string {
+/** Public origin for the live shop: emails, canonicals, sitemap. Never localhost, never apex. */
+export function getPublicSiteUrl(): string {
   const explicit = (
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -23,6 +23,10 @@ export function getEmailBaseUrl(): string {
   } catch {
     return PRODUCTION_SITE;
   }
+}
+
+export function getEmailBaseUrl(): string {
+  return getPublicSiteUrl();
 }
 
 /** Stable logo URL. Email clients often refuse redirects and filenames with spaces. */

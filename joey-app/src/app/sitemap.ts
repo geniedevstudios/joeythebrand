@@ -1,25 +1,37 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
+import { getPublicSiteUrl } from "@/lib/emailAssets";
 
-const SITE_URL = "https://joeythebrand.com";
+export const dynamic = "force-dynamic";
 
-type EventRow = { slug: string | null; updated_at?: string | null };
-type ProductRow = { slug: string | null; id: string; updated_at?: string | null };
-type CollectionRow = { slug: string | null; updated_at?: string | null };
+type DatedSlug = {
+  slug: string | null;
+  id?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+function lastMod(row: DatedSlug, fallback: Date): Date {
+  const raw = row.updated_at || row.created_at;
+  if (!raw) return fallback;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? fallback : d;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const site = getPublicSiteUrl();
   const now = new Date();
 
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${SITE_URL}/shop`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${SITE_URL}/events`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/collection`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/story`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/bespoke`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/contact`, lastModified: now, changeFrequency: "yearly", priority: 0.6 },
-    { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${SITE_URL}/shipping`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${site}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
+    { url: `${site}/shop`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${site}/events`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${site}/collection`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${site}/story`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${site}/bespoke`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${site}/contact`, lastModified: now, changeFrequency: "yearly", priority: 0.6 },
+    { url: `${site}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${site}/shipping`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,20 +41,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient(url, key);
 
   const [eventsRes, productsRes, collectionsRes] = await Promise.all([
-    supabase.from("events").select("slug,updated_at").not("slug", "is", null),
-    supabase.from("products").select("slug,id,updated_at"),
-    supabase.from("collections").select("slug,updated_at").not("slug", "is", null),
+    supabase.from("events").select("slug,created_at,updated_at").not("slug", "is", null),
+    supabase
+      .from("products")
+      .select("slug,id,created_at")
+      .or(
+        "is_published.eq.true,and(fulfillment_mode.eq.made_to_order_only,show_on_bespoke_page.eq.true)",
+      ),
+    supabase.from("collections").select("slug,created_at").not("slug", "is", null),
   ]);
 
   const dynamicEntries: MetadataRoute.Sitemap = [];
 
   if (!eventsRes.error && eventsRes.data) {
-    for (const r of eventsRes.data as unknown as EventRow[]) {
+    for (const r of eventsRes.data as DatedSlug[]) {
       const slug = (r.slug ?? "").trim();
       if (!slug) continue;
       dynamicEntries.push({
-        url: `${SITE_URL}/events/${encodeURIComponent(slug)}`,
-        lastModified: r.updated_at ? new Date(r.updated_at) : now,
+        url: `${site}/events/${encodeURIComponent(slug)}`,
+        lastModified: lastMod(r, now),
         changeFrequency: "weekly",
         priority: 0.7,
       });
@@ -50,14 +67,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   if (!productsRes.error && productsRes.data) {
-    for (const r of productsRes.data as unknown as ProductRow[]) {
+    for (const r of productsRes.data as DatedSlug[]) {
       const slug = (r.slug ?? "").trim();
       const id = String(r.id || "").trim();
-      const path = slug ? slug : id;
+      const path = slug || id;
       if (!path) continue;
       dynamicEntries.push({
-        url: `${SITE_URL}/shop/${encodeURIComponent(path)}`,
-        lastModified: r.updated_at ? new Date(r.updated_at) : now,
+        url: `${site}/shop/${encodeURIComponent(path)}`,
+        lastModified: lastMod(r, now),
         changeFrequency: "weekly",
         priority: 0.7,
       });
@@ -65,12 +82,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   if (!collectionsRes.error && collectionsRes.data) {
-    for (const r of collectionsRes.data as unknown as CollectionRow[]) {
+    for (const r of collectionsRes.data as DatedSlug[]) {
       const slug = (r.slug ?? "").trim();
       if (!slug) continue;
       dynamicEntries.push({
-        url: `${SITE_URL}/collection/${encodeURIComponent(slug)}`,
-        lastModified: r.updated_at ? new Date(r.updated_at) : now,
+        url: `${site}/collection/${encodeURIComponent(slug)}`,
+        lastModified: lastMod(r, now),
         changeFrequency: "weekly",
         priority: 0.6,
       });
