@@ -24,6 +24,20 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
    badge?: number;
  };
 
+ function ProfilePhoto({ url, initials }: { url?: string; initials: string }) {
+   const [failed, setFailed] = useState(false);
+   useEffect(() => {
+     setFailed(false);
+   }, [url]);
+   if (!url || failed) {
+     return <span>{initials || "AD"}</span>;
+   }
+   return (
+     // eslint-disable-next-line @next/next/no-img-element
+     <img src={url} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+   );
+ }
+
  function isActivePath(pathname: string, href: string): boolean {
    if (href === "/") return pathname === "/";
    return pathname === href || pathname.startsWith(`${href}/`);
@@ -363,11 +377,8 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
               aria-busy={userLabel ? undefined : true}
             >
               <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/10 text-xs font-bold text-white ring-1 ring-white/10">
-                {userLabel?.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={userLabel.avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : userLabel ? (
-                  <span>{userLabel.initials}</span>
+                {userLabel ? (
+                  <ProfilePhoto url={userLabel.avatarUrl} initials={userLabel.initials} />
                 ) : (
                   <span className="opacity-0">AD</span>
                 )}
@@ -476,14 +487,9 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
             <div className="space-y-5 px-6 py-5">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
-                  {profileAvatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={profileAvatarUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm font-bold text-white/70">
-                      {userLabel?.initials || "AD"}
-                    </div>
-                  )}
+                  <div className="flex h-full w-full items-center justify-center text-sm font-bold text-white/70">
+                    <ProfilePhoto url={profileAvatarUrl} initials={userLabel?.initials || "AD"} />
+                  </div>
                 </div>
 
                 <input
@@ -503,7 +509,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                       const url = await uploadSiteAsset(prepared, `admin/avatars/${uid}`);
                       setProfileAvatarUrl(url);
                     } catch (err) {
-                      console.error(err);
+                      toast.error(err instanceof Error ? err.message : "Could not upload that photo.");
                     } finally {
                       setProfileUploading(false);
                     }
