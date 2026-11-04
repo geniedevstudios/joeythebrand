@@ -9,7 +9,7 @@ type Props = {
   label: string;
   value: string;
   onChange: (url: string) => void;
-  /** Subfolder inside the site-assets bucket, e.g. "heroes/home" or "about" */
+  /** Folder on Cloudinary, e.g. "heroes/home" or "about" */
   uploadFolder: string;
   accept: string;
   placeholder?: string;
@@ -22,7 +22,6 @@ export default function AssetUrlField({
   onChange,
   uploadFolder,
   accept,
-  placeholder = "https://… or /path/from/public.jpg",
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -138,13 +137,6 @@ export default function AssetUrlField({
               </button>
             ) : null}
             </div>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="block w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-600 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
-              placeholder="Or paste external URL (e.g. Cloudinary)"
-            />
           </div>
         ) : hideUrlField && isVideo ? (
           <div className="flex flex-col gap-2 w-full max-w-[280px]">
@@ -204,35 +196,17 @@ export default function AssetUrlField({
               </button>
             ) : null}
             </div>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="block w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-600 shadow-sm focus:border-zinc-500 focus:ring-zinc-500"
-              placeholder="Or paste external URL (e.g. Cloudinary)"
-            />
           </div>
         ) : (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              id={id}
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="block w-full min-w-0 flex-1 rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-              placeholder={placeholder}
-            />
-            <div className="flex shrink-0 gap-2">
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => inputRef.current?.click()}
-                className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 disabled:opacity-50"
-              >
-                {uploading ? "Uploading…" : "Choose file"}
-              </button>
-            </div>
-          </div>
+          <button
+            id={id}
+            type="button"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+            className="w-fit rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 disabled:opacity-50"
+          >
+            {uploading ? "Uploading…" : value ? "Replace file" : "Choose file"}
+          </button>
         )}
 
         <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFile} />
