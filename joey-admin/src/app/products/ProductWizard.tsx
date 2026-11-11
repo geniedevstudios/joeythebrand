@@ -64,7 +64,7 @@ export default function ProductWizard({
   const [uploadKey, setUploadKey] = useState(`draft-${Date.now()}`);
 
   const allSizes = useMemo(
-    () => (wearTag === "womens" ? [...UK_SIZES] : [...STANDARD_SIZES]),
+    (): string[] => (wearTag === "womens" ? [...UK_SIZES] : [...STANDARD_SIZES]),
     [wearTag],
   );
 
@@ -133,7 +133,8 @@ export default function ProductWizard({
     if (!isOpen) return;
     setVariants((prev) =>
       prev.map((way) => {
-        const chosenSizes = way.chosenSizes.filter((size) => allSizes.includes(size));
+        const sizeSet = allSizes as readonly string[];
+        const chosenSizes = way.chosenSizes.filter((size) => sizeSet.includes(size));
         const nextChosen = chosenSizes.length ? chosenSizes : [...allSizes];
         return {
           ...way,

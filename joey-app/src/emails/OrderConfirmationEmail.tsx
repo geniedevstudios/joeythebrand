@@ -224,7 +224,7 @@ export default function OrderConfirmationEmail({
                     <tbody>
                       <tr>
                         {item.image ? (
-                          <td width={112} valign="top">
+                          <td width={112} style={{ verticalAlign: "top" }}>
                             <Img
                               src={item.image}
                               alt={item.name}
@@ -240,8 +240,10 @@ export default function OrderConfirmationEmail({
                           </td>
                         ) : null}
                         <td
-                          valign="middle"
-                          style={{ paddingLeft: item.image ? "20px" : "0" }}
+                          style={{
+                            verticalAlign: "middle",
+                            paddingLeft: item.image ? "20px" : "0",
+                          }}
                         >
                           <Text style={emailItemName}>{item.name}</Text>
                           <Text style={emailItemMeta}>{meta}</Text>

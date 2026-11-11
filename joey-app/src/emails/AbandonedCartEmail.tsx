@@ -92,7 +92,7 @@ export default function AbandonedCartEmail({
                     <tbody>
                       <tr>
                         {item.image ? (
-                          <td width={112} valign="top">
+                          <td width={112} style={{ verticalAlign: "top" }}>
                             <Img
                               src={item.image}
                               alt={item.name}
@@ -107,7 +107,12 @@ export default function AbandonedCartEmail({
                             />
                           </td>
                         ) : null}
-                        <td valign="middle" style={{ paddingLeft: item.image ? "20px" : "0" }}>
+                        <td
+                          style={{
+                            verticalAlign: "middle",
+                            paddingLeft: item.image ? "20px" : "0",
+                          }}
+                        >
                           <Text style={emailItemName}>{item.name}</Text>
                           <Text style={emailItemMeta}>{meta}</Text>
                           <Text style={emailItemPrice}>

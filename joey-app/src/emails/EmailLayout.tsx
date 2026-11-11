@@ -68,10 +68,9 @@ export default function EmailLayout({
                         className="hero"
                         height={240}
                         align="center"
-                        valign="middle"
-                        bgcolor={emailColors.heroFallback}
                         style={{
                           height: "240px",
+                          verticalAlign: "middle",
                           backgroundColor: emailColors.heroFallback,
                           backgroundImage: `url('${EMAIL_HERO_URL}')`,
                           backgroundPosition: "center",
@@ -99,13 +98,24 @@ export default function EmailLayout({
                         <table role="presentation" width="100%" cellPadding={0} cellSpacing={0}>
                           <tbody>
                             <tr>
-                              <td className="gutter" width={28} bgcolor={emailColors.heroFallback}>
+                              <td
+                                className="gutter"
+                                width={28}
+                                style={{ backgroundColor: emailColors.heroFallback }}
+                              >
                                 &nbsp;
                               </td>
-                              <td height={32} bgcolor={emailColors.panel}>
+                              <td
+                                height={32}
+                                style={{ backgroundColor: emailColors.panel }}
+                              >
                                 &nbsp;
                               </td>
-                              <td className="gutter" width={28} bgcolor={emailColors.heroFallback}>
+                              <td
+                                className="gutter"
+                                width={28}
+                                style={{ backgroundColor: emailColors.heroFallback }}
+                              >
                                 &nbsp;
                               </td>
                             </tr>
@@ -115,8 +125,10 @@ export default function EmailLayout({
                               </td>
                               <td
                                 className="panel-padding"
-                                bgcolor={emailColors.panel}
-                                style={{ padding: "0 32px 40px" }}
+                                style={{
+                                  padding: "0 32px 40px",
+                                  backgroundColor: emailColors.panel,
+                                }}
                               >
                                 <Text style={emailEyebrow}>{eyebrow}</Text>
                                 <h1 className="headline" style={emailHeadline}>
@@ -135,7 +147,10 @@ export default function EmailLayout({
                                   >
                                     <tbody>
                                       <tr>
-                                        <td align="center" bgcolor={emailColors.accent}>
+                                        <td
+                                          align="center"
+                                          style={{ backgroundColor: emailColors.accent }}
+                                        >
                                           <Button href={ctaHref} style={emailCta}>
                                             {ctaLabel}
                                           </Button>
