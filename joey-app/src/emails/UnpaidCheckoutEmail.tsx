@@ -1,19 +1,16 @@
-import {
-  Body,
-  Button,
-  Column,
-  Container,
-  Head,
-  Html,
-  Img,
-  Link,
-  Preview,
-  Row,
-  Section,
-  Text,
-} from "@react-email/components";
+import { Img, Link, Text } from "@react-email/components";
 import * as React from "react";
-import { EMAIL_LOGO_URL, getEmailBaseUrl } from "@/lib/emailAssets";
+import { getEmailBaseUrl } from "@/lib/emailAssets";
+import EmailLayout from "./EmailLayout";
+import {
+  emailColors,
+  emailDetailBox,
+  emailFonts,
+  emailItemMeta,
+  emailItemName,
+  emailItemPrice,
+  emailParagraph,
+} from "./emailStyles";
 
 export type UnpaidCheckoutItem = {
   name: string;
@@ -36,71 +33,6 @@ export type UnpaidCheckoutEmailProps = {
   isAdmin?: boolean;
 };
 
-const main = {
-  backgroundColor: "#f9f9f9",
-  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-};
-
-const container = {
-  margin: "0 auto",
-  padding: "40px 0",
-  width: "600px",
-  maxWidth: "100%",
-};
-
-const card = {
-  backgroundColor: "#ffffff",
-  padding: "40px 48px",
-  boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
-};
-
-const headerSerif = {
-  fontFamily: '"Bodoni Moda", "Times New Roman", Times, serif',
-  fontSize: "32px",
-  fontWeight: "bold" as const,
-  textAlign: "center" as const,
-  margin: "0 0 12px 0",
-  color: "#111111",
-};
-
-const statusText = {
-  fontSize: "14px",
-  color: "#555555",
-  textAlign: "center" as const,
-  margin: "0 0 24px 0",
-  lineHeight: "1.6",
-};
-
-const button = {
-  backgroundColor: "#333333",
-  color: "#ffffff",
-  padding: "12px 24px",
-  fontSize: "13px",
-  fontWeight: "bold" as const,
-  textDecoration: "none",
-  letterSpacing: "1px",
-};
-
-const itemTitle = {
-  fontSize: "14px",
-  color: "#333333",
-  fontWeight: "bold" as const,
-  margin: "0 0 8px 0",
-};
-
-const itemProp = {
-  fontSize: "13px",
-  color: "#555555",
-  margin: "0 0 4px 0",
-};
-
-const itemImage = {
-  width: "96px",
-  height: "auto",
-  display: "block",
-  borderRadius: "6px",
-};
-
 export default function UnpaidCheckoutEmail({
   customerName = "there",
   customerEmail,
@@ -120,108 +52,129 @@ export default function UnpaidCheckoutEmail({
     : `${firstName}, did something go wrong at checkout?`;
 
   return (
-    <Html lang="en">
-      <Head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,500;0,600;0,700&display=swap"
-          rel="stylesheet"
-        />
-      </Head>
-      <Preview>{preview}</Preview>
-      <Body style={main}>
-        <div
-          style={{
-            backgroundColor: "#000000",
-            height: "160px",
-            width: "100%",
-            paddingTop: "32px",
-            textAlign: "center",
-          }}
-        >
-          <Img
-            src={EMAIL_LOGO_URL}
-            alt="JOEY The brand"
-            width={160}
-            height={160}
-            style={{ width: "160px", height: "auto", margin: "0 auto", display: "block" }}
-          />
-        </div>
-        <Container style={container}>
-          <Section style={card}>
-            {isAdmin ? (
-              <>
-                <Text style={headerSerif}>Unpaid checkout</Text>
-                <Text style={statusText}>
-                  {customerName} started checkout and has not paid after 15 minutes. Call or email
-                  them if you want to help finish the order.
-                </Text>
-                <Text style={{ ...itemProp, textAlign: "center" }}>
-                  {orderNumber ? `Order ${orderNumber}` : "No order number yet (still on checkout)"}
-                  {total ? ` · GHC ${Number(total).toLocaleString()}` : ""}
-                </Text>
-                <Text style={{ ...itemProp, textAlign: "center", marginBottom: "16px" }}>
-                  {customerPhone ? (
-                    <>
-                      Call:{" "}
-                      <Link href={`tel:${customerPhone.replace(/\s+/g, "")}`}>{customerPhone}</Link>
-                      <br />
-                    </>
-                  ) : (
-                    "No phone on file yet."
-                  )}
-                  {customerEmail ? (
-                    <>
-                      Email: <Link href={`mailto:${customerEmail}`}>{customerEmail}</Link>
-                    </>
-                  ) : null}
-                </Text>
-                <Section style={{ textAlign: "center", marginBottom: "28px" }}>
-                  <Button href={adminOrdersUrl || `${baseUrl}/account`} style={button}>
-                    Open orders
-                  </Button>
-                </Section>
-              </>
-            ) : (
-              <>
-                <Text style={headerSerif}>Having trouble completing payment?</Text>
-                <Text style={statusText}>
-                  {orderNumber
-                    ? `We noticed payment for order ${orderNumber} did not finish. If Paystack stalled or something looked off, you can try again or reply and we will help. If you already paid, ignore this.`
-                    : "You reached checkout but the order was not completed. If something went wrong, reply to this email or return to checkout. If you already paid, ignore this."}
-                </Text>
-                <Section style={{ textAlign: "center", marginBottom: "28px" }}>
-                  <Button href={payUrl} style={button}>
-                    Return to checkout
-                  </Button>
-                </Section>
-              </>
-            )}
+    <EmailLayout
+      preview={preview}
+      eyebrow={isAdmin ? "STUDIO CHECKOUT" : "A LITTLE HELP WITH CHECKOUT"}
+      title={isAdmin ? "A payment needs attention." : "Let’s make it yours."}
+      ctaHref={isAdmin ? adminOrdersUrl || `${baseUrl}/account` : payUrl}
+      ctaLabel={isAdmin ? "OPEN THE STUDIO" : "RETURN TO CHECKOUT"}
+      helpText={
+        isAdmin
+          ? "A note from your Joey studio."
+          : "If your bank shows a debit, please contact us before retrying."
+      }
+    >
+      <div style={{ textAlign: "center" }}>
+        <Text style={emailParagraph}>
+          {isAdmin ? `${customerName}` : `Hello ${firstName},`}
+        </Text>
+        <Text style={emailParagraph}>
+          {isAdmin
+            ? "This customer started checkout and has not paid after 15 minutes. Call or email them if you want to help finish the order."
+            : orderNumber
+              ? `Paystack reported payment for order ${orderNumber} as unfinished. Return to checkout to try again, or reply for help. If you already paid, ignore this.`
+              : "Checkout closed before we could confirm your payment. Your selection is saved. If you completed payment, please wait for confirmation or reply for help before trying again."}
+        </Text>
+        {orderNumber ? (
+          <Text
+            style={{
+              margin: "20px 0 4px",
+              fontFamily: emailFonts.sans,
+              fontSize: "10px",
+              letterSpacing: "1.5px",
+              color: emailColors.meta,
+            }}
+          >
+            {orderNumber}
+          </Text>
+        ) : null}
+      </div>
 
-            {items.map((item, index) => (
-              <Row key={`${item.name}-${index}`} style={{ paddingBottom: "16px" }}>
-                <Column style={{ width: "120px" }} valign="middle">
-                  {item.image ? (
-                    <Img src={item.image} alt={item.name} width={96} height={120} style={itemImage} />
-                  ) : (
-                    <div style={{ width: "96px", height: "120px", backgroundColor: "#f4f4f4" }} />
-                  )}
-                </Column>
-                <Column style={{ paddingLeft: "16px" }} valign="top">
-                  <Text style={itemTitle}>{item.name}</Text>
-                  {item.size ? <Text style={itemProp}>Size: {item.size}</Text> : null}
-                  {item.color ? <Text style={itemProp}>Color: {item.color}</Text> : null}
-                  <Text style={itemProp}>Qty: {item.quantity}</Text>
-                </Column>
-                <Column style={{ width: "90px" }} valign="bottom">
-                  <Text style={{ ...itemTitle, textAlign: "right" }}>
-                    GHC {(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
-                  </Text>
-                </Column>
-              </Row>
-            ))}
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+      {isAdmin ? (
+        <div style={emailDetailBox}>
+          {customerPhone ? (
+            <Text style={emailParagraph}>
+              Call:{" "}
+              <Link href={`tel:${customerPhone.replace(/\s+/g, "")}`} style={{ color: emailColors.accent }}>
+                {customerPhone}
+              </Link>
+            </Text>
+          ) : (
+            <Text style={emailParagraph}>No phone on file yet.</Text>
+          )}
+          {customerEmail ? (
+            <Text style={emailParagraph}>
+              Email:{" "}
+              <Link href={`mailto:${customerEmail}`} style={{ color: emailColors.accent }}>
+                {customerEmail}
+              </Link>
+            </Text>
+          ) : null}
+          {total ? (
+            <Text style={emailParagraph}>Total: GHC {Number(total).toLocaleString()}</Text>
+          ) : null}
+        </div>
+      ) : null}
+
+      <table
+        role="presentation"
+        width="100%"
+        cellPadding={0}
+        cellSpacing={0}
+        style={{ marginTop: "12px" }}
+      >
+        <tbody>
+          {items.map((item, index) => {
+            const meta = [item.color, item.size ? `SIZE ${item.size}` : null, `QTY ${item.quantity}`]
+              .filter(Boolean)
+              .join("  /  ");
+            return (
+              <tr key={`${item.name}-${index}`}>
+                <td
+                  style={{
+                    padding: "20px 0",
+                    borderBottom:
+                      index === items.length - 1 ? "none" : `1px solid ${emailColors.divider}`,
+                  }}
+                >
+                  <table role="presentation" width="100%" cellPadding={0} cellSpacing={0}>
+                    <tbody>
+                      <tr>
+                        {item.image ? (
+                          <td width={112} valign="top">
+                            <Img
+                              src={item.image}
+                              alt={item.name}
+                              width={112}
+                              style={{
+                                display: "block",
+                                width: "112px",
+                                maxWidth: "112px",
+                                height: "auto",
+                                border: 0,
+                              }}
+                            />
+                          </td>
+                        ) : null}
+                        <td valign="middle" style={{ paddingLeft: item.image ? "20px" : "0" }}>
+                          <Text style={emailItemName}>{item.name}</Text>
+                          <Text style={emailItemMeta}>{meta}</Text>
+                          <Text style={emailItemPrice}>
+                            GHC{" "}
+                            {(
+                              Number(item.price || 0) * Number(item.quantity || 1)
+                            ).toLocaleString()}
+                          </Text>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </EmailLayout>
   );
 }

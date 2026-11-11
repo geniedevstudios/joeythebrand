@@ -3,10 +3,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { dataStore } from "@/lib/dataStore";
 import type { PageHeroKey, PageHeroMedia, SiteContent } from "@/lib/types";
-import { PAGE_HERO_KEYS, PAGE_HERO_LABELS } from "@/lib/pageHeroes";
+import { EDITABLE_PAGE_HERO_KEYS, PAGE_HERO_LABELS } from "@/lib/pageHeroes";
 import AssetUrlField from "@/components/AssetUrlField";
 import HeroFitSelectors from "@/components/HeroFitSelectors";
 import { toast } from "sonner";
@@ -28,7 +27,7 @@ export default function PageHeroesIndexPage() {
       const data = await dataStore.getSiteContent();
       setContent(data);
       const next: Record<PageHeroKey, LocalHero> = {} as any;
-      for (const k of PAGE_HERO_KEYS.filter((x) => x !== "home")) {
+      for (const k of EDITABLE_PAGE_HERO_KEYS.filter((x) => x !== "home")) {
         const h = data.pageHeroes[k];
         next[k] = {
           src: h.src,
@@ -90,20 +89,13 @@ export default function PageHeroesIndexPage() {
 
   if (!content || !heroes) return <div className="text-sm text-zinc-900">No content found.</div>;
 
-  const keys = PAGE_HERO_KEYS.filter((k) => k !== "home");
+  const keys = EDITABLE_PAGE_HERO_KEYS.filter((k) => k !== "home");
 
   return (
     <div className="w-full max-w-none space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link 
-            href="/content/app-pages" 
-            className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to App pages
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Page hero backgrounds</h1>
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Page hero backgrounds</h2>
           <p className="mt-1 text-sm text-zinc-900">
             Edit all non-home page heroes here, or open a single page for focus.
           </p>

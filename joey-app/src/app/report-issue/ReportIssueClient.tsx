@@ -1,29 +1,11 @@
 "use client";
 import styles from "./ReportIssue.module.css";
 import Link from "next/link";
-import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@/hooks/usePageHero";
-import type { SiteContent } from "@/lib/types";
 
-export default function ReportIssueClient({ initialSiteContent }: { initialSiteContent: SiteContent }) {
-  const {
-    empty: heroEmpty,
-    shellSpinner: heroSpinner,
-    style: heroStyle,
-    showImageLoader: heroImageLoader,
-    imageReady: heroImageReady,
-  } = usePageHeroShellRenderPropsWithSSRSeed("report_issue", initialSiteContent);
-
+export default function ReportIssueClient() {
   return (
     <div className={styles.page}>
-      <header 
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.header}`}
-        data-page-hero-empty={heroEmpty ? "true" : "false"}
-        data-page-hero-loading={heroSpinner ? "true" : "false"}
-        data-page-hero-ready={heroImageReady ? "true" : "false"}
-        style={heroStyle}
-      >
-        {heroImageLoader ? <PageHeroShellImageLoader /> : null}
+      <header className={styles.header}>
         <div className="container">
           <span className="section-label" style={{ color: "var(--cinereous)" }}>Support</span>
           <h1 className={`t-display ${styles.title}`}>Report an Issue</h1>
@@ -54,11 +36,10 @@ export default function ReportIssueClient({ initialSiteContent }: { initialSiteC
           </div>
 
           <div className={styles.grid}>
-            {/* WhatsApp Card */}
-            <a 
-              href="https://wa.me/233504148009" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://wa.me/233504148009"
+              target="_blank"
+              rel="noopener noreferrer"
               className={styles.card}
             >
               <div className={styles.cardIcon}>
@@ -75,9 +56,8 @@ export default function ReportIssueClient({ initialSiteContent }: { initialSiteC
               </div>
             </a>
 
-            {/* Email Card */}
-            <a 
-              href="mailto:joeythebrandonline@gmail.com" 
+            <a
+              href="mailto:joeythebrandonline@gmail.com"
               className={`${styles.card} ${styles.emailCard}`}
             >
               <div className={styles.cardIcon}>

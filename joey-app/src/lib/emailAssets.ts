@@ -31,3 +31,6 @@ export function getEmailBaseUrl(): string {
 
 /** Stable logo URL. Email clients often refuse redirects and filenames with spaces. */
 export const EMAIL_LOGO_URL = `${PRODUCTION_SITE}/white-logo.png`;
+
+/** Full-bleed hero used by the RMS-style transactional email shell. */
+export const EMAIL_HERO_URL = `${PRODUCTION_SITE}/collection_kpq24u.jpg`;

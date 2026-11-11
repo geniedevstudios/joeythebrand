@@ -41,7 +41,7 @@ export default function ShippingPage() {
               Deliveries to other regions in Ghana take <strong>2–4 business days</strong>.
             </p>
             <p>
-              Local dispatch is handled via secure courier, and you will be contacted on the day of delivery.
+              Where available, choose DHL Express Domestic at checkout to pay for delivery with your order and track it in your account. You can also choose Local Courier, and our team will contact you to confirm the delivery fee and timing.
             </p>
           </section>
 

@@ -1,115 +1,81 @@
 <!DOCTYPE html>
-<!-- Paste into Supabase → Authentication → Email Templates → Confirm signup.
-     OTP digit count: set mailer_otp_length = 6 (hosted: Dashboard Auth settings if shown,
-     else Supabase Management API PATCH .../config/auth — see supabase/config.toml comment).
-     URL: Site URL + Redirect URLs for joeythebrand.com and localhost. -->
-<html>
+<!-- Paste into Supabase → Authentication → Email Templates → Confirm signup (OTP).
+     OTP digit count: set mailer_otp_length = 6. -->
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOEY THE BRAND · Your verification code</title>
     <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        line-height: 1.6;
-        color: #333;
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f4f2ef;
-      }
-      .container {
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 40px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
-      }
-      .header { text-align: center; margin-bottom: 30px; }
-      .logo {
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        color: #272b36;
-        margin-bottom: 10px;
-      }
-      .title {
-        font-size: 24px;
-        font-weight: 400;
-        color: #6d6258;
-        margin-bottom: 10px;
-        letter-spacing: 0.02em;
-      }
-      .otp-box {
-        background: linear-gradient(135deg, #3d424d 0%, #917e71 100%);
-        color: white;
-        padding: 30px;
-        border-radius: 12px;
-        text-align: center;
-        margin: 30px 0;
-      }
-      .otp-code {
-        font-size: 48px;
-        font-weight: bold;
-        letter-spacing: 8px;
-        font-family: 'Courier New', monospace;
-        margin: 20px 0;
-      }
-      .otp-label { font-size: 14px; opacity: 0.9; margin-bottom: 10px; }
-      .content { margin: 30px 0; color: #374151; }
-      .footer {
-        text-align: center;
-        margin-top: 40px;
-        padding-top: 20px;
-        border-top: 1px solid #e5e7eb;
-        color: #6b7280;
-        font-size: 14px;
-      }
-      .warning {
-        background: #fef3c7;
-        border: 1px solid #fbbf24;
-        border-radius: 8px;
-        padding: 15px;
-        margin: 20px 0;
-        color: #92400e;
-        font-size: 14px;
+      @media only screen and (max-width:480px) {
+        .email-shell { padding: 0 !important; }
+        .panel-padding { padding: 0 18px 32px !important; }
+        .headline { font-size: 28px !important; }
       }
     </style>
   </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <div class="logo">JOEY The brand</div>
-        <div class="title">Verify your email</div>
-      </div>
-
-      <div class="content">
-        <p>Hello,</p>
-        <p>
-          Use the code below to verify your email and finish setting up your account.
-        </p>
-      </div>
-
-      <div class="otp-box">
-        <div class="otp-label">Your verification code</div>
-        <div class="otp-code">{{ .Token }}</div>
-        <div style="font-size: 12px; opacity: 0.8; margin-top: 10px;">
-          This code expires in 10 minutes.
-        </div>
-      </div>
-
-      <div class="warning">
-        <strong>Security tip:</strong> Do not share this code. JOEY The brand will never ask you for your code by email or DM.
-      </div>
-
-      <div class="content">
-        <p>
-          If you didn’t create an account, you can ignore this message.
-        </p>
-      </div>
-
-      <div class="footer">
-        <p>— JOEY The brand</p>
-        <p><a href="https://www.joeythebrand.com" style="color:#6b7280;text-decoration:none;">www.joeythebrand.com</a></p>
-      </div>
-    </div>
+  <body style="margin:0;padding:0;background:#f0efed;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0efed;">
+      <tr>
+        <td align="center" class="email-shell" style="padding:28px 12px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#f7f6f4;">
+            <tr>
+              <td height="120" align="center" valign="middle" bgcolor="#ecd8d7" style="height:120px;background-color:#ecd8d7;">
+                <p style="margin:0;font:9px Arial,sans-serif;font-weight:bold;letter-spacing:3px;color:#555149;">JOEY THE BRAND</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td width="28" bgcolor="#ecd8d7">&nbsp;</td>
+                    <td height="32" bgcolor="#ffffff">&nbsp;</td>
+                    <td width="28" bgcolor="#ecd8d7">&nbsp;</td>
+                  </tr>
+                  <tr>
+                    <td width="28">&nbsp;</td>
+                    <td class="panel-padding" bgcolor="#ffffff" style="padding:0 32px 40px;">
+                      <p style="margin:0;font:9px Arial,sans-serif;font-weight:bold;letter-spacing:3px;text-align:center;color:#555149;">YOUR JOEY</p>
+                      <h1 class="headline" style="margin:12px 0 0;font:normal 34px/1.15 Georgia,'Times New Roman',serif;letter-spacing:-1px;color:#24231f;text-align:center;">Confirm it’s you.</h1>
+                      <div style="text-align:center;">
+                        <p style="margin:14px 0 0;font:14px/1.7 Arial,Helvetica,sans-serif;color:#77746d;">Hello,</p>
+                        <p style="margin:14px 0 0;font:14px/1.7 Arial,Helvetica,sans-serif;color:#77746d;">Enter this 6-digit code to finish creating your account. It expires in 10 minutes.</p>
+                        <p style="margin:28px 0 0;font:32px/1 Georgia,'Times New Roman',serif;letter-spacing:10px;text-align:center;color:#24231f;">{{ .Token }}</p>
+                      </div>
+                      <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:28px auto 0;">
+                        <tr>
+                          <td align="center" bgcolor="#4c2938">
+                            <a href="https://www.joeythebrand.com" style="display:inline-block;padding:16px 32px;border:1px solid #4c2938;color:#fff;text-decoration:none;font:10px Arial;letter-spacing:2px;">VISIT JOEY THE BRAND</a>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="margin:22px 0 0;font:12px/1.7 Arial;color:#96928b;text-align:center;">Do not share this code. JOEY will never ask for it by email or DM.</p>
+                    </td>
+                    <td width="28">&nbsp;</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:32px 24px 0;font:16px/1.5 Georgia;color:#77746d;">Structure. Symbolism. Identity.</td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:14px 24px 0;font:11px/1.6 Arial;color:#96928b;">
+                Connect with us<br>
+                <a href="https://www.instagram.com/joeythebrand/" style="color:#77746d;text-decoration:none;">@joeythebrand</a>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:24px 40px 28px;">
+                <div style="border-top:1px solid #dedbd5;padding-top:18px;font:10px/1.8 Arial;color:#96928b;">
+                  © JOEY THE BRAND. All rights reserved.<br>
+                  <a href="https://www.joeythebrand.com" style="color:#77746d;text-decoration:none;">joeythebrand.com</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

@@ -1,6 +1,5 @@
 export const WOMENS_THICK_SIZES = ["S", "M", "L", "XL", "Custom"] as const;
 export const WOMENS_UK_SIZES = [
-  "UK 6",
   "UK 8",
   "UK 10",
   "UK 12",
@@ -167,4 +166,50 @@ export function displaySizeLabel(raw: string, fit?: string, wearTag?: string): s
     return ALPHA_TO_UK[n] || n;
   }
   return n;
+}
+
+export type SizeStockLike = { size?: string; quantity?: number };
+
+/** True when this colour (or product leaf) tracks inventory per size. */
+export function hasSizeStockTracking(
+  sizeStock: SizeStockLike[] | null | undefined,
+): boolean {
+  return Array.isArray(sizeStock) && sizeStock.length > 0;
+}
+
+/**
+ * Match a storefront size label (UK / alpha / Custom) to a sizeStock row.
+ * Returns the stored row size string (canonical for SKUs) and remaining units.
+ */
+export function findSizeStockEntry(
+  sizeStock: SizeStockLike[] | null | undefined,
+  requestedSize: string,
+): { size: string; quantity: number } | null {
+  if (!hasSizeStockTracking(sizeStock)) return null;
+  const aliases = new Set(
+    sizeAliases(requestedSize).map((alias) => normalizeSizeName(alias)),
+  );
+  if (!aliases.size) return null;
+  for (const row of sizeStock!) {
+    const stored = String(row?.size || "").trim();
+    if (!stored) continue;
+    const rowAliases = sizeAliases(stored).map((alias) => normalizeSizeName(alias));
+    if (rowAliases.some((alias) => aliases.has(alias))) {
+      return {
+        size: stored,
+        quantity: Math.max(0, Number(row?.quantity) || 0),
+      };
+    }
+  }
+  return null;
+}
+
+/** Units left for a size on a colourway; null when size-level stock is not tracked. */
+export function getSizeStockQuantity(
+  sizeStock: SizeStockLike[] | null | undefined,
+  requestedSize: string,
+): number | null {
+  if (!hasSizeStockTracking(sizeStock)) return null;
+  const entry = findSizeStockEntry(sizeStock, requestedSize);
+  return entry ? entry.quantity : 0;
 }

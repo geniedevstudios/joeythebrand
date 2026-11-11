@@ -2,8 +2,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { dataStore } from "@/lib/dataStore";
 import type { PageHeroMedia, SiteContent } from "@/lib/types";
 import AssetUrlField from "@/components/AssetUrlField";
@@ -132,14 +130,8 @@ export default function HomeHeroPage() {
   return (
     <div className="w-full max-w-none space-y-6">
       <div>
-        <Link 
-          href="/content/app-pages" 
-          className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to App pages
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Home page</h1>
+        <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Home</h2>
+        <p className="mt-1 text-sm text-zinc-800">These appear on the home page.</p>
       </div>
 
       <form onSubmit={save} className="space-y-8">
@@ -176,17 +168,16 @@ export default function HomeHeroPage() {
               </summary>
               <div className="p-4 space-y-4">
                 <AssetUrlField
-                  label={homeKind === "video" ? "Video URL" : "Image URL"}
+                  label={homeKind === "video" ? "Video" : "Image"}
                   value={homePrimaryUrl}
                   onChange={setHomePrimaryUrl}
                   uploadFolder="heroes/home"
                   accept={homeKind === "video" ? "video/*" : "image/*"}
-                  placeholder="https://… or /path/from/public.jpg"
                 />
 
                 {homeKind === "video" ? (
                   <AssetUrlField
-                    label="Poster image URL"
+                    label="Poster image"
                     value={homePosterUrl}
                     onChange={setHomePosterUrl}
                     uploadFolder="heroes/home-poster"
@@ -204,17 +195,16 @@ export default function HomeHeroPage() {
               </summary>
               <div className="p-4 space-y-4">
                 <AssetUrlField
-                  label={homeKind === "video" ? "Tablet Video URL" : "Tablet Image URL"}
+                  label={homeKind === "video" ? "Tablet video" : "Tablet image"}
                   value={homeTabletUrl}
                   onChange={setHomeTabletUrl}
                   uploadFolder="heroes/home-tablet"
                   accept={homeKind === "video" ? "video/*" : "image/*"}
-                  placeholder="Optional: custom file for tablets"
                 />
 
                 {homeKind === "video" ? (
                   <AssetUrlField
-                    label="Tablet Poster URL"
+                    label="Tablet poster"
                     value={homeTabletPosterUrl}
                     onChange={setHomeTabletPosterUrl}
                     uploadFolder="heroes/home-tablet-poster"
@@ -231,17 +221,16 @@ export default function HomeHeroPage() {
               </summary>
               <div className="p-4 space-y-4">
                 <AssetUrlField
-                  label={homeKind === "video" ? "Mobile Video URL" : "Mobile Image URL"}
+                  label={homeKind === "video" ? "Mobile video" : "Mobile image"}
                   value={homeMobileUrl}
                   onChange={setHomeMobileUrl}
                   uploadFolder="heroes/home-mobile"
                   accept={homeKind === "video" ? "video/*" : "image/*"}
-                  placeholder="Optional: custom file for phones"
                 />
 
                 {homeKind === "video" ? (
                   <AssetUrlField
-                    label="Mobile Poster URL"
+                    label="Mobile poster"
                     value={homeMobilePosterUrl}
                     onChange={setHomeMobilePosterUrl}
                     uploadFolder="heroes/home-mobile-poster"
@@ -268,15 +257,14 @@ export default function HomeHeroPage() {
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-zinc-900">Background Media</h4>
               <AssetUrlField
-                label="Video URL"
+                label="Video"
                 value={founderVideoUrl}
                 onChange={setFounderVideoUrl}
                 uploadFolder="site/founder"
                 accept="video/*"
-                placeholder="https://… or /path/to/video.mp4"
               />
               <AssetUrlField
-                label="Poster image URL (optional)"
+                label="Poster image (optional)"
                 value={founderPosterUrl}
                 onChange={setFounderPosterUrl}
                 uploadFolder="site/founder-poster"

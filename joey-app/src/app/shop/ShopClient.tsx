@@ -17,6 +17,8 @@ import { useStoreLoading } from "@/hooks/useStoreLoading";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import ProductMedia from "@/components/shop/ProductMedia";
+import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
+import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
 
@@ -194,7 +196,14 @@ export default function ShopClient() {
 
     setTimeout(() => {
       import("@/store/cartStore").then(({ cartStore }) => {
-        const stockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+        const stockStatus = getVariantStockStatus(
+          quickViewPiece,
+          quickViewActiveVariant,
+          quickViewActiveCombo,
+          quickViewMode,
+          undefined,
+          selectedSize || null,
+        );
         const isBespokeProduct = stockStatus.isBespokeProduct;
         cartStore.addItem({
           productId: quickViewPiece.id,
@@ -205,13 +214,21 @@ export default function ShopClient() {
           size: selectedSize || "Standard",
           fit: (quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") ? quickViewFit : undefined,
           wearTag: quickViewPiece.wearTag,
-          price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price,
+          price: stockStatus.unitPrice,
           image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewPiece.image,
           image2: quickViewActiveCombo?.images?.[0] || quickViewGalleryImages[1] || quickViewPiece.images?.[0],
           quantity: qty,
-          maxStock: stockStatus.maxStock ?? 99,
+          maxStock: isBespokeProduct ? stockStatus.mtoMaxQtyPerOrder : stockStatus.availablePhysicalStock,
+          availablePhysicalStock: stockStatus.availablePhysicalStock,
+          mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
+          canFallbackToMadeToOrder: stockStatus.canFallbackToMadeToOrder,
+          fulfillmentChoice: isBespokeProduct ? "made_to_order" : "ready_to_wear",
+          isMadeToOrder: isBespokeProduct || undefined,
+          leadDays: isBespokeProduct ? stockStatus.leadDays : undefined,
           isBespoke: isBespokeProduct || undefined,
           bespokeLeadDays: isBespokeProduct ? (stockStatus.bespokeLeadDays ?? 14) : undefined,
+          variantId: stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
+          comboId: stockStatus.comboId !== "base" ? stockStatus.comboId : undefined,
         });
 
         setAddStatus("added");
@@ -546,31 +563,6 @@ export default function ShopClient() {
                       </div>
                     </div>
 
-                    <div className={styles.badgeStack} aria-hidden="true">
-                      {(() => {
-                        const isBespoke = !!(
-                          p.fulfillmentMode === "made_to_order_only" ||
-                          (p.bespokeAvailable && p.quantity <= 0)
-                        );
-                        return isBespoke ? (
-                          <span className={styles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                        ) : p.isOutOfStock ? (
-                          <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                        ) : (
-                          <>
-                            {p.category === "sample-sale" && (
-                              <span className={styles.saleBadge}>SALE</span>
-                            )}
-                            {p.isLimited && p.category !== "sample-sale" && (
-                              <span className={styles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                            )}
-                            {p.isBestSeller && (
-                              <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
                   </div>
                   <div className={styles.info}>
                     <span className={styles.category}>
@@ -612,98 +604,32 @@ export default function ShopClient() {
               <div className={styles.modalGallery}>
                 <div className={styles.modalImageWrap} style={{ position: "relative" }}>
                   <ProductMedia src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image} alt={quickViewPiece.name} className={styles.modalImage} />
-                  <div className={styles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
-                    {(() => {
-                      const isBespoke = quickViewStockStatus.isBespokeProduct;
-                      return isBespoke ? (
-                        <span className={styles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                      ) : quickViewStockStatus.isSelectedOutOfStock ? (
-                        <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                      ) : (
-                        <>
-                          {quickViewPiece.category === "sample-sale" && (
-                            <span className={styles.saleBadge}>SALE</span>
-                          )}
-                          {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
-                            <span className={styles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                          )}
-                          {quickViewPiece.isBestSeller && (
-                            <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
+                  <GalleryNav
+                    count={quickViewGalleryImages.length}
+                    onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
+                    onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
+                  />
                 </div>
-                {quickViewGalleryImages && quickViewGalleryImages.length > 1 && (
-                  <div className={styles.modalThumbnails}>
-                    {quickViewGalleryImages.map((img: string, idx: number) => (
-                      <button
-                        key={idx}
-                        className={`${styles.thumbBtn} ${(activeImage || quickViewGalleryImages[0]) === img ? styles.thumbActive : ""}`}
-                        onClick={() => setActiveImage(img)}
-                        aria-label={`View image ${idx + 1}`}
-                      >
-                        <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {quickViewPiece?.variants?.some((v: any) => v.id === "fit-combo") && quickViewColorVariants.length === 0 && (
-                  <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
-                    <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
-                    <div className={styles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
-                      <button
-                        type="button"
-                        onClick={() => { setQuickViewMode("solo"); setQuickViewComboId(""); }}
-                        style={{ 
-                          padding: "0.25rem 0", 
-                          borderBottom: quickViewMode === "solo" ? "2px solid #000" : "2px solid transparent",
-                          color: quickViewMode === "solo" ? "#000" : "#888",
-                          fontWeight: quickViewMode === "solo" ? 600 : 400,
-                          background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
-                        }}
-                      >
-                        Original
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setQuickViewMode("paired"); setQuickViewComboId("fit-combo"); }}
-                        style={{ 
-                          padding: "0.25rem 0", 
-                          borderBottom: quickViewMode === "paired" ? "2px solid #000" : "2px solid transparent",
-                          color: quickViewMode === "paired" ? "#000" : "#888",
-                          fontWeight: quickViewMode === "paired" ? 600 : 400,
-                          background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
-                        }}
-                      >
-                        Options
-                      </button>
-                    </div>
+              </div>
 
-                    {quickViewMode === "paired" && (
-                      <div className={styles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                        <button
-                          onClick={() => setQuickViewComboId("fit-combo")}
-                          style={{
-                            width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
-                            border: quickViewComboId === "fit-combo" ? "2px solid #000" : "1px solid #e5e5e5",
-                            padding: 0, background: "none", cursor: "pointer", position: "relative"
-                          }}
-                          title={quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo"}
-                        >
-                          {quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.thumbnailUrl ? (
-                            <img src={quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : (
-                            <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>
-                              {(quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo").slice(0, 2)}
-                            </div>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className={styles.modalInfo}>
+                <ProductNameRow
+                  product={quickViewPiece}
+                  isBespoke={quickViewStockStatus.isBespokeProduct}
+                  isOutOfStock={quickViewStockStatus.isSelectedOutOfStock}
+                >
+                  <h2 id="modal-title" className={`t-display ${styles.modalTitle}`}>
+                    {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
+                  </h2>
+                </ProductNameRow>
+                <div className={styles.modalPriceRow}>
+                  <span className={styles.modalPrice}>
+                    {formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}
+                  </span>
+                  {!quickViewActiveCombo && quickViewPiece.originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice(quickViewPiece.originalPrice)}</span>}
+                </div>
+
+                <p className={styles.modalDesc}>{quickViewPiece.description}</p>
 
                 {quickViewColorVariants.length > 0 && (
                   <>
@@ -794,20 +720,62 @@ export default function ShopClient() {
                     )}
                   </>
                 )}
-              </div>
 
-              <div className={styles.modalInfo}>
-                <h2 id="modal-title" className={`t-display ${styles.modalTitle}`}>
-                  {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
-                </h2>
-                <div className={styles.modalPriceRow}>
-                  <span className={styles.modalPrice}>
-                    {formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}
-                  </span>
-                  {!quickViewActiveCombo && quickViewPiece.originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice(quickViewPiece.originalPrice)}</span>}
-                </div>
+                {quickViewPiece?.variants?.some((v: any) => v.id === "fit-combo") && quickViewColorVariants.length === 0 && (
+                  <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
+                    <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
+                    <div className={styles.comboToggles} style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
+                      <button
+                        type="button"
+                        onClick={() => { setQuickViewMode("solo"); setQuickViewComboId(""); }}
+                        style={{ 
+                          padding: "0.25rem 0", 
+                          borderBottom: quickViewMode === "solo" ? "2px solid #000" : "2px solid transparent",
+                          color: quickViewMode === "solo" ? "#000" : "#888",
+                          fontWeight: quickViewMode === "solo" ? 600 : 400,
+                          background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                        }}
+                      >
+                        Original
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setQuickViewMode("paired"); setQuickViewComboId("fit-combo"); }}
+                        style={{ 
+                          padding: "0.25rem 0", 
+                          borderBottom: quickViewMode === "paired" ? "2px solid #000" : "2px solid transparent",
+                          color: quickViewMode === "paired" ? "#000" : "#888",
+                          fontWeight: quickViewMode === "paired" ? 600 : 400,
+                          background: "none", borderTop: "none", borderLeft: "none", borderRight: "none", cursor: "pointer"
+                        }}
+                      >
+                        Options
+                      </button>
+                    </div>
 
-                <p className={styles.modalDesc}>{quickViewPiece.description}</p>
+                    {quickViewMode === "paired" && (
+                      <div className={styles.comboThumbnails} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => setQuickViewComboId("fit-combo")}
+                          style={{
+                            width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden",
+                            border: quickViewComboId === "fit-combo" ? "2px solid #000" : "1px solid #e5e5e5",
+                            padding: 0, background: "none", cursor: "pointer", position: "relative"
+                          }}
+                          title={quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo"}
+                        >
+                          {quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.thumbnailUrl ? (
+                            <img src={quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.thumbnailUrl} alt="Thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px" }}>
+                              {(quickViewPiece.variants?.find((v: any) => v.id === "fit-combo")?.name || "Fit Combo").slice(0, 2)}
+                            </div>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {(quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") && (
                   <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>

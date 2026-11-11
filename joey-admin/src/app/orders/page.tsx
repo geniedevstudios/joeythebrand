@@ -13,6 +13,10 @@ import OrderItemDetailModal from "@/components/OrderItemDetailModal";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import {
+  isDhlShippingAddress,
+  parseShippingAddressDisplay,
+} from "@/lib/formatShippingAddress";
 import { toast } from "sonner";
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
@@ -21,12 +25,45 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "processing", label: "Processing" },
   { value: "in production", label: "In Production (Made to Order)" },
   { value: "order packaged", label: "Order Packaged" },
+  { value: "shipped", label: "Shipped" },
   { value: "courier on his way to pick package", label: "Courier On His Way To Pick Package" },
   { value: "courier picked package", label: "Courier Picked Package" },
   { value: "courier on the way to deliver package", label: "Courier On The Way To Deliver Package" },
   { value: "package delivered", label: "Package Delivered" },
   { value: "cancelled", label: "Cancelled" },
 ];
+
+function isMtoItem(item: OrderItem) {
+  return (
+    item.fulfillmentType === "made_to_order" ||
+    Boolean(item.isMadeToOrder) ||
+    Boolean(item.isBespoke)
+  );
+}
+
+function orderFulfillmentKind(order: Order): "rtw" | "mto" | "mixed" {
+  if (order.isMixedFulfillment) return "mixed";
+  const hasMto =
+    Boolean(order.hasMadeToOrderItems) || order.items.some((item) => isMtoItem(item));
+  const hasRtw = order.items.some((item) => !isMtoItem(item));
+  if (hasMto && hasRtw) return "mixed";
+  if (hasMto) return "mto";
+  return "rtw";
+}
+
+function statusOptionsForOrder(order: Order) {
+  const kind = orderFulfillmentKind(order);
+  const options =
+    kind === "rtw"
+      ? STATUS_OPTIONS.filter((opt) => opt.value !== "in production")
+      : STATUS_OPTIONS;
+  // Keep current status visible if it was set before fulfillment filtering.
+  if (!options.some((opt) => opt.value === order.status)) {
+    const current = STATUS_OPTIONS.find((opt) => opt.value === order.status);
+    if (current) return [current, ...options];
+  }
+  return options;
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -153,7 +190,7 @@ export default function OrdersPage() {
               <p className="mt-1 text-sm text-zinc-800">Orders placed from the shop will appear here.</p>
             </div>
           ) : (
-            <table className="min-w-[1080px] w-full border-collapse text-left">
+            <table className="min-w-[1120px] w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-100">
                   <th
@@ -219,10 +256,33 @@ export default function OrdersPage() {
                         <div className="mt-1 text-xs font-medium text-blue-600">Linked account</div>
                       )}
                     </td>
-                    <td className="max-w-[220px] px-5 py-4">
-                      <div className="whitespace-normal text-xs leading-relaxed text-zinc-600">
-                        {order.shippingAddress}
-                      </div>
+                    <td className="w-[220px] max-w-[240px] px-5 py-4">
+                      {(() => {
+                        const shipping = parseShippingAddressDisplay(order.shippingAddress);
+                        return (
+                          <div className="space-y-1.5">
+                            <div className="whitespace-normal break-words text-xs leading-relaxed text-zinc-700">
+                              {shipping.address}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {shipping.carrier === "dhl" ? (
+                                <span className="inline-flex rounded bg-[#1c1e22] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#f5f1eb]">
+                                  DHL
+                                </span>
+                              ) : shipping.carrier === "custom" ? (
+                                <span className="inline-flex rounded bg-[#b6b7ba]/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#1c1e22]">
+                                  Custom
+                                </span>
+                              ) : null}
+                              {shipping.international ? (
+                                <span className="inline-flex rounded bg-[#ebe8e2] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#1c1e22] ring-1 ring-[#b6b7ba]/70">
+                                  International
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-4">
                       {order.isMixedFulfillment ? (
@@ -248,7 +308,7 @@ export default function OrdersPage() {
                               try { await dataStore.resolveOrderStockConflict(order.id, reason, agreement, days); await load(); toast.success("Conflicting items converted to Made to Order."); }
                               catch (err: any) { toast.error(err.message || "Could not resolve hold."); }
                               finally { setUpdatingId(null); }
-                            }} className="rounded bg-zinc-800 px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-50">
+                            }} className="rounded bg-[#1c1e22] px-2 py-1 text-[11px] font-semibold text-[#f5f1eb] disabled:opacity-50">
                               Record customer agreement and convert affected items
                             </button>
                           </div>
@@ -256,17 +316,14 @@ export default function OrdersPage() {
                       ) : null}
                       <ul className="flex max-w-xs flex-col gap-1.5">
                         {order.items.map((item, idx) => {
-                          const isMto =
-                            item.fulfillmentType === "made_to_order" ||
-                            Boolean(item.isMadeToOrder) ||
-                            Boolean(item.isBespoke);
+                          const isMto = isMtoItem(item);
                           const leadDays = item.leadDays ?? item.bespokeLeadDays ?? 14;
                           return (
                           <li key={`${order.id}-${idx}-${item.productId}-${item.size}`}>
                             <button
                               type="button"
                               onClick={() => setItemModal({ order, item, itemIndex: idx })}
-                              className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2 text-left transition hover:border-white/15 hover:bg-white/[0.06] hover:shadow-[0_18px_70px_rgba(0,0,0,0.35)]"
+                              className="flex w-full items-center gap-3 rounded-2xl border border-[#b6b7ba]/70 bg-white p-2 text-left transition hover:border-[#b6b7ba]/80 hover:bg-[#f5f1eb] hover:shadow-[0_10px_30px_rgba(28,30,34,0.08)]"
                               aria-label={`Details for ${item.name}, size ${item.size}, quantity ${item.quantity}`}
                             >
                               <span className="relative h-11 w-9 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 shadow-sm">
@@ -312,23 +369,27 @@ export default function OrdersPage() {
                                   Qty{" "}
                                   <span className="font-semibold text-zinc-700">{item.quantity}</span>
                                 </span>
-                                {isMto ? (
-                                  <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                                    <span className="inline-flex rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-800">
-                                      Made to Order · {leadDays}d
+                                <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                                  {isMto ? (
+                                    <span className="inline-flex rounded bg-[#1c1e22] px-1.5 py-0.5 text-[10px] font-semibold text-[#f5f1eb]">
+                                      Made to order · {leadDays}d
                                     </span>
-                                    {item.estimatedReadyDate ? (
-                                      <span className="text-[10px] text-zinc-600">
-                                        Ready: {item.estimatedReadyDate}
-                                      </span>
-                                    ) : null}
-                                    {item.productionStatus && item.productionStatus !== "not_applicable" ? (
-                                      <span className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium capitalize text-zinc-800">
-                                        {item.productionStatus.replace(/_/g, " ")}
-                                      </span>
-                                    ) : null}
-                                  </span>
-                                ) : null}
+                                  ) : (
+                                    <span className="inline-flex rounded bg-[#b6b7ba]/55 px-1.5 py-0.5 text-[10px] font-semibold text-[#1c1e22]">
+                                      Ready to wear
+                                    </span>
+                                  )}
+                                  {isMto && item.estimatedReadyDate ? (
+                                    <span className="text-[10px] text-zinc-600">
+                                      Ready: {item.estimatedReadyDate}
+                                    </span>
+                                  ) : null}
+                                  {isMto && item.productionStatus && item.productionStatus !== "not_applicable" ? (
+                                    <span className="inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium capitalize text-zinc-800">
+                                      {item.productionStatus.replace(/_/g, " ")}
+                                    </span>
+                                  ) : null}
+                                </span>
                               </span>
                             </button>
                           </li>
@@ -362,32 +423,44 @@ export default function OrdersPage() {
                         </div>
                       ) : null}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="w-[200px] max-w-[220px] px-5 py-4 align-top">
+                      {orderFulfillmentKind(order) === "mixed" ? (
+                        <div className="mb-2 inline-flex rounded bg-[#ebe8e2] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#1c1e22] ring-1 ring-[#b6b7ba]/70">
+                          Mixed RTW + MTO
+                        </div>
+                      ) : null}
                       <span id={`order-status-label-${order.id}`} className="sr-only">
                         Update order status
                       </span>
                       <AdminStyledSelect
+                        key={`${order.id}-${order.status}-${orderFulfillmentKind(order)}`}
                         name={`order-status-${order.id}`}
                         labelledBy={`order-status-label-${order.id}`}
                         defaultValue={order.status}
                         disabled={updatingId === order.id || order.stockConflictFlagged}
                         onValueChange={(v) => void handleStatusChange(order.id, v as OrderStatus)}
-                        options={STATUS_OPTIONS}
-                        wrapperClassName="min-w-[156px]"
+                        options={statusOptionsForOrder(order)}
+                        wrapperClassName="w-full"
                       />
                       {order.dhlTrackingNumber ? (
-                        <div className="mt-3 text-xs border-t border-zinc-100 pt-2">
-                          <p className="font-medium text-zinc-900 mb-1">DHL Ship</p>
-                          {order.dhlStatus?.startsWith("Pickup Scheduled") && (
-                            <a 
-                              href={order.dhlLabelUrl?.startsWith("data:") ? order.dhlLabelUrl : `data:application/pdf;base64,${order.dhlLabelUrl}`} 
-                              download={`DHL_Label_${order.dhlTrackingNumber}.pdf`} 
-                              className="text-blue-600 hover:underline block mb-1"
+                        <div className="mt-2 space-y-1 border-t border-zinc-100 pt-2 text-xs">
+                          <p className="truncate font-medium text-zinc-900" title={order.dhlTrackingNumber}>
+                            DHL {order.dhlTrackingNumber}
+                          </p>
+                          {order.dhlLabelUrl ? (
+                            <a
+                              href={
+                                order.dhlLabelUrl.startsWith("data:")
+                                  ? order.dhlLabelUrl
+                                  : `data:application/pdf;base64,${order.dhlLabelUrl}`
+                              }
+                              download={`DHL_Label_${order.dhlTrackingNumber}.pdf`}
+                              className="block text-blue-600 hover:underline"
                             >
-                              Download Label
+                              Download label
                             </a>
-                          )}
-                          {!order.dhlStatus?.startsWith("Pickup Scheduled") && (
+                          ) : null}
+                          {!order.dhlStatus?.startsWith("Pickup Scheduled") ? (
                             <button
                               type="button"
                               onClick={async () => {
@@ -395,12 +468,20 @@ export default function OrdersPage() {
                                   setUpdatingId(order.id);
                                   const res = await fetch("/api/dhl/schedule-pickup", {
                                     method: "POST",
-                                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}` },
-                                    body: JSON.stringify({ orderId: order.id, trackingNumber: order.dhlTrackingNumber })
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}`,
+                                    },
+                                    body: JSON.stringify({
+                                      orderId: order.id,
+                                      trackingNumber: order.dhlTrackingNumber,
+                                    }),
                                   });
                                   const data = await res.json();
                                   if (!res.ok) throw new Error(data.error || "Failed");
-                                  toast.success(`Pickup scheduled! Confirmation: ${data.dispatchConfirmationNumber}`);
+                                  toast.success(
+                                    `Pickup scheduled! Confirmation: ${data.dispatchConfirmationNumber}`,
+                                  );
                                   await load();
                                 } catch (err: any) {
                                   toast.error(`Error: ${err.message}`);
@@ -408,22 +489,29 @@ export default function OrdersPage() {
                                   setUpdatingId(null);
                                 }
                               }}
-                              className="text-white bg-black hover:bg-zinc-800 px-2 py-1 rounded w-full mt-1 transition-colors"
+                              className="w-full rounded bg-[#1c1e22] px-2 py-1 text-[11px] font-medium text-[#f5f1eb] transition-colors hover:bg-zinc-800"
                             >
-                              Schedule Pickup
+                              Schedule pickup
                             </button>
-                          )}
-                          <p className="mt-1 text-[10px] text-zinc-500">{order.dhlStatus}</p>
+                          ) : null}
+                          {order.dhlStatus && !order.dhlStatus.startsWith("[") ? (
+                            <p className="text-[10px] text-zinc-500">{order.dhlStatus}</p>
+                          ) : null}
                         </div>
-                      ) : order.shippingAddress?.includes("DHL[") ? (
-                        <div className="mt-3 border-t border-zinc-100 pt-2">
+                      ) : isDhlShippingAddress(order.shippingAddress) ? (
+                        <div className="mt-2 border-t border-zinc-100 pt-2">
                           <button
                             type="button"
-                            disabled={updatingId === order.id || order.stockConflictFlagged || order.status !== "order packaged"}
+                            disabled={
+                              updatingId === order.id ||
+                              order.paymentStatus !== "paid" ||
+                              order.stockConflictFlagged ||
+                              order.status !== "order packaged"
+                            }
                             onClick={() => setShipmentModal({ orderId: order.id })}
-                            className="text-white bg-black hover:bg-zinc-800 px-2 py-1.5 rounded w-full text-xs font-medium transition-colors disabled:opacity-50"
+                            className="w-full rounded bg-[#1c1e22] px-2 py-1.5 text-[11px] font-medium text-[#f5f1eb] transition-colors hover:bg-zinc-800 disabled:opacity-50"
                           >
-                            Create DHL Shipment
+                            Create DHL shipment
                           </button>
                         </div>
                       ) : null}

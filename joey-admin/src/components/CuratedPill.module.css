@@ -9,12 +9,12 @@
   padding: 0.45rem 1.15rem 0.5rem;
   border-radius: 999px;
   text-decoration: none;
-  color: rgba(245, 241, 236, 0.92);
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #1c1e22;
+  background: #ffffff;
+  border: 1px solid rgba(182, 183, 186, 0.9);
   box-shadow:
-    0 0 0 1px rgba(145, 126, 113, 0.12) inset,
-    0 4px 14px rgba(0, 0, 0, 0.12);
+    0 0 0 1px rgba(28, 30, 34, 0.04) inset,
+    0 4px 14px rgba(28, 30, 34, 0.08);
   transition:
     color 0.2s ease,
     background 0.2s ease,
@@ -24,13 +24,13 @@
 }
 
 .curatedPill:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(145, 126, 113, 0.45);
+  color: #000;
+  background: #f5f1eb;
+  border-color: rgba(28, 30, 34, 0.28);
   transform: translateY(-2px);
   box-shadow:
-    0 0 0 1px rgba(145, 126, 113, 0.2) inset,
-    0 8px 22px rgba(0, 0, 0, 0.18);
+    0 0 0 1px rgba(28, 30, 34, 0.06) inset,
+    0 8px 22px rgba(28, 30, 34, 0.12);
 }
 
 .curatedPill:focus-visible {
@@ -49,12 +49,12 @@
 
 .curatedPillInactive:hover {
   transform: none;
-  color: rgba(245, 241, 236, 0.92);
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.14);
+  color: #1c1e22;
+  background: #ffffff;
+  border-color: rgba(182, 183, 186, 0.9);
   box-shadow:
-    0 0 0 1px rgba(145, 126, 113, 0.12) inset,
-    0 4px 14px rgba(0, 0, 0, 0.12);
+    0 0 0 1px rgba(28, 30, 34, 0.04) inset,
+    0 4px 14px rgba(28, 30, 34, 0.08);
 }
 
 .curatedLabel {

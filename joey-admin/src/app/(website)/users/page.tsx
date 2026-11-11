@@ -140,7 +140,7 @@ export default function UsersPage() {
               </thead>
               <tbody className="divide-y divide-zinc-200">
                 {rows.map((u) => (
-                  <tr key={u.id} className="transition hover:bg-white/[0.07]">
+                  <tr key={u.id} className="transition hover:bg-[#f5f1eb]">
                     <td className="px-4 py-3 text-sm text-zinc-800">
                       {u.hasAccount ? (
                         <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-200">

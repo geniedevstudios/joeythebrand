@@ -6,44 +6,24 @@
 
 .pageHeader {
   position: relative;
-  background: var(--blue-athracite);
-  background-size: cover;
-  background-position: center top;
-  margin-top: calc(-1 * var(--nav-height));
-  padding-top: calc(var(--nav-height) + 4rem);
-  color: var(--color-text-light);
-  padding-bottom: var(--space-lg);
-}
-
-.pageHeader::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(39, 43, 54, 0.78) 0%,
-    rgba(39, 43, 54, 0.5) 50%,
-    rgba(145, 126, 113, 0.35) 100%
-  );
-  z-index: 0;
-}
-
-.pageHeader > * {
-  position: relative;
-  z-index: 1;
+  background: transparent;
+  padding-top: calc(var(--nav-height) + var(--space-2xl));
+  padding-bottom: var(--space-2xl);
 }
 
 .pageHeader .section-label {
   color: var(--cinereous);
   font-size: 0.7rem;
-  margin-top: 24px;
 }
 
 .pageTitle {
-  color: #fff;
+  color: var(--blue-athracite);
   margin-top: var(--space-xs);
   font-weight: 300;
   font-family: var(--font-display);
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
 .checkoutLayout {

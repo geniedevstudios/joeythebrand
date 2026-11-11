@@ -309,12 +309,11 @@ export default function NewsSpotlightsEditor() {
                 </div>
 
                 <AssetUrlField
-                  label={draft.snapshotKind === "video" ? "Teaser video URL" : "Teaser image URL"}
+                  label={draft.snapshotKind === "video" ? "Teaser video" : "Teaser image"}
                   value={draft.snapshotUrl}
                   onChange={(v) => setDraft((d) => ({ ...d, snapshotUrl: v }))}
                   uploadFolder="site/news-snapshots"
                   accept={draft.snapshotKind === "video" ? "video/*" : "image/*"}
-                  placeholder="Upload or paste URL"
                 />
 
                 <label className="block">

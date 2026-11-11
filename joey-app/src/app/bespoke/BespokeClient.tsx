@@ -9,8 +9,10 @@ import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageL
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderPropsWithSSRSeed } from "@/hooks/usePageHero";
 import type { Product, ProductVariant, SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
-import CustomDatePicker from "@/components/CustomDatePicker";
+import { WheelDatePicker, accraToday, formatWheelValue } from "@/components/wheel-picker";
 import ProductMedia from "@/components/shop/ProductMedia";
+import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
+import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { getStorefrontSizes } from "@/lib/wearSizes";
@@ -32,28 +34,10 @@ const EMPTY_WISHLIST: WishlistItem[] = [];
 const services = ["Bespoke Tailoring", "Styling Consultation", "Wardrobe Curation", "Event Styling"];
 const serviceOptions = services.map((s) => ({ value: s, label: s }));
 
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
+function shiftAccraDay(day: string, count: number) {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date + count)).toISOString().slice(0, 10);
 }
-
-function toTimeLabel(h24: number, m: number): string {
-  const hour12 = ((h24 + 11) % 12) + 1;
-  const ampm = h24 >= 12 ? "PM" : "AM";
-  const mm = m === 0 ? "00" : String(m);
-  return `${hour12}:${mm} ${ampm}`;
-}
-
-const timeOptions = (() => {
-  const out: { value: string; label: string }[] = [];
-  for (let h = 8; h <= 15; h++) {
-    for (const m of [0, 30] as const) {
-      if (h === 15 && m === 30) continue; // end at 3:00pm
-      const value = `${pad2(h)}:${pad2(m)}`;
-      out.push({ value, label: toTimeLabel(h, m) });
-    }
-  }
-  return out;
-})();
 
 function uniqueMediaUrls(urls: Array<string | undefined | null>): string[] {
   const out: string[] = [];
@@ -419,15 +403,17 @@ export default function BespokeClient({
   }, [quickViewPiece]);
   const [, setBookingIdForPayment] = useState<string | null>(null);
   const [payConfirmOpen, setPayConfirmOpen] = useState(false);
-  const [slotStep, setSlotStep] = useState<"date" | "time">("date");
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    service: "",
-    date: "",
-    time: "",
-    notes: "",
+  const [form, setForm] = useState(() => {
+    const day = shiftAccraDay(accraToday(), 1);
+    return {
+      name: "",
+      email: "",
+      phone: "",
+      service: "",
+      date: day,
+      time: "10:00",
+      notes: "",
+    };
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [submitError, setSubmitError] = useState("");
@@ -540,6 +526,10 @@ export default function BespokeClient({
     }
     if (!form.time?.trim()) {
       setSubmitError("Please choose a preferred time (8:00am–3:00pm).");
+      return;
+    }
+    if (disabledDates.includes(form.date.trim())) {
+      setSubmitError("That day is unavailable. Please pick another date.");
       return;
     }
     if (!form.service?.trim()) {
@@ -760,80 +750,44 @@ export default function BespokeClient({
                   </div>
                 </div>
 
-                <div className={styles.formRow}>
-                  <div className="form-group">
-                    <label htmlFor="phone" className="form-label">Phone / WhatsApp *</label>
-                    <input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      className="form-input"
-                      placeholder="+233 xxx xxx xxx"
-                      value={form.phone}
-                      onChange={handleChange}
-                      required
+                <div className="form-group">
+                  <label htmlFor="phone" className="form-label">Phone / WhatsApp *</label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    className="form-input"
+                    placeholder="+233 xxx xxx xxx"
+                    value={form.phone}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <span className="form-label" id="slot-label">Preferred day &amp; time *</span>
+                  {calendarLoadError ? (
+                    <p className={styles.calendarWarn}>{calendarLoadError}</p>
+                  ) : null}
+                  <div className={styles.wheelSlot} aria-labelledby="slot-label">
+                    <WheelDatePicker
+                      value={
+                        form.date && form.time
+                          ? `${form.date}T${form.time}`
+                          : `${shiftAccraDay(accraToday(), 1)}T10:00`
+                      }
+                      withTime
+                      onChange={(next) => {
+                        const [date = "", time = ""] = next.split("T");
+                        setForm((prev) => ({ ...prev, date, time }));
+                        setSubmitError("");
+                      }}
                     />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="date" className="form-label">Preferred Date *</label>
-                    {calendarLoadError ? (
-                      <p className={styles.calendarWarn}>{calendarLoadError}</p>
+                    {disabledDates.includes(form.date) ? (
+                      <p className={styles.calendarWarn}>
+                        {formatWheelValue(`${form.date}T${form.time || "10:00"}`, true)} is unavailable. Pick another day.
+                      </p>
                     ) : null}
-                    {slotStep === "date" ? (
-                      <div style={{ display: "grid", gap: "10px" }}>
-                        <CustomDatePicker
-                          id="date"
-                          name="date"
-                          value={form.date}
-                          onChange={handleChange as (e: { target: { name: string; value: string } }) => void}
-                          min={new Date().toISOString().split("T")[0]}
-                          disabledDates={disabledDates}
-                          closeOnSelect={false}
-                          nextLabel="Next: pick time"
-                          nextDisabled={!form.date.trim()}
-                          onNext={() => {
-                            if (!form.date.trim()) return;
-                            setSlotStep("time");
-                            setSubmitError("");
-                          }}
-                        />
-                        {form.date.trim() && form.time.trim() ? (
-                          <span style={{ alignSelf: "center", fontSize: "0.9rem", color: "var(--alaska-gray)" }}>
-                            Selected: <strong>{form.date}</strong> at{" "}
-                            <strong>{timeOptions.find((t) => t.value === form.time)?.label ?? form.time}</strong>
-                          </span>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div style={{ display: "grid", gap: "10px" }}>
-                        <div style={{ fontSize: "0.9rem", color: "var(--alaska-gray)" }}>
-                          Date: <strong>{form.date || "—"}</strong>
-                        </div>
-                        <label className="form-label" id="time-label">Preferred Time *</label>
-                        <CustomSelect
-                          id="time"
-                          name="time"
-                          value={form.time}
-                          onChange={handleChange}
-                          options={timeOptions}
-                          placeholder="Select a time (8:00am–3:00pm)"
-                          required
-                        />
-                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                          <button type="button" className="btn btn-outline" onClick={() => setSlotStep("date")}>
-                            Back
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={!form.time.trim()}
-                            onClick={() => setSlotStep("date")}
-                          >
-                            Done
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -1167,6 +1121,8 @@ export default function BespokeClient({
                   qvActiveVariant,
                   qvActiveCombo,
                   quickViewMode,
+                  "made_to_order",
+                  selectedSize || null,
                 );
                 const isInQvWishlist = wishlistItems.some((w) => w.id === quickViewPiece.id);
 
@@ -1244,40 +1200,39 @@ export default function BespokeClient({
                           alt={quickViewPiece.name}
                           className={shopStyles.modalImage}
                         />
-                        <div
-                          className={shopStyles.badgeStack}
-                          aria-hidden="true"
-                          style={{ left: "var(--space-md)" }}
-                        >
-                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>
-                            MADE TO ORDER
-                          </span>
-                        </div>
+                        <GalleryNav
+                          count={qvGalleryImages.length}
+                          onPrev={() => setActiveImage((img) => stepGalleryImage(qvGalleryImages, img || qvGalleryImages[0] || quickViewPiece.image, -1))}
+                          onNext={() => setActiveImage((img) => stepGalleryImage(qvGalleryImages, img || qvGalleryImages[0] || quickViewPiece.image, 1))}
+                        />
                       </div>
-                      {qvGalleryImages.length > 1 ? (
-                        <div className={shopStyles.modalThumbnails}>
-                          {qvGalleryImages.map((img: string, idx: number) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className={`${shopStyles.thumbBtn} ${
-                                (activeImage || qvGalleryImages[0]) === img
-                                  ? shopStyles.thumbActive
-                                  : ""
-                              }`}
-                              onClick={() => setActiveImage(img)}
-                              aria-label={`View image ${idx + 1}`}
-                            >
-                              <ProductMedia
-                                src={img}
-                                alt={`Thumbnail ${idx + 1}`}
-                                className={shopStyles.thumbImage}
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
 
+                    </div>
+
+                    <div className={shopStyles.modalInfo}>
+                      <ProductNameRow product={quickViewPiece} isBespoke>
+                        <h2 id="bespoke-qv-title" className={`t-display ${shopStyles.modalTitle}`}>
+                          {qvActiveCombo?.productNameOverride
+                            ? qvActiveCombo.productNameOverride
+                            : qvActiveVariant &&
+                                qvActiveVariant.id !== "main-color" &&
+                                qvActiveVariant.productNameOverride
+                              ? qvActiveVariant.productNameOverride
+                              : quickViewPiece.name}
+                        </h2>
+                      </ProductNameRow>
+                      <div className={shopStyles.modalPriceRow}>
+                        <span className={shopStyles.modalPrice}>
+                          GHC {quickViewStockStatus.unitPrice.toLocaleString()}
+                        </span>
+                        {!qvActiveCombo && quickViewPiece.originalPrice ? (
+                          <span className={shopStyles.modalOriginalPrice}>
+                            GHC {quickViewPiece.originalPrice.toLocaleString()}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className={shopStyles.modalDesc}>{quickViewPiece.description}</p>
                       {qvColorVariants.length > 0 ? (
                         <div className={shopStyles.colorSelectorSection}>
                           <span className={shopStyles.colorSelectorLabel}>Color:</span>
@@ -1322,30 +1277,7 @@ export default function BespokeClient({
                           </div>
                         </div>
                       ) : null}
-                    </div>
 
-                    <div className={shopStyles.modalInfo}>
-                      <h2 id="bespoke-qv-title" className={`t-display ${shopStyles.modalTitle}`}>
-                        {qvActiveCombo?.productNameOverride
-                          ? qvActiveCombo.productNameOverride
-                          : qvActiveVariant &&
-                              qvActiveVariant.id !== "main-color" &&
-                              qvActiveVariant.productNameOverride
-                            ? qvActiveVariant.productNameOverride
-                            : quickViewPiece.name}
-                      </h2>
-                      <div className={shopStyles.modalPriceRow}>
-                        <span className={shopStyles.modalPrice}>
-                          GHC {quickViewStockStatus.unitPrice.toLocaleString()}
-                        </span>
-                        {!qvActiveCombo && quickViewPiece.originalPrice ? (
-                          <span className={shopStyles.modalOriginalPrice}>
-                            GHC {quickViewPiece.originalPrice.toLocaleString()}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <p className={shopStyles.modalDesc}>{quickViewPiece.description}</p>
 
                       {(quickViewPiece.wearTag === "womens" ||
                         quickViewPiece.wearTag === "unisex") && (

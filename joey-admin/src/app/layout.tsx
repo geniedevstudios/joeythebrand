@@ -49,7 +49,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full w-full antialiased`}
     >
-      <body className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden overscroll-x-none touch-pan-y bg-[#0b0d10] font-sans text-white">
+      <body className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden overscroll-x-none touch-pan-y bg-[#f5f1eb] font-sans text-[#1c1e22]">
         <AdminAuthGate>
           <AdminRealtimeSync />
           <TopNav />

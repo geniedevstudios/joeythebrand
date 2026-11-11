@@ -1,5 +1,5 @@
 .page {
-  padding-top: 0;
+  padding-top: var(--nav-height);
   padding-bottom: var(--space-4xl);
   background: var(--color-bg);
   min-height: 100vh;
@@ -43,10 +43,9 @@
   );
 }
 
-/* Breadcrumbs */
+/* Breadcrumbs sit in the page, below the nav — not in the nav strip */
 .breadcrumbs {
-  padding: var(--space-md) 0;
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-lg) 0 var(--space-md);
 }
 
 .crumbLink {
@@ -697,8 +696,8 @@
 
 .suggestionsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
-  gap: clamp(var(--space-md), 2vw, var(--space-xl));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 25px;
 }
 
 .suggestCard {
@@ -712,7 +711,7 @@
 
 .suggestImgWrap {
   position: relative;
-  aspect-ratio: 3/4;
+  aspect-ratio: 3 / 4.2;
   background: var(--skintone);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -1002,7 +1001,10 @@
 }
 
 .modalImageWrap {
-  width: 100%;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   display: flex;
   justify-content: center;
   border-radius: var(--radius-md);
@@ -1247,6 +1249,17 @@
   color: var(--dark-wood);
 }
 
+@media (max-width: 760px) {
+  .suggestionsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 14px;
+  }
+
+  .suggestImgWrap {
+    aspect-ratio: 3 / 4.3;
+  }
+}
+
 @media (max-width: 640px) {
   .layout {
     grid-template-columns: 1fr;
@@ -1298,11 +1311,6 @@
     align-items: flex-start;
     gap: var(--space-sm);
     margin-bottom: var(--space-xl);
-  }
-
-  .suggestionsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-md);
   }
 
   .suggestionsTitle {
@@ -1388,14 +1396,15 @@
   }
 }
 
+@media (min-width: 1600px) {
+  .suggestImgWrap {
+    aspect-ratio: 3 / 4;
+  }
+}
+
 @media (max-width: 480px) {
   .layout {
     gap: var(--space-md);
-  }
-
-  .suggestionsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-sm);
   }
 
   .suggestName {

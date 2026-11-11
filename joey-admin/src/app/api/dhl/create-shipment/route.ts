@@ -1,7 +1,6 @@
 import { isDhlOperator } from "@/lib/dhlRequestAuth";
 import { NextResponse } from "next/server";
-import { createShipment } from "@/lib/dhl";
-import { dataStore } from "@/lib/dataStore";
+import { createShipment, parseDhlAddress } from "@/lib/dhl";
 import { createClient } from "@supabase/supabase-js";
 
 // Needs server role to bypass RLS when updating orders
@@ -10,43 +9,17 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function parseAddress(shippingAddress: string) {
-  // Check for the embedded DHL metadata: | DHL[City|PostalCode|CountryCode]
-  const dhlMatch = shippingAddress.match(/DHL\[([^|]+)\|([^|]*)\|([^\]]+)\]/);
-  if (dhlMatch) {
-    return {
-      addressLine1: shippingAddress.split("| DHL")[0].trim().substring(0, 45),
-      city: dhlMatch[1].trim().substring(0, 45),
-      postalCode: (dhlMatch[2] || "").trim().toUpperCase(),
-      countryCode: dhlMatch[3].trim()
-    };
-  }
-
-  // Try to parse JSON from shippingAddress (fallback)
-  try {
-    if (shippingAddress.startsWith("{")) {
-      const parsed = JSON.parse(shippingAddress);
-      if (!parsed.city || !parsed.countryCode) {
-        throw new Error("Invalid structured address: missing city or countryCode");
-      }
-      return {
-        addressLine1: (parsed.addressLine1 || parsed.address || "").substring(0, 45),
-        city: parsed.city.substring(0, 45),
-        countryCode: parsed.countryCode,
-        postalCode: (parsed.postalCode || "").trim().toUpperCase()
-      };
-    }
-  } catch (e) {}
-
-  throw new Error(`Invalid shipping address format: ${shippingAddress}`);
-}
-
 export async function POST(request: Request) {
   try {
     if (!(await isDhlOperator(request))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { orderId, packageDimensions } = await request.json();
     if (!orderId) {
       return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
+    }
+    if (packageDimensions !== undefined && !["length", "width", "height"].every((key) =>
+      typeof packageDimensions?.[key] === "number" && Number.isFinite(packageDimensions[key]) && packageDimensions[key] > 0
+    )) {
+      return NextResponse.json({ error: "Package dimensions must be positive measurements in centimeters." }, { status: 400 });
     }
 
     const { data: order, error } = await supabaseAdmin
@@ -59,15 +32,18 @@ export async function POST(request: Request) {
       throw new Error(error?.message || "Order not found");
     }
 
-    if (order.stock_conflict_flagged || order.status === "paid_requires_resolution" || order.payment_status !== "paid" || order.status !== "order packaged") {
-      return NextResponse.json({ error: "Order is not eligible for shipment." }, { status: 409 });
-    }
-
     if (order.dhl_tracking_number) {
       return NextResponse.json({ error: "Shipment already created", trackingNumber: order.dhl_tracking_number }, { status: 400 });
     }
 
-    const destination = parseAddress(order.shipping_address);
+    if (order.stock_conflict_flagged || order.payment_status !== "paid" || order.status !== "order packaged") {
+      return NextResponse.json({ error: "Order is not eligible for shipment." }, { status: 409 });
+    }
+
+    const destination = parseDhlAddress(order.shipping_address);
+    if (!destination) {
+      return NextResponse.json({ error: "This order does not have a valid DHL delivery address." }, { status: 409 });
+    }
     const productIds = (order.items || []).map((item: any) => item.productId || item.product_id).filter(Boolean);
     let productsMap: Record<string, any> = {};
     

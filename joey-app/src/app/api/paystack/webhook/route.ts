@@ -68,7 +68,6 @@ export async function POST(request: Request) {
   if (!reference) return NextResponse.json({ ok: true });
 
   const supabaseAdmin = getSupabaseAdmin();
-  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const bookingIdFromMeta =
     evt.data?.metadata?.bookingId?.trim() ||
@@ -80,7 +79,7 @@ export async function POST(request: Request) {
   if (bookingIdFromMeta || reference.startsWith("BSP-")) {
     await verifyConsultationPaystackAndNotify({
       supabaseAdmin,
-      emailSender: { send: (msg: any) => resend.emails.send(msg) },
+      emailSender: { send: (msg: any) => new Resend(process.env.RESEND_API_KEY).emails.send(msg) },
       renderEmail: (props) => BespokeBookingEmail(props),
       brandFromName: "JOEY The brand",
       reference,
@@ -102,7 +101,7 @@ export async function POST(request: Request) {
     supabaseAdmin,
     emailSender: {
       send: (msg: any, options?: { idempotencyKey?: string }) =>
-        resend.emails.send(
+        new Resend(process.env.RESEND_API_KEY).emails.send(
           msg,
           options?.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : undefined,
         ),

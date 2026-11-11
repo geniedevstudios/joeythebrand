@@ -24,16 +24,16 @@
   background: #fff;
 }
 
-/* Dark nav colors when scrolled (over light frosted bg) */
-.nav.scrolled .logo,
-.nav.scrolled .navLink,
-.nav.scrolled .cartBtn,
-.nav.scrolled .iconBtn,
-.nav.scrolled .hamburger {
+/* Dark type on cream pages (and after scroll). Pill stays on .scrolled only. */
+.nav.darkType .logo,
+.nav.darkType .navLink,
+.nav.darkType .cartBtn,
+.nav.darkType .iconBtn,
+.nav.darkType .hamburger {
   color: #0b0d10;
 }
 
-.nav.scrolled .navLink::after {
+.nav.darkType .navLink::after {
   background: var(--wood);
 }
 
@@ -342,7 +342,7 @@
   justify-content: center;
 }
 
-.nav.scrolled .cartBadge {
+.nav.darkType .cartBadge {
   background: var(--blue-athracite);
   color: #fff;
 }

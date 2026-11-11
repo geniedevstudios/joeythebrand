@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { dataStore } from "@/lib/dataStore";
 import type { ConsultationBooking, ConsultationSource } from "@/lib/types";
 import { openConsultationPrintWindow } from "@/lib/printConsultation";
@@ -11,8 +10,10 @@ import {
   formatPreferredSlotAccra,
   isoToAccraDateAndTime,
 } from "@/lib/formatConsultationAppointment";
-import { ArrowLeft, CalendarRange } from "lucide-react";
+import { CalendarRange } from "lucide-react";
 import { toast } from "sonner";
+import { WheelDatePicker, accraToday } from "@/components/wheel-picker";
+import { adminPillClass, adminPillTrackClass } from "@/lib/adminChrome";
 
 function formatCreatedAccra(iso?: string) {
   if (!iso?.trim()) return "—";
@@ -255,7 +256,7 @@ export default function ConsultationsPage() {
           onClick={() => updatingId !== confirmTarget.id && setConfirmTarget(null)}
         >
           <div
-            className="consultations-confirm-dialog w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
+            className="consultations-confirm-dialog w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="confirm-consultation-title" className="text-lg font-semibold text-zinc-900">
@@ -270,31 +271,18 @@ export default function ConsultationsPage() {
                 ? "They will receive their confirmation email and see the booking code on their portfolio slip."
                 : "They will receive their confirmation email and see the booking code on their shop account."}
             </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="confirm-date" className="block text-xs font-medium text-zinc-600">
-                  Date (Africa/Accra)
-                </label>
-                <input
-                  id="confirm-date"
-                  type="date"
-                  className="mt-1 w-full"
-                  value={modalDate}
-                  onChange={(e) => setModalDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="confirm-time" className="block text-xs font-medium text-zinc-600">
-                  Time (GMT)
-                </label>
-                <input
-                  id="confirm-time"
-                  type="time"
-                  className="mt-1 w-full"
-                  value={modalTime}
-                  onChange={(e) => setModalTime(e.target.value)}
-                />
-              </div>
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-zinc-600">Date &amp; time (Africa/Accra)</p>
+              <WheelDatePicker
+                value={`${modalDate || accraToday()}T${modalTime || "10:00"}`}
+                withTime
+                onChange={(next) => {
+                  const [date = "", time = "10:00"] = next.split("T");
+                  setModalDate(date);
+                  setModalTime(time);
+                  setModalError("");
+                }}
+              />
             </div>
             {modalError ? <p className="mt-3 text-sm text-red-600">{modalError}</p> : null}
             <div className="mt-6 flex flex-wrap justify-end gap-2">
@@ -329,7 +317,7 @@ export default function ConsultationsPage() {
           onClick={() => updatingId !== rescheduleTarget.id && setRescheduleTarget(null)}
         >
           <div
-            className="consultations-confirm-dialog w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
+            className="consultations-confirm-dialog w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="reschedule-consultation-title" className="text-lg font-semibold text-zinc-900">
@@ -344,31 +332,18 @@ export default function ConsultationsPage() {
             <p className="mt-3 text-sm text-zinc-800">
               Select a proposed date and time in <strong>Africa/Accra (GMT)</strong>. The proposal is saved separately from the confirmed appointment and emails the customer single-use links to <strong>Accept New Date</strong> or <strong>Request Another Time</strong>.
             </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="reschedule-date" className="block text-xs font-medium text-zinc-600">
-                  Proposed Date (Africa/Accra)
-                </label>
-                <input
-                  id="reschedule-date"
-                  type="date"
-                  className="mt-1 w-full"
-                  value={rescheduleDate}
-                  onChange={(e) => setRescheduleDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="reschedule-time" className="block text-xs font-medium text-zinc-600">
-                  Proposed Time (GMT)
-                </label>
-                <input
-                  id="reschedule-time"
-                  type="time"
-                  className="mt-1 w-full"
-                  value={rescheduleTime}
-                  onChange={(e) => setRescheduleTime(e.target.value)}
-                />
-              </div>
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-zinc-600">Proposed date &amp; time (Africa/Accra)</p>
+              <WheelDatePicker
+                value={`${rescheduleDate || accraToday()}T${rescheduleTime || "10:00"}`}
+                withTime
+                onChange={(next) => {
+                  const [date = "", time = "10:00"] = next.split("T");
+                  setRescheduleDate(date);
+                  setRescheduleTime(time);
+                  setRescheduleError("");
+                }}
+              />
             </div>
             <div className="mt-4">
               <label htmlFor="reschedule-note" className="block text-xs font-medium text-zinc-600">
@@ -482,7 +457,7 @@ export default function ConsultationsPage() {
             onClick={() => !dayRuleSaving && setDayRuleOpen(false)}
           />
           <div
-            className="relative consultations-confirm-dialog w-full max-w-md overflow-hidden rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
+            className="relative consultations-confirm-dialog w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="day-rule-title" className="text-lg font-semibold text-zinc-900">
@@ -492,17 +467,12 @@ export default function ConsultationsPage() {
               Pick a day and override how many confirmed consultations are allowed on that day.
             </p>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="mt-5 space-y-4">
               <div>
-                <label htmlFor="day-rule-date" className="block text-xs font-semibold uppercase tracking-wide text-zinc-600">
-                  Day
-                </label>
-                <input
-                  id="day-rule-date"
-                  type="date"
-                  className="mt-1 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900"
-                  value={dayRuleDate}
-                  onChange={(e) => setDayRuleDate(e.target.value)}
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-600">Day</p>
+                <WheelDatePicker
+                  value={dayRuleDate || accraToday()}
+                  onChange={(next) => setDayRuleDate(next.slice(0, 10))}
                 />
               </div>
               <div>
@@ -545,45 +515,36 @@ export default function ConsultationsPage() {
         </div>
       ) : null}
 
+      <div className="flex justify-center">
+        <nav aria-label="Consultation source" className={adminPillTrackClass}>
+          {(
+            [
+              { id: "shop" as const, label: "Shop" },
+              { id: "portfolio" as const, label: "Portfolio" },
+            ] as const
+          ).map((t) => {
+            const count = rows.filter((r) => r.source === t.id).length;
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                aria-current={active ? "page" : undefined}
+                className={adminPillClass(active, "sm")}
+              >
+                {t.label} <span className="ml-1 opacity-70">{count}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link
-            href="/content"
-            className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Site Content
-          </Link>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Consultations</h1>
         </div>
         <span className="text-sm text-zinc-800">{rows.length} total</span>
-      </div>
-
-      <div className="flex flex-wrap gap-2 border-b border-zinc-200 pb-0">
-        {(
-          [
-            { id: "shop" as const, label: "Shop (app)" },
-            { id: "portfolio" as const, label: "Portfolio site" },
-          ] as const
-        ).map((t) => {
-          const count = rows.filter((r) => r.source === t.id).length;
-          const active = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`rounded-t-lg border border-b-0 px-4 py-2.5 text-sm font-medium transition-colors ${
-                active
-                  ? "border-zinc-200 bg-white text-zinc-900"
-                  : "border-transparent bg-zinc-100/80 text-zinc-800 hover:bg-zinc-100"
-              }`}
-            >
-              {t.label}
-              <span className="ml-2 rounded-full bg-zinc-200/80 px-2 py-0.5 text-xs text-zinc-700">{count}</span>
-            </button>
-          );
-        })}
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -604,7 +565,7 @@ export default function ConsultationsPage() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl rounded-tl-none border border-zinc-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           {(() => {
             const filtered = rows.filter((r) => r.source === tab);
@@ -658,7 +619,7 @@ export default function ConsultationsPage() {
                   {filtered.map((b) => {
                     const isCancelledOrDeclined = b.status === "cancelled" || b.status === "declined";
                     return (
-                      <tr key={b.id} className="align-top transition hover:bg-white/[0.07]">
+                      <tr key={b.id} className="align-top transition hover:bg-[#f5f1eb]">
                         <td className="px-5 py-4 text-sm text-zinc-700 whitespace-nowrap">
                           {formatCreatedAccra(b.createdAt)}
                         </td>
@@ -777,7 +738,7 @@ export default function ConsultationsPage() {
                                 {b.status !== "confirmed" ? (
                                   <button
                                     type="button"
-                                    className="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+                                    className="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-[#1c1e22] hover:bg-emerald-800 disabled:opacity-50"
                                     disabled={updatingId === b.id}
                                     onClick={() => openConfirm(b)}
                                   >

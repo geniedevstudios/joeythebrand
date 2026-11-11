@@ -366,8 +366,8 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
-  gap: clamp(var(--space-md), 2vw, var(--space-xl));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 25px;
 }
 
 /* Card */
@@ -380,7 +380,7 @@
 
 .imageWrapOuter {
   position: relative;
-  aspect-ratio: 3/4;
+  aspect-ratio: 3 / 4.2;
   border-radius: var(--radius-md);
   background: var(--skintone);
   container-type: inline-size;
@@ -765,7 +765,10 @@
 }
 
 .modalImageWrap {
-  width: 100%;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   display: flex;
   justify-content: center;
   border-radius: var(--radius-md);
@@ -1112,14 +1115,28 @@
   color: var(--dark-wood);
 }
 
+@media (min-width: 1600px) {
+  .imageWrapOuter {
+    aspect-ratio: 3 / 4;
+  }
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 14px;
+  }
+
+  .imageWrapOuter {
+    aspect-ratio: 3 / 4.3;
+  }
+}
+
 @media (max-width: 640px) {
   .pageTitle {
     font-size: clamp(3rem, 15vw, 6rem);
   }
 
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .modalGrid {
     grid-template-columns: 1fr;
     gap: 0;
@@ -1140,7 +1157,6 @@
     width: 50px;
     height: 66px;
   }
-  .grid { gap: var(--space-md); }
 }
 
 @media (max-width: 480px) {
@@ -1168,10 +1184,6 @@
     font-size: 0.75rem;
   }
 
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
-  }
   .addBtn { width: 100%; justify-content: center; }
 }
 

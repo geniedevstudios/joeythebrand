@@ -56,7 +56,7 @@ function parseDhlError(body: string, statusText: string): string {
           `Unauthorized on DHL ${env} (${DHL_API_BASE}). ` +
           `Test keys only work with https://express.api.dhl.com/mydhlapi/test. ` +
           `Live keys only work with https://express.api.dhl.com/mydhlapi. ` +
-          `Re-copy DHL_API_KEY and DHL_API_SECRET from developer.dhl.com (no quotes or spaces) and match DHL_API_BASE_URL to that same environment.`
+          `Check DHL_API_KEY and DHL_API_SECRET for that environment. If using a .env file, escape literal dollar signs and quote values containing #.`
         );
       }
       return summary;
@@ -166,6 +166,9 @@ export async function getShippingRates(req: DHLRateRequest) {
   if (!account) throw new Error("DHL Account Number not configured");
 
   const countryCode = normalizeCountry(req.destination.countryCode);
+  const isDomestic = countryCode === SHIPPER_DETAILS.postalAddress.countryCode;
+  const productCode = isDomestic ? "N" : "P";
+  const serviceName = isDomestic ? "DHL Express Domestic" : "DHL Express Worldwide";
   const postalCode = postalForDhl(countryCode, req.destination.postalCode);
   const addressLine1 = (req.destination.addressLine1 || req.destination.city).trim().slice(0, 45);
 
@@ -182,11 +185,11 @@ export async function getShippingRates(req: DHLRateRequest) {
     accounts: [{ typeCode: "shipper" as const, number: account }],
     plannedShippingDateAndTime: dhlTimestamp(12),
     unitOfMeasurement: "metric",
-    isCustomsDeclarable: true,
+    isCustomsDeclarable: !isDomestic,
     nextBusinessDay: true,
-    monetaryAmount: [
+    ...(!isDomestic && { monetaryAmount: [
       { typeCode: "declaredValue", value: 100, currency: "GHS" }
-    ],
+    ] }),
     packages: [
       {
         weight: Math.max(0.5, Number(req.weightKg) || 0.5),
@@ -210,10 +213,16 @@ export async function getShippingRates(req: DHLRateRequest) {
   const data = await res.json();
 
   if (data.products && data.products.length > 0) {
-    const product = data.products.find((p: { productCode?: string }) => p.productCode === "P") || data.products[0];
-    const priceObj = product.totalPrice.find((p: { priceCurrency?: string }) => p.priceCurrency === "GHS") || product.totalPrice[0];
+    const product = data.products.find((p: { productCode?: string }) => p.productCode === productCode);
+    if (!product) throw new Error(`${serviceName} is unavailable for this destination`);
+
+    const priceObj = product.totalPrice?.find(
+      (p: { priceCurrency?: string; price?: number }) =>
+        p.priceCurrency === "GHS" && typeof p.price === "number" && Number.isFinite(p.price) && p.price > 0,
+    );
+    if (!priceObj) throw new Error(`${serviceName} did not return a valid GHS price`);
     return {
-      price: priceObj.price,
+      price: Math.round(priceObj.price * 100) / 100,
       currency: priceObj.priceCurrency,
       productName: product.productName
     };

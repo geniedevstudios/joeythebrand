@@ -101,7 +101,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={() => void handleConfirm()}
             disabled={busy}
-            className={`rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-50 ${
+            className={`rounded-lg px-5 py-2.5 text-sm font-semibold text-[#1c1e22] shadow-sm transition-colors disabled:opacity-50 ${
               variant === "danger"
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-zinc-950 hover:bg-zinc-800"

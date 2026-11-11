@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { WheelDatePicker, accraToday } from "@/components/wheel-picker";
 
 type ProposalInfo = {
   id: string;
@@ -14,23 +15,10 @@ type ProposalInfo = {
   rescheduleNote?: string;
 };
 
-const TIME_SLOTS = [
-  { value: "08:00", label: "8:00 AM" },
-  { value: "08:30", label: "8:30 AM" },
-  { value: "09:00", label: "9:00 AM" },
-  { value: "09:30", label: "9:30 AM" },
-  { value: "10:00", label: "10:00 AM" },
-  { value: "10:30", label: "10:30 AM" },
-  { value: "11:00", label: "11:00 AM" },
-  { value: "11:30", label: "11:30 AM" },
-  { value: "12:00", label: "12:00 PM" },
-  { value: "12:30", label: "12:30 PM" },
-  { value: "13:00", label: "1:00 PM" },
-  { value: "13:30", label: "1:30 PM" },
-  { value: "14:00", label: "2:00 PM" },
-  { value: "14:30", label: "2:30 PM" },
-  { value: "15:00", label: "3:00 PM" },
-];
+function shiftAccraDay(day: string, count: number) {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date + count)).toISOString().slice(0, 10);
+}
 
 function RescheduleResponseInner() {
   const searchParams = useSearchParams();
@@ -47,7 +35,7 @@ function RescheduleResponseInner() {
     bookingCode?: string;
   }>(null);
 
-  const [preferredDate, setPreferredDate] = useState("");
+  const [preferredDate, setPreferredDate] = useState(() => shiftAccraDay(accraToday(), 1));
   const [preferredTime, setPreferredTime] = useState("10:00");
   const [message, setMessage] = useState("");
 
@@ -129,8 +117,6 @@ function RescheduleResponseInner() {
       setSubmitting(false);
     }
   };
-
-  const minDate = new Date().toISOString().slice(0, 10);
 
   return (
     <div style={{ paddingTop: "var(--nav-height)", minHeight: "80vh", background: "#f9f9f9" }}>
@@ -259,34 +245,18 @@ function RescheduleResponseInner() {
               ) : (
                 <form onSubmit={handleRequestAnother} style={{ display: "grid", gap: 16 }}>
                   <div className="form-group">
-                    <label htmlFor="resched-date" className="form-label">
-                      Preferred Alternative Date (Africa/Accra)
-                    </label>
-                    <input
-                      id="resched-date"
-                      type="date"
-                      min={minDate}
-                      className="form-input"
-                      value={preferredDate}
-                      onChange={(e) => setPreferredDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="resched-time" className="form-label">
-                      Preferred Time (8:00 AM – 3:00 PM GMT)
-                    </label>
-                    <select
-                      id="resched-time"
-                      className="form-input"
-                      value={preferredTime}
-                      onChange={(e) => setPreferredTime(e.target.value)}
-                    >
-                      {TIME_SLOTS.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label} (GMT)
-                        </option>
-                      ))}
-                    </select>
+                    <span className="form-label">Preferred alternative day &amp; time (Africa/Accra)</span>
+                    <div style={{ marginTop: 8 }}>
+                      <WheelDatePicker
+                        value={`${preferredDate || shiftAccraDay(accraToday(), 1)}T${preferredTime || "10:00"}`}
+                        withTime
+                        onChange={(next) => {
+                          const [date = "", time = "10:00"] = next.split("T");
+                          setPreferredDate(date);
+                          setPreferredTime(time);
+                        }}
+                      />
+                    </div>
                   </div>
                   <div className="form-group">
                     <label htmlFor="resched-msg" className="form-label">

@@ -27,20 +27,20 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
 
   if (session === "loading") {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0b0d10" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#f5f1eb" }}>
         <div style={{ textAlign: "center" }}>
           <div
             style={{
               width: 32,
               height: 32,
-              border: "3px solid rgba(255,255,255,0.18)",
-              borderTopColor: "#fff",
+              border: "3px solid rgba(28,30,34,0.18)",
+              borderTopColor: "#1c1e22",
               borderRadius: "50%",
               animation: "spin 0.8s linear infinite",
               margin: "0 auto 12px",
             }}
           />
-          <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.72)" }}>Loading...</p>
+          <p style={{ fontSize: "0.875rem", color: "rgba(28,30,34,0.72)" }}>Loading...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -56,7 +56,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0b0d10",
+          background: "#f5f1eb",
           padding: "2rem 1rem",
         }}
       >
@@ -64,33 +64,32 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
           <div
             style={{
               width: "100%",
-              background: "rgba(255, 255, 255, 0.04)",
+              background: "#ffffff",
               borderRadius: 18,
-              border: "1px solid rgba(255, 255, 255, 0.10)",
-              boxShadow: "0 18px 60px rgba(0,0,0,0.45)",
+              border: "1px solid rgba(182, 183, 186, 0.9)",
+              boxShadow: "0 18px 50px rgba(28,30,34,0.10)",
               padding: "2.5rem",
               backdropFilter: "blur(10px)",
               WebkitBackdropFilter: "blur(10px)",
             }}
           >
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 10 }}>
               <Image
                 src="/white-logo.png"
                 alt="JOEY THE BRAND"
                 width={560}
                 height={112}
-                className="h-10 w-auto max-w-[12rem] object-contain opacity-95"
+                className="h-14 w-auto max-w-[16rem] object-contain opacity-95 invert sm:h-16 sm:max-w-[18rem]"
                 priority
-                sizes="12rem"
+                sizes="18rem"
               />
-              <div style={{ textAlign: "left" }}>
-                <div className="truncate text-sm font-semibold tracking-wide text-white">ADMIN</div>
-                <div className="truncate text-[11px] font-medium text-white/55">Management portal</div>
+              <div className="truncate text-xs font-semibold tracking-wide text-[#1c1e22]">
+                Studio
               </div>
             </div>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: 650, color: "#fff", margin: 0 }}>Sign In</h1>
-            <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.65)", marginTop: 8 }}>Management Portal Access</p>
+            <h1 style={{ fontSize: "1.6rem", fontWeight: 650, color: "#1c1e22", margin: 0 }}>Sign In</h1>
+            <p style={{ fontSize: "0.9rem", color: "rgba(28,30,34,0.65)", marginTop: 8 }}>Studio access</p>
           </div>
 
           <form onSubmit={async (e) => {
@@ -104,7 +103,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
             setIsLoading(false);
           }}>
             <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 550, color: "rgba(255,255,255,0.80)", marginBottom: 6 }}>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 550, color: "rgba(28,30,34,0.80)", marginBottom: 6 }}>
                 Email
               </label>
               <input
@@ -116,19 +115,19 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                 style={{
                   width: "100%",
                   padding: "11px 12px",
-                  border: "1px solid rgba(255,255,255,0.14)",
+                  border: "1px solid rgba(182,183,186,0.95)",
                   borderRadius: 10,
                   fontSize: "0.9rem",
                   outline: "none",
                   boxSizing: "border-box",
-                  background: "rgba(0,0,0,0.38)",
-                  color: "#fff",
+                  background: "#f5f1eb",
+                  color: "#1c1e22",
                 }}
               />
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 550, color: "rgba(255,255,255,0.80)", marginBottom: 6 }}>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 550, color: "rgba(28,30,34,0.80)", marginBottom: 6 }}>
                 Password
               </label>
               <div style={{ position: "relative" }}>
@@ -142,13 +141,13 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                   style={{
                     width: "100%",
                     padding: "10px 44px 10px 12px",
-                    border: "1px solid rgba(255,255,255,0.14)",
+                    border: "1px solid rgba(182,183,186,0.95)",
                     borderRadius: 10,
                     fontSize: "0.9rem",
                     outline: "none",
                     boxSizing: "border-box",
-                    background: "rgba(0,0,0,0.38)",
-                    color: "#fff",
+                    background: "#f5f1eb",
+                    color: "#1c1e22",
                   }}
                 />
                 <button
@@ -169,7 +168,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                     background: "transparent",
                     borderRadius: 6,
                     cursor: "pointer",
-                    color: "rgba(255,255,255,0.65)",
+                    color: "rgba(28,30,34,0.65)",
                   }}
                 >
                   {showPassword ? (
@@ -208,9 +207,9 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
               disabled={isLoading}
               style={{
                 width: "100%",
-                background: isLoading ? "rgba(255,255,255,0.18)" : "#fff",
-                color: "#0b0d10",
-                border: "1px solid rgba(255,255,255,0.18)",
+                background: isLoading ? "rgba(28,30,34,0.45)" : "#1c1e22",
+                color: "#f5f1eb",
+                border: "1px solid rgba(28,30,34,0.2)",
                 borderRadius: 9999,
                 padding: "12px 0",
                 fontWeight: 700,

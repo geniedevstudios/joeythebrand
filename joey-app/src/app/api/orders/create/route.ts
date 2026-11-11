@@ -58,6 +58,7 @@ export async function POST(req: Request) {
         city: string;
         postalCode?: string;
         countryCode: string;
+        addressLine1?: string;
       };
       promotionCode?: string;
       notes?: string;

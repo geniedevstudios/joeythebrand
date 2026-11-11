@@ -130,11 +130,6 @@ import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppo
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import styles from "./account.module.css";
-import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
-import {
-  PAGE_HERO_SHELL_CLASS,
-  usePageHeroShellRenderProps,
-} from "@/hooks/usePageHero";
 import { SignupOTPDialog } from "./SignupOTPDialog";
 
 type Mode = "signin" | "signup" | "forgot" | "otp" | "newpass" | "success";
@@ -202,7 +197,11 @@ function OrderLineRow({ line }: { line: OrderItem }) {
   return (
     <li className={styles.orderLine}>
       <Link href={href} className={styles.orderLineLink}>
-        <ProductMedia src={line.image} alt="" className={styles.orderLineImg} />
+        {line.image?.trim() ? (
+          <ProductMedia src={line.image} alt="" className={styles.orderLineImg} />
+        ) : (
+          <span className={styles.orderLineImg} aria-hidden="true" />
+        )}
         <span className={styles.orderLineBody}>
           <span className={styles.orderLineName}>{line.name || "Product"}</span>
           {(line.color || line.combo) && (
@@ -994,14 +993,10 @@ function OrderTrackingButton({
   );
 }
 
-function OrderCard({
-  o,
-  isInternational,
-}: {
-  o: Order;
-  isInternational: boolean;
-}) {
+function OrderCard({ o }: { o: Order }) {
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+  const awaitsCarrierTracking = o.shippingAddress.includes("(international)") ||
+    /\s+\| DHL\[[^\]]+\]$/.test(o.shippingAddress);
 
   return (
     <li className={styles.orderCard}>
@@ -1023,12 +1018,12 @@ function OrderCard({
           <span className={styles.orderTotal}>
             GHC {o.total.toLocaleString()}
           </span>
-          {isInternational && o.dhlTrackingNumber ? (
+          {o.dhlTrackingNumber ? (
             <OrderTrackingButton
               isOpen={isTimelineOpen}
               setIsOpen={setIsTimelineOpen}
             />
-          ) : isInternational && !o.dhlTrackingNumber ? (
+          ) : awaitsCarrierTracking ? (
             <span
               className={styles.orderStatus}
               style={{ background: "#f0f0f0", color: "#666" }}
@@ -1075,7 +1070,7 @@ function OrderCard({
       ) : null}
 
       {/* If timeline is open, render tracking block */}
-      {isInternational && o.dhlTrackingNumber && isTimelineOpen && (
+      {o.dhlTrackingNumber && isTimelineOpen && (
         <OrderTracking
           trackingNumber={o.dhlTrackingNumber}
           dhlStatus={o.dhlStatus}
@@ -1083,7 +1078,7 @@ function OrderCard({
           updatedAt={o.updatedAt}
         />
       )}
-      {!isInternational && isTimelineOpen && (
+      {!o.dhlTrackingNumber && !awaitsCarrierTracking && isTimelineOpen && (
         <DomesticOrderTracking
           history={o.statusHistory || []}
           createdAt={o.createdAt}
@@ -1207,24 +1202,9 @@ function AccountDashboard({ userId }: { userId: string }) {
   }, [avatarMenuOpen]);
 
   const initials = authStore.getInitials();
-  const {
-    empty: accountHeroEmpty,
-    shellSpinner: accountHeroSpinner,
-    style: accountHeroStyle,
-    showImageLoader: accountHeroImageLoader,
-    imageReady: accountHeroImageReady,
-  } = usePageHeroShellRenderProps("account");
-
   return (
     <div className={styles.page}>
-      <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
-        data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
-        data-page-hero-loading={accountHeroSpinner ? "true" : "false"}
-        data-page-hero-ready={accountHeroImageReady ? "true" : "false"}
-        style={accountHeroStyle}
-      >
-        {accountHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+      <div className={styles.pageHeader}>
         <div className="container">
           <span className="section-label">Welcome back</span>
           <h1 className={styles.pageTitle}>{user?.name}</h1>
@@ -1418,17 +1398,7 @@ function AccountDashboard({ userId }: { userId: string }) {
                             o.status !== "package delivered" &&
                             o.status !== "cancelled",
                         )
-                        .map((o) => {
-                          const isInternational =
-                            o.shippingAddress.includes("(international)");
-                          return (
-                            <OrderCard
-                              key={o.id}
-                              o={o}
-                              isInternational={isInternational}
-                            />
-                          );
-                        })}
+                        .map((o) => <OrderCard key={o.id} o={o} />)}
 
                       {orders.filter(
                         (o) =>
@@ -1752,17 +1722,7 @@ function AccountDashboard({ userId }: { userId: string }) {
                       o.status === "package delivered" ||
                       o.status === "cancelled",
                   )
-                  .map((o) => {
-                    const isInternational =
-                      o.shippingAddress.includes("(international)");
-                    return (
-                      <OrderCard
-                        key={o.id}
-                        o={o}
-                        isInternational={isInternational}
-                      />
-                    );
-                  })}
+                  .map((o) => <OrderCard key={o.id} o={o} />)}
                 {orders.filter(
                   (o) =>
                     o.status === "package delivered" ||
@@ -1790,13 +1750,6 @@ export default function AccountClient() {
     authStore.getUser,
     () => null,
   );
-  const {
-    empty: accountHeroEmpty,
-    shellSpinner: accountHeroSpinner,
-    style: accountHeroStyle,
-    showImageLoader: accountHeroImageLoader,
-    imageReady: accountHeroImageReady,
-  } = usePageHeroShellRenderProps("account");
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -1959,14 +1912,7 @@ export default function AccountClient() {
   ) {
     return (
       <div className={styles.page}>
-        <div
-          className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
-          data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
-          data-page-hero-loading={accountHeroSpinner ? "true" : "false"}
-          data-page-hero-ready={accountHeroImageReady ? "true" : "false"}
-          style={accountHeroStyle}
-        >
-          {accountHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+        <div className={styles.pageHeader}>
           <div className="container">
             <span className="section-label">Your Account</span>
             <h1 className={styles.pageTitle}>
@@ -2294,14 +2240,7 @@ export default function AccountClient() {
 
   return (
     <div className={styles.page}>
-      <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
-        data-page-hero-empty={accountHeroEmpty ? "true" : "false"}
-        data-page-hero-loading={accountHeroSpinner ? "true" : "false"}
-        data-page-hero-ready={accountHeroImageReady ? "true" : "false"}
-        style={accountHeroStyle}
-      >
-        {accountHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+      <div className={styles.pageHeader}>
         <div className="container">
           <span className="section-label">Your Account</span>
           <h1 className={styles.pageTitle}>

@@ -129,31 +129,6 @@ export default function ProductSuggestions({
                   </div>
                 </div>
 
-                <div className={shopStyles.badgeStack} aria-hidden="true">
-                  {(() => {
-                    const isBespoke = !!(
-                      item.fulfillmentMode === "made_to_order_only" ||
-                      (item.bespokeAvailable && item.quantity <= 0)
-                    );
-                    return isBespoke ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                    ) : item.isOutOfStock ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                    ) : (
-                      <>
-                        {item.category === "sample-sale" && (
-                          <span className={shopStyles.saleBadge}>SALE</span>
-                        )}
-                        {item.isLimited && item.category !== "sample-sale" && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                        )}
-                        {item.isBestSeller && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
               </div>
                 <div className={productStyles.suggestInfo}>
                   <h3 className={productStyles.suggestName} style={{ fontSize: item.name.length > 24 ? "0.95rem" : item.name.length > 16 ? "1.1rem" : undefined }}>{item.name}</h3>

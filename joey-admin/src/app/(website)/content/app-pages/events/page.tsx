@@ -2,8 +2,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { dataStore } from "@/lib/dataStore";
 import type { Collection } from "@/lib/types";
@@ -12,6 +10,7 @@ import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import AssetUrlField from "@/components/AssetUrlField";
 import AssetGalleryField from "@/components/AssetGalleryField";
+import { PageHeroEditor } from "@/components/PageHeroEditor";
 
 type EventsPageRow = {
   id: number;
@@ -235,25 +234,25 @@ function DateTimePicker({
             role="dialog"
             aria-label="Choose date and time"
             ref={popoverRef}
-            className="absolute left-0 top-[calc(100%+8px)] z-[9999] isolate w-[320px] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-black p-4 text-white shadow-2xl"
+            className="absolute left-0 top-[calc(100%+8px)] z-[9999] isolate w-[320px] max-w-[calc(100vw-2rem)] rounded-xl border border-[#b6b7ba] bg-white p-4 text-[#1c1e22] shadow-2xl"
           >
             {step === 1 ? (
               <>
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
-                    className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm hover:bg-white/10"
+                    className="rounded-md border border-[#b6b7ba]/70 bg-[#f5f1eb] px-2 py-1 text-sm hover:bg-[#ebe8e2]"
                     onClick={() => setVisibleMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
                     aria-label="Previous month"
                   >
                     ←
                   </button>
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-sm font-semibold text-[#1c1e22]">
                     {monthStart.toLocaleString(undefined, { month: "long", year: "numeric" })}
                   </div>
                   <button
                     type="button"
-                    className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm hover:bg-white/10"
+                    className="rounded-md border border-[#b6b7ba]/70 bg-[#f5f1eb] px-2 py-1 text-sm hover:bg-[#ebe8e2]"
                     onClick={() => setVisibleMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
                     aria-label="Next month"
                   >
@@ -261,7 +260,7 @@ function DateTimePicker({
                   </button>
                 </div>
 
-                <div className="mt-3 grid grid-cols-7 gap-1 text-[11px] font-semibold text-white/60">
+                <div className="mt-3 grid grid-cols-7 gap-1 text-[11px] font-semibold text-[#1c1e22]/60">
                   {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
                     <div key={d} className="py-1 text-center">
                       {d}
@@ -295,9 +294,9 @@ function DateTimePicker({
                         type="button"
                         className={`h-9 rounded-md text-sm transition-colors ${
                           isSelected
-                            ? "!bg-white !text-black font-semibold ring-2 ring-white/70 ring-offset-0"
-                            : "bg-white/10 text-white hover:bg-white/15"
-                        } ${isToday && !isSelected ? "border border-white/25" : "border border-transparent"}`}
+                            ? "!bg-[#1c1e22] !text-[#f5f1eb] font-semibold ring-2 ring-[#b6b7ba] ring-offset-0"
+                            : "bg-[#f5f1eb] text-[#1c1e22] hover:bg-[#ebe8e2]"
+                        } ${isToday && !isSelected ? "border border-[#b6b7ba]" : "border border-transparent"}`}
                         onClick={() => onPickDay(day)}
                       >
                         {day}
@@ -306,15 +305,15 @@ function DateTimePicker({
                   })}
                 </div>
 
-                <p className="mt-4 text-xs text-white/70">
+                <p className="mt-4 text-xs text-[#1c1e22]/70">
                   Pick a date, then tap <strong>Next</strong> to choose a time.
                 </p>
               </>
             ) : (
               <>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-white">Pick a time</div>
-                  <div className="text-xs text-white/60">
+                  <div className="text-sm font-semibold text-[#1c1e22]">Pick a time</div>
+                  <div className="text-xs text-[#1c1e22]/60">
                     {draftDay
                       ? draftDay.toLocaleDateString(undefined, {
                           weekday: "short",
@@ -327,12 +326,12 @@ function DateTimePicker({
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-xs font-semibold text-white/70">Time</label>
+                  <label className="block text-xs font-semibold text-[#1c1e22]/70">Time</label>
                   <select
                     value={draftTime}
                     size={10}
                     onChange={(e) => setDraftTime(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-white/10 bg-white/5 p-2 text-sm text-white max-h-64 overflow-auto"
+                    className="mt-1 w-full rounded-md border border-[#b6b7ba]/70 bg-[#f5f1eb] p-2 text-sm text-[#1c1e22] max-h-64 overflow-auto"
                   >
                     {timeOptions.map((t) => (
                       <option key={t} value={t}>
@@ -348,7 +347,7 @@ function DateTimePicker({
               {step === 2 ? (
                 <button
                   type="button"
-                  className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
+                  className="rounded-md border border-[#b6b7ba]/70 bg-[#f5f1eb] px-3 py-2 text-sm hover:bg-[#ebe8e2]"
                   onClick={() => setStep(1)}
                 >
                   Back
@@ -357,7 +356,7 @@ function DateTimePicker({
               {step === 1 ? (
                 <button
                   type="button"
-                  className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-white/90 disabled:opacity-50"
+                  className="rounded-md bg-[#1c1e22] px-3 py-2 text-sm font-semibold text-[#f5f1eb] hover:bg-[#2a2c30] disabled:opacity-50"
                   onClick={() => setStep(2)}
                   disabled={!draftDay}
                 >
@@ -366,7 +365,7 @@ function DateTimePicker({
               ) : (
                 <button
                   type="button"
-                  className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-white/90 disabled:opacity-50"
+                  className="rounded-md bg-[#1c1e22] px-3 py-2 text-sm font-semibold text-[#f5f1eb] hover:bg-[#2a2c30] disabled:opacity-50"
                   onClick={() => {
                     if (!draftDay) return;
                     setDateAndTime(draftDay, draftTime || "12:00");
@@ -694,17 +693,14 @@ export default function EventsContentPage() {
   return (
     <div className="w-full max-w-none space-y-8">
       <div>
-        <Link 
-          href="/content/app-pages" 
-          className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to App pages
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Events page</h1>
+        <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Events</h2>
+        <p className="mt-1 text-sm text-zinc-800">These appear on the Events page.</p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <PageHeroEditor heroKey="events" heading="Opening image" />
+
+      <div className="flex justify-center">
+        <div className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-zinc-200 bg-zinc-100 p-1">
         {(
           [
             { id: "main" as const, label: "Main page" },
@@ -718,14 +714,15 @@ export default function EventsContentPage() {
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                active ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              className={`whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                active ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900"
               }`}
             >
               {t.label}
             </button>
           );
         })}
+        </div>
       </div>
 
       {activeTab === "main" ? (
@@ -771,12 +768,11 @@ export default function EventsContentPage() {
                   </summary>
                   <div className="p-4 space-y-4">
                     <AssetUrlField
-                      label="Top video URL (or Image URL)"
+                      label="Top video or image"
                       value={topVideoUrl}
                       onChange={setTopVideoUrl}
                       uploadFolder="events/top"
                       accept="video/*,image/*"
-                      placeholder="Upload MP4/Image or paste URL"
                     />
                     <AssetUrlField
                       label="Poster image (while video loads, ignored if image above)"
@@ -784,7 +780,6 @@ export default function EventsContentPage() {
                       onChange={setTopVideoPosterUrl}
                       uploadFolder="events/top/poster"
                       accept="image/*"
-                      placeholder="Upload image or paste URL"
                     />
                   </div>
                 </details>
@@ -796,12 +791,11 @@ export default function EventsContentPage() {
                   </summary>
                   <div className="p-4 space-y-4">
                     <AssetUrlField
-                      label="Tablet video URL (or Image URL)"
+                      label="Tablet video or image"
                       value={topVideoTabletUrl}
                       onChange={setTopVideoTabletUrl}
                       uploadFolder="events/top/tablet"
                       accept="video/*,image/*"
-                      placeholder="Upload MP4/Image or paste URL"
                     />
                     <AssetUrlField
                       label="Tablet poster image"
@@ -809,7 +803,6 @@ export default function EventsContentPage() {
                       onChange={setTopVideoTabletPosterUrl}
                       uploadFolder="events/top/tablet-poster"
                       accept="image/*"
-                      placeholder="Upload image or paste URL"
                     />
                   </div>
                 </details>
@@ -821,12 +814,11 @@ export default function EventsContentPage() {
                   </summary>
                   <div className="p-4 space-y-4">
                     <AssetUrlField
-                      label="Mobile video URL (or Image URL)"
+                      label="Mobile video or image"
                       value={topVideoMobileUrl}
                       onChange={setTopVideoMobileUrl}
                       uploadFolder="events/top/mobile"
                       accept="video/*,image/*"
-                      placeholder="Upload MP4/Image or paste URL"
                     />
                     <AssetUrlField
                       label="Mobile poster image"
@@ -834,7 +826,6 @@ export default function EventsContentPage() {
                       onChange={setTopVideoMobilePosterUrl}
                       uploadFolder="events/top/mobile-poster"
                       accept="image/*"
-                      placeholder="Upload image or paste URL"
                     />
                   </div>
                 </details>
@@ -1216,7 +1207,6 @@ export default function EventsContentPage() {
                                   onChange={(url) => setDraft((p) => ({ ...p, flyerUrl: url }))}
                                   uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/flyer`}
                                   accept="image/*"
-                                  placeholder="Upload image or paste URL"
                                 />
                               </div>
                             </>
@@ -1231,7 +1221,6 @@ export default function EventsContentPage() {
                                   onChange={(url) => setDraft((p) => ({ ...p, showVideoUrl: url }))}
                                   uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/video`}
                                   accept="video/*"
-                                  placeholder="Upload MP4 or paste URL"
                                 />
                               </div>
                               <div className="sm:col-span-2">
@@ -1241,7 +1230,6 @@ export default function EventsContentPage() {
                                   onChange={(url) => setDraft((p) => ({ ...p, showVideoPosterUrl: url }))}
                                   uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/video-poster`}
                                   accept="image/*"
-                                  placeholder="Upload image or paste URL"
                                 />
                               </div>
                               <div className="sm:col-span-2">
@@ -1482,7 +1470,6 @@ export default function EventsContentPage() {
                   onChange={(url) => setDraft((p) => ({ ...p, flyerUrl: url }))}
                   uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/flyer`}
                   accept="image/*"
-                  placeholder="Upload image or paste URL"
                 />
               </div>
 
@@ -1495,7 +1482,6 @@ export default function EventsContentPage() {
                       onChange={(url) => setDraft((p) => ({ ...p, showVideoUrl: url }))}
                       uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/video`}
                       accept="video/*"
-                      placeholder="Upload MP4 or paste URL"
                     />
                   </div>
 
@@ -1506,7 +1492,6 @@ export default function EventsContentPage() {
                       onChange={(url) => setDraft((p) => ({ ...p, showVideoPosterUrl: url }))}
                       uploadFolder={`events/${sanitizeSlug(draft.slug || "draft")}/video-poster`}
                       accept="image/*"
-                      placeholder="Upload image or paste URL"
                     />
                   </div>
 

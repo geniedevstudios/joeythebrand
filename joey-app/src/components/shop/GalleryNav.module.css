@@ -1,0 +1,67 @@
+.nav {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.nav button {
+  pointer-events: auto;
+  position: absolute;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  color: #2f2a27;
+  background:
+    radial-gradient(
+      120% 80% at 30% 12%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.08) 42%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.06) 100%
+    );
+  backdrop-filter: blur(16px) saturate(180%) brightness(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(180%) brightness(1.12);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 -1px 0 rgba(39, 43, 54, 0.08) inset,
+    0 10px 24px rgba(37, 38, 33, 0.18);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.nav button:first-child {
+  left: 16px;
+}
+
+.nav button:last-child {
+  right: 16px;
+}
+
+.nav button:hover {
+  transform: translateY(-50%) scale(1.04);
+}
+
+@media (max-width: 640px) {
+  .nav button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .nav button:first-child {
+    left: 12px;
+  }
+
+  .nav button:last-child {
+    right: 12px;
+  }
+}

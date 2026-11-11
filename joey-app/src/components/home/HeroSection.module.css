@@ -5,11 +5,12 @@
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 70px; /* Provide space for the scroll indicator */
+  overflow: hidden;
 }
 
-/* Background */
+/* Background — absolute so it scrolls away with the hero (no sticky peek) */
 .bg {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
 }

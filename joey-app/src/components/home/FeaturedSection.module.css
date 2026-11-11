@@ -29,8 +29,8 @@
 /* Grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
-  gap: clamp(var(--space-md), 2vw, var(--space-lg));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 25px;
 }
 
 /* Card */
@@ -43,7 +43,7 @@
 
 .imageWrapOuter {
   position: relative;
-  aspect-ratio: 3/4;
+  aspect-ratio: 3 / 4.2;
   border-radius: var(--radius-md);
   background: var(--skintone);
 }
@@ -280,7 +280,10 @@
 }
 
 .modalImageWrap {
-  width: 100%;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   display: flex;
   justify-content: center;
   border-radius: var(--radius-md);
@@ -644,8 +647,29 @@
   color: var(--blue-athracite);
 }
 
+@media (min-width: 1600px) {
+  .imageWrapOuter {
+    aspect-ratio: 3 / 4;
+  }
+}
+
+@media (max-width: 760px) and (min-width: 641px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 14px;
+  }
+
+  .imageWrapOuter {
+    aspect-ratio: 3 / 4.3;
+  }
+}
+
 @media (max-width: 640px) {
   /* Mobile: swipeable 1-card-per-view carousel */
+  .imageWrapOuter {
+    aspect-ratio: 3 / 4.3;
+  }
+
   .grid {
     display: flex;
     flex-wrap: nowrap;

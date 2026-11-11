@@ -5,18 +5,25 @@ import type {
   ProductVariant,
   ItemFulfillmentType,
 } from "./types";
+import {
+  findSizeStockEntry,
+  hasSizeStockTracking,
+  normalizeSizeName,
+} from "./wearSizes";
 
 export interface ResolvedVariantStockStatus {
   skuKey: string;
   variantId: string;
   comboId: string;
+  /** Canonical size key used in skuKey / reservations when size stock is tracked. */
+  sizeKey: string;
   unitPrice: number;
   fulfillmentMode: ProductFulfillmentMode;
   /** True when the selected option is currently fulfilled as Made to Order (either made_to_order_only or 0-stock fallback). */
   isMadeToOrderProduct: boolean;
   /** Legacy alias for backwards compatibility across storefront components. */
   isBespokeProduct: boolean;
-  /** Physical ready-to-wear stock for the selected SKU. */
+  /** Physical ready-to-wear stock for the selected SKU (colour + size when tracked). */
   availablePhysicalStock: number;
   /** Max quantity allowed in selector (availablePhysicalStock for RTW, mtoMaxQtyPerOrder for MTO). */
   maxStock: number;
@@ -86,10 +93,12 @@ export function buildSkuKey(
   productId: string,
   variantId?: string | null,
   comboId?: string | null,
+  sizeKey?: string | null,
 ): string {
   const v = variantId && variantId.trim() ? variantId.trim() : "base";
   const c = comboId && comboId.trim() ? comboId.trim() : "base";
-  return `${productId}::${v}::${c}`;
+  const s = sizeKey && sizeKey.trim() ? sizeKey.trim() : "";
+  return s ? `${productId}::${v}::${c}::${s}` : `${productId}::${v}::${c}`;
 }
 
 /**
@@ -97,8 +106,10 @@ export function buildSkuKey(
  * Resolves exact physical stock, fulfilment mode, price, and MTO limits for:
  *  1) Simple Product (no variants) -> base::base
  *  2) Fits-Only Product -> Solo ("Original") uses base::base; Paired combo uses fit-combo::<combo.id>
- *  3) Colors-Only Product -> <color.id>::base
- *  4) Matrix Product -> Solo uses <color.id>::base; Paired combo uses <color.id>::<combo.id>
+ *  3) Colors-Only Product -> <color.id>::base[::size]
+ *  4) Matrix Product -> Solo uses <color.id>::base[::size]; Paired combo uses <color.id>::<combo.id>
+ *
+ * When a colourway has sizeStock and selectedSize is set, physical stock is that size’s units.
  */
 export function getVariantStockStatus(
   product: any,
@@ -106,12 +117,14 @@ export function getVariantStockStatus(
   currentCombo: any,
   activeMode: "solo" | "paired",
   forcedFulfillmentChoice?: ItemFulfillmentType,
+  selectedSize?: string | null,
 ): ResolvedVariantStockStatus {
   if (!product) {
     return {
       skuKey: "unknown::base::base",
       variantId: "base",
       comboId: "base",
+      sizeKey: "",
       unitPrice: 0,
       fulfillmentMode: "stock_only",
       isMadeToOrderProduct: false,
@@ -146,8 +159,10 @@ export function getVariantStockStatus(
   let resolvedVariantId = "base";
   let resolvedComboId = "base";
   let physicalStock = 0;
+  let sizeKey = "";
   let effectiveMode: ProductFulfillmentMode = productMode;
   let leadDays = defaultLeadDays;
+  const requestedSize = String(selectedSize || "").trim();
 
   if (activeMode === "paired" && currentCombo) {
     resolvedVariantId = currentColor?.id || "fit-combo";
@@ -184,6 +199,12 @@ export function getVariantStockStatus(
       Boolean(currentColor.isOutOfStock) ||
       (!hasExplicitColorQty && currentColor.id === "main-color" && Boolean(product.isOutOfStock));
     physicalStock = colorOut ? 0 : rawQty;
+
+    if (requestedSize && hasSizeStockTracking(currentColor.sizeStock)) {
+      const entry = findSizeStockEntry(currentColor.sizeStock, requestedSize);
+      sizeKey = entry?.size || normalizeSizeName(requestedSize);
+      physicalStock = colorOut ? 0 : entry ? entry.quantity : 0;
+    }
   } else {
     // Simple product OR Fits-Only in "solo" ("Original") mode
     resolvedVariantId = "base";
@@ -193,6 +214,23 @@ export function getVariantStockStatus(
     const prodOut = Boolean(product.isOutOfStock);
     const prodQty = typeof product.quantity === "number" ? Math.max(0, product.quantity) : 0;
     physicalStock = prodOut ? 0 : prodQty;
+
+    const productSizeStock =
+      (Array.isArray(product.sizeStock) && product.sizeStock) ||
+      (Array.isArray(product.sizes)
+        ? product.sizes
+            .filter((s: any) => s?.name && typeof s.quantity === "number")
+            .map((s: any) => ({ size: String(s.name), quantity: Number(s.quantity) || 0 }))
+        : null);
+    if (requestedSize && hasSizeStockTracking(productSizeStock)) {
+      const entry = findSizeStockEntry(productSizeStock, requestedSize);
+      sizeKey = entry?.size || normalizeSizeName(requestedSize);
+      physicalStock = prodOut ? 0 : entry ? entry.quantity : 0;
+    }
+  }
+
+  if (!sizeKey && requestedSize) {
+    sizeKey = normalizeSizeName(requestedSize);
   }
 
   if (effectiveMode === "made_to_order_only") {
@@ -216,12 +254,13 @@ export function getVariantStockStatus(
       : physicalStock;
 
   const unitPrice = resolveUnitPrice(product, activeMode === "paired" ? currentCombo : null);
-  const skuKey = buildSkuKey(product.id, resolvedVariantId, resolvedComboId);
+  const skuKey = buildSkuKey(product.id, resolvedVariantId, resolvedComboId, sizeKey);
 
   return {
     skuKey,
     variantId: resolvedVariantId,
     comboId: resolvedComboId,
+    sizeKey,
     unitPrice,
     fulfillmentMode: effectiveMode,
     isMadeToOrderProduct,

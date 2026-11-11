@@ -136,7 +136,7 @@ export default function OrderItemDetailModal({
               {isMto ? (
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="inline-flex rounded-full bg-zinc-700 px-2.5 py-0.5 text-xs font-bold text-white">
+                    <span className="inline-flex rounded-full bg-[#1c1e22] px-2.5 py-0.5 text-xs font-bold text-[#f5f1eb]">
                       Made to Order · {leadDays} Days Production
                     </span>
                     {item.estimatedReadyDate ? (

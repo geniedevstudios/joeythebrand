@@ -23,6 +23,28 @@ export const PAGE_HERO_KEYS: PageHeroKey[] = [
   "events",
 ];
 
+/** Utility pages keep a fixed heading — not CMS hero imagery. */
+export const STATIC_HEADER_PAGE_HERO_KEYS = [
+  "checkout",
+  "account",
+  "shipping",
+  "privacy",
+  "login",
+  "product",
+  "report_issue",
+  "wishlist",
+] as const;
+
+export function isStaticHeaderPageHeroKey(
+  key: string,
+): key is (typeof STATIC_HEADER_PAGE_HERO_KEYS)[number] {
+  return (STATIC_HEADER_PAGE_HERO_KEYS as readonly string[]).includes(key);
+}
+
+export const EDITABLE_PAGE_HERO_KEYS = PAGE_HERO_KEYS.filter(
+  (key) => !isStaticHeaderPageHeroKey(key),
+);
+
 export const PAGE_HERO_LABELS: Record<PageHeroKey, string> = {
   home: "Home",
   shop: "Shop",

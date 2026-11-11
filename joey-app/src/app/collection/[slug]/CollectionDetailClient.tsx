@@ -17,6 +17,8 @@ import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
 import type { Product, PublicCollection } from "@/lib/types";
 import { ShopProductGridSkeleton } from "@/components/shop/ShopProductGridSkeleton";
 import ProductMedia from "@/components/shop/ProductMedia";
+import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
+import ProductNameRow from "@/components/shop/ProductNameLabels";
 import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { getStorefrontSizes } from "@/lib/wearSizes";
@@ -77,11 +79,24 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
     [collection?.galleryUrls],
   );
 
-  const detailWriteup = useMemo(() => {
-    const w = String(collection?.detailWriteup ?? "").trim();
-    if (w) return w;
-    const fallback = String(collection?.description ?? "").trim();
-    return fallback;
+  const { detailEyebrow, detailWriteup } = useMemo(() => {
+    const raw = String(collection?.detailWriteup ?? "").trim()
+      || String(collection?.description ?? "").trim();
+    if (!raw) return { detailEyebrow: "", detailWriteup: "" };
+    const lines = raw.split("\n");
+    const first = lines[0]?.trim() || "";
+    const looksLikeEyebrow =
+      first.length > 0 &&
+      first.length <= 48 &&
+      lines.length > 1 &&
+      !first.includes(".");
+    if (!looksLikeEyebrow) {
+      return { detailEyebrow: "", detailWriteup: raw };
+    }
+    return {
+      detailEyebrow: first,
+      detailWriteup: lines.slice(1).join("\n").trim(),
+    };
   }, [collection?.detailWriteup, collection?.description]);
 
   const detailVideoUrl = String(collection?.detailVideoUrl ?? "").trim();
@@ -164,7 +179,14 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
     setAddStatus("adding");
     setTimeout(() => {
       import("@/store/cartStore").then(({ cartStore }) => {
-        const stockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+        const stockStatus = getVariantStockStatus(
+          quickViewPiece,
+          quickViewActiveVariant,
+          quickViewActiveCombo,
+          quickViewMode,
+          undefined,
+          selectedSize || null,
+        );
         const isBespokeProduct = stockStatus.isBespokeProduct;
         cartStore.addItem({
           productId: quickViewPiece.id,
@@ -175,13 +197,21 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
           size: selectedSize || "Standard",
           fit: (quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") ? quickViewFit : undefined,
           wearTag: quickViewPiece.wearTag,
-          price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price,
+          price: stockStatus.unitPrice,
           image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewPiece.image,
           image2: quickViewActiveCombo?.images?.[0] || quickViewGalleryImages[1] || quickViewPiece.images?.[0],
           quantity: qty,
-          maxStock: stockStatus.maxStock ?? 99,
+          maxStock: isBespokeProduct ? stockStatus.mtoMaxQtyPerOrder : stockStatus.availablePhysicalStock,
+          availablePhysicalStock: stockStatus.availablePhysicalStock,
+          mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
+          canFallbackToMadeToOrder: stockStatus.canFallbackToMadeToOrder,
+          fulfillmentChoice: isBespokeProduct ? "made_to_order" : "ready_to_wear",
+          isMadeToOrder: isBespokeProduct || undefined,
+          leadDays: isBespokeProduct ? stockStatus.leadDays : undefined,
           isBespoke: isBespokeProduct || undefined,
           bespokeLeadDays: isBespokeProduct ? (stockStatus.bespokeLeadDays ?? 14) : undefined,
+          variantId: stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
+          comboId: stockStatus.comboId !== "base" ? stockStatus.comboId : undefined,
         });
         setAddStatus("added");
         setTimeout(() => setAddStatus("idle"), 2000);
@@ -339,13 +369,17 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
         </section>
       ) : null}
 
-      {detailWriteup ? (
+      {detailWriteup || detailEyebrow ? (
         <section className={`${styles.collectionDetailEditorial} ${styles.collectionDetailCentered}`}>
           <div className="container">
             <div className={styles.collectionDetailEditorialRow}>
               <div className={styles.collectionDetailProseCol}>
-                <h2 className={`t-display ${styles.collectionDetailTitle}`}>{collection.name}</h2>
-                <p className={styles.collectionDetailProse}>{detailWriteup}</p>
+                <h2 className={`t-display ${styles.collectionDetailTitle}`}>
+                  {detailEyebrow || collection.name}
+                </h2>
+                {detailWriteup ? (
+                  <p className={styles.collectionDetailProse}>{detailWriteup}</p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -513,34 +547,6 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                       </div>
                     </div>
 
-                    <div className={shopStyles.badgeStack} aria-hidden="true">
-                      {(() => {
-                        const isBespoke = !!(p.bespokeAvailable && p.quantity <= 0);
-                        return isBespoke ? (
-                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>
-                            MADE TO ORDER
-                          </span>
-                        ) : p.isOutOfStock ? (
-                          <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>
-                            OUT OF STOCK
-                          </span>
-                        ) : (
-                          <>
-                            {p.category === "sample-sale" && <span className={shopStyles.saleBadge}>SALE</span>}
-                            {p.isLimited && p.category !== "sample-sale" && (
-                              <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>
-                                LIMITED
-                              </span>
-                            )}
-                            {p.isBestSeller && (
-                              <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>
-                                BEST SELLER
-                              </span>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
                   </div>
                   <div className={shopStyles.info}>
                     <span className={shopStyles.category}>{getCollectionName(p)}</span>
@@ -582,43 +588,34 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                     alt={quickViewPiece.name}
                     className={styles.modalImage}
                   />
-                  <div className={shopStyles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
-                    {(() => {
-                      const isBespoke = quickViewStockStatus.isBespokeProduct;
-                      return isBespoke ? (
-                        <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                      ) : quickViewStockStatus.isSelectedOutOfStock ? (
-                        <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                      ) : (
-                        <>
-                          {quickViewPiece.category === "sample-sale" && (
-                            <span className={shopStyles.saleBadge}>SALE</span>
-                          )}
-                          {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
-                            <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                          )}
-                          {quickViewPiece.isBestSeller && (
-                            <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
+                  <GalleryNav
+                    count={quickViewGalleryImages.length}
+                    onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
+                    onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
+                  />
                 </div>
-                {quickViewGalleryImages && quickViewGalleryImages.length > 1 && (
-                  <div className={styles.modalThumbnails}>
-                    {quickViewGalleryImages.map((img, idx) => (
-                      <button
-                        key={idx}
-                        className={`${styles.thumbBtn} ${(activeImage || quickViewGalleryImages[0]) === img ? styles.thumbActive : ""}`}
-                        onClick={() => setActiveImage(img)}
-                        aria-label={`View image ${idx + 1}`}
-                      >
-                      <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
-                      </button>
-                    ))}
-                  </div>
-                )}
+
+              </div>
+
+              <div className={styles.modalInfo}>
+                <ProductNameRow
+                  product={quickViewPiece}
+                  isBespoke={quickViewStockStatus.isBespokeProduct}
+                  isOutOfStock={quickViewStockStatus.isSelectedOutOfStock}
+                >
+                  <h2 id="modal-title" className={`t-display ${styles.modalTitle}`}>
+                    {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
+                  </h2>
+                </ProductNameRow>
+                <div className={styles.modalPriceRow}>
+                  <span className={styles.modalPrice}>GHC {(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price).toLocaleString()}</span>
+                  {!quickViewActiveCombo && (quickViewPiece as any).originalPrice && <span className={styles.modalOriginalPrice}>GHC {(quickViewPiece as any).originalPrice.toLocaleString()}</span>}
+                </div>
+
+                <p className={styles.modalDesc}>{quickViewPiece.description}</p>
+                <p className={styles.modalDescNote}>
+                  Authentic Hand Woven. Available on backorder.
+                </p>
                 {quickViewPiece?.variants?.some((v: any) => v.id === "fit-combo") && quickViewColorVariants.length === 0 && (
                   <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
                     <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
@@ -764,21 +761,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                     )}
                   </>
                 )}
-              </div>
 
-              <div className={styles.modalInfo}>
-                <h2 id="modal-title" className={`t-display ${styles.modalTitle}`}>
-                  {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
-                </h2>
-                <div className={styles.modalPriceRow}>
-                  <span className={styles.modalPrice}>GHC {(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price).toLocaleString()}</span>
-                  {!quickViewActiveCombo && (quickViewPiece as any).originalPrice && <span className={styles.modalOriginalPrice}>GHC {(quickViewPiece as any).originalPrice.toLocaleString()}</span>}
-                </div>
-
-                <p className={styles.modalDesc}>{quickViewPiece.description}</p>
-                <p className={styles.modalDescNote}>
-                  Authentic Hand Woven. Available on backorder.
-                </p>
 
                 {(quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") && (
                   <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>

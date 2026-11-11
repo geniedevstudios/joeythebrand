@@ -223,6 +223,38 @@ export interface DHLShipmentRequest {
   packageDimensions?: { length: number; width: number; height: number; };
 }
 
+export function parseDhlAddress(shippingAddress: string): DHLShipmentRequest["destination"] | null {
+  const address = shippingAddress.trim();
+  // Older orders stored the display address, city, postal code and country only.
+  const match = /\s+\| DHL\[([^|\]]+)\|([^|\]]*)\|([A-Z]{2})(?:\|([^|\]]+))?\](?: \(international\))?$/i.exec(address);
+  try {
+    if (match) {
+      const [, city, postalCode, countryCode, encodedStreet] = match;
+      return {
+        addressLine1: encodedStreet ? decodeURIComponent(encodedStreet) : address.slice(0, match.index),
+        city: city.trim(),
+        postalCode: postalCode.trim().toUpperCase(),
+        countryCode: countryCode.toUpperCase(),
+      };
+    }
+
+    if (address.startsWith("{")) {
+      const parsed = JSON.parse(address);
+      if (typeof parsed?.city === "string" && typeof parsed?.countryCode === "string") {
+        return {
+          addressLine1: String(parsed.addressLine1 || parsed.address || ""),
+          city: parsed.city.trim(),
+          postalCode: String(parsed.postalCode || "").trim().toUpperCase(),
+          countryCode: normalizeCountry(parsed.countryCode),
+        };
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export async function createShipment(req: DHLShipmentRequest) {
   const account = envTrim("DHL_ACCOUNT_NUMBER");
   if (!account) throw new Error("DHL Account Number not configured");
@@ -230,6 +262,7 @@ export async function createShipment(req: DHLShipmentRequest) {
   const totalWeight = req.items.reduce((acc, item) => acc + (item.weightKg * item.quantity), 0) || 1.0;
   const declaredValue = req.items.reduce((acc, item) => acc + (item.price * item.quantity), 0) || 100;
   const countryCode = normalizeCountry(req.destination.countryCode);
+  const isDomestic = countryCode === SHIPPER_DETAILS.postalAddress.countryCode;
   const postalCode = postalForDhl(countryCode, req.destination.postalCode);
   const shipperPostal = postalForDhl(
     SHIPPER_DETAILS.postalAddress.countryCode,
@@ -241,15 +274,17 @@ export async function createShipment(req: DHLShipmentRequest) {
     pickup: {
       isRequested: false // The user wants to manually schedule this later
     },
-    productCode: "P",
+    productCode: isDomestic ? "N" : "P",
     accounts: [{ typeCode: "shipper", number: account }],
     outputImageProperties: {
       allDocumentsInOneImage: true,
       encodingFormat: "pdf",
       imageOptions: [
         { typeCode: "label", templateName: "ECOM26_84_A4_001", isRequested: true },
-        { typeCode: "waybillDoc", templateName: "ARCH_8x4", isRequested: true },
-        { typeCode: "invoice", templateName: "COMMERCIAL_INVOICE_P_10", isRequested: true, invoiceType: "commercial" }
+        ...(!isDomestic ? [
+          { typeCode: "waybillDoc", templateName: "ARCH_8x4", isRequested: true },
+          { typeCode: "invoice", templateName: "COMMERCIAL_INVOICE_P_10", isRequested: true, invoiceType: "commercial" },
+        ] : []),
       ]
     },
     customerDetails: {
@@ -279,7 +314,6 @@ export async function createShipment(req: DHLShipmentRequest) {
     },
     content: {
       unitOfMeasurement: "metric",
-      incoterm: "DAP",
       packages: [
         {
           weight: totalWeight,
@@ -288,28 +322,31 @@ export async function createShipment(req: DHLShipmentRequest) {
           description: "Clothing apparel"
         }
       ],
-      isCustomsDeclarable: true,
-      declaredValue: declaredValue,
-      declaredValueCurrency: "GHS",
-      exportDeclaration: {
-        lineItems: req.items.map((item, index) => {
-          if (!item.hsCode) throw new Error(`Item "${item.name}" is missing an HS Code. Please add it to the product before shipping.`);
-          return {
-            number: index + 1,
-            description: item.name.substring(0, 45),
-            price: item.price || 0,
-            quantity: { value: item.quantity || 1, unitOfMeasurement: "EA" },
-            commodityCodes: [{ typeCode: "outbound", value: item.hsCode }],
-            exportReasonType: "permanent",
-            manufacturerCountry: "GH",
-            weight: { netValue: item.weightKg || 0.5, grossValue: item.weightKg || 0.5 }
-          };
-        }),
-        invoice: {
-          number: `INV-${req.orderId.substring(0, 20)}`,
-          date: new Date().toISOString().split("T")[0]
-        }
-      },
+      isCustomsDeclarable: !isDomestic,
+      ...(!isDomestic && {
+        incoterm: "DAP",
+        declaredValue: declaredValue,
+        declaredValueCurrency: "GHS",
+        exportDeclaration: {
+          lineItems: req.items.map((item, index) => {
+            if (!item.hsCode) throw new Error(`Item "${item.name}" is missing an HS Code. Please add it to the product before shipping.`);
+            return {
+              number: index + 1,
+              description: item.name.substring(0, 45),
+              price: item.price || 0,
+              quantity: { value: item.quantity || 1, unitOfMeasurement: "EA" },
+              commodityCodes: [{ typeCode: "outbound", value: item.hsCode }],
+              exportReasonType: "permanent",
+              manufacturerCountry: "GH",
+              weight: { netValue: item.weightKg || 0.5, grossValue: item.weightKg || 0.5 }
+            };
+          }),
+          invoice: {
+            number: `INV-${req.orderId.substring(0, 20)}`,
+            date: new Date().toISOString().split("T")[0]
+          }
+        },
+      }),
       description: "Clothing and Apparel"
     }
   };
@@ -318,7 +355,7 @@ export async function createShipment(req: DHLShipmentRequest) {
     method: "POST",
     headers: dhlHeaders(),
     body: JSON.stringify(payload)
-  });
+  }, 0);
 
   if (!res.ok) {
     const errorBody = await res.text();
@@ -328,14 +365,18 @@ export async function createShipment(req: DHLShipmentRequest) {
 
   const data = await res.json();
 
-  // Return tracking number and base64 label
+  const label = data.documents?.find((doc: { typeCode?: string }) => doc.typeCode === "label");
+  if (!data.shipmentTrackingNumber || typeof label?.content !== "string" ||
+      Buffer.from(label.content, "base64").subarray(0, 5).toString() !== "%PDF-") {
+    throw new Error("DHL returned an incomplete shipment response. Check DHL before attempting to create another label.");
+  }
   return {
     trackingNumber: data.shipmentTrackingNumber,
-    labelData: data.documents?.[0]?.content // base64 encoded PDF
+    labelData: label.content,
   };
 }
 
-export async function schedulePickup(trackingNumber: string, weight: number = 0.5, dimensions: { length: number; width: number; height: number; } = { length: 30, width: 20, height: 10 }) {
+export async function schedulePickup(trackingNumber: string, isCustomsDeclarable = true) {
   const account = envTrim("DHL_ACCOUNT_NUMBER");
   if (!account) throw new Error("DHL Account Number not configured");
 
@@ -364,10 +405,9 @@ export async function schedulePickup(trackingNumber: string, weight: number = 0.
     shipmentDetails: [{
       shipmentTrackingNumber: trackingNumber,
       unitOfMeasurement: "metric",
-      isCustomsDeclarable: true,
-      packages: [{ typeCode: "3BX", weight, dimensions }],
-      declaredValue: 100,
-      declaredValueCurrency: "GHS"
+      isCustomsDeclarable,
+      packages: [{ typeCode: "3BX", weight: 0.5, dimensions: { length: 30, width: 20, height: 10 } }],
+      ...(isCustomsDeclarable && { declaredValue: 100, declaredValueCurrency: "GHS" }),
     }]
   };
 
@@ -375,7 +415,7 @@ export async function schedulePickup(trackingNumber: string, weight: number = 0.
     method: "POST",
     headers: dhlHeaders(),
     body: JSON.stringify(payload)
-  });
+  }, 0);
 
   if (!res.ok) {
     const errorBody = await res.text();
@@ -384,8 +424,10 @@ export async function schedulePickup(trackingNumber: string, weight: number = 0.
   }
 
   const data = await res.json();
+  const confirmation = data.dispatchConfirmationNumbers?.[0];
+  if (!confirmation) throw new Error("DHL returned no pickup confirmation. Check DHL before booking another pickup.");
   return {
-    dispatchConfirmationNumber: data.dispatchConfirmationNumbers?.[0]
+    dispatchConfirmationNumber: confirmation
   };
 }
 

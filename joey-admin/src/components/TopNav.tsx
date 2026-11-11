@@ -5,20 +5,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LogOut, Menu, X, Pencil, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { ArrowUpRight, LogOut, Menu, Settings, X, Pencil, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import { compressImageIfNeeded } from "@/lib/compressImageClient";
 import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
+import { adminPillClass, adminPillTrackClass } from "@/lib/adminChrome";
 
  type NavItem = {
-   label: string;
-   href: string;
-   badge?: number;
- };
-
- type DropdownItem = {
    label: string;
    href: string;
    badge?: number;
@@ -47,8 +42,6 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
    const pathname = usePathname();
    const [processingOrdersCount, setProcessingOrdersCount] = useState(0);
    const [pendingConsultationsCount, setPendingConsultationsCount] = useState(0);
-   const [contentOpen, setContentOpen] = useState(false);
-   const contentRootRef = useRef<HTMLDivElement>(null);
   const [userLabel, setUserLabel] = useState<{
     name: string;
     email: string;
@@ -163,24 +156,6 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
   }, [profileOpen]);
 
   useEffect(() => {
-    if (!contentOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      if (contentRootRef.current && !contentRootRef.current.contains(e.target as Node)) {
-        setContentOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setContentOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [contentOpen]);
-
-  useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
 
@@ -195,230 +170,221 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
 
    const nav: NavItem[] = useMemo(
      () => [
-       { label: "Dashboard", href: "/" },
+       { label: "Overview", href: "/" },
        { label: "Products", href: "/products" },
        { label: "Orders", href: "/orders", badge: processingOrdersCount || undefined },
-       { label: "Promotions", href: "/promotions" },
-       { label: "Clan", href: "/users" },
-     ],
-     [processingOrdersCount],
-   );
-
-   const contentItems: DropdownItem[] = useMemo(
-     () => [
-       { label: "Site Content", href: "/content" },
-       { label: "App pages", href: "/content/app-pages" },
        {
          label: "Consultations",
          href: "/content/consultations",
          badge: pendingConsultationsCount || undefined,
        },
-       { label: "Newsletter", href: "/content/newsletter" },
+       { label: "Website", href: "/users" },
      ],
-     [pendingConsultationsCount],
+     [pendingConsultationsCount, processingOrdersCount],
    );
 
-   const contentActive =
-     pathname === "/content" ||
-     pathname.startsWith("/content/app-pages") ||
-     pathname.startsWith("/content/consultations") ||
-     pathname.startsWith("/content/newsletter");
+   const isNavActive = (item: NavItem) => {
+     if (item.label === "Website") {
+       return (
+         pathname === "/users" ||
+         pathname.startsWith("/users/") ||
+         pathname.startsWith("/promotions") ||
+         pathname.startsWith("/content/app-pages")
+       );
+     }
+     return isActivePath(pathname, item.href);
+   };
+
+   const settingsActive = pathname === "/settings" || pathname.startsWith("/settings/");
+   const storefrontUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://www.joeythebrand.com").replace(/\/+$/, "");
+   const today = (() => {
+     const d = new Date();
+     return {
+       day: d.toLocaleDateString(undefined, { day: "2-digit" }),
+       weekday: d.toLocaleDateString(undefined, { weekday: "short" }),
+       month: d.toLocaleDateString(undefined, { month: "long" }),
+     };
+   })();
+
+  const pillClass = (active: boolean) =>
+    `relative inline-flex items-center gap-2 ${adminPillClass(active, "md")}`;
 
   return (
     <>
-      <header className="relative z-30 border-b border-white/10 bg-[#0b0d10] px-3 sm:px-5 md:px-6">
-        <div className="flex min-h-24 w-full min-w-0 items-center justify-between gap-2 py-2 sm:justify-start sm:gap-4">
-          <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-            <div className="flex shrink-0 items-center">
-              <Image
-                src="/white-logo.png"
-                alt="JOEY THE BRAND"
-                width={560}
-                height={112}
-                className="h-14 w-auto max-w-[9rem] object-contain opacity-95 sm:h-16 sm:max-w-[12rem] md:h-[4.5rem] md:max-w-[15rem] lg:h-20 lg:max-w-[22rem] xl:max-w-[26rem]"
-                priority
-                sizes="(max-width: 640px) 9rem, 26rem"
-              />
-            </div>
-            <div className="hidden min-w-0 sm:block">
-              <div className="truncate text-sm font-semibold tracking-wide text-white">ADMIN</div>
-              <div className="truncate text-[11px] font-medium text-white/55">Management portal</div>
+      <div className="sticky top-0 z-30 border-b border-[#b6b7ba]/50 bg-[#f5f1eb]/95 backdrop-blur-md">
+        <header className="px-3 sm:px-5 md:px-8">
+          <div className="flex min-h-[4.5rem] w-full min-w-0 items-center justify-between gap-3 py-3">
+            <Link href="/" className="flex min-w-0 shrink-0 items-center gap-3" aria-label="JOEY studio overview">
+              <span className="inline-flex items-center rounded-full border border-[#b6b7ba] bg-white px-3 py-1.5 sm:px-4 sm:py-2">
+                <Image
+                  src="/white-logo.png"
+                  alt="JOEY THE BRAND"
+                  width={560}
+                  height={112}
+                  className="h-7 w-auto max-w-[9.5rem] object-contain invert sm:h-8 sm:max-w-[11rem]"
+                  priority
+                  sizes="11rem"
+                />
+              </span>
+              <span className="hidden max-w-[4.5rem] text-[7px] font-semibold uppercase leading-tight tracking-[0.22em] text-[#1c1e22]/45 sm:block">
+                The studio
+              </span>
+            </Link>
+
+            <nav
+              className="hidden min-w-0 flex-1 items-center justify-center lg:flex"
+              aria-label="Studio navigation"
+            >
+              <div className={adminPillTrackClass}>
+                {nav.map((item) => {
+                  const active = isNavActive(item);
+                  return (
+                    <Link key={item.href} href={item.href} className={pillClass(active)}>
+                      {item.label}
+                      {item.badge ? (
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <Link
+                href="/settings"
+                title="Settings"
+                aria-label="Settings"
+                aria-current={settingsActive ? "page" : undefined}
+                className={`inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#b6b7ba] px-3 text-sm font-semibold transition ${
+                  settingsActive ? "bg-[#1c1e22] text-[#f5f1eb]" : "bg-white text-[#1c1e22]/75 hover:bg-[#ebe8e2]"
+                }`}
+              >
+                <Settings className="h-4 w-4" strokeWidth={1.75} />
+                <span className="hidden sm:inline">Settings</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setProfileOpen(true)}
+                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-white text-xs font-bold text-[#1c1e22] ring-1 ring-[#b6b7ba]"
+                aria-label="Open profile"
+              >
+                {userLabel ? (
+                  <ProfilePhoto url={userLabel.avatarUrl} initials={userLabel.initials} />
+                ) : (
+                  <span className="opacity-40">AD</span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                aria-label="Sign out"
+                disabled={signingOut}
+                onClick={async () => {
+                  setSigningOut(true);
+                  try {
+                    await supabase.auth.signOut();
+                    try {
+                      localStorage.removeItem("joey_admin_user_label_v1");
+                    } catch {
+                      /* ignore */
+                    }
+                    setUserLabel(null);
+                  } finally {
+                    setSigningOut(false);
+                  }
+                }}
+                className="hidden h-11 w-11 items-center justify-center rounded-full border border-[#b6b7ba] bg-white text-[#1c1e22]/75 hover:bg-[#ebe8e2] sm:inline-flex"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+
+              <button
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#b6b7ba] bg-white text-[#1c1e22] lg:hidden"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((o) => !o)}
+              >
+                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
             </div>
           </div>
+        </header>
 
-          <nav
-            className="hidden min-h-[3rem] min-w-0 flex-1 items-center justify-center sm:flex"
-            aria-label="Admin navigation"
-          >
-            <div className="flex w-max min-w-0 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
-              {nav.map((item) => {
-                const active = isActivePath(pathname, item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      active
-                        ? "border border-[#d6ff2a]/60 bg-white/[0.02] text-[#d6ff2a] shadow-[0_0_0_1px_rgba(214,255,42,0.15)]"
-                        : "text-white/70 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    {item.label}
-                    {item.badge ? (
-                      <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ring-1 ring-white/20">
-                        {item.badge}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-
-              <div className="relative" ref={contentRootRef}>
-                <button
-                  type="button"
-                  onClick={() => setContentOpen((v) => !v)}
-                  aria-haspopup="menu"
-                  aria-expanded={contentOpen}
-                  className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    contentActive
-                      ? "border border-[#d6ff2a]/60 bg-white/[0.02] text-[#d6ff2a] shadow-[0_0_0_1px_rgba(214,255,42,0.15)]"
-                      : "text-white/70 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  Site
-                  <span className="text-white/40" aria-hidden>
-                    ▾
-                  </span>
-                </button>
-
-                {contentOpen ? (
-                  <div
-                    role="menu"
-                    className="absolute left-0 top-[calc(100%+10px)] z-50 w-64 overflow-hidden rounded-2xl border border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)]"
-                  >
-                    <div className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">
-                      Site Content
-                    </div>
-                    <div className="px-2 pb-2">
-                      {contentItems.map((it) => {
-                        const active = isActivePath(pathname, it.href);
-                        return (
-                          <Link
-                            key={it.href}
-                            href={it.href}
-                            role="menuitem"
-                            onClick={() => setContentOpen(false)}
-                            className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                              active
-                                ? "bg-white/6 text-white"
-                                : "text-white/75 hover:bg-white/5 hover:text-white"
-                            }`}
-                          >
-                            <span>{it.label}</span>
-                            {it.badge ? (
-                              <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white ring-1 ring-white/20">
-                                {it.badge}
-                              </span>
-                            ) : null}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+        <div className="mx-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#b6b7ba]/60 py-3 sm:mx-5 md:mx-8">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-semibold tracking-wide text-[#1c1e22]/50">
+                {userLabel?.name || "Admin"},
+              </p>
+              <p className="text-xl font-medium tracking-tight text-[#1c1e22] sm:text-2xl">Welcome back</p>
             </div>
-          </nav>
-
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <time className="hidden items-center gap-2.5 sm:flex" dateTime={new Date().toISOString().slice(0, 10)}>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-[#1c1e22] text-sm font-semibold text-[#f5f1eb]">
+                {today.day}
+              </span>
+              <span className="leading-tight">
+                <span className="block text-sm font-semibold text-[#1c1e22]">{today.weekday}</span>
+                <span className="block text-xs text-[#1c1e22]/55">{today.month}</span>
+              </span>
+            </time>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={storefrontUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#b6b7ba] bg-white px-3 py-2 text-xs font-semibold text-[#1c1e22]/80 hover:bg-[#ebe8e2]"
+            >
+              View storefront
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </a>
             <button
               type="button"
               onClick={() => {
                 dataStore.notify();
                 toast.success("Database refreshed");
               }}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/80 transition hover:bg-white/[0.08] hover:text-[#d6ff2a] sm:h-10 sm:w-10"
-              aria-label="Refresh Database"
-              title="Refresh Data"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#b6b7ba] bg-white text-[#1c1e22]/70 hover:bg-[#ebe8e2]"
+              aria-label="Refresh data"
+              title="Refresh data"
             >
-              <RefreshCw className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={2} />
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white transition hover:bg-white/[0.08] sm:hidden"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={menuOpen}
-              aria-controls="admin-mobile-nav"
-              onClick={() => setMenuOpen((o) => !o)}
-            >
-              {menuOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
-            </button>
-
-            <div className="hidden text-right sm:block">
-              {userLabel ? (
-                <>
-                  <div className="text-sm font-semibold text-white">{userLabel.name}</div>
-                  <div className="text-[11px] font-medium text-white/55">{userLabel.email}</div>
-                </>
-              ) : (
-                <div className="space-y-1.5">
-                  <div className="h-4 w-28 rounded bg-white/10" />
-                  <div className="h-3 w-40 rounded bg-white/7" />
-                </div>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setProfileOpen(true)}
-              className="group inline-flex items-center justify-center rounded-full p-1 transition hover:bg-white/5"
-              aria-label="Open profile settings"
-              aria-busy={userLabel ? undefined : true}
-            >
-              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/10 text-xs font-bold text-white ring-1 ring-white/10">
-                {userLabel ? (
-                  <ProfilePhoto url={userLabel.avatarUrl} initials={userLabel.initials} />
-                ) : (
-                  <span className="opacity-0">AD</span>
-                )}
-              </div>
+              <RefreshCw className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {menuOpen ? (
-        <div className="fixed inset-0 z-[100] sm:hidden" id="admin-mobile-nav" role="dialog" aria-modal="true" aria-label="Admin menu">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/60"
-            aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
-          />
-          <div className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col border-l border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)]">
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
-              <span className="text-sm font-semibold tracking-wide text-white">Menu</span>
+        <div className="fixed inset-0 z-[100] lg:hidden" id="admin-mobile-nav" role="dialog" aria-modal="true" aria-label="Admin menu">
+          <button type="button" className="absolute inset-0 bg-black/60" aria-label="Close menu" onClick={() => setMenuOpen(false)} />
+          <div className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col border-l border-[#b6b7ba] bg-[#f5f1eb]">
+            <div className="flex items-center justify-between border-b border-[#b6b7ba]/70 px-4 py-4">
+              <span className="text-sm font-semibold text-[#1c1e22]">Menu</span>
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white hover:bg-white/5"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#b6b7ba] bg-white text-[#1c1e22]"
                 aria-label="Close menu"
                 onClick={() => setMenuOpen(false)}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Admin navigation">
+            <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Studio navigation">
               <div className="space-y-1">
                 {nav.map((item) => {
-                  const active = isActivePath(pathname, item.href);
+                  const active = isNavActive(item);
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
                       className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold ${
-                        active ? "bg-white/[0.08] text-[#d6ff2a]" : "text-white/85 hover:bg-white/[0.06]"
+                        active ? "bg-[#1c1e22] text-[#f5f1eb]" : "text-[#1c1e22]/85 hover:bg-white"
                       }`}
                     >
                       {item.label}
@@ -431,29 +397,16 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                   );
                 })}
               </div>
-              <p className="mb-2 mt-6 px-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/50">Site</p>
-              <div className="space-y-1">
-                {contentItems.map((it) => {
-                  const active = isActivePath(pathname, it.href);
-                  return (
-                    <Link
-                      key={it.href}
-                      href={it.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold ${
-                        active ? "bg-white/[0.08] text-[#d6ff2a]" : "text-white/85 hover:bg-white/[0.06]"
-                      }`}
-                    >
-                      {it.label}
-                      {it.badge ? (
-                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                          {it.badge}
-                        </span>
-                      ) : null}
-                    </Link>
-                  );
-                })}
-              </div>
+              <Link
+                href="/settings"
+                onClick={() => setMenuOpen(false)}
+                className={`mt-6 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${
+                  settingsActive ? "bg-[#1c1e22] text-[#f5f1eb]" : "text-[#1c1e22]/85 hover:bg-white"
+                }`}
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
             </nav>
           </div>
         </div>
@@ -476,18 +429,18 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
             role="dialog"
             aria-modal="true"
             aria-label="Edit profile"
-            className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#0b0d10] shadow-[0_26px_90px_rgba(0,0,0,0.55)] ring-1 ring-white/5"
+            className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-[#b6b7ba] bg-white shadow-[0_26px_90px_rgba(28,30,34,0.18)]"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div className="border-b border-white/10 px-6 py-5">
-              <h2 className="text-lg font-semibold tracking-tight text-white">Profile</h2>
-              <p className="mt-1 text-sm text-white/60">Update your name and profile picture.</p>
+            <div className="border-b border-[#b6b7ba]/60 px-6 py-5">
+              <h2 className="text-lg font-semibold tracking-tight text-[#1c1e22]">Profile</h2>
+              <p className="mt-1 text-sm text-[#1c1e22]/60">Update your name and profile picture.</p>
             </div>
 
             <div className="space-y-5 px-6 py-5">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
-                  <div className="flex h-full w-full items-center justify-center text-sm font-bold text-white/70">
+                <div className="h-14 w-14 overflow-hidden rounded-full bg-[#f5f1eb] ring-1 ring-[#b6b7ba]">
+                  <div className="flex h-full w-full items-center justify-center text-sm font-bold text-[#1c1e22]/70">
                     <ProfilePhoto url={profileAvatarUrl} initials={userLabel?.initials || "AD"} />
                   </div>
                 </div>
@@ -521,7 +474,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                     type="button"
                     disabled={profileUploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.06] disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-[#b6b7ba] bg-[#f5f1eb] px-4 py-2.5 text-sm font-semibold text-[#1c1e22]/80 transition hover:bg-[#ebe8e2] disabled:opacity-60"
                   >
                     {profileUploading ? "Uploading…" : (
                       <>
@@ -536,7 +489,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                       disabled={profileUploading}
                       onClick={() => setProfileAvatarUrl("")}
                       aria-label="Remove photo"
-                      className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-2.5 text-white/70 transition hover:bg-white/[0.06] hover:text-red-400 disabled:opacity-60"
+                      className="inline-flex items-center justify-center rounded-2xl border border-[#b6b7ba] bg-[#f5f1eb] p-2.5 text-[#1c1e22]/70 transition hover:bg-[#ebe8e2] hover:text-red-600 disabled:opacity-60"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -545,16 +498,16 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-white/80">Name</label>
+                <label className="block text-sm font-semibold text-[#1c1e22]/80">Name</label>
                 <input
                   type="text"
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
                   placeholder="Your name"
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90 placeholder:text-white/40 outline-none focus:border-[#d6ff2a]/50 focus:ring-2 focus:ring-[#d6ff2a]/20"
+                  className="mt-2 w-full rounded-2xl border border-[#b6b7ba] bg-[#f5f1eb] px-4 py-3 text-sm text-[#1c1e22] placeholder:text-[#1c1e22]/40 outline-none focus:border-[#1c1e22]/40 focus:ring-2 focus:ring-[#b6b7ba]/50"
                 />
                 
-                <label className="mt-4 block text-sm font-semibold text-white/80">Change Password</label>
+                <label className="mt-4 block text-sm font-semibold text-[#1c1e22]/80">Change Password</label>
                 <div className="relative mt-2">
                   <input
                     type={showProfilePassword ? "text" : "password"}
@@ -562,19 +515,19 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                     onChange={(e) => setProfilePassword(e.target.value)}
                     placeholder="Leave blank to keep current password"
                     autoComplete="new-password"
-                    className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-4 pr-12 text-sm text-white/90 placeholder:text-white/40 outline-none focus:border-[#d6ff2a]/50 focus:ring-2 focus:ring-[#d6ff2a]/20"
+                    className="w-full rounded-2xl border border-[#b6b7ba] bg-[#f5f1eb] py-3 pl-4 pr-12 text-sm text-[#1c1e22] placeholder:text-[#1c1e22]/40 outline-none focus:border-[#1c1e22]/40 focus:ring-2 focus:ring-[#b6b7ba]/50"
                   />
                   <button
                     type="button"
                     onClick={() => setShowProfilePassword((v) => !v)}
                     aria-label={showProfilePassword ? "Hide password" : "Show password"}
-                    className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-white/55 transition hover:bg-white/[0.06] hover:text-white/90"
+                    className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-[#1c1e22]/55 transition hover:bg-white hover:text-[#1c1e22]"
                   >
                     {showProfilePassword ? <EyeOff className="h-5 w-5" strokeWidth={2} /> : <Eye className="h-5 w-5" strokeWidth={2} />}
                   </button>
                 </div>
                 
-                <p className="mt-4 text-xs text-white/50">{userLabel?.email || ""}</p>
+                <p className="mt-4 text-xs text-[#1c1e22]/50">{userLabel?.email || ""}</p>
                 <button
                   type="button"
                   aria-label="Sign out of admin"
@@ -596,7 +549,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                       setSigningOut(false);
                     }
                   }}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/75 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-60"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#b6b7ba] bg-[#f5f1eb] px-4 py-2.5 text-sm font-semibold text-[#1c1e22]/75 transition hover:bg-[#ebe8e2] hover:text-[#1c1e22] disabled:opacity-60"
                 >
                   <LogOut className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
                   {signingOut ? "Signing out…" : "Sign out"}
@@ -604,12 +557,12 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
               </div>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-white/10 px-6 py-4 sm:flex-row sm:justify-end sm:gap-3">
+            <div className="flex flex-col-reverse gap-2 border-t border-[#b6b7ba]/60 px-6 py-4 sm:flex-row sm:justify-end sm:gap-3">
               <button
                 type="button"
                 onClick={() => setProfileOpen(false)}
                 disabled={profileSaving || signingOut}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/[0.06] disabled:opacity-60"
+                className="rounded-2xl border border-[#b6b7ba] bg-[#f5f1eb] px-4 py-2.5 text-sm font-semibold text-[#1c1e22]/80 transition hover:bg-[#ebe8e2] disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -672,7 +625,7 @@ import { uploadSiteAsset } from "@/lib/uploadSiteAsset";
                     setProfileSaving(false);
                   }
                 }}
-                className="rounded-2xl bg-[#d6ff2a] px-5 py-2.5 text-sm font-semibold text-black shadow-[0_12px_30px_rgba(214,255,42,0.14)] transition hover:opacity-95 disabled:opacity-60"
+                className="rounded-2xl bg-[#1c1e22] px-5 py-2.5 text-sm font-semibold text-[#f5f1eb] shadow-sm transition hover:bg-[#2a2c30] disabled:opacity-60"
               >
                 {profileSaving ? "Saving…" : "Save"}
               </button>

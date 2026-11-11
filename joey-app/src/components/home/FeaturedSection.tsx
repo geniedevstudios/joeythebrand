@@ -13,6 +13,8 @@ import { useStoreLoading } from "@/hooks/useStoreLoading";
 import type { Product } from "@/lib/types";
 import type { WishlistItem } from "@/store/wishlistStore";
 import ProductMedia from "@/components/shop/ProductMedia";
+import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
+import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import styles from "./FeaturedSection.module.css";
 import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
@@ -210,7 +212,14 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
     setAddStatus("adding");
     setTimeout(() => {
       import("@/store/cartStore").then(({ cartStore }) => {
-        const stockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+        const stockStatus = getVariantStockStatus(
+          quickViewPiece,
+          quickViewActiveVariant,
+          quickViewActiveCombo,
+          quickViewMode,
+          undefined,
+          selectedSize || null,
+        );
         const isBespokeProduct = stockStatus.isBespokeProduct;
         cartStore.addItem({
           productId: quickViewPiece.id,
@@ -221,12 +230,20 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
           size: selectedSize || "Standard",
           fit: (quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") ? selectedFit : undefined,
           wearTag: quickViewPiece.wearTag,
-          price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price,
+          price: stockStatus.unitPrice,
           image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewPiece.image,
           quantity: qty,
-          maxStock: stockStatus.maxStock ?? 99,
+          maxStock: isBespokeProduct ? stockStatus.mtoMaxQtyPerOrder : stockStatus.availablePhysicalStock,
+          availablePhysicalStock: stockStatus.availablePhysicalStock,
+          mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
+          canFallbackToMadeToOrder: stockStatus.canFallbackToMadeToOrder,
+          fulfillmentChoice: isBespokeProduct ? "made_to_order" : "ready_to_wear",
+          isMadeToOrder: isBespokeProduct || undefined,
+          leadDays: isBespokeProduct ? stockStatus.leadDays : undefined,
           isBespoke: isBespokeProduct || undefined,
           bespokeLeadDays: isBespokeProduct ? (stockStatus.bespokeLeadDays ?? 14) : undefined,
+          variantId: stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
+          comboId: stockStatus.comboId !== "base" ? stockStatus.comboId : undefined,
         });
         setAddStatus("added");
         setTimeout(() => setAddStatus("idle"), 2000);
@@ -277,46 +294,32 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       alt={quickViewPiece.name}
                       className={styles.modalImage}
                     />
-                    <div className={styles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
-                      {(() => {
-                        const isBespoke = quickViewStockStatus.isBespokeProduct;
-                        return isBespoke ? (
-                          <span className={styles.tag} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                        ) : quickViewStockStatus.isSelectedOutOfStock ? (
-                          <span className={styles.tag} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                        ) : (
-                          <>
-                            {quickViewPiece.category === "sample-sale" && (
-                              <span className={styles.tag}>SALE</span>
-                            )}
-                            {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
-                              <span className={styles.tag} style={{ background: "#595D66" }}>LIMITED</span>
-                            )}
-                            {quickViewPiece.isBestSeller && (
-                              <span className={styles.tag} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
+                    <GalleryNav
+                      count={quickViewGalleryImages.length}
+                      onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
+                      onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
+                    />
                   </div>
 
-                  {quickViewGalleryImages && quickViewGalleryImages.length > 1 && (
-                    <div className={styles.modalThumbnails}>
-                      {quickViewGalleryImages.map((img: string, idx: number) => (
-                        <button
-                          key={idx}
-                          className={`${styles.thumbBtn} ${(activeImage || quickViewGalleryImages[0]) === img ? styles.thumbActive : ""}`}
-                          onClick={() => setActiveImage(img)}
-                          aria-label={`View image ${idx + 1}`}
-                          type="button"
-                        >
-                          <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
-                        </button>
-                      ))}
-                    </div>
-                  )}
 
+                </div>
+
+                <div className={styles.modalInfo}>
+                  <ProductNameRow
+                    product={quickViewPiece}
+                    isBespoke={quickViewStockStatus.isBespokeProduct}
+                    isOutOfStock={quickViewStockStatus.isSelectedOutOfStock}
+                  >
+                    <h3 id="featured-quickview-title" className={`t-display ${styles.modalTitle}`}>
+                      {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
+                    </h3>
+                  </ProductNameRow>
+                  <div className={styles.modalPriceRow}>
+                    <span className={styles.modalPrice}>{formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}</span>
+                    {!quickViewActiveCombo && (quickViewPiece as any).originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice((quickViewPiece as any).originalPrice)}</span>}
+                  </div>
+
+                  <p className={styles.modalDesc}>{quickViewPiece.description}</p>
                   {quickViewPiece?.variants?.some((v: any) => v.id === "fit-combo") && quickViewColorVariants.length === 0 && (
                     <div className={styles.comboSelectorSection} style={{ marginTop: "1rem" }}>
                       <span className={styles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
@@ -462,18 +465,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       )}
                     </>
                   )}
-                </div>
 
-                <div className={styles.modalInfo}>
-                  <h3 id="featured-quickview-title" className={`t-display ${styles.modalTitle}`}>
-                    {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
-                  </h3>
-                  <div className={styles.modalPriceRow}>
-                    <span className={styles.modalPrice}>{formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}</span>
-                    {!quickViewActiveCombo && (quickViewPiece as any).originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice((quickViewPiece as any).originalPrice)}</span>}
-                  </div>
-
-                  <p className={styles.modalDesc}>{quickViewPiece.description}</p>
 
                   {(quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") && (
                     <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
@@ -750,28 +742,6 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                 </div>
                 </div>
 
-                <div className={styles.badgeStack} aria-hidden="true">
-                  {(() => {
-                    const isBespoke = !!(item.bespokeAvailable && item.quantity <= 0);
-                    return isBespoke ? (
-                      <span className={styles.tag} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                    ) : item.isOutOfStock ? (
-                      <span className={styles.tag} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                    ) : (
-                      <>
-                        {item.category === "sample-sale" && (
-                          <span className={styles.tag}>SALE</span>
-                        )}
-                        {item.isLimited && item.category !== "sample-sale" && (
-                          <span className={styles.tag} style={{ background: "#595D66" }}>LIMITED</span>
-                        )}
-                        {item.isBestSeller && (
-                          <span className={styles.tag} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
               </div>
               <div className={styles.info}>
                 {(() => {

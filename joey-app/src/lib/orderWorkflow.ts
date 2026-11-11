@@ -79,7 +79,7 @@ export const defaultPaystackOrderVerifier: PaystackOrderVerifier = async (
 };
 
 export type ShippingRateCalculator = (params: {
-  destination: { city: string; postalCode?: string; countryCode: string };
+  destination: { city: string; postalCode?: string; countryCode: string; addressLine1?: string };
   weightKg: number;
 }) => Promise<{ price: number }>;
 
@@ -112,6 +112,7 @@ export interface CreateOrderInput {
     city: string;
     postalCode?: string;
     countryCode: string;
+    addressLine1?: string;
   };
   promotionCode?: string;
   notes?: string;
@@ -280,7 +281,14 @@ export async function createServerAuthoritativeOrder(params: {
   const resolvedOrderItems: OrderItem[] = [];
   const reservationsToCreateMap = new Map<
     string,
-    { productId: string; variantId: string; comboId: string; skuKey: string; quantity: number }
+    {
+      productId: string;
+      variantId: string;
+      comboId: string;
+      size: string;
+      skuKey: string;
+      quantity: number;
+    }
   >();
   const partialStockConflicts: PartialStockConflictDetail[] = [];
 
@@ -380,13 +388,14 @@ export async function createServerAuthoritativeOrder(params: {
       }
     }
 
-    // Evaluate Single Inventory Authority for this SKU
+    // Evaluate Single Inventory Authority for this SKU (colour + size when sizeStock is tracked)
     const skuStatus = getVariantStockStatus(
       pRow,
       matchedColor,
       matchedCombo,
       activeMode,
       reqItem.fulfillmentChoice,
+      reqSize,
     );
 
     const activeReserved = reservedBySku.get(skuStatus.skuKey) || 0;
@@ -473,6 +482,7 @@ export async function createServerAuthoritativeOrder(params: {
           productId: pRow.id,
           variantId: skuStatus.variantId,
           comboId: skuStatus.comboId,
+          size: skuStatus.sizeKey || reqSize,
           skuKey: skuStatus.skuKey,
           quantity: qty,
         });
@@ -560,55 +570,62 @@ export async function createServerAuthoritativeOrder(params: {
     validatedPromoCode = promoRow.code;
   }
 
-  // 5. Server-authoritative Shipping Cost calculation
+  // 5. Requote DHL and store the destination used for the label.
   let shippingCost = 0;
-  if (input.shippingDestination === "international") {
-    if (input.shippingOption === "dhl") {
-      if (
-        !input.destinationDetails?.city?.trim() ||
-        !input.destinationDetails?.countryCode?.trim()
-      ) {
-        return {
-          ok: false,
-          status: 400,
-          code: "SHIPPING_ERROR",
-          error: "City and country are required for international DHL shipping.",
-        };
-      }
-      try {
-        const calcFn =
-          params.calculateShippingRate ||
-          (async (p) => {
-            const { getShippingRates } = await import("./dhl");
-            return getShippingRates(p);
-          });
-        const rateRes = await calcFn({
-          destination: {
-            city: input.destinationDetails.city.trim(),
-            postalCode: input.destinationDetails.postalCode?.trim() || "",
-            countryCode: input.destinationDetails.countryCode.trim(),
-          },
-          weightKg: Math.max(0.5, totalWeightKg),
-        });
-        shippingCost = Math.max(0, Math.round(Number(rateRes.price || 0)));
-      } catch (err) {
-        return {
-          ok: false,
-          status: 400,
-          code: "SHIPPING_ERROR",
-          error:
-            err instanceof Error
-              ? err.message
-              : "Failed to calculate international DHL shipping rate.",
-        };
-      }
-    } else {
-      shippingCost = 0; // Custom sales shipping arranged after checkout
+  let shippingAddress = input.shippingAddress.trim();
+  const dhlSuffix = /\s*\| DHL\[[^\]]*\](?: \(international\))?$/;
+  if (input.shippingOption === "dhl") {
+    const city = input.destinationDetails?.city?.trim();
+    const postalCode = input.destinationDetails?.postalCode?.trim() || "";
+    const countryCode = input.destinationDetails?.countryCode?.trim().toUpperCase();
+    const addressLine1 = input.destinationDetails?.addressLine1?.trim();
+    const isInternational = input.shippingDestination === "international";
+    if (
+      !city || /[|\[\]]/.test(city + postalCode) ||
+      !countryCode || !/^[A-Z]{2}$/.test(countryCode) ||
+      (isInternational ? countryCode === "GH" : countryCode !== "GH" || !addressLine1)
+    ) {
+      return {
+        ok: false,
+        status: 400,
+        code: "SHIPPING_ERROR",
+        error: "Enter a valid DHL delivery address for the selected destination.",
+      };
     }
+
+    try {
+      const calculateRate = params.calculateShippingRate || (await import("./dhl")).getShippingRates;
+      const rate = await calculateRate({
+        destination: { city, postalCode, countryCode, addressLine1 },
+        weightKg: Math.max(0.5, totalWeightKg),
+      });
+      if (!Number.isFinite(rate.price) || rate.price <= 0) {
+        throw new Error("DHL Express did not return a valid shipping price.");
+      }
+      shippingCost = Math.round(rate.price * 100) / 100;
+      shippingAddress = shippingAddress.replace(dhlSuffix, "");
+      const streetField = addressLine1 ? `|${encodeURIComponent(addressLine1)}` : "";
+      shippingAddress += ` | DHL[${city}|${postalCode}|${countryCode}${streetField}]`;
+      if (isInternational) shippingAddress += " (international)";
+    } catch (err) {
+      return {
+        ok: false,
+        status: 400,
+        code: "SHIPPING_ERROR",
+        error: err instanceof Error ? err.message : "Failed to calculate the DHL shipping rate.",
+      };
+    }
+  } else if (dhlSuffix.test(shippingAddress)) {
+    return {
+      ok: false,
+      status: 400,
+      code: "SHIPPING_ERROR",
+      error: "Choose DHL to place an order with DHL delivery.",
+    };
   }
 
-  const total = Math.max(0, subtotal - discount + shippingCost);
-  const amountPesewas = Math.round(total * 100);
+  const amountPesewas = Math.max(0, Math.round((subtotal - discount + shippingCost) * 100));
+  const total = amountPesewas / 100;
 
   const sanitizedFirstItem = (resolvedOrderItems[0]?.name || "ITEM")
     .replace(/[^a-zA-Z0-9\s]/g, "")
@@ -632,7 +649,7 @@ export async function createServerAuthoritativeOrder(params: {
       p_customer_name: input.customerName.trim(),
       p_customer_email: input.customerEmail.trim(),
       p_customer_phone: input.customerPhone.trim(),
-      p_shipping_address: input.shippingAddress.trim(),
+      p_shipping_address: shippingAddress,
       p_items: resolvedOrderItems,
       p_subtotal: subtotal,
       p_discount: discount,

@@ -1,6 +1,6 @@
 import { isDhlOperator } from "@/lib/dhlRequestAuth";
 import { NextResponse } from "next/server";
-import { schedulePickup } from "@/lib/dhl";
+import { parseDhlAddress, schedulePickup, SHIPPER_DETAILS } from "@/lib/dhl";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -19,11 +19,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing orderId or trackingNumber" }, { status: 400 });
     }
 
-    const { data: order, error: lookupError } = await supabaseAdmin.from("orders").select("payment_status,status,stock_conflict_flagged,dhl_tracking_number").eq("id", orderId).single();
+    const { data: order, error: lookupError } = await supabaseAdmin.from("orders").select("payment_status,status,stock_conflict_flagged,dhl_tracking_number,shipping_address").eq("id", orderId).single();
     if (lookupError || !order || order.payment_status !== "paid" || order.stock_conflict_flagged || order.status === "paid_requires_resolution" || order.dhl_tracking_number !== trackingNumber) {
       return NextResponse.json({ error: "Order is not eligible for pickup." }, { status: 409 });
     }
-    const pickupRes = await schedulePickup(trackingNumber);
+    const destination = parseDhlAddress(order.shipping_address);
+    const isDomestic = destination?.countryCode === SHIPPER_DETAILS.postalAddress.countryCode;
+    const pickupRes = await schedulePickup(trackingNumber, !isDomestic);
 
     // Update order status in DB
     const { error } = await supabaseAdmin

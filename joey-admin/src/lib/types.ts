@@ -32,6 +32,13 @@ export interface Collection {
 export interface ProductSize {
   name: string;
   available: boolean;
+  /** Optional units left for this size (admin colourways; sum feeds colour quantity). */
+  quantity?: number;
+}
+
+export interface SizeStock {
+  size: string;
+  quantity: number;
 }
 
 export type ProductVariantType = "color" | "fit_combo"; // Keeping fit_combo for backwards compatibility with old variants
@@ -77,6 +84,8 @@ export interface ProductVariant {
   combos?: ProductCombo[];
   nameFormat?: "plus" | "brackets";
   quantity?: number;
+  /** Sizes offered for this colour, with units left when tracking stock. */
+  sizeStock?: SizeStock[];
   isOutOfStock?: boolean;
   fulfillmentMode?: ProductFulfillmentMode;
   leadDays?: number;

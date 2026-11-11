@@ -1,530 +1,55 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { dataStore } from "@/lib/dataStore";
-import type {
-  Product,
-  ProductSize,
-  Collection,
-  WearTag,
-  ProductVariant,
-} from "@/lib/types";
-import { Edit2, Plus, X, Trash2, Layers, Package } from "lucide-react";
-import AssetUrlField from "@/components/AssetUrlField";
-import AssetGalleryField from "@/components/AssetGalleryField";
-import AdminStyledSelect from "@/components/AdminStyledSelect";
+import type { Product, Collection } from "@/lib/types";
+import { Edit2, Plus, Trash2 } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 import ProductWizard from "./ProductWizard";
+import CollectionEditor from "./CollectionEditor";
+import { adminPillClass, adminPillTrackClass } from "@/lib/adminChrome";
 
+type TabId = "rtw" | "mto" | "collections";
 
-const DEFAULT_SIZES: ProductSize[] = [
-  { name: "S", available: true },
-  { name: "M", available: true },
-  { name: "L", available: true },
-  { name: "XL", available: true },
-  { name: "XXL", available: true },
-  { name: "Custom", available: true },
-];
-
-const UK_SIZES: ProductSize[] = [
-  { name: "UK 6", available: true },
-  { name: "UK 8", available: true },
-  { name: "UK 10", available: true },
-  { name: "UK 12", available: true },
-  { name: "UK 14", available: true },
-  { name: "UK 16", available: true },
-  { name: "UK 18", available: true },
-  { name: "UK 20", available: true },
-  { name: "UK 22", available: true },
-  { name: "Custom", available: true },
-];
-
-type SizeButtonsMode = "standard" | "uk";
-
-function isUkSizeName(name: string): boolean {
-  const n = String(name || "")
-    .trim()
-    .toUpperCase();
-  return n.startsWith("UK");
+function isMadeToOrder(product: Product) {
+  return product.fulfillmentMode === "made_to_order_only";
 }
 
-function inferSizeButtonsMode(sizes?: ProductSize[] | null): SizeButtonsMode {
-  if (!sizes || sizes.length === 0) return "standard";
-  return sizes.some((s) => isUkSizeName(s.name)) ? "uk" : "standard";
-}
-
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-function sanitizeCollectionSlug(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-type TabId = "collections" | "products";
-
-function CombosEditor({
-  variantId,
-  variants,
-  setVariants,
-  productUploadFolder,
-}: {
-  variantId: string;
-  variants: ProductVariant[];
-  setVariants: (v: ProductVariant[]) => void;
-  productUploadFolder: string;
-}) {
-  const variant = variants.find((v) => v.id === variantId);
-  const combos = variant?.combos || [];
-  return (
-    <div className="mt-6 border-t border-zinc-200 pt-6">
-      <div className="flex items-center justify-between mb-4">
-        <label className="block text-sm font-medium text-zinc-700">
-          Paired Combos
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            const next = [...variants];
-            const vIdx = next.findIndex((v) => v.id === variantId);
-            if (vIdx !== -1) {
-              const nextCombos = [
-                ...(next[vIdx].combos || []),
-                {
-                  id: `combo-${Date.now()}`,
-                  name: "",
-                  price: 0,
-                  thumbnailUrl: "",
-                  images: [],
-                },
-              ];
-              next[vIdx] = { ...next[vIdx], combos: nextCombos };
-              setVariants(next);
-            }
-          }}
-          className="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-        >
-          <Plus className="-ml-1 mr-1 h-3 w-3" />
-          Add Combo
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {combos.map((combo, comboIdx) => (
-          <div
-            key={combo.id}
-            className="rounded-lg border border-zinc-200 bg-zinc-50 p-4"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-semibold text-zinc-900">
-                Combo {comboIdx + 1}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const next = [...variants];
-                  const vIdx = next.findIndex((v) => v.id === variantId);
-                  if (vIdx !== -1) {
-                    const nextCombos = (next[vIdx].combos || []).filter(
-                      (c) => c.id !== combo.id,
-                    );
-                    next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                    setVariants(next);
-                  }
-                }}
-                className="text-red-500 hover:text-red-700"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-700">
-                  Combo Name
-                </label>
-                <input
-                  type="text"
-                  value={combo.name}
-                  placeholder="e.g. White Jeans"
-                  onChange={(e) => {
-                    const next = [...variants];
-                    const vIdx = next.findIndex((v) => v.id === variantId);
-                    if (vIdx !== -1) {
-                      const nextCombos = [...(next[vIdx].combos || [])];
-                      const cIdx = nextCombos.findIndex(
-                        (c) => c.id === combo.id,
-                      );
-                      if (cIdx !== -1) {
-                        nextCombos[cIdx] = {
-                          ...nextCombos[cIdx],
-                          name: e.target.value,
-                        };
-                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                        setVariants(next);
-                      }
-                    }
-                  }}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-zinc-700">
-                  Display Format
-                </label>
-                <AdminStyledSelect
-                  name={`combo-format-${combo.id}`}
-                  defaultValue={combo.nameFormat || "plus"}
-                  options={[
-                    { value: "plus", label: "Base + Combo" },
-                    { value: "brackets", label: "Base (Combo)" },
-                  ]}
-                  onValueChange={(val) => {
-                    const next = [...variants];
-                    const vIdx = next.findIndex((v) => v.id === variantId);
-                    if (vIdx !== -1) {
-                      const nextCombos = [...(next[vIdx].combos || [])];
-                      const cIdx = nextCombos.findIndex(
-                        (c) => c.id === combo.id,
-                      );
-                      if (cIdx !== -1) {
-                        nextCombos[cIdx] = {
-                          ...nextCombos[cIdx],
-                          nameFormat: val as "plus" | "brackets",
-                        };
-                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                        setVariants(next);
-                      }
-                    }
-                  }}
-                  wrapperClassName="mt-1"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-zinc-700">
-                  Price Override (GHC)
-                </label>
-                <input
-                  type="number"
-                  value={combo.price || ""}
-                  placeholder="0.00"
-                  onChange={(e) => {
-                    const next = [...variants];
-                    const vIdx = next.findIndex((v) => v.id === variantId);
-                    if (vIdx !== -1) {
-                      const nextCombos = [...(next[vIdx].combos || [])];
-                      const cIdx = nextCombos.findIndex(
-                        (c) => c.id === combo.id,
-                      );
-                      if (cIdx !== -1) {
-                        nextCombos[cIdx] = {
-                          ...nextCombos[cIdx],
-                          price: parseFloat(e.target.value) || 0,
-                        };
-                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                        setVariants(next);
-                      }
-                    }
-                  }}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm bg-white"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-700">
-                  Quantity in Stock
-                </label>
-                <input
-                  type="number"
-                  value={combo.quantity ?? 0}
-                  onChange={(e) => {
-                    const next = [...variants];
-                    const vIdx = next.findIndex((v) => v.id === variantId);
-                    if (vIdx !== -1) {
-                      const nextCombos = [...(next[vIdx].combos || [])];
-                      const cIdx = nextCombos.findIndex(
-                        (c) => c.id === combo.id,
-                      );
-                      if (cIdx !== -1) {
-                        nextCombos[cIdx] = {
-                          ...nextCombos[cIdx],
-                          quantity: parseInt(e.target.value) || 0,
-                        };
-                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                        setVariants(next);
-                      }
-                    }
-                  }}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="block text-xs font-medium text-zinc-700">
-                  Stock Status
-                </label>
-                <AdminStyledSelect
-                  name={`combo-stock-${combo.id}`}
-                  defaultValue={
-                    combo.bespokeAvailable
-                      ? "bespokeAvailable"
-                      : combo.isOutOfStock
-                        ? "isOutOfStock"
-                        : "none"
-                  }
-                  onValueChange={(val) => {
-                    const next = [...variants];
-                    const vIdx = next.findIndex((v) => v.id === variantId);
-                    if (vIdx !== -1) {
-                      const nextCombos = [...(next[vIdx].combos || [])];
-                      const cIdx = nextCombos.findIndex(
-                        (c) => c.id === combo.id,
-                      );
-                      if (cIdx !== -1) {
-                        nextCombos[cIdx] = {
-                          ...nextCombos[cIdx],
-                          isOutOfStock: val === "isOutOfStock",
-                          bespokeAvailable: val === "bespokeAvailable",
-                        };
-                        next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                        setVariants(next);
-                      }
-                    }
-                  }}
-                  options={[
-                    { value: "none", label: "None" },
-                    { value: "isOutOfStock", label: "Out of stock" },
-                    { value: "bespokeAvailable", label: "Bespoke available" },
-                  ]}
-                  wrapperClassName="mt-1"
-                />
-                {combo.bespokeAvailable && (
-                  <div className="mt-2">
-                    <label className="block text-xs font-medium text-zinc-700">
-                      Bespoke lead time (days)
-                    </label>
-                    <input
-                      type="number"
-                      value={combo.bespokeLeadDays ?? 14}
-                      onChange={(e) => {
-                        const next = [...variants];
-                        const vIdx = next.findIndex((v) => v.id === variantId);
-                        if (vIdx !== -1) {
-                          const nextCombos = [...(next[vIdx].combos || [])];
-                          const cIdx = nextCombos.findIndex(
-                            (c) => c.id === combo.id,
-                          );
-                          if (cIdx !== -1) {
-                            nextCombos[cIdx] = {
-                              ...nextCombos[cIdx],
-                              bespokeLeadDays: parseInt(e.target.value) || 14,
-                            };
-                            next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                            setVariants(next);
-                          }
-                        }
-                      }}
-                      min={1}
-                      max={90}
-                      className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <AssetUrlField
-                id={`variant-${variantId}-combo-${combo.id}-thumb`}
-                label="Thumbnail Image (Small swatch)"
-                value={combo.thumbnailUrl || ""}
-                onChange={(url) => {
-                  const next = [...variants];
-                  const vIdx = next.findIndex((v) => v.id === variantId);
-                  if (vIdx !== -1) {
-                    const nextCombos = [...(next[vIdx].combos || [])];
-                    const cIdx = nextCombos.findIndex((c) => c.id === combo.id);
-                    if (cIdx !== -1) {
-                      nextCombos[cIdx] = {
-                        ...nextCombos[cIdx],
-                        thumbnailUrl: url,
-                      };
-                      next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                      setVariants(next);
-                    }
-                  }
-                }}
-                uploadFolder={`${productUploadFolder}/variants/${variantId}/combos/${combo.id}`}
-                accept="image/*"
-                placeholder="URL or upload"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs font-medium text-zinc-700">
-                Gallery Images (Max 3)
-              </label>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {[0, 1, 2].map((imgIdx) => (
-                  <AssetUrlField
-                    key={imgIdx}
-                    id={`variant-${variantId}-combo-${combo.id}-img-${imgIdx}`}
-                    label={`Image ${imgIdx + 1}`}
-                    value={(combo.images || [])[imgIdx] || ""}
-                    onChange={(url) => {
-                      const next = [...variants];
-                      const vIdx = next.findIndex((v) => v.id === variantId);
-                      if (vIdx !== -1) {
-                        const nextCombos = [...(next[vIdx].combos || [])];
-                        const cIdx = nextCombos.findIndex(
-                          (c) => c.id === combo.id,
-                        );
-                        if (cIdx !== -1) {
-                          const newImages = [
-                            ...(nextCombos[cIdx].images || []),
-                          ];
-                          newImages[imgIdx] = url;
-                          nextCombos[cIdx] = {
-                            ...nextCombos[cIdx],
-                            images: newImages,
-                          };
-                          next[vIdx] = { ...next[vIdx], combos: nextCombos };
-                          setVariants(next);
-                        }
-                      }
-                    }}
-                    uploadFolder={`${productUploadFolder}/variants/${variantId}/combos/${combo.id}`}
-                    accept="image/*,video/mp4,video/webm"
-                    placeholder="URL or upload"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-        {combos.length === 0 && (
-          <div className="rounded-lg border border-dashed border-zinc-300 p-4 text-center">
-            <p className="text-sm text-zinc-500">
-              No combos added for this color.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+function colourwaysOf(product: Product) {
+  const colors = (product.variants || []).filter(
+    (v) => (v.type === "color" || !v.type) && v.id !== "fit-combo",
   );
+  if (colors.length) return colors;
+  return product.image ? [{ id: "main-color", type: "color" as const, name: "", colorHex: "", thumbnailUrl: product.image }] : [];
 }
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [tab, setTab] = useState<TabId>("products");
+  const [tab, setTab] = useState<TabId>("rtw");
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [collectionsLoadError, setCollectionsLoadError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [error, setError] = useState("");
 
   const [collectionModalOpen, setCollectionModalOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<Collection | null>(
     null,
   );
-  const [collectionFormError, setCollectionFormError] = useState("");
-  const [collectionSaving, setCollectionSaving] = useState(false);
-
-  const [mainImageUrl, setMainImageUrl] = useState("");
-  const [hoverImageUrl, setHoverImageUrl] = useState("");
-  const [extraImageUrls, setExtraImageUrls] = useState<string[]>(["", "", ""]);
-  const [newProductUploadKey, setNewProductUploadKey] = useState("");
-  const [detailsLines, setDetailsLines] = useState<string[]>([""]);
-  const detailInputRefs = useRef<Array<HTMLInputElement | null>>([]);
-  const [sizeButtonsMode, setSizeButtonsMode] =
-    useState<SizeButtonsMode>("standard");
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
-  const [badgeType, setBadgeType] = useState<string>("none");
 
   const [productPendingDelete, setProductPendingDelete] =
     useState<Product | null>(null);
   const [collectionPendingDelete, setCollectionPendingDelete] =
     useState<Collection | null>(null);
 
-  const [colMainImageUrl, setColMainImageUrl] = useState("");
-  const [colImage2Url, setColImage2Url] = useState("");
-  const [colImage3Url, setColImage3Url] = useState("");
-  const [colGalleryUrls, setColGalleryUrls] = useState<string[]>([]);
-  const [colDetailWriteup, setColDetailWriteup] = useState("");
-  const [colDetailVideoUrl, setColDetailVideoUrl] = useState("");
-  const [colDetailVideoPosterUrl, setColDetailVideoPosterUrl] = useState("");
-  const [colDetailGalleryUrls, setColDetailGalleryUrls] = useState<string[]>(
-    [],
-  );
-  const [pendingColSlug, setPendingColSlug] = useState("");
-
-  const productUploadFolder = editingProduct?.id
-    ? `products/${editingProduct.id}`
-    : newProductUploadKey
-      ? `products/${newProductUploadKey}`
-      : "products/draft";
-
-  useEffect(() => {
-    if (!isModalOpen) return;
-    if (editingProduct) {
-      const main =
-        editingProduct.image?.trim() ||
-        editingProduct.images?.find((u) => u?.trim()) ||
-        "";
-      setMainImageUrl(main);
-      const extras = (editingProduct.images || [])
-        .filter((u) => u?.trim() && u.trim() !== main)
-        .slice(0, 3);
-      setExtraImageUrls([0, 1, 2].map((i) => extras[i] ?? ""));
-      setHoverImageUrl(editingProduct.hoverImage?.trim() || "");
-      setDetailsLines(
-        editingProduct.details?.length ? editingProduct.details : [""],
-      );
-      setSizeButtonsMode(inferSizeButtonsMode(editingProduct.sizes));
-      setVariants(editingProduct.variants || []);
-      setBadgeType(
-        editingProduct.isOutOfStock
-          ? "isOutOfStock"
-          : editingProduct.isLimited
-            ? "isLimited"
-            : editingProduct.isBestSeller
-              ? "isBestSeller"
-              : editingProduct.bespokeAvailable
-                ? "bespokeAvailable"
-                : "none",
-      );
-    } else {
-      setMainImageUrl("");
-      setHoverImageUrl("");
-      setExtraImageUrls(["", "", ""]);
-      setDetailsLines([""]);
-      setSizeButtonsMode("standard");
-      setVariants([]);
-      setBadgeType("none");
-    }
-  }, [isModalOpen, editingProduct]);
-
-  const sizesForEditor = useMemo(() => {
-    const base = sizeButtonsMode === "uk" ? UK_SIZES : DEFAULT_SIZES;
-    const existing = editingProduct?.sizes ?? [];
-    const map = new Map(existing.map((s) => [s.name, Boolean(s.available)]));
-    return base.map((s) => ({
-      ...s,
-      available: map.has(s.name)
-        ? Boolean(map.get(s.name))
-        : Boolean(s.available),
-    }));
-  }, [editingProduct, sizeButtonsMode]);
+  const rtwProducts = products.filter((p) => !isMadeToOrder(p));
+  const mtoProducts = products.filter(isMadeToOrder);
+  const visibleProducts = tab === "mto" ? mtoProducts : rtwProducts;
 
   const load = useCallback(async () => {
     try {
@@ -570,22 +95,17 @@ export default function ProductsPage() {
     return unsubscribe;
   }, [load]);
 
-  // Auto-open product editor when ?edit=<productId> is in the URL
   const editParam = searchParams.get("edit");
   const autoOpenedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!editParam || products.length === 0) return;
-    // Prevent re-opening if we already handled this param
     if (autoOpenedRef.current === editParam) return;
     const match = products.find((p) => p.id === editParam);
     if (match) {
       autoOpenedRef.current = editParam;
-      setTab("products");
+      setTab(isMadeToOrder(match) ? "mto" : "rtw");
       setEditingProduct(match);
-      setError("");
-      setNewProductUploadKey("");
       setIsModalOpen(true);
-      // Clean the URL param so closing the modal doesn't re-trigger
       const url = new URL(window.location.href);
       url.searchParams.delete("edit");
       router.replace(url.pathname + url.search, { scroll: false });
@@ -596,55 +116,13 @@ export default function ProductsPage() {
     if (tab === "collections") loadCollectionsOnly();
   }, [tab, loadCollectionsOnly]);
 
-  const collectionOptions = useMemo(() => {
-    const base = collections;
-
-    // Add "None" option
-    const optionsWithNone = [
-      {
-        id: "none",
-        slug: "none",
-        name: "None (Standalone Product)",
-        briefDescription: "",
-        description: "",
-        sortOrder: -1,
-        createdAt: "",
-      },
-      ...base,
-    ];
-
-    if (
-      editingProduct &&
-      editingProduct.category &&
-      !optionsWithNone.some((c) => c.slug === editingProduct.category)
-    ) {
-      return [
-        ...optionsWithNone,
-        {
-          id: "orphan",
-          slug: editingProduct.category,
-          name: `${editingProduct.categoryName} (current)`,
-          briefDescription: "",
-          description: "",
-          sortOrder: 999,
-          createdAt: "",
-        },
-      ];
-    }
-    return optionsWithNone;
-  }, [collections, editingProduct]);
-
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    setError("");
-    setNewProductUploadKey("");
     setIsModalOpen(true);
   };
 
   const handleAdd = () => {
     setEditingProduct(null);
-    setError("");
-    setNewProductUploadKey(`draft-${Date.now()}`);
     setIsModalOpen(true);
   };
 
@@ -652,274 +130,14 @@ export default function ProductsPage() {
     setProductPendingDelete(product);
   };
 
-  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setError("");
-
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get("name") as string;
-    let slug = (formData.get("slug") as string)?.trim().toLowerCase();
-    if (!slug) {
-      slug = name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-    }
-    const category = formData.get("category") as string;
-    const price = Number(formData.get("price"));
-    const primary = mainImageUrl.trim();
-    if (!primary) {
-      setError("Add a main product image URL.");
-      setIsSaving(false);
-      return;
-    }
-    const extras = extraImageUrls
-      .map((s) => s.trim())
-      .filter((u) => u && u !== primary);
-    const images = [primary, ...extras];
-    const description = formData.get("description") as string;
-    const detailsRaw = (formData.get("details") as string) || "";
-    const details = detailsRaw
-      .split(/\n/)
-      .map((s) => s.replace(/^[•\-\u2022]\s*/, "").trim())
-      .filter(Boolean);
-    const badgeType = formData.get("badgeType") as string;
-    const isOutOfStock = badgeType === "isOutOfStock";
-    const isLimited = badgeType === "isLimited";
-    const isBestSeller = badgeType === "isBestSeller";
-    const bespokeAvailable = badgeType === "bespokeAvailable";
-
-    const featured = formData.get("featured") === "on";
-    const wearRaw = (formData.get("wearTag") as string) || "unisex";
-    const wearTag: WearTag =
-      wearRaw === "mens" || wearRaw === "womens" || wearRaw === "unisex"
-        ? wearRaw
-        : "unisex";
-    const quantity = Number(formData.get("quantity")) || 0;
-    const bespokeLeadDays = Number(formData.get("bespokeLeadDays")) || 14;
-    const weightKg = Number(formData.get("weightKg")) || 0.5;
-    const hsCode = (formData.get("hsCode") as string)?.trim() || "";
-
-    const col = collectionOptions.find((c) => c.slug === category);
-    const categoryName =
-      category === "none"
-        ? ""
-        : col?.name || editingProduct?.categoryName || category;
-
-    const newSizes: ProductSize[] = sizesForEditor.map((s) => ({
-      ...s,
-      available: formData.get(`size-${s.name}`) === "on",
-    }));
-
-    const processedVariants = variants.map(v => 
-      v.id === "main-color" ? { ...v, images: [primary] } : v
-    );
-
-    try {
-      if (editingProduct) {
-        await dataStore.updateProduct(editingProduct.id, {
-          slug,
-          name,
-          categoryName,
-          category,
-          price,
-          image: primary,
-          hoverImage: hoverImageUrl.trim(),
-          images,
-          description,
-          details,
-          isOutOfStock,
-          isLimited,
-          isBestSeller,
-          featured,
-          sizes: newSizes,
-          wearTag,
-          quantity,
-          bespokeAvailable,
-          bespokeLeadDays,
-          weightKg,
-          hsCode,
-          variants: processedVariants,
-        });
-      } else {
-        await dataStore.addProduct({
-          slug,
-          name,
-          categoryName,
-          category,
-          price,
-          image: primary,
-          hoverImage: hoverImageUrl.trim(),
-          images,
-          description,
-          details,
-          sizes: newSizes,
-          isOutOfStock,
-          isLimited,
-          isBestSeller,
-          featured,
-          wearTag,
-          quantity,
-          bespokeAvailable,
-          bespokeLeadDays,
-          weightKg,
-          hsCode,
-          variants: processedVariants,
-        });
-      }
-      toast.success(editingProduct ? "Product updated." : "Product created.");
-      setIsModalOpen(false);
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to save product.";
-      setError(msg);
-      toast.error(msg);
-      console.error(err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const openAddCollection = () => {
     setEditingCollection(null);
-    setCollectionFormError("");
-    setColMainImageUrl("");
-    setColImage2Url("");
-    setColImage3Url("");
-    setColGalleryUrls([]);
-    setColDetailWriteup("");
-    setColDetailVideoUrl("");
-    setColDetailVideoPosterUrl("");
-    setColDetailGalleryUrls([]);
-    setPendingColSlug("");
     setCollectionModalOpen(true);
   };
 
   const openEditCollection = (c: Collection) => {
     setEditingCollection(c);
-    setCollectionFormError("");
-    setColMainImageUrl(c.image?.trim() || "");
-    setColImage2Url(c.image2 || "");
-    setColImage3Url(c.image3 || "");
-    setColGalleryUrls(c.galleryUrls ?? []);
-    setColDetailWriteup(String(c.detailWriteup ?? c.description ?? ""));
-    setColDetailVideoUrl(String(c.detailVideoUrl ?? ""));
-    setColDetailVideoPosterUrl(String(c.detailVideoPosterUrl ?? ""));
-    setColDetailGalleryUrls(
-      (c.detailGalleryUrls ?? [])
-        .map((u) => String(u || "").trim())
-        .filter(Boolean),
-    );
-    setPendingColSlug("");
     setCollectionModalOpen(true);
-  };
-
-  const collectionGalleryFolder = useMemo(() => {
-    const slug =
-      (editingCollection?.slug && editingCollection.slug.trim()) ||
-      sanitizeCollectionSlug(pendingColSlug) ||
-      "draft";
-    return `collections/${slug}/gallery`;
-  }, [editingCollection?.slug, pendingColSlug]);
-
-  const handleSaveCollection = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setCollectionSaving(true);
-    setCollectionFormError("");
-    const form = e.currentTarget;
-    const name = (
-      form.querySelector('[name="col-name"]') as HTMLInputElement
-    ).value.trim();
-    const briefDescription = (
-      form.querySelector(
-        '[name="col-brief-description"]',
-      ) as HTMLTextAreaElement
-    ).value.trim();
-    const description = (
-      form.querySelector(
-        '[name="col-detailed-description"]',
-      ) as HTMLTextAreaElement
-    ).value.trim();
-    const detailWriteup = colDetailWriteup.trim();
-    const detailVideoUrl = colDetailVideoUrl.trim();
-    const detailVideoPosterUrl = colDetailVideoPosterUrl.trim();
-    const sortOrder =
-      Number(
-        (form.querySelector('[name="col-sort"]') as HTMLInputElement).value,
-      ) || 0;
-
-    try {
-      const galleryUrls = colGalleryUrls
-        .map((u) => String(u || "").trim())
-        .filter(Boolean);
-      const detailGalleryUrls = colDetailGalleryUrls
-        .map((u) => String(u || "").trim())
-        .filter(Boolean);
-      if (editingCollection) {
-        await dataStore.updateCollection(editingCollection.id, {
-          name,
-          briefDescription,
-          description,
-          sortOrder,
-          image: colMainImageUrl,
-          image2: colImage2Url,
-          image3: colImage3Url,
-          galleryUrls,
-          detailWriteup,
-          detailVideoUrl,
-          detailVideoPosterUrl,
-          detailGalleryUrls,
-        });
-      } else {
-        let slug = (
-          form.querySelector('[name="col-slug"]') as HTMLInputElement
-        ).value
-          .trim()
-          .toLowerCase();
-        if (!slug) {
-          slug = name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/(^-|-$)/g, "");
-        }
-        if (!SLUG_PATTERN.test(slug)) {
-          const msg =
-            "Slug: lowercase letters, numbers, and hyphens only (e.g. spring-drop).";
-          setCollectionFormError(msg);
-          toast.error(msg);
-          setCollectionSaving(false);
-          return;
-        }
-        await dataStore.addCollection({
-          slug,
-          name,
-          briefDescription,
-          description,
-          sortOrder,
-          image: colMainImageUrl,
-          image2: colImage2Url,
-          image3: colImage3Url,
-          galleryUrls,
-          detailWriteup,
-          detailVideoUrl,
-          detailVideoPosterUrl,
-          detailGalleryUrls,
-        });
-      }
-      toast.success(
-        editingCollection ? "Collection updated." : "Collection created.",
-      );
-      setCollectionModalOpen(false);
-      await loadCollectionsOnly();
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to save collection.";
-      setCollectionFormError(msg);
-      toast.error(msg);
-    } finally {
-      setCollectionSaving(false);
-    }
   };
 
   const handleRequestDeleteCollection = (c: Collection) => {
@@ -936,178 +154,174 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
-          Products
-        </h1>
-        <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-100/80 p-1">
+      <div className="flex justify-center">
+        <nav aria-label="Products" className={adminPillTrackClass}>
+          <button
+            type="button"
+            onClick={() => setTab("rtw")}
+            aria-current={tab === "rtw" ? "page" : undefined}
+            className={adminPillClass(tab === "rtw", "sm")}
+          >
+            Ready to wear <span className="ml-1 opacity-70">{rtwProducts.length}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("mto")}
+            aria-current={tab === "mto" ? "page" : undefined}
+            className={adminPillClass(tab === "mto", "sm")}
+          >
+            Made to order <span className="ml-1 opacity-70">{mtoProducts.length}</span>
+          </button>
           <button
             type="button"
             onClick={() => setTab("collections")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              tab === "collections"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900"
-            }`}
+            aria-current={tab === "collections" ? "page" : undefined}
+            className={adminPillClass(tab === "collections", "sm")}
           >
-            <Layers className="h-4 w-4" aria-hidden />
-            Create collections
+            Collections <span className="ml-1 opacity-70">{collections.length}</span>
           </button>
+        </nav>
+      </div>
+
+      {tab !== "collections" ? (
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c1e22]/45">
+              The wardrobe
+            </p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#1c1e22]">
+              {tab === "mto" ? "Made to order." : "Ready to wear."}
+            </h1>
+          </div>
           <button
             type="button"
-            onClick={() => setTab("products")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              tab === "products"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900"
-            }`}
+            onClick={handleAdd}
+            className="inline-flex items-center justify-center rounded-full bg-[#1c1e22] px-4 py-2 text-sm font-medium text-[#f5f1eb] shadow-sm hover:bg-[#2a2c30]"
           >
-            <Package className="h-4 w-4" aria-hidden />
-            Create products
+            <Plus className="-ml-1 mr-2 h-4 w-4" aria-hidden />
+            Add {tab === "mto" ? "design" : "product"}
           </button>
         </div>
-      </div>
+      ) : null}
 
       {tab === "collections" && (
         <div className="space-y-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c1e22]/45">
+              The wardrobe
+            </p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#1c1e22]">
+              Collections.
+            </h1>
+          </div>
           {collectionsLoadError && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               {collectionsLoadError}
             </div>
           )}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-zinc-600">
+            <p className="text-sm text-[#1c1e22]/55">
               Collections define shop category slugs. Each product must use one
               slug; display names can differ per product if needed.
             </p>
             <button
               type="button"
               onClick={openAddCollection}
-              className="inline-flex shrink-0 items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800"
+              className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1c1e22] px-4 py-2 text-sm font-medium text-[#f5f1eb] shadow-sm hover:bg-[#2a2c30]"
             >
               <Plus className="-ml-1 mr-2 h-4 w-4" aria-hidden />
               Add collection
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200">
-                <thead className="bg-white">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Slug
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Sort
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Brief
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 bg-white">
-                  {collections.length > 0 ? (
-                    collections.map((c) => (
-                      <tr key={c.id}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">
-                          {c.name}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-zinc-700">
+          {collections.length === 0 ? (
+            <div className="rounded-xl border border-[#b6b7ba]/70 bg-white px-4 py-10 text-center text-sm text-[#1c1e22]/55">
+              No collections yet. Create your first collection above.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[...collections]
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((c) => {
+                  const pieceCount = products.filter((p) => p.category === c.slug).length;
+                  return (
+                    <section
+                      key={c.id}
+                      className="flex gap-4 overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+                    >
+                      <div className="h-28 w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
+                        {c.image?.trim() ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={c.image.trim()}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[10px] uppercase tracking-wide text-zinc-400">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
                           {c.slug}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-700">
-                          {c.sortOrder}
-                        </td>
-                        <td className="max-w-xs truncate px-6 py-4 text-sm text-zinc-700">
-                          {c.briefDescription || "—"}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                        </p>
+                        <h2 className="mt-1 text-lg font-semibold text-zinc-900">{c.name}</h2>
+                        <p className="mt-1 line-clamp-2 text-sm text-zinc-600">
+                          {c.briefDescription || "No brief yet."}
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+                          <span>{pieceCount} pieces</span>
+                          <span>Sort {c.sortOrder}</span>
+                        </div>
+                        <div className="mt-3 flex items-center gap-3">
                           <button
                             type="button"
                             onClick={() => openEditCollection(c)}
-                            className="mr-4 text-zinc-600 hover:text-zinc-900"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
                           >
-                            <Edit2 className="inline h-4 w-4" />
+                            <Edit2 className="h-3.5 w-3.5" />
+                            Edit collection
                           </button>
                           <button
                             type="button"
                             onClick={() => handleRequestDeleteCollection(c)}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-xs font-medium text-red-500 hover:text-red-700"
                           >
-                            <Trash2 className="inline h-4 w-4" />
+                            Delete
                           </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : collectionsLoadError ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-6 py-4 text-center text-sm text-red-500"
-                      >
-                        Error loading collections: {collectionsLoadError}
-                      </td>
-                    </tr>
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-6 py-4 text-center text-sm text-zinc-500"
-                      >
-                        No collections found. Create your first collection
-                        above.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </section>
+                  );
+                })}
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {tab === "products" && (
+      {tab !== "collections" && (
         <>
-          <div className="flex items-center justify-end">
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="inline-flex items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800"
-            >
-              <Plus className="-ml-1 mr-2 h-4 w-4" aria-hidden />
-              Add product
-            </button>
-          </div>
-
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-zinc-200">
                 <thead className="bg-white">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Product
+                      Piece
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Category
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Visibility
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
-                      Stock
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Price
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
+                      {tab === "mto" ? "Lead time" : "Colour"}
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-zinc-900">
+                      Status
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-zinc-900">
                       Actions
@@ -1115,7 +329,19 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 bg-white">
-                  {products.map((product) => (
+                  {visibleProducts.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-6 py-10 text-center text-sm text-zinc-500"
+                      >
+                        {tab === "mto"
+                          ? "No made-to-order designs yet."
+                          : "No ready-to-wear pieces yet."}
+                      </td>
+                    </tr>
+                  ) : null}
+                  {visibleProducts.map((product) => (
                     <tr key={product.id}>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center">
@@ -1160,20 +386,43 @@ export default function ProductsPage() {
                           : collections.find((c) => c.slug === product.category)
                               ?.name || product.categoryName}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        {product.fulfillmentMode === "made_to_order_only" ? (
-                          <span className="inline-flex rounded-full bg-zinc-200 px-2 text-xs font-semibold leading-5 text-zinc-800">
-                            Made to Order Only
-                          </span>
-                        ) : product.isOutOfStock ? (
-                          <span className="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">
-                            Out of Stock
-                          </span>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-zinc-900">
+                        GHC {product.price.toLocaleString()}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-700">
+                        {tab === "mto" ? (
+                          `${product.madeToOrderLeadDays ?? product.bespokeLeadDays ?? 14} days`
                         ) : (
-                          <span className="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">
-                            In Stock
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            {colourwaysOf(product)
+                              .filter((way) => way.name?.trim())
+                              .map((way) => (
+                                <span key={way.id} className="inline-flex items-center gap-1.5">
+                                  {way.colorHex ? (
+                                    <i
+                                      className="inline-block h-2.5 w-2.5 rounded-full border border-zinc-300"
+                                      style={{ background: way.colorHex }}
+                                    />
+                                  ) : null}
+                                  {way.name}
+                                </span>
+                              ))}
+                            {!colourwaysOf(product).some((way) => way.name?.trim()) && (
+                              <span className="text-zinc-400">No colour</span>
+                            )}
                           </span>
                         )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                            product.isPublished === false
+                              ? "bg-zinc-200 text-zinc-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {product.isPublished === false ? "Draft" : "Active"}
+                        </span>
                         {product.isLimited && (
                           <span className="ml-2 inline-flex rounded-full bg-orange-100 px-2 text-xs font-semibold leading-5 text-orange-800">
                             Limited
@@ -1184,27 +433,18 @@ export default function ProductsPage() {
                             Best Seller
                           </span>
                         )}
-                        {product.fulfillmentMode !== "made_to_order_only" &&
-                          (product.fulfillmentMode === "stock_then_made_to_order" || product.bespokeAvailable) && (
+                        {product.featured && (
+                          <span className="ml-2 inline-flex rounded-full bg-zinc-200 px-2 text-xs font-semibold leading-5 text-zinc-800">
+                            Featured
+                          </span>
+                        )}
+                        {tab === "rtw" &&
+                          (product.fulfillmentMode === "stock_then_made_to_order" ||
+                            product.bespokeAvailable) && (
                             <span className="ml-2 inline-flex rounded-full bg-zinc-200 px-2 text-xs font-semibold leading-5 text-zinc-800">
-                              Made to Order Fallback
+                              MTO fallback
                             </span>
                           )}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-700">
-                        {product.fulfillmentMode === "made_to_order_only" && product.showOnBespokePage
-                          ? product.isPublished === false
-                            ? "Published (/bespoke Only)"
-                            : "Published (Shop + /bespoke)"
-                          : product.isPublished === false
-                            ? "Draft"
-                            : "Published"}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">
-                        {product.fulfillmentMode === "made_to_order_only" ? "MTO" : product.quantity}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-zinc-900">
-                        GHC {product.price.toLocaleString()}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <button
@@ -1231,224 +471,29 @@ export default function ProductsPage() {
         </>
       )}
 
-      <ProductWizard isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} editingProduct={editingProduct} collections={collections} onSuccess={() => { setIsModalOpen(false); load(); }} />
+      <ProductWizard
+        key={editingProduct?.id ?? "new"}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        editingProduct={editingProduct}
+        collections={collections}
+        listKind={tab === "mto" ? "mto" : "rtw"}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          load();
+        }}
+      />
 
-            {collectionModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="max-h-[min(90vh,860px)] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold">
-                {editingCollection ? "Edit collection" : "Add collection"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setCollectionModalOpen(false)}
-                className="text-zinc-600 hover:text-zinc-900"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSaveCollection} className="space-y-4">
-              {!editingCollection && (
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700">
-                    Slug (leave empty to auto-generate)
-                  </label>
-                  <input
-                    name="col-slug"
-                    value={pendingColSlug}
-                    onChange={(e) => setPendingColSlug(e.target.value)}
-                    placeholder="e.g. spring-drop"
-                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                    className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm font-mono shadow-sm"
-                  />
-                  <p className="mt-1 text-xs text-zinc-700">
-                    Lowercase, hyphens only. Cannot be changed later.
-                  </p>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700">
-                  Display name
-                </label>
-                <input
-                  name="col-name"
-                  required
-                  defaultValue={editingCollection?.name}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700">
-                  Brief description
-                </label>
-                <p className="mt-0.5 text-xs text-zinc-700">
-                  Home page, shop collection cards, and the hero line on the
-                  collection page.
-                </p>
-                <textarea
-                  name="col-brief-description"
-                  rows={2}
-                  placeholder="One or two short lines"
-                  defaultValue={editingCollection?.briefDescription}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700">
-                  Detailed description
-                </label>
-                <p className="mt-0.5 text-xs text-zinc-700">
-                  Full story on the collection detail page (below the hero).
-                </p>
-                <textarea
-                  name="col-detailed-description"
-                  rows={5}
-                  placeholder="Longer copy for /collection/your-slug"
-                  defaultValue={editingCollection?.description}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700">
-                  Sort order
-                </label>
-                <input
-                  name="col-sort"
-                  type="number"
-                  defaultValue={editingCollection?.sortOrder ?? 0}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                />
-              </div>
-
-              <div className="pt-2">
-                <AssetUrlField
-                  id="col-image"
-                  label="Main Image"
-                  value={colMainImageUrl}
-                  onChange={setColMainImageUrl}
-                  uploadFolder="collections"
-                  accept="image/*"
-                  placeholder="Main collection showcase image"
-                />
-              </div>
-
-              <div>
-                <AssetUrlField
-                  id="col-image2"
-                  label="Secondary Image 1"
-                  value={colImage2Url}
-                  onChange={setColImage2Url}
-                  uploadFolder="collections"
-                  accept="image/*"
-                  placeholder="Secondary showcase image 1"
-                />
-              </div>
-
-              <div>
-                <AssetUrlField
-                  id="col-image3"
-                  label="Secondary Image 2"
-                  value={colImage3Url}
-                  onChange={setColImage3Url}
-                  uploadFolder="collections"
-                  accept="image/*"
-                  placeholder="Secondary showcase image 2"
-                />
-              </div>
-
-              <AssetGalleryField
-                label="Collection page gallery"
-                value={colGalleryUrls}
-                onChange={setColGalleryUrls}
-                uploadFolder={collectionGalleryFolder}
-                accept="image/*"
-              />
-              <p className="-mt-1 text-xs text-zinc-700">
-                Shown on the collection page above the shop filter (same grid as
-                event galleries).
-              </p>
-
-              <div className="pt-2">
-                <label className="block text-sm font-medium text-zinc-700">
-                  Detail write-up (optional)
-                </label>
-                <p className="mt-0.5 text-xs text-zinc-700">
-                  Shown below the first gallery on{" "}
-                  <code>/collection/[slug]</code>. Leave empty to reuse the
-                  detailed description above.
-                </p>
-                <textarea
-                  rows={6}
-                  value={colDetailWriteup}
-                  onChange={(e) => setColDetailWriteup(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-zinc-300 p-2 text-sm shadow-sm"
-                  placeholder="Write-up shown below the gallery…"
-                />
-              </div>
-
-              <div className="pt-2">
-                <AssetUrlField
-                  id="col-detail-video"
-                  label="Detail video (optional)"
-                  value={colDetailVideoUrl}
-                  onChange={setColDetailVideoUrl}
-                  uploadFolder="collections"
-                  accept="video/*"
-                  placeholder="https://… or upload"
-                />
-              </div>
-
-              <div>
-                <AssetUrlField
-                  id="col-detail-video-poster"
-                  label="Detail video poster (optional)"
-                  value={colDetailVideoPosterUrl}
-                  onChange={setColDetailVideoPosterUrl}
-                  uploadFolder="collections"
-                  accept="image/*"
-                  placeholder="Still image shown until video plays"
-                />
-              </div>
-
-              <AssetGalleryField
-                label="More images (after video)"
-                value={colDetailGalleryUrls}
-                onChange={setColDetailGalleryUrls}
-                uploadFolder={`collections/${sanitizeCollectionSlug(pendingColSlug || editingCollection?.slug || "draft")}/detail-gallery`}
-                accept="image/*"
-              />
-              <p className="-mt-1 text-xs text-zinc-700">
-                Optional second gallery shown after the video on the collection
-                detail page.
-              </p>
-              {collectionFormError && (
-                <p className="text-sm text-red-600">{collectionFormError}</p>
-              )}
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setCollectionModalOpen(false)}
-                  className="rounded-md border px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={collectionSaving}
-                  className="rounded-md bg-zinc-950 px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-60"
-                >
-                  {collectionSaving
-                    ? "Saving…"
-                    : editingCollection
-                      ? "Save"
-                      : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CollectionEditor
+        open={collectionModalOpen}
+        collection={editingCollection}
+        products={products}
+        collections={collections}
+        onClose={() => setCollectionModalOpen(false)}
+        onSaved={async () => {
+          await load();
+        }}
+      />
 
       <ConfirmDialog
         open={productPendingDelete !== null}

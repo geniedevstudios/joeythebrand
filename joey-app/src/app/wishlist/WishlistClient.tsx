@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
 import { cartStore } from "@/store/cartStore";
 import styles from "./WishlistClient.module.css";
-import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import ProductMedia from "@/components/shop/ProductMedia";
+import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
+import ProductNameRow from "@/components/shop/ProductNameLabels";
 import { dataStore } from "@/lib/dataStore";
 import shopStyles from "../shop/ShopClient.module.css";
 import productStyles from "../shop/[slug]/ProductClient.module.css";
@@ -28,14 +28,6 @@ export default function WishlistClient() {
   const items = useSyncExternalStore(wishlistStore.subscribe, wishlistStore.getItems, () => EMPTY_ARRAY);
   const products = useSyncExternalStore(dataStore.subscribe, dataStore.getProducts, () => EMPTY_PRODUCTS);
   const [quickAddStatus, setQuickAddStatus] = useState<AddStatus>("idle");
-  
-  const {
-    empty: wishlistHeroEmpty,
-    shellSpinner: wishlistHeroSpinner,
-    style: wishlistHeroStyle,
-    showImageLoader: wishlistHeroImageLoader,
-    imageReady: wishlistHeroImageReady,
-  } = usePageHeroShellRenderProps("wishlist");
 
   const [quickViewPiece, setQuickViewPiece] = useState<Product | null>(null);
   const [quickViewColorVariantId, setQuickViewColorVariantId] = useState<string>("main-color");
@@ -101,7 +93,14 @@ export default function WishlistClient() {
 
     setTimeout(() => {
       const priceNum = Number(String(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price).replace(/[^0-9.-]+/g, ""));
-      const stockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+      const stockStatus = getVariantStockStatus(
+        quickViewPiece,
+        quickViewActiveVariant,
+        quickViewActiveCombo,
+        quickViewMode,
+        undefined,
+        quickViewSize || null,
+      );
       const isBespokeProduct = stockStatus.isBespokeProduct;
       cartStore.addItem({
         productId: quickViewPiece.id,
@@ -112,12 +111,20 @@ export default function WishlistClient() {
         size: quickViewSize || "Standard",
         fit: (quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") ? quickViewFit : undefined,
         wearTag: quickViewPiece.wearTag,
-        price: priceNum,
+        price: stockStatus.unitPrice || priceNum,
         image: quickViewActiveCombo?.thumbnailUrl || activeImage || quickViewGalleryImages[0] || quickViewPiece.image,
         quantity: qty,
-        maxStock: stockStatus.maxStock ?? 99,
+        maxStock: isBespokeProduct ? stockStatus.mtoMaxQtyPerOrder : stockStatus.availablePhysicalStock,
+        availablePhysicalStock: stockStatus.availablePhysicalStock,
+        mtoMaxQtyPerOrder: stockStatus.mtoMaxQtyPerOrder,
+        canFallbackToMadeToOrder: stockStatus.canFallbackToMadeToOrder,
+        fulfillmentChoice: isBespokeProduct ? "made_to_order" : "ready_to_wear",
+        isMadeToOrder: isBespokeProduct || undefined,
+        leadDays: isBespokeProduct ? stockStatus.leadDays : undefined,
         isBespoke: isBespokeProduct || undefined,
         bespokeLeadDays: isBespokeProduct ? (stockStatus.bespokeLeadDays ?? 14) : undefined,
+        variantId: stockStatus.variantId !== "base" ? stockStatus.variantId : undefined,
+        comboId: stockStatus.comboId !== "base" ? stockStatus.comboId : undefined,
       });
 
       wishlistStore.removeItem(quickViewPiece.id);
@@ -180,14 +187,7 @@ export default function WishlistClient() {
 
   return (
     <div className={styles.page}>
-      <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.pageHeader}`}
-        data-page-hero-empty={wishlistHeroEmpty ? "true" : "false"}
-        data-page-hero-loading={wishlistHeroSpinner ? "true" : "false"}
-        data-page-hero-ready={wishlistHeroImageReady ? "true" : "false"}
-        style={wishlistHeroStyle}
-      >
-        {wishlistHeroImageLoader ? <PageHeroShellImageLoader /> : null}
+      <div className={styles.pageHeader}>
         <div className="container">
           <span className="section-label">Saved For Later</span>
           <h1 className={`t-display ${styles.pageTitle}`}>Wishlist</h1>
@@ -283,28 +283,6 @@ export default function WishlistClient() {
                   </div>
                 </div>
 
-                <div className={shopStyles.badgeStack} aria-hidden="true">
-                  {(() => {
-                    const isBespoke = !!(fullProduct.bespokeAvailable && fullProduct.quantity <= 0);
-                    return isBespoke ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                    ) : fullProduct.isOutOfStock ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                    ) : (
-                      <>
-                        {fullProduct.category === "sample-sale" && (
-                          <span className={shopStyles.saleBadge}>SALE</span>
-                        )}
-                        {fullProduct.isLimited && fullProduct.category !== "sample-sale" && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                        )}
-                        {fullProduct.isBestSeller && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
               </div>
                 <div className={shopStyles.info}>
                   <span className={shopStyles.category}>
@@ -365,43 +343,30 @@ export default function WishlistClient() {
                 <div className={shopStyles.modalImageWrap} style={{ position: "relative" }}>
 
                   <ProductMedia src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image} alt={quickViewPiece.name} className={shopStyles.modalImage} />
-                  <div className={shopStyles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
-                    {(() => {
-                      const isBespoke = quickViewStockStatus.isBespokeProduct;
-                      return isBespoke ? (
-                        <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                      ) : quickViewStockStatus.isSelectedOutOfStock ? (
-                        <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                      ) : (
-                        <>
-                          {quickViewPiece.category === "sample-sale" && (
-                            <span className={shopStyles.saleBadge}>SALE</span>
-                          )}
-                          {quickViewPiece.isLimited && quickViewPiece.category !== "sample-sale" && (
-                            <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                          )}
-                          {quickViewPiece.isBestSeller && (
-                            <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
+                  <GalleryNav
+                    count={quickViewGalleryImages.length}
+                    onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
+                    onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
+                  />
                 </div>
-                {quickViewGalleryImages && quickViewGalleryImages.length > 1 && (
-                  <div className={shopStyles.modalThumbnails}>
-                    {quickViewGalleryImages.map((img: string, idx: number) => (
-                      <button
-                        key={idx}
-                        className={`${shopStyles.thumbBtn} ${(activeImage || quickViewGalleryImages[0]) === img ? shopStyles.thumbActive : ""}`}
-                        onClick={() => setActiveImage(img)}
-                        aria-label={`View image ${idx + 1}`}
-                      >
-                        <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={shopStyles.thumbImage} />
-                      </button>
-                    ))}
-                  </div>
-                )}
+              </div>
+
+              <div className={shopStyles.modalInfo}>
+                <ProductNameRow
+                  product={quickViewPiece}
+                  isBespoke={quickViewStockStatus.isBespokeProduct}
+                  isOutOfStock={quickViewStockStatus.isSelectedOutOfStock}
+                >
+                  <h2 id="modal-title" className={`t-display ${shopStyles.modalTitle}`}>
+                    {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
+                  </h2>
+                </ProductNameRow>
+                <div className={shopStyles.modalPriceRow}>
+                  <span className={shopStyles.modalPrice}>{formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}</span>
+                  {!quickViewActiveCombo && (quickViewPiece as any).originalPrice && <span className={shopStyles.modalOriginalPrice}>{formatPrice((quickViewPiece as any).originalPrice)}</span>}
+                </div>
+
+                <p className={shopStyles.modalDesc}>{quickViewPiece.description}</p>
                 {quickViewPiece?.variants?.some((v: any) => v.id === "fit-combo") && quickViewColorVariants.length === 0 && (
                   <div className={shopStyles.comboSelectorSection} style={{ marginTop: "1rem" }}>
                     <span className={shopStyles.colorSelectorLabel} style={{ display: "block", marginBottom: "0.5rem" }}>Fit Combo:</span>
@@ -547,18 +512,6 @@ export default function WishlistClient() {
                     )}
                   </>
                 )}
-              </div>
-
-              <div className={shopStyles.modalInfo}>
-                <h2 id="modal-title" className={`t-display ${shopStyles.modalTitle}`}>
-                  {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveVariant && quickViewActiveVariant.id !== "main-color" && quickViewActiveVariant.productNameOverride ? quickViewActiveVariant.productNameOverride : quickViewPiece.name)}
-                </h2>
-                <div className={shopStyles.modalPriceRow}>
-                  <span className={shopStyles.modalPrice}>{formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewPiece.price) : quickViewPiece.price)}</span>
-                  {!quickViewActiveCombo && (quickViewPiece as any).originalPrice && <span className={shopStyles.modalOriginalPrice}>{formatPrice((quickViewPiece as any).originalPrice)}</span>}
-                </div>
-
-                <p className={shopStyles.modalDesc}>{quickViewPiece.description}</p>
 
                 {(quickViewPiece.wearTag === "womens" || quickViewPiece.wearTag === "unisex") && (
                   <div className={shopStyles.modalSizeRow} style={{ marginBottom: "1rem" }}>

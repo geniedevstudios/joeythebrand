@@ -2,12 +2,30 @@
 import { useState, useEffect, useLayoutEffect, useSyncExternalStore, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { toggleCart } from "./CartDrawer";
 import { cartStore } from "@/store/cartStore";
 import { authStore } from "@/store/authStore";
 import { wishlistStore, type WishlistItem } from "@/store/wishlistStore";
 import type { CartItem } from "@/store/cartStore";
 import styles from "./Nav.module.css";
+
+/** Pages with no dark hero — nav must use dark type from the start. */
+function usesLightNavChrome(pathname: string): boolean {
+  if (
+    pathname === "/privacy" ||
+    pathname === "/shipping" ||
+    pathname === "/checkout" ||
+    pathname === "/account" ||
+    pathname.startsWith("/account/") ||
+    pathname === "/report-issue" ||
+    pathname === "/wishlist"
+  ) {
+    return true;
+  }
+  if (pathname.startsWith("/shop/") && pathname !== "/shop/") return true;
+  return false;
+}
 
 const EMPTY_CART: CartItem[] = [];
 const EMPTY_WISHLIST: WishlistItem[] = [];
@@ -106,6 +124,10 @@ export default function Nav() {
     };
   }, []);
 
+  const pathname = usePathname();
+  const lightChrome = usesLightNavChrome(pathname);
+  const darkType = scrolled || lightChrome;
+
   const handleIconClick = () => {
     // Reset timer on manual click
     if (timerRef.current) clearInterval(timerRef.current);
@@ -169,7 +191,7 @@ export default function Nav() {
 
   return (
     <>
-      <header className={`${styles.nav} ${scrolled ? styles.scrolled : ""}`}>
+      <header className={`${styles.nav} ${darkType ? styles.darkType : ""} ${scrolled ? styles.scrolled : ""}`}>
         <div className={styles.inner}>
           <button
             className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ""}`}
@@ -203,7 +225,7 @@ export default function Nav() {
                 width={560}
                 height={112}
                 priority
-                className={`${styles.logoImg} ${styles.logoLayer} ${scrolled ? styles.logoLayerHidden : styles.logoLayerVisible}`}
+                className={`${styles.logoImg} ${styles.logoLayer} ${darkType ? styles.logoLayerHidden : styles.logoLayerVisible}`}
                 sizes="(max-width: 640px) 45vw, 280px"
               />
               <Image
@@ -212,7 +234,7 @@ export default function Nav() {
                 width={560}
                 height={112}
                 priority
-                className={`${styles.logoImg} ${styles.logoLayer} ${scrolled ? styles.logoLayerVisible : styles.logoLayerHidden}`}
+                className={`${styles.logoImg} ${styles.logoLayer} ${darkType ? styles.logoLayerVisible : styles.logoLayerHidden}`}
                 sizes="(max-width: 640px) 45vw, 280px"
               />
             </span>

@@ -13,10 +13,9 @@ function getSupabaseAdmin() {
 }
 
 function getResendOrderSender() {
-  const resend = new Resend(process.env.RESEND_API_KEY);
   return {
     send: (msg: any, options?: { idempotencyKey?: string }) =>
-      resend.emails.send(
+      new Resend(process.env.RESEND_API_KEY).emails.send(
         msg,
         options?.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : undefined,
       ),

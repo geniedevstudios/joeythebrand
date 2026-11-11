@@ -7,10 +7,10 @@ import { toast } from "sonner";
 import { Clock } from "lucide-react";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore } from "@/lib/dataStore";
-import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import ProductMedia from "@/components/shop/ProductMedia";
-import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
+import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
+import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import ProductSuggestions from "@/components/shop/ProductSuggestions";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
@@ -34,15 +34,6 @@ function ProductDetailSkeletonBody() {
               className={`${styles.mainImageWrap} skeleton`}
               style={{ aspectRatio: "3/4", width: "100%", borderRadius: 8 }}
             />
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="skeleton"
-                  style={{ width: 72, height: 72, borderRadius: 6, flexShrink: 0 }}
-                />
-              ))}
-            </div>
           </div>
           {/* Info column */}
           <div className={styles.infoCol}>
@@ -55,7 +46,7 @@ function ProductDetailSkeletonBody() {
               <div className="skeleton" style={{ height: 14, width: "85%", marginBottom: 8 }} />
               <div className="skeleton" style={{ height: 14, width: "70%", marginBottom: 32 }} />
               <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-                {["XS","S","M","L","XL","Custom"].map((s) => (
+                {["S","M","L","XL","XXL","Custom"].map((s) => (
                   <div key={s} className="skeleton" style={{ width: 48, height: 40, borderRadius: 6 }} />
                 ))}
               </div>
@@ -254,35 +245,10 @@ export default function ProductClient({ slug }: { slug: string }) {
     if (typeof price === "string") return price;
     return `GHC ${price.toLocaleString()}`;
   };
-  const {
-    empty: productHeroEmpty,
-    shellSpinner: productHeroSpinner,
-    style: productHeroStyle,
-    showImageLoader: productHeroImageLoader,
-    imageReady: productHeroImageReady,
-  } = usePageHeroShellRenderProps("product");
-
-  const productHeroBanner = (
-    <div className={styles.heroBanner}>
-      <div
-        className={`${PAGE_HERO_SHELL_CLASS} ${styles.heroBannerBg}`}
-        data-page-hero-empty={productHeroEmpty ? "true" : "false"}
-        data-page-hero-loading={productHeroSpinner ? "true" : "false"}
-        data-page-hero-ready={productHeroImageReady ? "true" : "false"}
-        style={productHeroStyle}
-      >
-        {productHeroImageLoader ? <PageHeroShellImageLoader /> : null}
-        {/* Keep route-specific scrim consistent with other headers. */}
-        {!productHeroEmpty ? <div className={styles.heroBannerOverlay} /> : null}
-      </div>
-    </div>
-  );
-
   if (!product) {
     if (isStoreLoading || products.length === 0) {
       return (
         <div className={styles.page}>
-          {productHeroBanner}
           <ProductDetailSkeletonBody />
         </div>
       );
@@ -303,7 +269,14 @@ export default function ProductClient({ slug }: { slug: string }) {
   const currentCombo = activeCombo;
   const currentColor = activeColorVariant;
 
-  const baseStockStatus = getVariantStockStatus(product, currentColor, currentCombo, activeMode);
+  const baseStockStatus = getVariantStockStatus(
+    product,
+    currentColor,
+    currentCombo,
+    activeMode,
+    undefined,
+    selectedSize || null,
+  );
   const needsPartialStockChoice =
     baseStockStatus.canFallbackToMadeToOrder &&
     baseStockStatus.availablePhysicalStock > 0 &&
@@ -379,8 +352,6 @@ export default function ProductClient({ slug }: { slug: string }) {
   return (
     <>
     <div className={styles.page}>
-      {productHeroBanner}
-
       <div className={styles.breadcrumbs}>
         <div className="container">
           <button
@@ -420,41 +391,42 @@ export default function ProductClient({ slug }: { slug: string }) {
                   alt={product.name} 
                   className={styles.mainImage} 
                 />
-                <div className={styles.badgeStack} aria-hidden="true">
-                  {isBespokeProduct ? (
-                    <span className={styles.mtoBadge}>Made to order</span>
-                  ) : isSelectedOutOfStock ? (
-                    <span className={styles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                  ) : (
-                    <>
-                      {product.category === "sample-sale" && (
-                        <span className={styles.saleBadge}>SALE</span>
-                      )}
-                      {product.isLimited && product.category !== "sample-sale" && (
-                        <span className={styles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                      )}
-                      {product.isBestSeller && (
-                        <span className={styles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                      )}
-                    </>
-                  )}
-                </div>
+                <GalleryNav
+                  count={galleryImages.length}
+                  onPrev={() => setActiveImage((img) => stepGalleryImage(galleryImages, img || galleryImages[0], -1))}
+                  onNext={() => setActiveImage((img) => stepGalleryImage(galleryImages, img || galleryImages[0], 1))}
+                />
+              </div>
+            </div>
+
+          <div className={styles.infoCol}>
+            <div className={styles.infoSticky}>
+              {(() => {
+                const colName = getCollectionName(product);
+                return colName ? <span className={styles.categoryLabel}>{colName}</span> : null;
+              })()}
+              <ProductNameRow
+                product={product}
+                isBespoke={isBespokeProduct}
+                isOutOfStock={isSelectedOutOfStock}
+              >
+                <h1 className={`t-display ${styles.productName}`}>
+                  {activeCombo?.productNameOverride ? activeCombo.productNameOverride : (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.productNameOverride ? activeColorVariant.productNameOverride : product.name)}
+                </h1>
+              </ProductNameRow>
+              
+              <div className={styles.priceRow}>
+                <span className={styles.price}>
+                  {formatPrice(activeCombo ? (activeCombo.price || product.price) : product.price)}
+                </span>
+                {!activeCombo && product.originalPrice && <span className={styles.originalPrice}>{formatPrice(product.originalPrice)}</span>}
               </div>
 
-            {galleryImages.length > 1 && (
-              <div className={styles.thumbnails}>
-                {galleryImages.map((img: string, idx: number) => (
-                  <button
-                    key={idx}
-                    className={`${styles.thumb} ${(activeImage || galleryImages[0]) === img ? styles.thumbActive : ""}`}
-                    onClick={() => setActiveImage(img)}
-                    aria-label={`View image ${idx + 1}`}
-                  >
-                    <ProductMedia src={img} alt={`${product.name} view ${idx + 1}`} />
-                  </button>
-                ))}
+              <div className={styles.divider} />
+
+              <div className={styles.description}>
+                <p>{product.description}</p>
               </div>
-            )}
 
             {colorVariants.length > 0 && (
               <div className={styles.colorSelectorSection}>
@@ -601,30 +573,6 @@ export default function ProductClient({ slug }: { slug: string }) {
                 )}
               </div>
             )}
-            </div>
-
-          <div className={styles.infoCol}>
-            <div className={styles.infoSticky}>
-              {(() => {
-                const colName = getCollectionName(product);
-                return colName ? <span className={styles.categoryLabel}>{colName}</span> : null;
-              })()}
-              <h1 className={`t-display ${styles.productName}`}>
-                {activeCombo?.productNameOverride ? activeCombo.productNameOverride : (activeColorVariant && activeColorVariant.id !== "main-color" && activeColorVariant.productNameOverride ? activeColorVariant.productNameOverride : product.name)}
-              </h1>
-              
-              <div className={styles.priceRow}>
-                <span className={styles.price}>
-                  {formatPrice(activeCombo ? (activeCombo.price || product.price) : product.price)}
-                </span>
-                {!activeCombo && product.originalPrice && <span className={styles.originalPrice}>{formatPrice(product.originalPrice)}</span>}
-              </div>
-
-              <div className={styles.divider} />
-
-              <div className={styles.description}>
-                <p>{product.description}</p>
-              </div>
 
               {product.wearTag === "womens" && (
                 <div className={styles.sizeSection}>
@@ -680,16 +628,39 @@ export default function ProductClient({ slug }: { slug: string }) {
                   </button>
                 </div>
                 <div className={styles.sizeGrid}>
-                  {getAvailableSizes(product, selectedFit).map((size: string) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(prev => prev === size ? "" : size)}
-                      className={`${styles.sizeBtn} ${selectedSize === size ? styles.sizeBtnActive : ""}`}
-                      aria-pressed={selectedSize === size}
-                    >
-                      {formatSizeLabel(size, selectedFit, product.wearTag)}
-                    </button>
-                  ))}
+                  {getAvailableSizes(product, selectedFit).map((size: string) => {
+                    const sizeStatus = getVariantStockStatus(
+                      product,
+                      currentColor,
+                      currentCombo,
+                      activeMode,
+                      undefined,
+                      size,
+                    );
+                    const sizeSoldOut =
+                      sizeStatus.isSelectedOutOfStock && !sizeStatus.canFallbackToMadeToOrder;
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => {
+                          if (sizeSoldOut) return;
+                          setSelectedSize((prev) => (prev === size ? "" : size));
+                        }}
+                        disabled={sizeSoldOut}
+                        className={`${styles.sizeBtn} ${selectedSize === size ? styles.sizeBtnActive : ""}`}
+                        aria-pressed={selectedSize === size}
+                        style={
+                          sizeSoldOut
+                            ? { opacity: 0.4, textDecoration: "line-through" }
+                            : undefined
+                        }
+                        title={sizeSoldOut ? "Out of stock" : undefined}
+                      >
+                        {formatSizeLabel(size, selectedFit, product.wearTag)}
+                      </button>
+                    );
+                  })}
                 </div>
                 {selectedSize === "Custom" && (
                   <p className={styles.customNotice}>
@@ -877,46 +848,37 @@ export default function ProductClient({ slug }: { slug: string }) {
             <div className={styles.modalGallery}>
               <div className={styles.modalImageWrap} style={{ position: "relative" }}>
                 <ProductMedia src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
-                <div className={shopStyles.badgeStack} aria-hidden="true" style={{ left: "var(--space-md)" }}>
-                  {(() => {
-                    const isBespoke = !!(
-                      quickViewItem.fulfillmentMode === "made_to_order_only" ||
-                      (quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0)
-                    );
-                    return isBespoke ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>MADE TO ORDER</span>
-                    ) : quickViewItem.isOutOfStock ? (
-                      <span className={shopStyles.saleBadge} style={{ background: "#ef4444" }}>OUT OF STOCK</span>
-                    ) : (
-                      <>
-                        {quickViewItem.category === "sample-sale" && (
-                          <span className={shopStyles.saleBadge}>SALE</span>
-                        )}
-                        {quickViewItem.isLimited && quickViewItem.category !== "sample-sale" && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#595D66" }}>LIMITED</span>
-                        )}
-                        {quickViewItem.isBestSeller && (
-                          <span className={shopStyles.saleBadge} style={{ background: "#f59e0b" }}>BEST SELLER</span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
+                <GalleryNav
+                  count={quickViewGalleryImages.length}
+                  onPrev={() => setQuickViewImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewItem.image, -1))}
+                  onNext={() => setQuickViewImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewItem.image, 1))}
+                />
               </div>
-              {quickViewGalleryImages.length > 1 && (
-                <div className={styles.modalThumbnails}>
-                  {quickViewGalleryImages.map((img: string, idx: number) => (
-                    <button 
-                      key={idx} 
-                      className={`${styles.thumbBtn} ${(quickViewImage || quickViewItem.image) === img ? styles.thumbActive : ""}`}
-                      aria-label={`Thumbnail ${idx + 1}`}
-                      onClick={() => setQuickViewImage(img)}
-                    >
-                      <ProductMedia src={img} alt={`Thumbnail ${idx + 1}`} className={styles.thumbImage} />
-                    </button>
-                  ))}
-                </div>
-              )}
+            </div>
+
+            <div className={styles.modalInfo}>
+              <ProductNameRow
+                product={quickViewItem}
+                isBespoke={
+                  !!(
+                    quickViewItem.fulfillmentMode === "made_to_order_only" ||
+                    (quickViewItem.bespokeAvailable && quickViewItem.quantity <= 0)
+                  )
+                }
+                isOutOfStock={!!quickViewItem.isOutOfStock}
+              >
+                <h3 className={styles.modalTitle}>
+                  {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveColorVariant && quickViewActiveColorVariant.id !== "main-color" && quickViewActiveColorVariant.productNameOverride ? quickViewActiveColorVariant.productNameOverride : quickViewItem.name)}
+                </h3>
+              </ProductNameRow>
+              <div className={styles.modalPriceRow}>
+                <span className={styles.modalPrice}>
+                  {formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price)}
+                </span>
+                {!quickViewActiveCombo && quickViewItem.originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice(quickViewItem.originalPrice)}</span>}
+              </div>
+              
+              <p className={styles.modalDesc}>{quickViewItem.description}</p>
 
               {quickViewColorVariants.length > 0 && (
                 <>
@@ -1012,20 +974,6 @@ export default function ProductClient({ slug }: { slug: string }) {
                   )}
                 </>
               )}
-            </div>
-
-            <div className={styles.modalInfo}>
-              <h3 className={styles.modalTitle}>
-                {quickViewActiveCombo?.productNameOverride ? quickViewActiveCombo.productNameOverride : (quickViewActiveColorVariant && quickViewActiveColorVariant.id !== "main-color" && quickViewActiveColorVariant.productNameOverride ? quickViewActiveColorVariant.productNameOverride : quickViewItem.name)}
-              </h3>
-              <div className={styles.modalPriceRow}>
-                <span className={styles.modalPrice}>
-                  {formatPrice(quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price)}
-                </span>
-                {!quickViewActiveCombo && quickViewItem.originalPrice && <span className={styles.modalOriginalPrice}>{formatPrice(quickViewItem.originalPrice)}</span>}
-              </div>
-              
-              <p className={styles.modalDesc}>{quickViewItem.description}</p>
               
               {(quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") && (
                 <div className={styles.modalSizeRow} style={{ marginBottom: "1rem" }}>
@@ -1112,6 +1060,8 @@ export default function ProductClient({ slug }: { slug: string }) {
                     quickViewActiveColorVariant,
                     quickViewActiveCombo,
                     quickViewMode || "solo",
+                    undefined,
+                    quickViewSize || null,
                   );
                   return !qvStock.isBespokeProduct &&
                     qvStock.availablePhysicalStock > 0 &&
@@ -1125,7 +1075,14 @@ export default function ProductClient({ slug }: { slug: string }) {
 
               <div className={styles.modalActions}>
                 {(() => {
-                  const quickViewStockStatus = getVariantStockStatus(quickViewItem, quickViewActiveColorVariant, quickViewActiveCombo, quickViewMode || "solo");
+                  const quickViewStockStatus = getVariantStockStatus(
+                    quickViewItem,
+                    quickViewActiveColorVariant,
+                    quickViewActiveCombo,
+                    quickViewMode || "solo",
+                    undefined,
+                    quickViewSize || null,
+                  );
                   const isBespoke = quickViewStockStatus.isBespokeProduct;
                   return (
                     <button 
@@ -1141,7 +1098,15 @@ export default function ProductClient({ slug }: { slug: string }) {
                         setAddStatus("adding");
                         setTimeout(() => {
                           import("@/store/cartStore").then(({ cartStore }) => {
-                            const quickViewStockStatusCart = getVariantStockStatus(quickViewItem, quickViewActiveColorVariant, quickViewActiveCombo, quickViewMode || "solo");
+                            const quickViewStockStatusCart = getVariantStockStatus(
+                              quickViewItem,
+                              quickViewActiveColorVariant,
+                              quickViewActiveCombo,
+                              quickViewMode || "solo",
+                              undefined,
+                              quickViewSize || null,
+                            );
+                            const isMto = quickViewStockStatusCart.isBespokeProduct;
                             cartStore.addItem({
                               productId: quickViewItem.id,
                               name: quickViewItem.name,
@@ -1151,13 +1116,23 @@ export default function ProductClient({ slug }: { slug: string }) {
                               size: quickViewSize || "Standard",
                               fit: (quickViewItem.wearTag === "womens" || quickViewItem.wearTag === "unisex") ? quickViewFit : undefined,
                               wearTag: quickViewItem.wearTag,
-                              price: quickViewActiveCombo ? (quickViewActiveCombo.price || quickViewItem.price) : quickViewItem.price,
+                              price: quickViewStockStatusCart.unitPrice,
                               image: quickViewActiveCombo?.thumbnailUrl || quickViewGalleryImages[0] || quickViewItem.image,
                               image2: quickViewActiveCombo?.images?.[0] || quickViewGalleryImages[1] || quickViewItem.images?.[0],
                               quantity: qty,
-                              maxStock: quickViewStockStatusCart.maxStock ?? 99,
-                              isBespoke: quickViewStockStatusCart.isBespokeProduct || undefined,
-                              bespokeLeadDays: quickViewStockStatusCart.isBespokeProduct ? (quickViewStockStatusCart.bespokeLeadDays ?? 14) : undefined,
+                              maxStock: isMto
+                                ? quickViewStockStatusCart.mtoMaxQtyPerOrder
+                                : quickViewStockStatusCart.availablePhysicalStock,
+                              availablePhysicalStock: quickViewStockStatusCart.availablePhysicalStock,
+                              mtoMaxQtyPerOrder: quickViewStockStatusCart.mtoMaxQtyPerOrder,
+                              canFallbackToMadeToOrder: quickViewStockStatusCart.canFallbackToMadeToOrder,
+                              fulfillmentChoice: isMto ? "made_to_order" : "ready_to_wear",
+                              isMadeToOrder: isMto || undefined,
+                              leadDays: isMto ? quickViewStockStatusCart.leadDays : undefined,
+                              isBespoke: isMto || undefined,
+                              bespokeLeadDays: isMto ? (quickViewStockStatusCart.bespokeLeadDays ?? 14) : undefined,
+                              variantId: quickViewStockStatusCart.variantId !== "base" ? quickViewStockStatusCart.variantId : undefined,
+                              comboId: quickViewStockStatusCart.comboId !== "base" ? quickViewStockStatusCart.comboId : undefined,
                             });
                             
                             setAddStatus("added");

@@ -62,15 +62,14 @@ export const DEFAULT_SIZES: ProductSize[] = [
 ];
 
 export const WOMENS_DEFAULT_SIZES: ProductSize[] = [
-  { name: "XS", available: true },
-  { name: "S", available: true },
-  { name: "M", available: true },
-  { name: "L", available: true },
-  { name: "XL", available: true },
-  { name: "XXL", available: true },
-  { name: "3XL", available: true },
-  { name: "4XL", available: true },
-  { name: "5XL", available: true },
+  { name: "UK 8", available: true },
+  { name: "UK 10", available: true },
+  { name: "UK 12", available: true },
+  { name: "UK 14", available: true },
+  { name: "UK 16", available: true },
+  { name: "UK 18", available: true },
+  { name: "UK 20", available: true },
+  { name: "UK 22", available: true },
   { name: "Custom", available: true },
 ];
 
@@ -576,6 +575,7 @@ export const dataStore = {
     shippingOption?: "dhl" | "sales" | null;
     shippingAddress: string;
     destinationDetails?: {
+      addressLine1?: string;
       city: string;
       postalCode?: string;
       countryCode: string;

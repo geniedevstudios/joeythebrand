@@ -6,6 +6,12 @@ export type WearTag = "mens" | "womens" | "unisex";
 export interface ProductSize {
   name: string;
   available: boolean;
+  quantity?: number;
+}
+
+export interface SizeStock {
+  size: string;
+  quantity: number;
 }
 
 export type ProductVariantType = "color" | "fit_combo";
@@ -51,6 +57,7 @@ export interface ProductVariant {
   combos?: ProductCombo[];
   nameFormat?: "plus" | "brackets";
   quantity?: number;
+  sizeStock?: SizeStock[];
   isOutOfStock?: boolean;
   fulfillmentMode?: ProductFulfillmentMode;
   leadDays?: number;

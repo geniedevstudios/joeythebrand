@@ -2,11 +2,10 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { dataStore } from "@/lib/dataStore";
 import type { SiteContent } from "@/lib/types";
 import AssetUrlField from "@/components/AssetUrlField";
+import { PageHeroEditor } from "@/components/PageHeroEditor";
 import { toast } from "sonner";
 
 export default function AboutContentPage() {
@@ -63,15 +62,11 @@ export default function AboutContentPage() {
   return (
     <div className="w-full max-w-none space-y-6">
       <div>
-        <Link 
-          href="/content/app-pages" 
-          className="inline-flex items-center gap-1.5 text-sm mb-4 text-zinc-500 hover:text-zinc-900 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to App pages
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">About / Founder section</h1>
+        <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Story</h2>
+        <p className="mt-1 text-sm text-zinc-800">These appear on Story.</p>
       </div>
+
+      <PageHeroEditor heroKey="story" heading="Opening image" />
 
       <form onSubmit={save} className="space-y-8">
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
@@ -80,7 +75,7 @@ export default function AboutContentPage() {
           </div>
           <div className="p-6 space-y-4">
             <AssetUrlField
-              label="About image URL"
+              label="About image"
               value={aboutImageUrl}
               onChange={setAboutImageUrl}
               uploadFolder="about"

@@ -112,9 +112,9 @@ function splitParagraphs(text: string): string[] {
 }
 
 const P_MAIN =
-  "margin:0 0 18px;font-size:16px;line-height:1.65;color:#3f3f46;font-family:Georgia,'Times New Roman',serif;";
+  "margin:0 0 18px;font-size:14px;line-height:1.7;color:#77746d;font-family:Arial,Helvetica,sans-serif;";
 const P_SMALL =
-  "margin:0 0 12px;font-size:13px;line-height:1.6;color:#52525b;font-family:system-ui,-apple-system,sans-serif;";
+  "margin:0 0 12px;font-size:12px;line-height:1.7;color:#96928b;font-family:Arial,Helvetica,sans-serif;";
 
 function paragraphsHtml(text: string, style: string): string {
   return splitParagraphs(text)
@@ -176,12 +176,12 @@ export function buildNewsletterTemplateHtml(
   const headlineRow =
     headline.length > 0
       ? `<tr><td style="padding:28px 24px 8px;background:#ffffff;">
-           <h1 style="margin:0;font-size:26px;line-height:1.2;font-weight:700;letter-spacing:0.02em;color:#18181b;font-family:system-ui,-apple-system,sans-serif;text-transform:none;">${escapeHtml(headline)}</h1>
+           <h1 style="margin:0;font:normal 34px/1.15 Georgia,'Times New Roman',serif;letter-spacing:-1px;color:#24231f;text-align:center;">${escapeHtml(headline)}</h1>
          </td></tr>`
       : "";
 
   const brandBarRow = !logoSrc
-    ? `<tr><td style="padding:20px 24px 16px;background:#272B36;color:#ffffff;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-family:system-ui,sans-serif;">
+    ? `<tr><td style="padding:20px 24px 16px;background:#4c2938;color:#ffffff;font-size:9px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif;text-align:center;">
          ${escapeHtml(brand)}
        </td></tr>`
     : "";
@@ -228,19 +228,19 @@ export function buildNewsletterTemplateHtml(
   const socialCell = (l: { href: string; label: string; icon: string | null }) =>
     l.icon
       ? `<a href="${escapeHtml(l.href)}" style="display:inline-block;text-decoration:none;margin:0 10px;vertical-align:middle;" title="${escapeHtml(l.label)}"><img src="${escapeHtml(l.icon)}" alt="${escapeHtml(l.label)}" width="32" height="32" style="display:block;width:32px;height:32px;border:0;outline:none;"/></a>`
-      : `<a href="${escapeHtml(l.href)}" style="color:#272B36;font-weight:600;text-decoration:underline;font-family:system-ui,sans-serif;font-size:13px;">${escapeHtml(l.label)}</a>`;
+      : `<a href="${escapeHtml(l.href)}" style="color:#4c2938;font-weight:600;text-decoration:underline;font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(l.label)}</a>`;
 
   const socialHtml =
     links.length > 0
-      ? `<tr><td style="padding:28px 24px 20px;text-align:center;background:#fafafa;border-top:1px solid #e4e4e7;">
+      ? `<tr><td style="padding:28px 24px 20px;text-align:center;background:#f7f6f4;border-top:1px solid #dedbd5;">
           <div style="font-size:0;line-height:0;">
           ${links.map((l, i) => `${i > 0 ? `<span style="display:inline-block;width:8px;"></span>` : ""}${socialCell(l)}`).join("")}
           </div>
         </td></tr>`
-      : `<tr><td style="padding:28px 24px 16px;text-align:center;font-family:system-ui,sans-serif;font-size:13px;background:#fafafa;border-top:1px solid #e4e4e7;">
-          <a href="${escapeHtml(base + "/shop")}" style="color:#272B36;font-weight:600;text-decoration:none;">Shop</a>
-          <span style="color:#d4d4d8;">&nbsp;·&nbsp;</span>
-          <a href="${escapeHtml(base + "/bespoke")}" style="color:#272B36;font-weight:600;text-decoration:none;">Bespoke</a>
+      : `<tr><td style="padding:28px 24px 16px;text-align:center;font-family:Arial,sans-serif;font-size:13px;background:#f7f6f4;border-top:1px solid #dedbd5;">
+          <a href="${escapeHtml(base + "/shop")}" style="color:#4c2938;font-weight:600;text-decoration:none;">Shop</a>
+          <span style="color:#dedbd5;">&nbsp;·&nbsp;</span>
+          <a href="${escapeHtml(base + "/bespoke")}" style="color:#4c2938;font-weight:600;text-decoration:none;">Bespoke</a>
         </td></tr>`;
 
   return `<!DOCTYPE html>
@@ -250,11 +250,11 @@ export function buildNewsletterTemplateHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>${escapeHtml(brand)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:24px 12px;">
+<body style="margin:0;padding:0;background:#f0efed;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f0efed;padding:28px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#f7f6f4;overflow:hidden;">
           ${logoRow}
           ${viewRow}
           ${brandBarRow}
@@ -265,19 +265,26 @@ export function buildNewsletterTemplateHtml(
           ${extraHtml}
           ${socialHtml}
           <tr>
-            <td style="padding:24px 24px 12px;text-align:center;font-family:system-ui,sans-serif;font-size:11px;color:#a1a1aa;line-height:1.5;">
-              Copyright © ${year} ${escapeHtml(brand)}<br/>
-              All rights reserved.
+            <td style="padding:32px 24px 0;text-align:center;font:16px/1.5 Georgia,'Times New Roman',serif;color:#77746d;">
+              Structure. Symbolism. Identity.
             </td>
           </tr>
           <tr>
-            <td style="padding:0 24px 28px;text-align:center;font-family:system-ui,sans-serif;font-size:11px;color:#a1a1aa;line-height:1.5;">
-              Want to change how you receive these emails?<br/>
-              You can update your preferences or unsubscribe using the link in your email client.
+            <td style="padding:14px 24px 0;text-align:center;font:11px/1.6 Arial,sans-serif;color:#96928b;">
+              Connect with us<br/>
+              <a href="https://www.instagram.com/joeythebrand/" style="color:#77746d;text-decoration:none;">@joeythebrand</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 40px 28px;text-align:center;">
+              <div style="border-top:1px solid #dedbd5;padding-top:18px;font:10px/1.8 Arial,sans-serif;color:#96928b;">
+                © ${year} ${escapeHtml(brand)}. All rights reserved.<br/>
+                <a href="${escapeHtml(base)}" style="color:#77746d;text-decoration:none;">joeythebrand.com</a>
+              </div>
             </td>
           </tr>
         </table>
-        <p style="margin:16px 0 0;font-size:11px;color:#a1a1aa;font-family:system-ui,sans-serif;max-width:560px;text-align:center;line-height:1.5;">
+        <p style="margin:16px 0 0;font-size:11px;color:#96928b;font-family:Arial,sans-serif;max-width:600px;text-align:center;line-height:1.5;">
           You joined our mailing list to hear from ${escapeHtml(brand)}.
         </p>
       </td>
@@ -377,9 +384,10 @@ export function wrapSimpleNewsletterHtml(body: string, shopUrl?: string): string
   const blocks = chunks
     .map(
       (p) =>
-        `<p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#27272a;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(p).replace(/\n/g, "<br/>")}</p>`,
+        `<p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:#77746d;font-family:Arial,Helvetica,sans-serif;">${escapeHtml(p).replace(/\n/g, "<br/>")}</p>`,
     )
     .join("");
+  const year = new Date().getFullYear();
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -388,28 +396,33 @@ export function wrapSimpleNewsletterHtml(body: string, shopUrl?: string): string
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>JOEY THE BRAND</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:24px 12px;">
+<body style="margin:0;padding:0;background:#f0efed;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f0efed;padding:28px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7;">
+        <table role="presentation" width="100%" style="max-width:600px;background:#f7f6f4;overflow:hidden;">
           <tr>
-            <td style="padding:28px 28px 8px;background:#272B36;color:#ffffff;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-family:system-ui,sans-serif;">
+            <td style="padding:20px 24px 16px;background:#4c2938;color:#ffffff;font-size:9px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif;text-align:center;">
               JOEY THE BRAND
             </td>
           </tr>
           <tr>
-            <td style="padding:28px 28px 32px;">
+            <td style="padding:28px 32px 32px;background:#ffffff;">
               ${blocks}
-              <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#71717a;font-family:system-ui,sans-serif;">
-                <a href="${escapeHtml(base + "/shop")}" style="color:#272B36;font-weight:600;">Shop new arrivals</a>
-                &nbsp;·&nbsp;
-                <a href="${escapeHtml(base + "/bespoke")}" style="color:#272B36;">Bespoke</a>
-              </p>
+              <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:28px auto 0;"><tr><td align="center" bgcolor="#4c2938"><a href="${escapeHtml(base + "/shop")}" style="display:inline-block;padding:16px 32px;border:1px solid #4c2938;color:#fff;text-decoration:none;font:10px Arial;letter-spacing:2px;">VISIT THE SHOP</a></td></tr></table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 24px 0;text-align:center;font:16px/1.5 Georgia,'Times New Roman',serif;color:#77746d;">Structure. Symbolism. Identity.</td>
+          </tr>
+          <tr>
+            <td style="padding:14px 24px 28px;text-align:center;font:10px/1.8 Arial,sans-serif;color:#96928b;">
+              © ${year} JOEY THE BRAND. All rights reserved.<br/>
+              <a href="${escapeHtml(base)}" style="color:#77746d;text-decoration:none;">joeythebrand.com</a>
             </td>
           </tr>
         </table>
-        <p style="margin:16px 0 0;font-size:11px;color:#a1a1aa;font-family:system-ui,sans-serif;max-width:560px;">
+        <p style="margin:16px 0 0;font-size:11px;color:#96928b;font-family:Arial,sans-serif;max-width:600px;">
           You received this because you joined our list. Use the unsubscribe link in your email app if you no longer wish to hear from us.
         </p>
       </td>

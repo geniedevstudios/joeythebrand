@@ -171,7 +171,7 @@ export default function PromotionPopupsEditor() {
   const saveDraft = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.mediaUrl.trim() || !draft.headline.trim()) {
-      toast.error("Media URL and headline are required.");
+      toast.error("Media and headline are required.");
       return;
     }
     if (draft.action === "product" && !draft.productSlugOrId.trim()) {
@@ -411,12 +411,11 @@ export default function PromotionPopupsEditor() {
                 </div>
 
                 <AssetUrlField
-                  label={draft.mediaKind === "video" ? "Video URL" : "Image URL"}
+                  label={draft.mediaKind === "video" ? "Video" : "Image"}
                   value={draft.mediaUrl}
                   onChange={(url) => setDraft((d) => ({ ...d, mediaUrl: url }))}
                   uploadFolder="promotions/popup"
                   accept={draft.mediaKind === "video" ? "video/*" : "image/*"}
-                  placeholder={draft.mediaKind === "video" ? "Upload or paste MP4 / WebM URL" : "Upload or paste image URL"}
                 />
 
                 {draft.mediaKind === "video" ? (

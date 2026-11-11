@@ -9,34 +9,17 @@
 
 .header {
   position: relative;
-  background-color: #000;
-  color: #fff;
-  padding: calc(var(--nav-height) + var(--space-3xl)) 0 var(--space-3xl);
-  margin-bottom: var(--space-3xl);
-}
-
-.header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(39, 43, 54, 0.78) 0%,
-    rgba(39, 43, 54, 0.5) 50%,
-    rgba(145, 126, 113, 0.35) 100%
-  );
-  z-index: 0;
-}
-
-.header > * {
-  position: relative;
-  z-index: 1;
+  background: transparent;
+  padding: calc(var(--nav-height) + var(--space-2xl)) 0 var(--space-2xl);
 }
 
 .title {
-  color: #fff;
+  color: var(--blue-athracite);
   margin-top: var(--space-sm);
   font-weight: 300;
+  font-size: clamp(2.4rem, 5vw, 3.75rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
 .content {
