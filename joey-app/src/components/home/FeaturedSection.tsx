@@ -290,21 +290,17 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                     : quickViewStockStatus.availablePhysicalStock;
                   return (
                     <>
-                <div className={styles.modalGallery}>
-                  <div className={styles.modalImageWrap} style={{ position: "relative" }}>
-                    <ProductMedia
-                      src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image}
-                      alt={quickViewPiece.name}
-                      className={styles.modalImage}
-                    />
-                    <GalleryNav
-                      count={quickViewGalleryImages.length}
-                      onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
-                      onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
-                    />
-                  </div>
-
-
+                <div className={styles.modalImageWrap}>
+                  <ProductMedia
+                    src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image}
+                    alt={quickViewPiece.name}
+                    className={styles.modalImage}
+                  />
+                  <GalleryNav
+                    count={quickViewGalleryImages.length}
+                    onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
+                    onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
+                  />
                 </div>
 
                 <div className={styles.modalInfo}>

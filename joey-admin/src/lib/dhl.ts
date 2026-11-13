@@ -256,7 +256,7 @@ export async function createShipment(req: DHLShipmentRequest) {
   const countryCode = normalizeCountry(req.destination.countryCode);
   const isDomestic = countryCode === SHIPPER_DETAILS.postalAddress.countryCode;
   const documentTypes = isDomestic ? ["label", "waybillDoc"] : ["label", "waybillDoc", "invoice"];
-  const description = req.itemDescription.slice(0, 70);
+  const description = Array.from(req.itemDescription).slice(0, 70).join("").trimEnd();
 
   const payload = {
     plannedShippingDateAndTime: dhlTimestamp(12),

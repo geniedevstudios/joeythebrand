@@ -1193,20 +1193,17 @@ export default function BespokeClient({
 
                 return (
                   <>
-                    <div className={shopStyles.modalGallery}>
-                      <div className={shopStyles.modalImageWrap} style={{ position: "relative" }}>
-                        <ProductMedia
-                          src={activeImage || qvGalleryImages[0] || quickViewPiece.image}
-                          alt={quickViewPiece.name}
-                          className={shopStyles.modalImage}
-                        />
-                        <GalleryNav
-                          count={qvGalleryImages.length}
-                          onPrev={() => setActiveImage((img) => stepGalleryImage(qvGalleryImages, img || qvGalleryImages[0] || quickViewPiece.image, -1))}
-                          onNext={() => setActiveImage((img) => stepGalleryImage(qvGalleryImages, img || qvGalleryImages[0] || quickViewPiece.image, 1))}
-                        />
-                      </div>
-
+                    <div className={shopStyles.modalImageWrap}>
+                      <ProductMedia
+                        src={activeImage || qvGalleryImages[0] || quickViewPiece.image}
+                        alt={quickViewPiece.name}
+                        className={shopStyles.modalImage}
+                      />
+                      <GalleryNav
+                        count={qvGalleryImages.length}
+                        onPrev={() => setActiveImage((img) => stepGalleryImage(qvGalleryImages, img || qvGalleryImages[0] || quickViewPiece.image, -1))}
+                        onNext={() => setActiveImage((img) => stepGalleryImage(qvGalleryImages, img || qvGalleryImages[0] || quickViewPiece.image, 1))}
+                      />
                     </div>
 
                     <div className={shopStyles.modalInfo}>

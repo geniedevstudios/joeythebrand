@@ -339,16 +339,14 @@ export default function WishlistClient() {
                   : quickViewStockStatus.availablePhysicalStock;
                 return (
                   <>
-              <div className={shopStyles.modalGallery}>
-                <div className={shopStyles.modalImageWrap} style={{ position: "relative" }}>
+              <div className={shopStyles.modalImageWrap}>
 
-                  <ProductMedia src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image} alt={quickViewPiece.name} className={shopStyles.modalImage} />
-                  <GalleryNav
-                    count={quickViewGalleryImages.length}
-                    onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
-                    onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
-                  />
-                </div>
+                <ProductMedia src={activeImage || quickViewGalleryImages[0] || quickViewPiece.image} alt={quickViewPiece.name} className={shopStyles.modalImage} />
+                <GalleryNav
+                  count={quickViewGalleryImages.length}
+                  onPrev={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, -1))}
+                  onNext={() => setActiveImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewGalleryImages[0] || quickViewPiece.image, 1))}
+                />
               </div>
 
               <div className={shopStyles.modalInfo}>

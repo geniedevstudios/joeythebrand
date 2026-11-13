@@ -851,15 +851,13 @@ export default function ProductClient({ slug }: { slug: string }) {
             </svg>
           </button>
           <div className={styles.modalGrid}>
-            <div className={styles.modalGallery}>
-              <div className={styles.modalImageWrap} style={{ position: "relative" }}>
-                <ProductMedia src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
-                <GalleryNav
-                  count={quickViewGalleryImages.length}
-                  onPrev={() => setQuickViewImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewItem.image, -1))}
-                  onNext={() => setQuickViewImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewItem.image, 1))}
-                />
-              </div>
+            <div className={styles.modalImageWrap}>
+              <ProductMedia src={quickViewImage || quickViewItem.image} alt={quickViewItem.name} className={styles.modalImage} />
+              <GalleryNav
+                count={quickViewGalleryImages.length}
+                onPrev={() => setQuickViewImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewItem.image, -1))}
+                onNext={() => setQuickViewImage((img) => stepGalleryImage(quickViewGalleryImages, img || quickViewItem.image, 1))}
+              />
             </div>
 
             <div className={styles.modalInfo}>

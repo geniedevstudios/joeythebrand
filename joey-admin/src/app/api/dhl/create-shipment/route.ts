@@ -44,22 +44,28 @@ async function prepareShipment(orderId: string) {
 
   const items = order.items as StoredItem[];
   if (!Array.isArray(items) || !items.length) return problem("The order has no items to declare.", 409);
-  const customsLines: DhlCustomsLine[] = [];
-  if (destination.countryCode !== SHIPPER_DETAILS.postalAddress.countryCode) {
-    const ids = items.map((item) => item.productId || item.product_id).filter(Boolean);
-    if (ids.length !== items.length) return problem("An order item is missing its catalogue product.", 409);
-    const { data: products, error: productError } = await supabaseAdmin
-      .from("products").select("id, customs_profile").in("id", ids);
-    if (productError) throw productError;
+  const isExport = destination.countryCode !== SHIPPER_DETAILS.postalAddress.countryCode;
+  const itemProductIds = items.map((item) => item?.productId || item?.product_id);
+  if (isExport && itemProductIds.some((id) => !id)) {
+    return problem("An order item is missing its catalogue product.", 409);
+  }
 
-    const profiles = new Map(products.map((product) => [product.id, product.customs_profile as CustomsProfile | null]));
+  const ids = [...new Set(itemProductIds.filter((id): id is string => !!id))];
+  const { data: products, error: productError } = ids.length
+    ? await supabaseAdmin.from("products").select("id, description, customs_profile").in("id", ids)
+    : { data: [], error: null };
+  if (productError) throw productError;
+  const productsById = new Map((products ?? []).map((product) => [product.id, product]));
+
+  const customsLines: DhlCustomsLine[] = [];
+  if (isExport) {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const discount = Number(order.discount ?? 0);
     if (!Number.isFinite(subtotal) || !Number.isFinite(discount) || discount < 0 || subtotal <= discount) {
       return problem("The order needs a positive merchandise value. Confirm the customs valuation before shipping.", 409);
     }
     for (const item of items) {
-      const profile = profiles.get(item.productId || item.product_id);
+      const profile = productsById.get(item.productId || item.product_id)?.customs_profile as CustomsProfile | null | undefined;
       if (profile?.verified !== true || !validCustomsComponents(profile.components)) {
         return problem(`Verify export customs details for ${item.name || "the order item"} in Products, then reopen this shipment.`, 409);
       }
@@ -87,8 +93,13 @@ async function prepareShipment(orderId: string) {
     }
   }
 
-  const names = customsLines.length ? customsLines.map((line) => line.description) : items.map((item) => item?.name?.trim()).filter(Boolean);
-  const itemDescription = [...new Set(names)].join(", ");
+  const descriptions = items.map((item, index) => {
+    const product = productsById.get(itemProductIds[index]);
+    const profile = product?.customs_profile as CustomsProfile | null | undefined;
+    const customsDescription = isExport ? profile?.components.map((line) => line.description).join(", ") : undefined;
+    return product?.description?.trim() || customsDescription || item?.name?.trim();
+  }).filter(Boolean);
+  const itemDescription = [...new Set(descriptions)].join(", ").replace(/\s+/g, " ").trim();
   if (!itemDescription) return problem("The order needs an item description.", 409);
   const freight = Number(order.shipping_cost ?? 0);
   if (!Number.isFinite(freight) || freight < 0) return problem("The order has an invalid DHL freight amount.", 409);

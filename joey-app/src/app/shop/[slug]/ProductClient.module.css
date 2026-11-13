@@ -989,37 +989,23 @@
 
 .modalGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-lg);
-}
-
-.modalGallery {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-2xl) 0 var(--space-2xl) var(--space-2xl);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .modalImageWrap {
   position: relative;
-  width: fit-content;
-  max-width: 100%;
-  margin-inline: auto;
-  display: flex;
-  justify-content: center;
-  border-radius: var(--radius-md);
+  height: min(650px, 73svh);
+  background: var(--skintone);
   overflow: hidden;
 }
 
-.modalImageWrap > :is(img, video),
-.modalImage:is(img, video) {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 50vh;
-  object-fit: contain;
+.modalImage {
   display: block;
-  border-radius: var(--radius-md);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
 }
 
 .modalThumbnails {
@@ -1064,7 +1050,8 @@
 }
 
 .modalInfo {
-  padding: var(--space-2xl) var(--space-2xl) var(--space-2xl) 0;
+  min-width: 0;
+  padding: var(--space-2xl);
   display: flex;
   flex-direction: column;
 }
@@ -1323,16 +1310,21 @@
   }
 
   .modalGrid {
-    grid-template-columns: 1fr;
-    gap: 0;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .modalGallery {
-    padding: var(--space-lg) var(--space-lg) 0;
-  }
 
   .modalImageWrap {
-    max-height: 40vh;
+    height: 270px;
+  }
+
+  .modalClose {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-surface);
   }
 
   .modalThumbnails {
@@ -1415,13 +1407,6 @@
     font-size: 0.85rem;
   }
 
-  .modalImageWrap {
-    max-height: 35vh;
-  }
-
-  .modalGallery {
-    padding: var(--space-md) var(--space-md) 0;
-  }
 
   .modalInfo {
     padding: var(--space-md);
