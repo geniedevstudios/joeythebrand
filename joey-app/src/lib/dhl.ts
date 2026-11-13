@@ -1,3 +1,5 @@
+import { estimateShippingParcel } from "./shippingWeight";
+
 function envTrim(name: string): string {
   return (process.env[name] || "").trim().replace(/^["']|["']$/g, "");
 }
@@ -95,6 +97,7 @@ export const SHIPPER_DETAILS = {
   postalAddress: {
     postalCode: "GD-141-1647",
     cityName: "Accra",
+    countyName: "Greater Accra",
     countryCode: "GH",
     addressLine1: "Nii KWAOFIO ST ASHALEY BOTWE"
   },
@@ -112,6 +115,7 @@ export interface DHLRateRequest {
     postalCode?: string;
     countryCode: string;
     addressLine1?: string;
+    region?: string;
   };
   weightKg: number;
   packageDimensions?: { length: number; width: number; height: number; };
@@ -157,6 +161,7 @@ function shipperRateAddress() {
     cityName: SHIPPER_DETAILS.postalAddress.cityName,
     countryCode,
     addressLine1: SHIPPER_DETAILS.postalAddress.addressLine1,
+    countyName: SHIPPER_DETAILS.postalAddress.countyName,
     ...(postalCode ? { postalCode } : {}),
   };
 }
@@ -168,6 +173,7 @@ export async function getShippingRates(req: DHLRateRequest) {
   const countryCode = normalizeCountry(req.destination.countryCode);
   const isDomestic = countryCode === SHIPPER_DETAILS.postalAddress.countryCode;
   const productCode = isDomestic ? "N" : "P";
+  await validateAddress({ city: req.destination.city, postalCode: req.destination.postalCode ?? "", countryCode });
   const serviceName = isDomestic ? "DHL Express Domestic" : "DHL Express Worldwide";
   const postalCode = postalForDhl(countryCode, req.destination.postalCode);
   const addressLine1 = (req.destination.addressLine1 || req.destination.city).trim().slice(0, 45);
@@ -179,6 +185,7 @@ export async function getShippingRates(req: DHLRateRequest) {
         cityName: req.destination.city.substring(0, 45),
         countryCode,
         addressLine1,
+        ...(req.destination.region && { countyName: req.destination.region.slice(0, 45) }),
         ...(postalCode ? { postalCode } : {}),
       }
     },
@@ -187,15 +194,8 @@ export async function getShippingRates(req: DHLRateRequest) {
     unitOfMeasurement: "metric",
     isCustomsDeclarable: !isDomestic,
     nextBusinessDay: true,
-    ...(!isDomestic && { monetaryAmount: [
-      { typeCode: "declaredValue", value: 100, currency: "GHS" }
-    ] }),
-    packages: [
-      {
-        weight: Math.max(0.5, Number(req.weightKg) || 0.5),
-        dimensions: req.packageDimensions || { length: 30, width: 20, height: 10 }
-      }
-    ]
+    productCode,
+    packages: [estimateShippingParcel(req.weightKg, req.packageDimensions)]
   };
 
   const res = await fetchWithRetry(`${DHL_API_BASE}/rates`, {
@@ -231,211 +231,24 @@ export async function getShippingRates(req: DHLRateRequest) {
   throw new Error("No shipping products available for this destination");
 }
 
-export interface DHLShipmentRequest {
-  orderId: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  destination: {
-    addressLine1: string;
-    city: string;
-    postalCode?: string;
-    countryCode: string;
-  };
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-    weightKg: number;
-    hsCode: string;
-  }[];
-  packageDimensions?: { length: number; width: number; height: number; };
-}
-
-export async function createShipment(req: DHLShipmentRequest) {
-  const account = envTrim("DHL_ACCOUNT_NUMBER");
-  if (!account) throw new Error("DHL Account Number not configured");
-
-  const totalWeight = req.items.reduce((acc, item) => acc + (item.weightKg * item.quantity), 0) || 1.0;
-  const declaredValue = req.items.reduce((acc, item) => acc + (item.price * item.quantity), 0) || 100;
-  const countryCode = normalizeCountry(req.destination.countryCode);
-  const postalCode = postalForDhl(countryCode, req.destination.postalCode);
-  const shipperPostal = postalForDhl(
-    SHIPPER_DETAILS.postalAddress.countryCode,
-    SHIPPER_DETAILS.postalAddress.postalCode,
-  );
-
-  const payload = {
-    plannedShippingDateAndTime: dhlTimestamp(12),
-    pickup: {
-      isRequested: false
-    },
-    productCode: "P",
-    accounts: [{ typeCode: "shipper" as const, number: account }],
-    outputImageProperties: {
-      allDocumentsInOneImage: true,
-      encodingFormat: "pdf",
-      imageOptions: [
-        { typeCode: "label", templateName: "ECOM26_84_A4_001", isRequested: true },
-        { typeCode: "waybillDoc", templateName: "ARCH_8x4", isRequested: true },
-        { typeCode: "invoice", templateName: "COMMERCIAL_INVOICE_P_10", isRequested: true, invoiceType: "commercial" }
-      ]
-    },
-    customerDetails: {
-      shipperDetails: {
-        postalAddress: {
-          cityName: SHIPPER_DETAILS.postalAddress.cityName,
-          countryCode: SHIPPER_DETAILS.postalAddress.countryCode,
-          addressLine1: SHIPPER_DETAILS.postalAddress.addressLine1,
-          ...(shipperPostal ? { postalCode: shipperPostal } : {}),
-        },
-        contactInformation: SHIPPER_DETAILS.contactInformation,
-      },
-      receiverDetails: {
-        postalAddress: {
-          cityName: req.destination.city.substring(0, 45),
-          countryCode,
-          addressLine1: req.destination.addressLine1.substring(0, 45),
-          ...(postalCode ? { postalCode } : {}),
-        },
-        contactInformation: {
-          email: req.customerEmail || "customer@example.com",
-          phone: (req.customerPhone || "0000000000").substring(0, 25),
-          companyName: req.customerName.substring(0, 45),
-          fullName: req.customerName.substring(0, 45)
-        }
-      }
-    },
-    content: {
-      unitOfMeasurement: "metric",
-      incoterm: "DAP",
-      packages: [
-        {
-          weight: totalWeight,
-          dimensions: req.packageDimensions || { length: 30, width: 20, height: 10 },
-          customerReferences: [{ value: req.orderId.substring(0, 35), typeCode: "CU" }],
-          description: "Clothing apparel"
-        }
-      ],
-      isCustomsDeclarable: true,
-      declaredValue: declaredValue,
-      declaredValueCurrency: "GHS",
-      exportDeclaration: {
-        lineItems: req.items.map((item, index) => {
-          if (!item.hsCode) throw new Error(`Item "${item.name}" is missing an HS Code. Please add it to the product before shipping.`);
-          return {
-            number: index + 1,
-            description: item.name.substring(0, 45),
-            price: item.price || 0,
-            quantity: { value: item.quantity || 1, unitOfMeasurement: "EA" },
-            commodityCodes: [{ typeCode: "outbound", value: item.hsCode }],
-            exportReasonType: "permanent",
-            manufacturerCountry: "GH",
-            weight: { netValue: item.weightKg || 0.5, grossValue: item.weightKg || 0.5 }
-          };
-        }),
-        invoice: {
-          number: `INV-${req.orderId.substring(0, 20)}`,
-          date: new Date().toISOString().split("T")[0]
-        }
-      },
-      description: "Clothing and Apparel"
-    }
-  };
-
-  const res = await fetchWithRetry(`${DHL_API_BASE}/shipments`, {
-    method: "POST",
-    headers: dhlHeaders(),
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error("DHL Shipment Error:", errorBody);
-    throw new Error(`Failed to create DHL shipment: ${parseDhlError(errorBody, res.statusText)}`);
-  }
-
-  const data = await res.json();
-
-  return {
-    trackingNumber: data.shipmentTrackingNumber,
-    labelData: data.documents?.[0]?.content
-  };
-}
-
-export async function schedulePickup(trackingNumber: string, weight: number = 0.5, dimensions: { length: number; width: number; height: number; } = { length: 30, width: 20, height: 10 }) {
-  const account = envTrim("DHL_ACCOUNT_NUMBER");
-  if (!account) throw new Error("DHL Account Number not configured");
-
-  const shipperPostal = postalForDhl(
-    SHIPPER_DETAILS.postalAddress.countryCode,
-    SHIPPER_DETAILS.postalAddress.postalCode,
-  );
-
-  const payload = {
-    plannedPickupDateAndTime: dhlTimestamp(10),
-    closeTime: "16:00",
-    location: "Reception",
-    locationType: "business",
-    accounts: [{ typeCode: "shipper" as const, number: account }],
-    customerDetails: {
-      shipperDetails: {
-        postalAddress: {
-          cityName: SHIPPER_DETAILS.postalAddress.cityName,
-          countryCode: SHIPPER_DETAILS.postalAddress.countryCode,
-          addressLine1: SHIPPER_DETAILS.postalAddress.addressLine1,
-          ...(shipperPostal ? { postalCode: shipperPostal } : {}),
-        },
-        contactInformation: SHIPPER_DETAILS.contactInformation,
-      }
-    },
-    shipmentDetails: [{
-      shipmentTrackingNumber: trackingNumber,
-      unitOfMeasurement: "metric",
-      isCustomsDeclarable: true,
-      packages: [{ typeCode: "3BX", weight, dimensions }],
-      declaredValue: 100,
-      declaredValueCurrency: "GHS"
-    }]
-  };
-
-  const res = await fetchWithRetry(`${DHL_API_BASE}/pickups`, {
-    method: "POST",
-    headers: dhlHeaders(),
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error("DHL Pickup Error:", errorBody);
-    throw new Error(`Failed to schedule pickup: ${parseDhlError(errorBody, res.statusText)}`);
-  }
-
-  const data = await res.json();
-  return {
-    dispatchConfirmationNumber: data.dispatchConfirmationNumbers?.[0]
-  };
-}
-
 export async function trackShipment(trackingNumber: string) {
-  const res = await fetchWithRetry(`${DHL_API_BASE}/shipments/${trackingNumber}/tracking`, {
+  const res = await fetchWithRetry(`${DHL_API_BASE}/shipments/${trackingNumber}/tracking?trackingView=all-checkpoints&levelOfDetail=all`, {
     method: "GET",
     headers: dhlHeaders(false),
   });
 
+  if (res.status === 404) return { shipments: [] };
   if (!res.ok) {
     const errorBody = await res.text();
     console.error("DHL Tracking Error:", errorBody);
-
-    if (res.status === 500 && process.env.NODE_ENV === "development" && DHL_API_BASE.includes("test")) {
-      return { shipments: [] };
-    }
 
     throw new Error(`Failed to track shipment: ${parseDhlError(errorBody, res.statusText)}`);
   }
 
   return res.json();
 }
+
+export class DhlAddressRejected extends Error {}
 
 export async function validateAddress({
   city,
@@ -450,31 +263,25 @@ export async function validateAddress({
   const params = new URLSearchParams({
     type: "delivery",
     countryCode: normalizedCountry,
-    cityName: city
+    cityName: city,
+    strictValidation: "true",
   });
   const dhlPostal = postalForDhl(normalizedCountry, postalCode);
   if (dhlPostal) params.append("postalCode", dhlPostal);
 
-  try {
-    const res = await fetchWithRetry(`${DHL_API_BASE}/address-validate?${params.toString()}`, {
-      method: "GET",
-      headers: dhlHeaders(false),
-    });
+  const res = await fetchWithRetry(`${DHL_API_BASE}/address-validate?${params}`, {
+    method: "GET",
+    headers: dhlHeaders(false),
+  });
 
-    if (res.status === 405 || res.status === 404) {
-      console.warn("DHL address-validate not available (test env). Skipping validation.");
-      return { warnings: [], address: [] };
-    }
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      console.error("DHL Address Validate Error:", errorBody);
-      throw new Error(`Failed to validate address: ${parseDhlError(errorBody, res.statusText)}`);
-    }
-
-    return res.json();
-  } catch (err) {
-    console.warn("Address validation unavailable, skipping:", err);
-    return { warnings: [], address: [] };
+  if (res.status === 400 || res.status === 422) {
+    throw new DhlAddressRejected("DHL could not verify the city and postal code. Check your delivery address.");
   }
+  if (!res.ok) throw new Error("DHL address validation is temporarily unavailable.");
+
+  const data = await res.json();
+  if (!Array.isArray(data.address) || !data.address.length) {
+    throw new DhlAddressRejected("DHL could not verify the city and postal code. Check your delivery address.");
+  }
+  return data;
 }

@@ -6,7 +6,8 @@ import {
   getVariantStockStatus,
   resolveProductFulfillmentMode,
 } from "./variantUtils";
-import { isSizeAllowedForProduct } from "./wearSizes";
+import { findSizeStockEntry, isSizeAllowedForProduct, normalizeSizeName } from "./wearSizes";
+import { garmentWeightKg } from "./shippingWeight";
 import type {
   ItemFulfillmentType,
   OrderItem,
@@ -79,7 +80,7 @@ export const defaultPaystackOrderVerifier: PaystackOrderVerifier = async (
 };
 
 export type ShippingRateCalculator = (params: {
-  destination: { city: string; postalCode?: string; countryCode: string; addressLine1?: string };
+  destination: { city: string; postalCode?: string; countryCode: string; addressLine1?: string; region?: string };
   weightKg: number;
 }) => Promise<{ price: number }>;
 
@@ -111,6 +112,7 @@ export interface CreateOrderInput {
   destinationDetails?: {
     city: string;
     postalCode?: string;
+    region?: string;
     countryCode: string;
     addressLine1?: string;
   };
@@ -351,7 +353,9 @@ export async function createServerAuthoritativeOrder(params: {
       }
     } else if (hasColors) {
       activeMode = "solo";
-      const targetVarId = reqItem.variantId?.trim() || "main-color";
+      const targetVarId = reqItem.variantId?.trim() ||
+        variants.find((variant) => variant.type === "color" && variant.id === "main-color")?.id ||
+        variants.find((variant) => variant.type === "color")?.id;
       matchedColor =
         variants.find((v) => v.type === "color" && v.id === targetVarId) || null;
       if (!matchedColor) {
@@ -369,6 +373,7 @@ export async function createServerAuthoritativeOrder(params: {
     const sizes = Array.isArray(pRow.sizes) ? pRow.sizes : [];
     const reqSize = String(reqItem.size || "Standard").trim();
     if (
+      normalizeSizeName(reqSize) === "Custom" ||
       sizes.length > 0 ||
       String(pRow.wear_tag || "").toLowerCase() === "womens" ||
       String(reqItem.fit || "") === "Thick"
@@ -386,6 +391,16 @@ export async function createServerAuthoritativeOrder(params: {
           error: `Size "${reqSize}" is not available for ${pRow.name}.`,
         };
       }
+    }
+
+    if (activeMode === "solo" && matchedColor?.sizeStock?.length &&
+        !findSizeStockEntry(matchedColor.sizeStock, reqSize)) {
+      return {
+        ok: false,
+        status: 400,
+        code: "OPTION_UNAVAILABLE",
+        error: `Size "${reqSize}" is not available in the selected colour for ${pRow.name}.`,
+      };
     }
 
     // Evaluate Single Inventory Authority for this SKU (colour + size when sizeStock is tracked)
@@ -491,7 +506,7 @@ export async function createServerAuthoritativeOrder(params: {
 
     const unitPrice = skuStatus.unitPrice;
     subtotal += unitPrice * qty;
-    totalWeightKg += Number(pRow.weight_kg ?? 0.5) * qty;
+    totalWeightKg += garmentWeightKg(pRow.weight_kg) * qty;
 
     const itemImage =
       matchedCombo?.thumbnailUrl ||
@@ -579,11 +594,12 @@ export async function createServerAuthoritativeOrder(params: {
     const postalCode = input.destinationDetails?.postalCode?.trim() || "";
     const countryCode = input.destinationDetails?.countryCode?.trim().toUpperCase();
     const addressLine1 = input.destinationDetails?.addressLine1?.trim();
+    const region = input.destinationDetails?.region?.trim();
     const isInternational = input.shippingDestination === "international";
     if (
       !city || /[|\[\]]/.test(city + postalCode) ||
       !countryCode || !/^[A-Z]{2}$/.test(countryCode) ||
-      (isInternational ? countryCode === "GH" : countryCode !== "GH" || !addressLine1)
+      !addressLine1 || (isInternational ? countryCode === "GH" : countryCode !== "GH")
     ) {
       return {
         ok: false,
@@ -596,16 +612,17 @@ export async function createServerAuthoritativeOrder(params: {
     try {
       const calculateRate = params.calculateShippingRate || (await import("./dhl")).getShippingRates;
       const rate = await calculateRate({
-        destination: { city, postalCode, countryCode, addressLine1 },
-        weightKg: Math.max(0.5, totalWeightKg),
+        destination: { city, postalCode, countryCode, addressLine1, region },
+        weightKg: totalWeightKg,
       });
       if (!Number.isFinite(rate.price) || rate.price <= 0) {
         throw new Error("DHL Express did not return a valid shipping price.");
       }
       shippingCost = Math.round(rate.price * 100) / 100;
       shippingAddress = shippingAddress.replace(dhlSuffix, "");
-      const streetField = addressLine1 ? `|${encodeURIComponent(addressLine1)}` : "";
-      shippingAddress += ` | DHL[${city}|${postalCode}|${countryCode}${streetField}]`;
+      const streetField = addressLine1 || region ? `|${encodeURIComponent(addressLine1 ?? "")}` : "";
+      const regionField = region ? `|${encodeURIComponent(region)}` : "";
+      shippingAddress += ` | DHL[${city}|${postalCode}|${countryCode}${streetField}${regionField}]`;
       if (isInternational) shippingAddress += " (international)";
     } catch (err) {
       return {
@@ -922,6 +939,7 @@ export async function processOrderNotificationOutbox(params: {
         shippingCost: orderData.shipping_cost != null ? Number(orderData.shipping_cost) : 0,
         total: Number(orderData.total || 0),
         shippingAddress: orderData.shipping_address || "TBD",
+        orderNote: isAdminEvent ? orderData.notes : undefined,
         dateOrdered: orderData.paid_at || orderData.created_at || new Date().toISOString(),
         isAdmin: isAdminEvent,
         adminOrdersUrl,

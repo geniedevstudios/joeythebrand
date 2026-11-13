@@ -1,14 +1,13 @@
-import { Img, Link, Text } from "@react-email/components";
+import { Link, Text } from "@react-email/components";
 import * as React from "react";
 import { getEmailBaseUrl } from "@/lib/emailAssets";
+import { formatOrderAmount } from "@/lib/formatOrderAmount";
+import EmailItemRows from "./EmailItemRows";
 import EmailLayout from "./EmailLayout";
 import {
   emailColors,
   emailDetailBox,
   emailFonts,
-  emailItemMeta,
-  emailItemName,
-  emailItemPrice,
   emailParagraph,
 } from "./emailStyles";
 
@@ -72,7 +71,7 @@ export default function UnpaidCheckoutEmail({
           {isAdmin
             ? "This customer started checkout and has not paid after 15 minutes. Call or email them if you want to help finish the order."
             : orderNumber
-              ? `Paystack reported payment for order ${orderNumber} as unfinished. Return to checkout to try again, or reply for help. If you already paid, ignore this.`
+              ? `We haven’t confirmed payment for order ${orderNumber}. If you paid or see a debit, reply for help before trying again.`
               : "Checkout closed before we could confirm your payment. Your selection is saved. If you completed payment, please wait for confirmation or reply for help before trying again."}
         </Text>
         {orderNumber ? (
@@ -89,6 +88,20 @@ export default function UnpaidCheckoutEmail({
           </Text>
         ) : null}
       </div>
+
+      <EmailItemRows
+        items={items.map((item) => {
+          const meta = [item.color, item.size ? `SIZE ${item.size}` : null, `QTY ${item.quantity}`]
+            .filter(Boolean)
+            .join("  /  ");
+          return {
+            name: item.name,
+            image: item.image,
+            meta,
+            amount: item.price * item.quantity,
+          };
+        })}
+      />
 
       {isAdmin ? (
         <div style={emailDetailBox}>
@@ -111,75 +124,10 @@ export default function UnpaidCheckoutEmail({
             </Text>
           ) : null}
           {total ? (
-            <Text style={emailParagraph}>Total: GHC {Number(total).toLocaleString()}</Text>
+            <Text style={emailParagraph}>Total: {formatOrderAmount(total)}</Text>
           ) : null}
         </div>
       ) : null}
-
-      <table
-        role="presentation"
-        width="100%"
-        cellPadding={0}
-        cellSpacing={0}
-        style={{ marginTop: "12px" }}
-      >
-        <tbody>
-          {items.map((item, index) => {
-            const meta = [item.color, item.size ? `SIZE ${item.size}` : null, `QTY ${item.quantity}`]
-              .filter(Boolean)
-              .join("  /  ");
-            return (
-              <tr key={`${item.name}-${index}`}>
-                <td
-                  style={{
-                    padding: "20px 0",
-                    borderBottom:
-                      index === items.length - 1 ? "none" : `1px solid ${emailColors.divider}`,
-                  }}
-                >
-                  <table role="presentation" width="100%" cellPadding={0} cellSpacing={0}>
-                    <tbody>
-                      <tr>
-                        {item.image ? (
-                          <td width={112} style={{ verticalAlign: "top" }}>
-                            <Img
-                              src={item.image}
-                              alt={item.name}
-                              width={112}
-                              style={{
-                                display: "block",
-                                width: "112px",
-                                maxWidth: "112px",
-                                height: "auto",
-                                border: 0,
-                              }}
-                            />
-                          </td>
-                        ) : null}
-                        <td
-                          style={{
-                            verticalAlign: "middle",
-                            paddingLeft: item.image ? "20px" : "0",
-                          }}
-                        >
-                          <Text style={emailItemName}>{item.name}</Text>
-                          <Text style={emailItemMeta}>{meta}</Text>
-                          <Text style={emailItemPrice}>
-                            GHC{" "}
-                            {(
-                              Number(item.price || 0) * Number(item.quantity || 1)
-                            ).toLocaleString()}
-                          </Text>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </EmailLayout>
   );
 }

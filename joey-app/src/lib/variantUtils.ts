@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import {
   findSizeStockEntry,
+  getStorefrontSizes,
   hasSizeStockTracking,
   normalizeSizeName,
 } from "./wearSizes";
@@ -154,7 +155,7 @@ export function getVariantStockStatus(
   );
 
   const variants: ProductVariant[] = Array.isArray(product.variants) ? product.variants : [];
-  const hasColorVariants = variants.some((v) => v.type === "color");
+  const color = currentColor ?? variants.find((v) => v.type === "color");
 
   let resolvedVariantId = "base";
   let resolvedComboId = "base";
@@ -182,28 +183,35 @@ export function getVariantStockStatus(
     const comboQty =
       typeof currentCombo.quantity === "number" ? Math.max(0, currentCombo.quantity) : 0;
     physicalStock = comboOut ? 0 : comboQty;
-  } else if (hasColorVariants && currentColor) {
-    resolvedVariantId = currentColor.id || "main-color";
+  } else if (color) {
+    resolvedVariantId = color.id || "main-color";
     resolvedComboId = "base";
-    effectiveMode = resolveLeafFulfillmentMode(currentColor, productMode);
+    effectiveMode = resolveLeafFulfillmentMode(color, productMode);
     leadDays = Number(
-      currentColor.leadDays ?? currentColor.bespokeLeadDays ?? defaultLeadDays,
+      color.leadDays ?? color.bespokeLeadDays ?? defaultLeadDays,
     );
-    const hasExplicitColorQty = typeof currentColor.quantity === "number";
+    const hasExplicitColorQty = typeof color.quantity === "number";
     const rawQty = hasExplicitColorQty
-      ? Math.max(0, currentColor.quantity)
-      : currentColor.id === "main-color" && typeof product.quantity === "number"
+      ? Math.max(0, color.quantity)
+      : color.id === "main-color" && typeof product.quantity === "number"
         ? Math.max(0, product.quantity)
         : 0;
     const colorOut =
-      Boolean(currentColor.isOutOfStock) ||
-      (!hasExplicitColorQty && currentColor.id === "main-color" && Boolean(product.isOutOfStock));
+      Boolean(color.isOutOfStock) ||
+      (!hasSizeStockTracking(color.sizeStock) && !hasExplicitColorQty && color.id === "main-color" && Boolean(product.isOutOfStock));
     physicalStock = colorOut ? 0 : rawQty;
 
-    if (requestedSize && hasSizeStockTracking(currentColor.sizeStock)) {
-      const entry = findSizeStockEntry(currentColor.sizeStock, requestedSize);
-      sizeKey = entry?.size || normalizeSizeName(requestedSize);
-      physicalStock = colorOut ? 0 : entry ? entry.quantity : 0;
+    if (hasSizeStockTracking(color.sizeStock)) {
+      if (requestedSize) {
+        const entry = findSizeStockEntry(color.sizeStock, requestedSize);
+        sizeKey = entry?.size || normalizeSizeName(requestedSize);
+        physicalStock = colorOut ? 0 : entry?.quantity ?? 0;
+      } else {
+        physicalStock = colorOut ? 0 : color.sizeStock.reduce(
+          (total: number, row: { quantity: number }) => total + Math.max(0, Number(row.quantity) || 0),
+          0,
+        );
+      }
     }
   } else {
     // Simple product OR Fits-Only in "solo" ("Original") mode
@@ -211,7 +219,7 @@ export function getVariantStockStatus(
     resolvedComboId = "base";
     effectiveMode = productMode;
     leadDays = defaultLeadDays;
-    const prodOut = Boolean(product.isOutOfStock);
+    const prodOut = Boolean(product.isOutOfStock ?? product.is_out_of_stock);
     const prodQty = typeof product.quantity === "number" ? Math.max(0, product.quantity) : 0;
     physicalStock = prodOut ? 0 : prodQty;
 
@@ -276,10 +284,21 @@ export function getVariantStockStatus(
   };
 }
 
+/** Only offer sizes listed for the selected colourway. */
+export function getVariantStorefrontSizes(
+  product: Product,
+  fit?: string,
+  color?: ProductVariant | null,
+): string[] {
+  const sizes = getStorefrontSizes(product, fit);
+  if (!hasSizeStockTracking(color?.sizeStock)) return sizes;
+  return sizes.filter((size) => findSizeStockEntry(color?.sizeStock, size) !== null);
+}
+
 export function getIsSoloUnavailable(currentColor: any, product: any): boolean {
   if (!product) return false;
   const status = getVariantStockStatus(product, currentColor, null, "solo");
-  return status.isSelectedOutOfStock;
+  return status.isUnorderable;
 }
 
 /**
@@ -301,8 +320,18 @@ export function getCardFulfillmentSummary(product: any): {
   if (mode === "made_to_order_only") {
     return { isMadeToOrder: true, isSoldOut: false, leadDays };
   }
-  const qty = typeof product.quantity === "number" ? product.quantity : 0;
-  const out = Boolean(product.isOutOfStock) || qty <= 0;
+  const variants: ProductVariant[] = Array.isArray(product.variants) ? product.variants : [];
+  const colors = variants.filter((variant) => variant.type === "color");
+  const hasSoloStock = colors.length
+    ? colors.some((color) => getVariantStockStatus(product, color, null, "solo").availablePhysicalStock > 0)
+    : getVariantStockStatus(product, null, null, "solo").availablePhysicalStock > 0;
+  const hasStock = hasSoloStock || variants.some((variant) =>
+    variant.combos?.some((combo) =>
+      getVariantStockStatus(product, variant.type === "color" ? variant : null, combo, "paired")
+        .availablePhysicalStock > 0,
+    ),
+  );
+  const out = !hasStock || (mode === "stock_only" && Boolean(product.isOutOfStock));
   if (mode === "stock_then_made_to_order" && out) {
     return { isMadeToOrder: true, isSoldOut: false, leadDays };
   }

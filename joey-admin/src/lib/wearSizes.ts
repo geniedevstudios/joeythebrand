@@ -1,4 +1,4 @@
-export const WOMENS_THICK_SIZES = ["S", "M", "L", "XL", "Custom"] as const;
+export const WOMENS_THICK_SIZES = ["S", "M", "L", "XL"] as const;
 
 const ALPHA_TO_UK: Record<string, string> = {
   XS: "UK 6",

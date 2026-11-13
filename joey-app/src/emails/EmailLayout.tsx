@@ -1,6 +1,6 @@
-import { Body, Button, Head, Html, Link, Preview, Text } from "@react-email/components";
+import { Body, Button, Head, Html, Img, Link, Preview, Text } from "@react-email/components";
 import * as React from "react";
-import { EMAIL_HERO_URL, getEmailBaseUrl } from "@/lib/emailAssets";
+import { EMAIL_HERO_URL, EMAIL_LOGO_URL, getEmailBaseUrl } from "@/lib/emailAssets";
 import {
   emailColors,
   emailCta,
@@ -40,6 +40,7 @@ export default function EmailLayout({
   return (
     <Html lang="en">
       <Head>
+        <title>{`${title} · JOEY THE BRAND`}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style dangerouslySetInnerHTML={{ __html: emailResponsiveCss }} />
       </Head>
@@ -68,11 +69,13 @@ export default function EmailLayout({
                         className="hero"
                         height={240}
                         align="center"
+                        valign="middle"
+                        {...{ bgcolor: emailColors.heroFallback, background: EMAIL_HERO_URL }}
                         style={{
                           height: "240px",
                           verticalAlign: "middle",
                           backgroundColor: emailColors.heroFallback,
-                          backgroundImage: `url('${EMAIL_HERO_URL}')`,
+                          backgroundImage: `linear-gradient(rgba(39,43,54,0.62), rgba(39,43,54,0.62)), url('${EMAIL_HERO_URL}')`,
                           backgroundPosition: "center",
                           backgroundSize: "cover",
                           backgroundRepeat: "no-repeat",
@@ -81,14 +84,16 @@ export default function EmailLayout({
                         <a
                           href={baseUrl}
                           aria-label="JOEY THE BRAND website"
-                          className="hero-link"
-                          style={{
-                            display: "block",
-                            height: "240px",
-                            textDecoration: "none",
-                          }}
+                          style={{ display: "inline-block", textDecoration: "none" }}
                         >
-                          &nbsp;
+                          <Img
+                            className="email-logo"
+                            src={EMAIL_LOGO_URL}
+                            alt="JOEY THE BRAND"
+                            width={212}
+                            height={212}
+                            style={{ display: "block", border: 0, color: "#fffdfa", fontFamily: emailFonts.serif }}
+                          />
                         </a>
                       </td>
                     </tr>
@@ -101,20 +106,23 @@ export default function EmailLayout({
                               <td
                                 className="gutter"
                                 width={28}
-                                style={{ backgroundColor: emailColors.heroFallback }}
+                                {...{ bgcolor: emailColors.heroFallback }}
+                                style={{ width: "28px", backgroundColor: emailColors.heroFallback }}
                               >
                                 &nbsp;
                               </td>
                               <td
                                 height={32}
-                                style={{ backgroundColor: emailColors.panel }}
+                                {...{ bgcolor: emailColors.panel }}
+                                style={{ height: "32px", lineHeight: "32px", backgroundColor: emailColors.panel }}
                               >
                                 &nbsp;
                               </td>
                               <td
                                 className="gutter"
                                 width={28}
-                                style={{ backgroundColor: emailColors.heroFallback }}
+                                {...{ bgcolor: emailColors.heroFallback }}
+                                style={{ width: "28px", backgroundColor: emailColors.heroFallback }}
                               >
                                 &nbsp;
                               </td>
@@ -149,6 +157,7 @@ export default function EmailLayout({
                                       <tr>
                                         <td
                                           align="center"
+                                          {...{ bgcolor: emailColors.accent }}
                                           style={{ backgroundColor: emailColors.accent }}
                                         >
                                           <Button href={ctaHref} style={emailCta}>
@@ -181,7 +190,7 @@ export default function EmailLayout({
                                       style={{
                                         fontFamily: emailFonts.sans,
                                         fontSize: "11px",
-                                        color: "#88717c",
+                                        color: emailColors.muted,
                                       }}
                                     >
                                       {secondaryLabel}

@@ -1,14 +1,14 @@
-import { Img, Link, Text } from "@react-email/components";
+import { Text } from "@react-email/components";
 import * as React from "react";
 import { getEmailBaseUrl } from "@/lib/emailAssets";
+import { formatShippingAddress } from "@/lib/formatShippingAddress";
+import { formatOrderAmount } from "@/lib/formatOrderAmount";
+import EmailItemRows from "./EmailItemRows";
 import EmailLayout from "./EmailLayout";
 import {
   emailColors,
   emailDetailBox,
   emailFonts,
-  emailItemMeta,
-  emailItemName,
-  emailItemPrice,
   emailParagraph,
 } from "./emailStyles";
 
@@ -39,6 +39,7 @@ export type OrderConfirmationEmailProps = {
   shippingCost?: number;
   total: number;
   shippingAddress: string;
+  orderNote?: string;
   dateOrdered?: string;
   isAdmin?: boolean;
   adminOrdersUrl?: string;
@@ -53,10 +54,6 @@ function isItemMto(item: OrderItem): boolean {
     Boolean(item.isMadeToOrder) ||
     Boolean(item.isBespoke)
   );
-}
-
-function money(value: number) {
-  return `GHC ${Number(value || 0).toLocaleString()}`;
 }
 
 export default function OrderConfirmationEmail({
@@ -76,6 +73,7 @@ export default function OrderConfirmationEmail({
   shippingCost = 0,
   total = 175,
   shippingAddress = "123 Evergreen Lane\nAnytown, NY 45678",
+  orderNote,
   dateOrdered = new Date().toISOString(),
   isAdmin = false,
   adminOrdersUrl = DEFAULT_ADMIN_ORDERS_URL,
@@ -189,82 +187,30 @@ export default function OrderConfirmationEmail({
         </div>
       ) : null}
 
-      <table
-        role="presentation"
-        width="100%"
-        cellPadding={0}
-        cellSpacing={0}
-        style={{ marginTop: "12px" }}
-      >
-        <tbody>
-          {items.map((item, index) => {
-            const mto = isItemMto(item);
-            const lead = item.leadDays ?? item.bespokeLeadDays ?? 14;
-            const meta = [
-              item.color,
-              item.size
-                ? `SIZE ${item.size}${item.fit ? ` (${item.fit})` : ""}`
-                : null,
-              item.combo ? `COMBO ${item.combo}` : null,
-              `QTY ${item.quantity}`,
-              mto ? `MTO · ${lead}D` : null,
-            ]
-              .filter(Boolean)
-              .join("  /  ");
-            return (
-              <tr key={`${item.name}-${index}`}>
-                <td
-                  style={{
-                    padding: "20px 0",
-                    borderBottom:
-                      index === items.length - 1 ? "none" : `1px solid ${emailColors.divider}`,
-                  }}
-                >
-                  <table role="presentation" width="100%" cellPadding={0} cellSpacing={0}>
-                    <tbody>
-                      <tr>
-                        {item.image ? (
-                          <td width={112} style={{ verticalAlign: "top" }}>
-                            <Img
-                              src={item.image}
-                              alt={item.name}
-                              width={112}
-                              style={{
-                                display: "block",
-                                width: "112px",
-                                maxWidth: "112px",
-                                height: "auto",
-                                border: 0,
-                              }}
-                            />
-                          </td>
-                        ) : null}
-                        <td
-                          style={{
-                            verticalAlign: "middle",
-                            paddingLeft: item.image ? "20px" : "0",
-                          }}
-                        >
-                          <Text style={emailItemName}>{item.name}</Text>
-                          <Text style={emailItemMeta}>{meta}</Text>
-                          {mto && item.estimatedReadyDate ? (
-                            <Text style={{ ...emailItemMeta, marginTop: "6px" }}>
-                              Est. ready {item.estimatedReadyDate}
-                            </Text>
-                          ) : null}
-                          <Text style={emailItemPrice}>
-                            {money(item.price * item.quantity)}
-                          </Text>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <EmailItemRows
+        items={items.map((item) => {
+          const mto = isItemMto(item);
+          const lead = item.leadDays ?? item.bespokeLeadDays ?? 14;
+          const meta = [
+            item.color,
+            item.size
+              ? `SIZE ${item.size}${item.fit ? ` (${item.fit})` : ""}`
+              : null,
+            item.combo ? `COMBO ${item.combo}` : null,
+            `QTY ${item.quantity}`,
+            mto ? `MTO · ${lead}D` : null,
+          ]
+            .filter(Boolean)
+            .join("  /  ");
+          return {
+            name: item.name,
+            image: item.image,
+            meta,
+            amount: item.price * item.quantity,
+            detail: mto && item.estimatedReadyDate ? `Est. ready ${item.estimatedReadyDate}` : undefined,
+          };
+        })}
+      />
 
       <table role="presentation" width="100%" style={{ marginTop: "22px" }}>
         <tbody>
@@ -277,7 +223,7 @@ export default function OrderConfirmationEmail({
                 align="right"
                 style={{ fontFamily: emailFonts.sans, fontSize: "12px", color: emailColors.body }}
               >
-                {money(computedSubtotal)}
+                {formatOrderAmount(computedSubtotal)}
               </td>
             </tr>
           ) : null}
@@ -290,7 +236,7 @@ export default function OrderConfirmationEmail({
                 align="right"
                 style={{ fontFamily: emailFonts.sans, fontSize: "12px", color: emailColors.body }}
               >
-                −{money(discount)}
+                −{formatOrderAmount(discount)}
               </td>
             </tr>
           ) : null}
@@ -303,7 +249,7 @@ export default function OrderConfirmationEmail({
                 align="right"
                 style={{ fontFamily: emailFonts.sans, fontSize: "12px", color: emailColors.body }}
               >
-                {money(shippingCost)}
+                {formatOrderAmount(shippingCost)}
               </td>
             </tr>
           ) : null}
@@ -327,7 +273,7 @@ export default function OrderConfirmationEmail({
                 paddingTop: "8px",
               }}
             >
-              {money(total)}
+              {formatOrderAmount(total)}
             </td>
           </tr>
         </tbody>
@@ -346,17 +292,17 @@ export default function OrderConfirmationEmail({
           DELIVER TO
         </Text>
         <Text style={emailParagraph}>{customerName}</Text>
-        {shippingAddress.split("\n").map((line, i) => (
+        {formatShippingAddress(shippingAddress).split(/\r?\n/).map((line, i) => (
           <Text key={i} style={{ ...emailParagraph, margin: i === 0 ? "8px 0 0" : "0" }}>
             {line}
           </Text>
         ))}
         <Text style={{ ...emailParagraph, marginTop: "14px" }}>Ordered {formattedDate}</Text>
-        <Text style={emailParagraph}>
-          <Link href={`${baseUrl}/shop`} style={{ color: emailColors.accent }}>
-            Continue shopping
-          </Link>
-        </Text>
+        {isAdmin && orderNote?.trim() ? (
+          <Text style={{ ...emailParagraph, whiteSpace: "pre-wrap" }}>
+            <strong>Order note:</strong> {orderNote.trim()}
+          </Text>
+        ) : null}
       </div>
     </EmailLayout>
   );

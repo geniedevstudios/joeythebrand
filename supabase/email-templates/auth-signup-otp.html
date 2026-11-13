@@ -9,67 +9,75 @@
     <style>
       @media only screen and (max-width:480px) {
         .email-shell { padding: 0 !important; }
+        .hero { height: 200px !important; }
+        .email-logo { width: 184px !important; height: 184px !important; }
+        .gutter { width: 16px !important; }
         .panel-padding { padding: 0 18px 32px !important; }
         .headline { font-size: 28px !important; }
       }
     </style>
   </head>
-  <body style="margin:0;padding:0;background:#f0efed;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0efed;">
+  <body style="margin:0;padding:0;background:#f5f1ec;">
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">Use this code to verify your Joey account.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f1ec;">
       <tr>
         <td align="center" class="email-shell" style="padding:28px 12px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#f7f6f4;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#f9f5ef;">
             <tr>
-              <td height="120" align="center" valign="middle" bgcolor="#ecd8d7" style="height:120px;background-color:#ecd8d7;">
-                <p style="margin:0;font:9px Arial,sans-serif;font-weight:bold;letter-spacing:3px;color:#555149;">JOEY THE BRAND</p>
+              <td class="hero" height="240" align="center" valign="middle"
+                  bgcolor="#272b36" background="https://www.joeythebrand.com/collection_kpq24u.jpg"
+                  style="height:240px;background-color:#272b36;background-image:linear-gradient(rgba(39,43,54,0.62),rgba(39,43,54,0.62)),url('https://www.joeythebrand.com/collection_kpq24u.jpg');background-position:center;background-size:cover;background-repeat:no-repeat;">
+                <a href="https://www.joeythebrand.com" aria-label="JOEY THE BRAND website" style="display:inline-block;text-decoration:none;">
+                  <img class="email-logo" src="https://www.joeythebrand.com/white-logo.png" alt="JOEY THE BRAND" width="212" height="212" style="display:block;border:0;color:#fffdfa;font-family:Georgia,'Times New Roman',serif;">
+                </a>
               </td>
             </tr>
             <tr>
               <td>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td width="28" bgcolor="#ecd8d7">&nbsp;</td>
-                    <td height="32" bgcolor="#ffffff">&nbsp;</td>
-                    <td width="28" bgcolor="#ecd8d7">&nbsp;</td>
+                    <td class="gutter" width="28" bgcolor="#272b36">&nbsp;</td>
+                    <td height="32" bgcolor="#fffdfa" style="height:32px;line-height:32px;">&nbsp;</td>
+                    <td class="gutter" width="28" bgcolor="#272b36">&nbsp;</td>
                   </tr>
                   <tr>
-                    <td width="28">&nbsp;</td>
-                    <td class="panel-padding" bgcolor="#ffffff" style="padding:0 32px 40px;">
-                      <p style="margin:0;font:9px Arial,sans-serif;font-weight:bold;letter-spacing:3px;text-align:center;color:#555149;">YOUR JOEY</p>
-                      <h1 class="headline" style="margin:12px 0 0;font:normal 34px/1.15 Georgia,'Times New Roman',serif;letter-spacing:-1px;color:#24231f;text-align:center;">Confirm it’s you.</h1>
+                    <td class="gutter" width="28">&nbsp;</td>
+                    <td class="panel-padding" bgcolor="#fffdfa" style="padding:0 32px 40px;">
+                      <p style="margin:0;font:9px Arial,sans-serif;font-weight:bold;letter-spacing:3px;text-align:center;color:#685c54;">YOUR JOEY</p>
+                      <h1 class="headline" style="margin:12px 0 0;font:normal 34px/1.15 Georgia,'Times New Roman',serif;letter-spacing:-1px;color:#272b36;text-align:center;">Confirm it’s you.</h1>
                       <div style="text-align:center;">
-                        <p style="margin:14px 0 0;font:14px/1.7 Arial,Helvetica,sans-serif;color:#77746d;">Hello,</p>
-                        <p style="margin:14px 0 0;font:14px/1.7 Arial,Helvetica,sans-serif;color:#77746d;">Enter this 6-digit code to finish creating your account. It expires in 10 minutes.</p>
-                        <p style="margin:28px 0 0;font:32px/1 Georgia,'Times New Roman',serif;letter-spacing:10px;text-align:center;color:#24231f;">{{ .Token }}</p>
+                        <p style="margin:14px 0 0;font:14px/1.7 Arial,Helvetica,sans-serif;color:#5c554e;">Hello,</p>
+                        <p style="margin:14px 0 0;font:14px/1.7 Arial,Helvetica,sans-serif;color:#5c554e;">Enter this 6-digit code to finish creating your account.</p>
+                        <p style="margin:28px 0 0;font:32px/1 Georgia,'Times New Roman',serif;letter-spacing:10px;text-align:center;color:#272b36;">{{ .Token }}</p>
                       </div>
                       <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:28px auto 0;">
                         <tr>
-                          <td align="center" bgcolor="#4c2938">
-                            <a href="https://www.joeythebrand.com" style="display:inline-block;padding:16px 32px;border:1px solid #4c2938;color:#fff;text-decoration:none;font:10px Arial;letter-spacing:2px;">VISIT JOEY THE BRAND</a>
+                          <td align="center" bgcolor="#272b36">
+                            <a href="https://www.joeythebrand.com" style="display:inline-block;padding:16px 32px;border:1px solid #272b36;color:#fffdfa;text-decoration:none;font:10px Arial;letter-spacing:2px;">VISIT JOEY THE BRAND</a>
                           </td>
                         </tr>
                       </table>
-                      <p style="margin:22px 0 0;font:12px/1.7 Arial;color:#96928b;text-align:center;">Do not share this code. JOEY will never ask for it by email or DM.</p>
+                      <p style="margin:22px 0 0;font:12px/1.7 Arial;color:#685c54;text-align:center;">Do not share this code. JOEY will never ask for it by email or DM.</p>
                     </td>
-                    <td width="28">&nbsp;</td>
+                    <td class="gutter" width="28">&nbsp;</td>
                   </tr>
                 </table>
               </td>
             </tr>
             <tr>
-              <td align="center" style="padding:32px 24px 0;font:16px/1.5 Georgia;color:#77746d;">Structure. Symbolism. Identity.</td>
+              <td align="center" style="padding:32px 24px 0;font:16px/1.5 Georgia;color:#5c554e;">Structure. Symbolism. Identity.</td>
             </tr>
             <tr>
-              <td align="center" style="padding:14px 24px 0;font:11px/1.6 Arial;color:#96928b;">
+              <td align="center" style="padding:14px 24px 0;font:11px/1.6 Arial;color:#685c54;">
                 Connect with us<br>
-                <a href="https://www.instagram.com/joeythebrand/" style="color:#77746d;text-decoration:none;">@joeythebrand</a>
+                <a href="https://www.instagram.com/joeythebrand/" style="color:#5c554e;text-decoration:none;">@joeythebrand</a>
               </td>
             </tr>
             <tr>
               <td align="center" style="padding:24px 40px 28px;">
-                <div style="border-top:1px solid #dedbd5;padding-top:18px;font:10px/1.8 Arial;color:#96928b;">
+                <div style="border-top:1px solid #dfd7ce;padding-top:18px;font:10px/1.8 Arial;color:#685c54;">
                   © JOEY THE BRAND. All rights reserved.<br>
-                  <a href="https://www.joeythebrand.com" style="color:#77746d;text-decoration:none;">joeythebrand.com</a>
+                  <a href="https://www.joeythebrand.com" style="color:#5c554e;text-decoration:none;">joeythebrand.com</a>
                 </div>
               </td>
             </tr>

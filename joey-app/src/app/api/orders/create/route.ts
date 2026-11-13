@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       destinationDetails?: {
         city: string;
         postalCode?: string;
+        region?: string;
         countryCode: string;
         addressLine1?: string;
       };

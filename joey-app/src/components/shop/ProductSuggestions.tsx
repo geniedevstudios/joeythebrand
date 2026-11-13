@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { getCardFulfillmentSummary } from "@/lib/variantUtils";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
 import { wishlistStore } from "@/store/wishlistStore";
@@ -107,15 +108,12 @@ export default function ProductSuggestions({
                     </div>
                     <div className={productStyles.suggestPickMeWrap}>
                       {(() => {
-                        const isBespoke = !!(
-                          item.fulfillmentMode === "made_to_order_only" ||
-                          (item.bespokeAvailable && item.quantity <= 0)
-                        );
-                        return isBespoke ? (
+                        const { isMadeToOrder, isSoldOut } = getCardFulfillmentSummary(item);
+                        return isMadeToOrder ? (
                           <Link href={`/shop/${item.slug || item.id}`} className={productStyles.suggestPickMeBtn}>
                             Made to Order
                           </Link>
-                        ) : item.isOutOfStock ? (
+                        ) : isSoldOut ? (
                           <span className={`${productStyles.suggestPickMeBtn} ${shopStyles.soldOutBtn}`}>
                             Sold Out
                           </span>

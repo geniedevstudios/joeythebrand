@@ -9,7 +9,7 @@ type Props = {
   label: string;
   value: string;
   onChange: (url: string) => void;
-  /** Folder on Cloudinary, e.g. "heroes/home" or "about" */
+  /** Media upload folder, e.g. "heroes/home" or "about" */
   uploadFolder: string;
   accept: string;
   placeholder?: string;

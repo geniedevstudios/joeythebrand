@@ -17,6 +17,7 @@ import type {
 } from "./types";
 import { supabase } from "./supabase";
 import { siteContentWithPageHeroes } from "./pageHeroes";
+import { canSetManualOrderStatus, isDhlOrder } from "./orderStatusRules";
 
 function normalizeWearTag(v: unknown): WearTag {
   if (v === "mens" || v === "womens" || v === "unisex") return v;
@@ -69,6 +70,7 @@ const mapProduct = (row: Record<string, unknown>): Product => {
     bespokeLeadDays: leadDays,
     weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
     hsCode: (row.hs_code as string) || undefined,
+    customsProfile: (row.customs_profile as Product["customsProfile"]) || undefined,
     variants: (row.variants as any) || [],
   };
 };
@@ -144,6 +146,10 @@ const mapOrder = (row: Record<string, unknown>): Order => ({
   dhlTrackingNumber: row.dhl_tracking_number as string | undefined,
   dhlLabelUrl: row.dhl_label_url as string | undefined,
   dhlStatus: row.dhl_status as string | undefined,
+  dhlParcel: (row.dhl_parcel as Order["dhlParcel"]) ?? undefined,
+  dhlShipmentClaimedAt: row.dhl_shipment_claimed_at as string | undefined,
+  dhlPickupClaimedAt: row.dhl_pickup_claimed_at as string | undefined,
+  dhlPickupConfirmation: row.dhl_pickup_confirmation as string | undefined,
   statusHistory: (typeof row.dhl_status === "string" && row.dhl_status.startsWith("[")) 
     ? JSON.parse(row.dhl_status) 
     : [],
@@ -503,6 +509,7 @@ export const dataStore = {
     if (updates.bespokeLeadDays !== undefined) payload.bespoke_lead_days = updates.bespokeLeadDays;
     if (updates.weightKg !== undefined) payload.weight_kg = updates.weightKg;
     if (updates.hsCode !== undefined) payload.hs_code = updates.hsCode;
+    if (updates.customsProfile !== undefined) payload.customs_profile = updates.customsProfile;
     if (updates.variants !== undefined) payload.variants = updates.variants;
 
     const { error } = await supabase.from("products").update(payload).eq("id", id);
@@ -546,6 +553,7 @@ export const dataStore = {
       bespoke_lead_days: leadDays,
       weight_kg: product.weightKg ?? null,
       hs_code: product.hsCode ?? null,
+      customs_profile: product.customsProfile ?? null,
       variants: product.variants ?? [],
     });
     if (error) throw new Error(error.message);
@@ -613,37 +621,43 @@ export const dataStore = {
   },
 
   updateOrderStatus: async (id: string, status: OrderStatus): Promise<void> => {
-    // Fetch the current order to get its dhl_status (where we store history for local orders)
     const { data: currentOrder, error: fetchError } = await supabase
       .from("orders")
-      .select("dhl_status, dhl_tracking_number")
+      .select("status, shipping_address, dhl_status, dhl_tracking_number, dhl_shipment_claimed_at")
       .eq("id", id)
       .single();
 
     if (fetchError) throw new Error(fetchError.message);
-
-    const payload: Record<string, unknown> = {
-      status,
-      updated_at: new Date().toISOString()
+    const shipment = {
+      shippingAddress: currentOrder.shipping_address,
+      dhlTrackingNumber: currentOrder.dhl_tracking_number,
+      dhlShipmentClaimedAt: currentOrder.dhl_shipment_claimed_at,
     };
+    if (!canSetManualOrderStatus(shipment, status)) {
+      throw new Error("This status cannot be set manually for this order.");
+    }
 
-    // If it's a domestic order (no DHL tracking), we store history in dhl_status
-    if (!currentOrder.dhl_tracking_number) {
+    const timestamp = new Date().toISOString();
+    const payload: Record<string, unknown> = { status, updated_at: timestamp };
+    const isDhl = isDhlOrder(shipment);
+    if (!isDhl) {
       let history: { status: string; timestamp: string }[] = [];
       if (typeof currentOrder.dhl_status === "string" && currentOrder.dhl_status.startsWith("[")) {
         try {
-          history = JSON.parse(currentOrder.dhl_status);
-        } catch(e) {}
+          const parsed: unknown = JSON.parse(currentOrder.dhl_status);
+          if (Array.isArray(parsed)) history = parsed;
+        } catch {
+          // A malformed history should not prevent an order update.
+        }
       }
-      history.push({ status, timestamp: new Date().toISOString() });
-      payload.dhl_status = JSON.stringify(history);
+      payload.dhl_status = JSON.stringify([...history, { status, timestamp }]);
     }
 
-    const { error } = await supabase
-      .from("orders")
-      .update(payload)
-      .eq("id", id);
+    let update = supabase.from("orders").update(payload).eq("id", id).eq("status", currentOrder.status);
+    if (isDhl) update = update.is("dhl_tracking_number", null).is("dhl_shipment_claimed_at", null);
+    const { data: saved, error } = await update.select("id").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!saved) throw new Error("The order changed. Refresh and try again.");
     dataStore.notify();
   },
 

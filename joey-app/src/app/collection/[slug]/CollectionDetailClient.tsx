@@ -19,7 +19,7 @@ import { ShopProductGridSkeleton } from "@/components/shop/ShopProductGridSkelet
 import ProductMedia from "@/components/shop/ProductMedia";
 import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
 import ProductNameRow from "@/components/shop/ProductNameLabels";
-import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
+import { getVariantStockStatus, getIsSoloUnavailable, getVariantStorefrontSizes, getCardFulfillmentSummary } from "@/lib/variantUtils";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { getStorefrontSizes } from "@/lib/wearSizes";
 
@@ -272,7 +272,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
   }, [quickViewPiece]);
 
   const quickViewActiveVariant = useMemo(() => {
-    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
+    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId) ?? quickViewColorVariants[0];
   }, [quickViewColorVariants, quickViewColorVariantId]);
 
   const quickViewActiveCombo = useMemo(() => {
@@ -520,8 +520,8 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
 
                         <div className={shopStyles.pickMeWrap}>
                           {(() => {
-                            const isBespoke = !!(p.bespokeAvailable && p.quantity <= 0);
-                            return isBespoke ? (
+                            const { isMadeToOrder, isSoldOut } = getCardFulfillmentSummary(p);
+                            return isMadeToOrder ? (
                               <Link
                                 href={`/shop/${p.slug || p.id}`}
                                 className={shopStyles.pickMeBtn}
@@ -529,7 +529,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                               >
                                 Made to Order
                               </Link>
-                            ) : p.isOutOfStock ? (
+                            ) : isSoldOut ? (
                               <span className={`${shopStyles.pickMeBtn} ${shopStyles.soldOutBtn}`}>
                                 Sold Out
                               </span>
@@ -578,7 +578,10 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
             </button>
             <div className={styles.modalGrid}>
               {(() => {
-                const quickViewStockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+                const quickViewStockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode, undefined, selectedSize);
+                const quickViewMaxQty = quickViewStockStatus.isMadeToOrderProduct
+                  ? quickViewStockStatus.mtoMaxQtyPerOrder
+                  : quickViewStockStatus.availablePhysicalStock;
                 return (
                   <>
               <div className={styles.modalGallery}>
@@ -680,10 +683,12 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                         {quickViewColorVariants.map((v: any) => (
                           <button
                             key={v.id}
-                            className={`${styles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
+                            className={`${styles.colorSelectorBtn} ${quickViewActiveVariant?.id === v.id ? styles.colorSelectorBtnActive : ""}`}
                             style={{ backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center" }}
                             onClick={() => {
                               setQuickViewColorVariantId(v.id);
+                              setSelectedSize("");
+                              setQty(1);
                               const isSoloUnavailable = getIsSoloUnavailable(v, quickViewPiece);
                               const hasCombos = v.combos && v.combos.length > 0;
                               if (isSoloUnavailable && hasCombos) {
@@ -771,7 +776,7 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                         <button
                           key={fit}
                           className={`${styles.fitBtn} ${quickViewFit === fit ? styles.fitBtnActive : ""}`}
-                          onClick={() => { setQuickViewFit(fit); setSelectedSize(""); }}
+                          onClick={() => { setQuickViewFit(fit); setSelectedSize(""); setQty(1); }}
                         >
                           {fit}
                         </button>
@@ -783,11 +788,11 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                 <div className={styles.modalSizeRow}>
                   <span className={styles.qtyLabel}>Size:</span>
                   <div className={styles.sizeGrid}>
-                    {getAvailableSizes(quickViewPiece, quickViewFit).map((sz: string) => (
+                    {getVariantStorefrontSizes(quickViewPiece, quickViewFit, quickViewActiveVariant).map((sz: string) => (
                       <button
                         key={sz}
                         className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
-                        onClick={() => setSelectedSize(prev => prev === sz ? "" : sz)}
+                        onClick={() => { setSelectedSize(prev => prev === sz ? "" : sz); setQty(1); }}
                       >
                         {formatSizeLabel(sz, quickViewFit, quickViewPiece.wearTag)}
                       </button>
@@ -813,13 +818,13 @@ export default function CollectionDetailClient({ slug }: CollectionDetailClientP
                       className={styles.qtyBtn} 
                       onClick={() => {
                         const isBespoke = quickViewStockStatus.isBespokeProduct;
-                        if (isBespoke || qty < quickViewStockStatus.maxStock) {
+                        if (qty < quickViewMaxQty) {
                           setQty(qty + 1);
                         } else {
-                          toast.error(`Only ${quickViewStockStatus.maxStock} items available.`);
+                          toast.error(`Only ${quickViewMaxQty} items available.`);
                         }
                       }}
-                      disabled={!quickViewStockStatus.isBespokeProduct && qty >= quickViewStockStatus.maxStock}
+                      disabled={qty >= quickViewMaxQty}
                     >+</button>
                   </div>
                 </div>

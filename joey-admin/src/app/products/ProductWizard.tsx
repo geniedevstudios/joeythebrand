@@ -11,6 +11,8 @@ import type {
 import { X, Plus, Trash2 } from "lucide-react";
 import AdminStyledSelect from "@/components/AdminStyledSelect";
 import { toast } from "sonner";
+import CustomsFields from "./CustomsFields";
+import type { CustomsProfile } from "@/lib/customsProfile";
 import {
   ColourwaysField,
   colourwaysFrom,
@@ -56,8 +58,8 @@ export default function ProductWizard({
   const [featured, setFeatured] = useState(false);
   const [bespokeLeadDays, setBespokeLeadDays] = useState<number | "">(14);
   const [mtoMaxQtyPerOrder, setMtoMaxQtyPerOrder] = useState<number | "">(5);
-  const [weightKg, setWeightKg] = useState<number | "">(0.5);
-  const [hsCode, setHsCode] = useState("");
+  const [weightKg, setWeightKg] = useState<number | "">("");
+  const [customsProfile, setCustomsProfile] = useState<CustomsProfile>({ verified: false, components: [] });
   const [variants, setVariants] = useState<DraftColour[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -91,7 +93,7 @@ export default function ProductWizard({
       );
       setIsPublished(editingProduct.isPublished !== false);
       setBadgeType(
-        editingProduct.isOutOfStock && resolvedMode === "stock_only"
+        editingProduct.isOutOfStock && editingProduct.quantity > 0 && resolvedMode === "stock_only"
           ? "isOutOfStock"
           : editingProduct.isLimited
             ? "isLimited"
@@ -102,8 +104,8 @@ export default function ProductWizard({
       setFeatured(editingProduct.featured || false);
       setBespokeLeadDays(editingProduct.madeToOrderLeadDays ?? editingProduct.bespokeLeadDays ?? 14);
       setMtoMaxQtyPerOrder(editingProduct.mtoMaxQtyPerOrder ?? 5);
-      setWeightKg(editingProduct.weightKg ?? 0.5);
-      setHsCode(editingProduct.hsCode || "");
+      setWeightKg(editingProduct.weightKg || "");
+      setCustomsProfile(editingProduct.customsProfile ?? { verified: false, components: [] });
       const sizes =
         (editingProduct.wearTag || "unisex") === "womens" ? [...UK_SIZES] : [...STANDARD_SIZES];
       setVariants(colourwaysFrom(editingProduct, sizes));
@@ -121,8 +123,8 @@ export default function ProductWizard({
       setFeatured(false);
       setBespokeLeadDays(14);
       setMtoMaxQtyPerOrder(5);
-      setWeightKg(0.5);
-      setHsCode("");
+      setWeightKg("");
+      setCustomsProfile({ verified: false, components: [] });
       setUploadKey(`draft-${Date.now()}`);
       setVariants([blankColour([...STANDARD_SIZES])]);
     }
@@ -183,7 +185,7 @@ export default function ProductWizard({
     }
 
     const finalDetails = detailsLines.map((s) => s.trim()).filter(Boolean);
-    const isOutOfStock = isMtoForm ? false : badgeType === "isOutOfStock";
+    const isOutOfStock = fulfillmentMode === "stock_only" && badgeType === "isOutOfStock";
     const isLimited = badgeType === "isLimited";
     const isBestSeller = badgeType === "isBestSeller";
     const finalLeadDays = Number(bespokeLeadDays) || 14;
@@ -232,7 +234,7 @@ export default function ProductWizard({
       bespokeAvailable: fulfillmentMode !== "stock_only",
       bespokeLeadDays: finalLeadDays,
       weightKg: Number(weightKg) || 0,
-      hsCode: hsCode.trim(),
+      customsProfile,
       variants: committed.colourways,
     };
 
@@ -374,7 +376,7 @@ export default function ProductWizard({
                 <p className="mt-1 text-xs text-zinc-500">
                   {wearTag === "womens"
                     ? "Women’s sizes use the UK chart (UK 8–22)."
-                    : "Sizes start at S through XXL, plus Custom."}
+                    : "Sizes run from S through XXL."}
                 </p>
               </div>
 
@@ -382,7 +384,7 @@ export default function ProductWizard({
                 <span className={LABEL}>Label</span>
                 <AdminStyledSelect
                   name="badgeType"
-                  defaultValue={badgeType}
+                  value={mtoWhenSoldOut && badgeType === "isOutOfStock" ? "none" : badgeType}
                   onValueChange={setBadgeType}
                   options={[
                     { value: "none", label: "None" },
@@ -411,7 +413,10 @@ export default function ProductWizard({
                   <input
                     type="checkbox"
                     checked={mtoWhenSoldOut}
-                    onChange={(e) => setMtoWhenSoldOut(e.target.checked)}
+                    onChange={(e) => {
+                      setMtoWhenSoldOut(e.target.checked);
+                      if (e.target.checked && badgeType === "isOutOfStock") setBadgeType("none");
+                    }}
                     className="mt-0.5 rounded border-zinc-300"
                   />
                   <span>
@@ -508,33 +513,21 @@ export default function ProductWizard({
                 </label>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <label className="block">
-                  <span className={LABEL}>Weight · kg</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(e.target.value ? Number(e.target.value) : "")}
-                    className={FIELD}
-                  />
-                </label>
-                <div>
-                  <span className={LABEL}>HS code</span>
-                  <AdminStyledSelect
-                    name="hsCode"
-                    defaultValue={hsCode || "620442"}
-                    onValueChange={setHsCode}
-                    wrapperClassName="mt-1"
-                    options={[
-                      { value: "620442", label: "620442 — Women's dresses" },
-                      { value: "620319", label: "620319 — Men's suits" },
-                      { value: "621142", label: "621142 — Women's garments" },
-                      { value: "610910", label: "610910 — T-shirts" },
-                    ]}
-                  />
-                </div>
-              </div>
+              <label className="block">
+                <span className={LABEL}>Garment weight (kg)</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(e.target.value ? Number(e.target.value) : "")}
+                  className={FIELD}
+                />
+                <span className="mt-1 block text-xs text-zinc-600">
+                  Weigh everything included in one unit, before shipping packaging. For Made to Order, use a representative sample.
+                </span>
+              </label>
+              <CustomsFields profile={customsProfile} legacyCode={editingProduct?.hsCode} onChange={setCustomsProfile} />
             </div>
           </div>
 

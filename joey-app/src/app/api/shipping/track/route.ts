@@ -6,8 +6,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const trackingNumber = searchParams.get("trackingNumber");
 
-    if (!trackingNumber) {
-      return NextResponse.json({ error: "Missing trackingNumber parameter" }, { status: 400 });
+    if (!trackingNumber || !/^\d{10}$/.test(trackingNumber)) {
+      return NextResponse.json({ error: "Enter a valid DHL waybill number" }, { status: 400 });
     }
 
     const data = await trackShipment(trackingNumber);

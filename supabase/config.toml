@@ -16,3 +16,11 @@ additional_redirect_urls = [
 
 [auth.email]
 otp_length = 6
+
+[auth.email.template.confirmation]
+subject = "JOEY THE BRAND · Your verification code"
+content_path = "./supabase/email-templates/auth-signup-otp.html"
+
+[auth.email.template.recovery]
+subject = "JOEY THE BRAND · Your password reset code"
+content_path = "./supabase/email-templates/auth-reset-password.html"

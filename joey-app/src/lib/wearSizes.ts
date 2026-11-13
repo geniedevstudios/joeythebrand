@@ -1,4 +1,4 @@
-export const WOMENS_THICK_SIZES = ["S", "M", "L", "XL", "Custom"] as const;
+export const WOMENS_THICK_SIZES = ["S", "M", "L", "XL"] as const;
 export const WOMENS_UK_SIZES = [
   "UK 8",
   "UK 10",
@@ -8,9 +8,8 @@ export const WOMENS_UK_SIZES = [
   "UK 18",
   "UK 20",
   "UK 22",
-  "Custom",
 ] as const;
-export const MENS_DEFAULT_SIZE_NAMES = ["S", "M", "L", "XL", "XXL", "Custom"] as const;
+export const MENS_DEFAULT_SIZE_NAMES = ["S", "M", "L", "XL", "XXL"] as const;
 
 const ALPHA_TO_UK: Record<string, string> = {
   XS: "UK 6",
@@ -75,7 +74,7 @@ function wearTagOf(product: WearSizeProduct | null | undefined): string {
 
 function availableSizes(product: WearSizeProduct | null | undefined): SizeLike[] {
   const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
-  return sizes.filter((s) => s?.name && s.available !== false);
+  return sizes.filter((s) => s?.name && s.available !== false && normalizeSizeName(s.name) !== "Custom");
 }
 
 function uniqueNames(names: string[]): string[] {
@@ -85,17 +84,9 @@ function uniqueNames(names: string[]): string[] {
     const n = normalizeSizeName(name);
     if (!n || seen.has(n)) continue;
     seen.add(n);
-    out.push(n === "CUSTOM" ? "Custom" : n);
+    out.push(n);
   }
   return out;
-}
-
-function hasCustom(available: SizeLike[]): boolean {
-  return available.some((s) => normalizeSizeName(String(s.name)) === "Custom");
-}
-
-function thickSizes(includeCustom: boolean): string[] {
-  return includeCustom ? [...WOMENS_THICK_SIZES] : ["S", "M", "L", "XL"];
 }
 
 /** Storefront buttons: Standard uses UK names, Thick uses S–XL. */
@@ -105,22 +96,22 @@ export function getStorefrontSizes(
 ): string[] {
   const wear = wearTagOf(product);
   const available = availableSizes(product);
-  const customOn = available.length === 0 || hasCustom(available);
+  const hasListedSizes = Array.isArray(product?.sizes);
+  if (hasListedSizes && !available.length) return [];
 
   if (wear === "womens") {
-    if (fit === "Thick") return thickSizes(true);
+    if (fit === "Thick") return [...WOMENS_THICK_SIZES];
     if (available.length === 0) return [...WOMENS_UK_SIZES];
     return uniqueNames(
       available.map((s) => {
         const n = normalizeSizeName(String(s.name));
-        if (n === "Custom") return "Custom";
         return ALPHA_TO_UK[n] || n;
       }),
     );
   }
 
   if (wear === "unisex") {
-    if (fit === "Women") return thickSizes(customOn);
+    if (fit === "Women") return [...WOMENS_THICK_SIZES];
     if (available.length > 0) return uniqueNames(available.map((s) => String(s.name)));
     return [...MENS_DEFAULT_SIZE_NAMES];
   }
@@ -135,19 +126,19 @@ export function isSizeAllowedForProduct(
   fit?: string,
 ): boolean {
   const req = normalizeSizeName(size);
-  if (!req) return false;
+  if (!req || req === "Custom") return false;
   const wear = wearTagOf(product);
   const fitName = String(fit || "").trim();
 
   if (wear === "womens" && fitName === "Thick") {
-    return WOMENS_THICK_SIZES.some((s) => s === req || (req === "CUSTOM" && s === "Custom"));
+    return WOMENS_THICK_SIZES.some((s) => s === req);
   }
   if (wear === "unisex" && fitName === "Women") {
-    return WOMENS_THICK_SIZES.some((s) => s === req || (req === "CUSTOM" && s === "Custom"));
+    return WOMENS_THICK_SIZES.some((s) => s === req);
   }
 
   const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
-  if (sizes.length === 0) return true;
+  if (sizes.length === 0) return !Array.isArray(product?.sizes);
 
   const aliases = sizeAliases(req);
   return aliases.some((alias) =>

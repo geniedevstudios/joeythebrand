@@ -58,7 +58,6 @@ export const DEFAULT_SIZES: ProductSize[] = [
   { name: "L", available: true },
   { name: "XL", available: true },
   { name: "XXL", available: true },
-  { name: "Custom", available: true },
 ];
 
 export const WOMENS_DEFAULT_SIZES: ProductSize[] = [
@@ -70,7 +69,6 @@ export const WOMENS_DEFAULT_SIZES: ProductSize[] = [
   { name: "UK 18", available: true },
   { name: "UK 20", available: true },
   { name: "UK 22", available: true },
-  { name: "Custom", available: true },
 ];
 
 export const DEFAULT_SITE_CONTENT: SiteContent = {
@@ -578,6 +576,7 @@ export const dataStore = {
       addressLine1?: string;
       city: string;
       postalCode?: string;
+      region?: string;
       countryCode: string;
     };
     promotionCode?: string;

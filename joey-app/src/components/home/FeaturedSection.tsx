@@ -17,7 +17,7 @@ import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
 import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
 import styles from "./FeaturedSection.module.css";
-import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
+import { getVariantStockStatus, getIsSoloUnavailable, getVariantStorefrontSizes, getCardFulfillmentSummary } from "@/lib/variantUtils";
 
 const EMPTY_PRODUCTS: Product[] = [];
 const EMPTY_WISHLIST: WishlistItem[] = [];
@@ -146,7 +146,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
   }, [quickViewPiece]);
 
   const quickViewActiveVariant = useMemo(() => {
-    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
+    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId) ?? quickViewColorVariants[0];
   }, [quickViewColorVariants, quickViewColorVariantId]);
 
   const quickViewActiveCombo = useMemo(() => {
@@ -284,7 +284,10 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
 
               <div className={styles.modalGrid}>
                 {(() => {
-                  const quickViewStockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+                  const quickViewStockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode, undefined, selectedSize);
+                  const quickViewMaxQty = quickViewStockStatus.isMadeToOrderProduct
+                    ? quickViewStockStatus.mtoMaxQtyPerOrder
+                    : quickViewStockStatus.availablePhysicalStock;
                   return (
                     <>
                 <div className={styles.modalGallery}>
@@ -384,10 +387,12 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                         {quickViewColorVariants.map((v: any) => (
                           <button
                             key={v.id}
-                            className={`${styles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
+                            className={`${styles.colorSelectorBtn} ${quickViewActiveVariant?.id === v.id ? styles.colorSelectorBtnActive : ""}`}
                             style={{ backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center" }}
                             onClick={() => {
                               setQuickViewColorVariantId(v.id);
+                              setSelectedSize("");
+                              setQty(1);
                               const isSoloUnavailable = getIsSoloUnavailable(v, quickViewPiece);
                               const hasCombos = v.combos && v.combos.length > 0;
                               if (isSoloUnavailable && hasCombos) {
@@ -476,7 +481,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                             key={fit}
                             type="button"
                             className={`${styles.fitBtn} ${selectedFit === fit ? styles.fitBtnActive : ""}`}
-                            onClick={() => { setSelectedFit(fit); setSelectedSize(""); }}
+                            onClick={() => { setSelectedFit(fit); setSelectedSize(""); setQty(1); }}
                           >
                             {fit}
                           </button>
@@ -488,7 +493,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                   <div className={styles.modalSizeRow}>
                     <span className={styles.qtyLabel}>Size:</span>
                     <div className={styles.sizeGrid}>
-                      {getAvailableSizes(quickViewPiece, selectedFit).map((sz: string) => (
+                      {getVariantStorefrontSizes(quickViewPiece, selectedFit, quickViewActiveVariant).map((sz: string) => (
                         <button
                           key={sz}
                           type="button"
@@ -507,11 +512,6 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       Size Guide
                     </button>
                   </div>
-                  {selectedSize === "Custom" && (
-                    <p className={styles.customNotice}>
-                      Custom sizing selected. We will contact you for measurements after checkout.
-                    </p>
-                  )}
 
                   {(() => {
                     const isBespoke = quickViewStockStatus.isBespokeProduct;
@@ -539,13 +539,13 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                           className={styles.qtyBtn}
                           onClick={() => {
                             const isBespoke = quickViewStockStatus.isBespokeProduct;
-                            if (isBespoke || qty < quickViewStockStatus.maxStock) {
+                            if (qty < quickViewMaxQty) {
                               setQty(qty + 1);
                             } else {
-                              toast.error(`Only ${quickViewStockStatus.maxStock} items available.`);
+                              toast.error(`Only ${quickViewMaxQty} items available.`);
                             }
                           }}
-                          disabled={!quickViewStockStatus.isBespokeProduct && qty >= quickViewStockStatus.maxStock}
+                          disabled={qty >= quickViewMaxQty}
                         >
                           +
                         </button>
@@ -722,7 +722,7 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       aria-label="Quick view"
                       title="Quick view"
                       onClick={() => setQuickViewPiece(item)}
-                      disabled={item.isOutOfStock}
+                      disabled={getCardFulfillmentSummary(item).isSoldOut}
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/>

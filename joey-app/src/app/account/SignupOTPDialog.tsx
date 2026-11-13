@@ -135,8 +135,7 @@ export function SignupOTPDialog({ email, onBack }: Props) {
 
         <button
           type="submit"
-          className="btn btn-primary btn-lg"
-          style={{ width: "100%", justifyContent: "center", marginTop: "var(--space-lg)" }}
+          className={styles.solidButton}
           disabled={isVerifying || code.length !== DIGITS}
         >
           {isVerifying ? "Verifying…" : "Verify & continue"}

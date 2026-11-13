@@ -1,9 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { wishlistStore } from "@/store/wishlistStore";
-import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { toast } from "sonner";
 import styles from "./CheckoutClient.module.css";
 import { cartStore } from "@/store/cartStore";
@@ -11,10 +8,12 @@ import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import CustomSelect from "@/components/CustomSelect";
 import { INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS, countryNameFromIso2 } from "@/lib/countrySelectOptions";
-import type { Order } from "@/lib/types";
-import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import type { CartItem } from "@/store/cartStore";
-import ProductMedia from "@/components/shop/ProductMedia";
+import { ArrowLeft, CreditCard, Smartphone } from "lucide-react";
+import CheckoutSummary from "./CheckoutSummary";
+import { formatShippingAddress } from "@/lib/formatShippingAddress";
+import { formatOrderAmount } from "@/lib/formatOrderAmount";
+import CheckoutConfirmation, { type ConfirmedCheckout } from "./CheckoutConfirmation";
 
 const EMPTY_ARRAY: CartItem[] = [];
 
@@ -73,13 +72,11 @@ function buildShippingAddress(
 }
 
 export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: boolean }) {
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const items = useSyncExternalStore(cartStore.subscribe, cartStore.getCart, () => EMPTY_ARRAY);
   const appliedPromo = useSyncExternalStore(cartStore.subscribe, cartStore.getAppliedPromo, () => null);
 
   const [shippingDestination, setShippingDestination] = useState<ShippingDestination>("ghana");
-  const [dhlQuote, setDhlQuote] = useState<{ request: object; price: number | null } | null>(null);
+  const [dhlQuote, setDhlQuote] = useState<{ request: object; price: number | null; error?: string } | null>(null);
   const [selectedDhlQuote, setSelectedDhlQuote] = useState<typeof dhlQuote>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("card");
   const [formData, setFormData] = useState({
@@ -97,7 +94,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [placedOrder, setPlacedOrder] = useState<any>(null);
+  const [confirmation, setConfirmation] = useState<ConfirmedCheckout | null>(null);
   const [partialStockConflict, setPartialStockConflict] = useState<{
     productId: string;
     skuKey: string;
@@ -136,14 +133,15 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   const city = formData.city.trim();
   const addressLine1 = formData.address.trim();
   const postalCode = isGhana ? "" : formData.postalCode.trim();
+  const region = isGhana ? regionLabel(formData.region) : formData.stateOrProvince.trim();
   const addressReady = !!(countryCode && city && addressLine1 && (!isGhana || formData.region));
   const quoteRequest = useMemo(() => {
     if (!dhlEnabled || !addressReady || items.length === 0) return null;
     return {
-      destination: { countryCode, city, addressLine1, postalCode },
-      items: items.map(({ weightKg, quantity }) => ({ weightKg: weightKg || 0.5, quantity })),
+      destination: { countryCode, city, addressLine1, postalCode, region },
+      items: items.map(({ productId, quantity }) => ({ productId, quantity })),
     };
-  }, [dhlEnabled, addressReady, countryCode, city, addressLine1, postalCode, items]);
+  }, [dhlEnabled, addressReady, countryCode, city, addressLine1, postalCode, region, items]);
 
   const currentQuote = dhlQuote?.request === quoteRequest ? dhlQuote : null;
   const calculatedDhlPrice = currentQuote?.price ?? null;
@@ -154,9 +152,8 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   const subtotalRaw = items.reduce((acc, current) => acc + (current.price * current.quantity), 0);
   const discount = appliedPromo?.discount || 0;
   const total = subtotalRaw - discount + shippingCost;
-  const formattedSubtotal = `GHC ${subtotalRaw.toLocaleString()}`;
-  const formattedShipping = selectedShippingOption === "dhl" ? `GHC ${shippingCost.toLocaleString()}` : "TBD";
-  const formattedTotal = `GHC ${total.toLocaleString()}`;
+  const dhlLabel = isGhana ? "DHL Express Domestic" : "DHL Express Worldwide";
+  const arrangedLabel = isGhana ? "Local courier" : "Custom shipping";
 
   useEffect(() => {
     if (!quoteRequest) return;
@@ -165,11 +162,6 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
     const { signal } = controller;
     const timer = setTimeout(async () => {
       try {
-        const { city, countryCode, postalCode } = quoteRequest.destination;
-        const params = new URLSearchParams({ city, countryCode, postalCode });
-        const validation = await fetch(`/api/shipping/validate?${params}`, { signal });
-        if (!validation.ok) throw new Error("DHL could not validate this address");
-
         const response = await fetch("/api/shipping/rates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -177,6 +169,10 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
           signal,
         });
         const data = await response.json();
+        if (response.status === 422 && data.code === "ADDRESS_REJECTED") {
+          if (!signal.aborted) setDhlQuote({ request: quoteRequest, price: null, error: data.error });
+          return;
+        }
         if (!response.ok || typeof data.price !== "number" || !Number.isFinite(data.price) || data.price <= 0) {
           throw new Error("DHL could not quote this address");
         }
@@ -243,12 +239,6 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
         formData,
         selectedShippingOption,
       );
-      const notes =
-        (formData.notes ? formData.notes + "\n\n" : "") +
-          (selectedShippingOption === "dhl"
-            ? `Selected Shipping: DHL Express ${isGhana ? "Domestic" : "Worldwide"}`
-            : isGhana ? "" : "Selected Shipping: Custom Sales Contact") || undefined;
-
       // 1. Server-Authoritative Order Creation + Atomic SKU Reservation
       const { order: placed, paystackReference, amountPesewas } =
         await dataStore.placeOrder({
@@ -259,10 +249,10 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
           shippingOption: selectedShippingOption,
           shippingAddress,
           destinationDetails: selectedShippingOption === "dhl"
-            ? { city, postalCode, countryCode, addressLine1 }
+            ? { city, postalCode, countryCode, addressLine1, region }
             : undefined,
           promotionCode: appliedPromo?.code,
-          notes,
+          notes: formData.notes.trim() || undefined,
           items: items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
@@ -311,8 +301,15 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                 throw new Error(verifyData.error || "Verification failed");
               }
 
+              setConfirmation({
+                order: placed,
+                amountPaid: amountPesewas / 100,
+                deliveryMethod: selectedShippingOption === "dhl" ? dhlLabel : arrangedLabel,
+                deliveryAddress: formatShippingAddress(shippingAddress),
+                deliveryFeePending: selectedShippingOption === "sales",
+                needsReview: verifyData.stockConflictFlagged === true || verifyData.orderStatus === "paid_requires_resolution",
+              });
               cartStore.clearCart();
-              setPlacedOrder(placed);
             } catch (err) {
               toast.error(
                 err instanceof Error
@@ -349,466 +346,181 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
       setIsSubmitting(false);
     }
   };
-  if (placedOrder) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.pageHeader}>
-          <div className="container">
-            <span className="section-label">Order Confirmed</span>
-            <h1 className={styles.pageTitle}>Thank You!</h1>
-          </div>
-        </div>
-        <div className="container section">
-          <div className={styles.successScreen}>
-            <div className={styles.successIconWrap}>
-              <svg className={styles.successIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-            </div>
-            <h2 className={styles.successTitle}>Your order is complete</h2>
-            <p className={styles.successText}>
-              Order number <strong>{formatOrderNumber(placedOrder)}</strong> has been successfully placed. You can find your order details in your account.
-            </p>
-            <div className={styles.successActions}>
-              <Link href="/account" className={`btn ${styles.submitBtnPrimary} ${styles.actionBtn}`}>View My Account</Link>
-              <Link href="/shop" className={`btn ${styles.submitBtnSecondary} ${styles.actionBtn}`}>Continue Shopping</Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (confirmation) return <CheckoutConfirmation confirmation={confirmation} />;
 
   if (items.length === 0) {
     return (
       <div className={styles.page}>
-        <div className={styles.pageHeader}>
-          <div className="container">
-            <span className="section-label">Checkout</span>
-            <h1 className={styles.pageTitle}>Your Order</h1>
-          </div>
-        </div>
-        <div className="container section">
-          <div className={styles.emptyCart}>
-            <p>Your cart is empty.</p>
-            <Link href="/shop" className="btn btn-primary">
-              Start Shopping
-            </Link>
-          </div>
-        </div>
+        <section className={`${styles.shell} ${styles.emptyCart}`}>
+          <h1 className={styles.pageTitle}>Checkout</h1>
+          <p>Your bag is empty.</p>
+          <Link href="/shop" className={styles.primaryButton}>Explore the shop</Link>
+        </section>
       </div>
     );
   }
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <div className="container">
-          <span className="section-label">Checkout</span>
-          <h1 className={styles.pageTitle}>Complete Your Order</h1>
-        </div>
-      </div>
+      <div className={styles.shell}>
+        <header className={styles.pageHeader}>
+          <Link href="/cart" className={styles.backLink}><ArrowLeft size={16} aria-hidden="true" /> Back to bag</Link>
+          <h1 className={styles.pageTitle}>Checkout</h1>
+        </header>
 
-      <div className={`container ${styles.checkoutLayout}`}>
-        <div className={styles.formSection}>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <h2 className={styles.sectionTitle}>Delivery</h2>
-            <fieldset className={styles.destinationFieldset}>
-              <legend className={`form-label ${styles.destinationLegend}`}>
-                Where should we send your order?
-              </legend>
-              <div className={styles.choiceRow}>
-                <label
-                  className={`${styles.choiceChip} ${shippingDestination === "ghana" ? styles.choiceChipActive : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="shippingDestination"
-                    value="ghana"
-                    checked={shippingDestination === "ghana"}
-                    onChange={() => handleDestinationChange("ghana")}
-                  />
-                  <span className={styles.choiceChipTitle}>Within Ghana</span>
-                  <span className={styles.choiceChipMeta}>City &amp; region</span>
-                </label>
-                <label
-                  className={`${styles.choiceChip} ${shippingDestination === "international" ? styles.choiceChipActive : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="shippingDestination"
-                    value="international"
-                    checked={shippingDestination === "international"}
-                    onChange={() => handleDestinationChange("international")}
-                  />
-                  <span className={styles.choiceChipTitle}>Outside Ghana</span>
-                  <span className={styles.choiceChipMeta}>International</span>
-                </label>
-              </div>
-            </fieldset>
-
-            <h2 className={styles.sectionTitle}>Contact Information</h2>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">Email Address</label>
-              <input
-                id="email" name="email" type="email" className="form-input"
-                placeholder="your@email.com" value={formData.email}
-                onChange={handleChange} required
-              />
-            </div>
-
-            <div className={styles.formRow}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="firstName">First Name</label>
-                <input id="firstName" name="firstName" type="text" className="form-input"
-                  placeholder="First name" value={formData.firstName}
-                  onChange={handleChange} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="lastName">Last Name</label>
-                <input id="lastName" name="lastName" type="text" className="form-input"
-                  placeholder="Last name" value={formData.lastName}
-                  onChange={handleChange} required />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="phone">Phone Number</label>
-              <input id="phone" name="phone" type="tel" className="form-input"
-                placeholder={shippingDestination === "ghana" ? "+233 XX XXX XXXX" : "Include country code"}
-                value={formData.phone}
-                onChange={handleChange} required />
-            </div>
-
-            <h2 className={styles.sectionTitle}>
-              {shippingDestination === "ghana" ? "Delivery Details" : "Shipping Address"}
-            </h2>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="address">Street Address</label>
-              <input id="address" name="address" type="text" className="form-input"
-                placeholder="House number, street name" value={formData.address}
-                onChange={handleChange} required />
-            </div>
-
-            {shippingDestination === "ghana" ? (
+        <div className={styles.checkoutLayout}>
+          <form id="checkout-form" onSubmit={handleSubmit} className={styles.form}>
+            <section className={styles.formCard} aria-labelledby="contact-title">
+              <h2 id="contact-title" className={styles.sectionTitle}>Contact details</h2>
               <div className={styles.formRow}>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="city">City</label>
-                  <input id="city" name="city" type="text" className="form-input"
-                    placeholder="Accra" value={formData.city}
-                    onChange={handleChange} required />
+                  <label className="form-label" htmlFor="firstName">First name</label>
+                  <input id="firstName" name="firstName" autoComplete="given-name" className="form-input" value={formData.firstName} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" id="region-label">Region</label>
-                  <CustomSelect
-                    id="region" name="region" value={formData.region}
-                    onChange={handleChange} options={regionOptions}
-                    placeholder="Select region"
-                    required={shippingDestination === "ghana"}
-                  />
+                  <label className="form-label" htmlFor="lastName">Last name</label>
+                  <input id="lastName" name="lastName" autoComplete="family-name" className="form-input" value={formData.lastName} onChange={handleChange} required />
                 </div>
               </div>
-            ) : (
-              <>
-                <div className={styles.formRow}>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="city">City</label>
-                    <input id="city" name="city" type="text" className="form-input"
-                      placeholder="City" value={formData.city}
-                      onChange={handleChange} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="stateOrProvince">State / Province</label>
-                    <input id="stateOrProvince" name="stateOrProvince" type="text" className="form-input"
-                      placeholder="Region, state, or county" value={formData.stateOrProvince}
-                      onChange={handleChange} required />
-                  </div>
+              <div className={styles.formRow}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="email">Email address</label>
+                  <input id="email" name="email" type="email" autoComplete="email" className="form-input" placeholder="you@example.com" value={formData.email} onChange={handleChange} required />
                 </div>
-                <p className={styles.fieldHint}>
-                  Use &quot;N/A&quot; if your address does not include a state or province.
-                </p>
-                <div className={styles.formRow}>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="postalCode">
-                      Postal / ZIP code{" "}
-                      <span style={{ fontWeight: 300, color: "var(--cinereous)" }}>(optional)</span>
-                    </label>
-                    <input id="postalCode" name="postalCode" type="text" className="form-input"
-                      placeholder="Postal or ZIP code" value={formData.postalCode}
-                      onChange={handleChange} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" id="country-label" htmlFor="country">Country</label>
-                    <CustomSelect
-                      id="country"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleChange}
-                      options={INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS}
-                      placeholder="Select country"
-                      required
-                      listMaxHeight={320}
-                    />
-                    <p className={styles.countryShippingHint}>
-                      Delivering within Ghana? Choose <strong>Within Ghana</strong> at the top.
-                    </p>
-                  </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="phone">Phone number</label>
+                  <input id="phone" name="phone" type="tel" autoComplete="tel" className="form-input" placeholder={isGhana ? "+233 XX XXX XXXX" : "Include country code"} value={formData.phone} onChange={handleChange} required />
                 </div>
-              </>
-            )}
+              </div>
+            </section>
 
-            {(!isGhana || dhlEnabled) && (
-              <div className={styles.shippingOptionsSection}>
-                <h2 className={styles.sectionTitle}>Shipping Method</h2>
+            <section className={styles.formCard} aria-labelledby="delivery-title">
+              <h2 id="delivery-title" className={styles.sectionTitle}>Delivery</h2>
+              <fieldset className={styles.fieldset}>
+                <legend>Destination</legend>
                 <div className={styles.choiceRow}>
-                  {dhlEnabled ? (
-                    <label
-                      className={`${styles.choiceChip} ${selectedShippingOption === "dhl" ? styles.choiceChipActive : ""} ${calculatedDhlPrice == null ? styles.choiceChipDisabled : ""}`}
-                    >
-                      <input
-                        type="radio"
-                        name="shippingOption"
-                        value="dhl"
-                        checked={selectedShippingOption === "dhl"}
-                        disabled={calculatedDhlPrice == null}
-                        onChange={() => setSelectedDhlQuote(currentQuote)}
-                      />
-                      <span className={styles.choiceChipTitle}>
-                        <img src="/dhl-logo.svg" alt="" className={styles.dhlLogoImg} /> {isGhana ? "DHL Express Domestic" : "DHL"}
-                      </span>
-                      <span className={styles.choiceChipMeta}>
-                        {isCalculatingShipping
-                          ? "Getting rate…"
-                          : calculatedDhlPrice != null
-                            ? `GHC ${calculatedDhlPrice.toLocaleString()}`
-                            : addressReady ? "Unavailable" : "Enter your delivery address"}
-                      </span>
-                    </label>
-                  ) : null}
-                  <label
-                    className={`${styles.choiceChip} ${selectedShippingOption === "sales" ? styles.choiceChipActive : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name="shippingOption"
-                      value="sales"
-                      checked={selectedShippingOption === "sales"}
-                      onChange={() => setSelectedDhlQuote(null)}
-                    />
-                    <span className={styles.choiceChipTitle}>{isGhana ? "Local Courier" : "Custom Shipping"}</span>
-                    <span className={styles.choiceChipMeta}>Sales will arrange · TBD</span>
+                  <label className={styles.choiceChip}>
+                    <input type="radio" name="shippingDestination" value="ghana" checked={isGhana} onChange={() => handleDestinationChange("ghana")} />
+                    <span className={styles.choiceTitle}>Within Ghana</span>
+                  </label>
+                  <label className={styles.choiceChip}>
+                    <input type="radio" name="shippingDestination" value="international" checked={!isGhana} onChange={() => handleDestinationChange("international")} />
+                    <span className={styles.choiceTitle}>Outside Ghana</span>
                   </label>
                 </div>
-                {isCalculatingShipping ? (
-                  <p className={styles.choiceHint}>Getting a DHL rate for this address…</p>
-                ) : currentQuote?.price === null || !dhlEnabled ? (
-                  <p className={styles.choiceHint}>
-                    {dhlEnabled
-                      ? `DHL could not quote this address. Choose ${isGhana ? "Local Courier" : "Custom Shipping"} and we will contact you to arrange delivery.`
-                      : "DHL Express is not live yet. Choose Custom Shipping and we will arrange delivery with you."}
-                  </p>
-                ) : selectedShippingOption === "sales" ? (
-                  <p className={styles.choiceHint}>Our salesperson will contact you to arrange delivery.</p>
-                ) : null}
-              </div>
-            )}
+              </fieldset>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="notes">
-                Order Notes <span style={{ fontWeight: 300, color: "var(--cinereous)" }}>(optional)</span>
-              </label>
-              <textarea id="notes" name="notes" className="form-input" rows={3}
-                placeholder="Any special instructions for your order"
-                value={formData.notes} onChange={handleChange} />
-            </div>
-
-            <h2 className={styles.sectionTitle}>Payment Method</h2>
-            <div className={styles.choiceRow}>
-              <label className={`${styles.choiceChip} ${paymentMethod === "card" ? styles.choiceChipActive : ""}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="card"
-                  checked={paymentMethod === "card"}
-                  onChange={() => setPaymentMethod("card")}
-                />
-                <span className={styles.choiceChipTitle}>Card</span>
-                <span className={styles.choiceChipMeta}>Visa, Mastercard</span>
-              </label>
-              <label className={`${styles.choiceChip} ${paymentMethod === "mobile_money" ? styles.choiceChipActive : ""}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="mobile_money"
-                  checked={paymentMethod === "mobile_money"}
-                  onChange={() => setPaymentMethod("mobile_money")}
-                />
-                <span className={styles.choiceChipTitle}>Mobile Money</span>
-                <span className={styles.choiceChipMeta}>MTN, Telecel, AirtelTigo</span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className={`${styles.submitBtn} ${styles.submitBtnPrimary}`}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Processing..." : `Place Order — ${formattedTotal}`}
-            </button>
-          </form>
-        </div>
-
-        <div className={styles.summarySection}>
-          <h2 className={styles.sectionTitle}>Order Summary</h2>
-          <div className={styles.itemsList}>
-            {items.map((item) => (
-              <div key={`${item.id}-${item.size}`} className={styles.summaryItem}>
-                <div className={styles.itemImgWrap}>
-                  <ProductMedia src={item.image} alt={item.name} className={styles.itemImg} />
-                  <span className={styles.itemQty}>{item.quantity}</span>
+              {!isGhana && (
+                <div className="form-group">
+                  <label className="form-label" id="country-label">Country</label>
+                  <CustomSelect id="country" name="country" value={formData.country} onChange={handleChange}
+                    options={INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS} placeholder="Select country" required listMaxHeight={320} />
                 </div>
-                <div className={styles.itemInfo}>
-                  <span className={styles.itemName}>{item.name}</span>
-                  {(item.color || item.colorHex) && (
-                    <div className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", marginTop: "2px", display: "flex", alignItems: "center", gap: "6px", textTransform: "capitalize" }}>
-                      Color: {item.colorHex ? <span style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: item.colorHex || "#ccc", backgroundImage: item.image ? `url(${item.image})` : "none", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid #ccc", display: "inline-block" }} title={item.color} /> : item.color}
-                    </div>
-                  )}
-                  {item.combo && <span className={styles.itemVariant} style={{ fontSize: "12px", color: "var(--cinereous)", display: "block", marginTop: "2px", textTransform: "capitalize" }}>Combo: {item.combo}</span>}
-                  <span className={styles.itemSize}>
-                    {formatSizeLabel(item.size, item.fit, item.wearTag)}{item.fit ? ` — ${item.fit} Fit` : ""}
-                  </span>
-                  {(item.isMadeToOrder || item.isBespoke || item.fulfillmentChoice === "made_to_order") && (
-                    <span style={{ fontSize: "11px", color: "#3f3f46", background: "#f4f4f5", border: "1px solid #e4e4e7", padding: "2px 7px", borderRadius: "4px", marginTop: "3px", display: "inline-block", fontWeight: 600 }}>
-                      Made to Order · {item.leadDays || item.bespokeLeadDays || 14} days
-                    </span>
-                  )}
-                </div>
-                <span className={styles.itemPrice}>GHC {(item.price * item.quantity).toLocaleString()}</span>
+              )}
+              <div className="form-group">
+                <label className="form-label" htmlFor="address">Street address</label>
+                <input id="address" name="address" autoComplete="shipping address-line1" className="form-input"
+                  placeholder="House number and street" value={formData.address} onChange={handleChange} required />
               </div>
-            ))}
-          </div>
-
-          {(() => {
-            const hasMto = items.some(
-              (i) => i.isMadeToOrder || i.isBespoke || i.fulfillmentChoice === "made_to_order",
-            );
-            const hasRtw = items.some(
-              (i) => !(i.isMadeToOrder || i.isBespoke || i.fulfillmentChoice === "made_to_order"),
-            );
-            const maxLead = items.reduce(
-              (m, i) =>
-                i.isMadeToOrder || i.isBespoke || i.fulfillmentChoice === "made_to_order"
-                  ? Math.max(m, i.leadDays || i.bespokeLeadDays || 14)
-                  : m,
-              0,
-            );
-            if (!hasMto) return null;
-            return (
-              <div
-                style={{
-                  marginTop: "16px",
-                  padding: "12px 14px",
-                  borderRadius: "8px",
-                  background: "#f4f4f5",
-                  border: "1px solid #d4d4d8",
-                  color: "#3f3f46",
-                  fontSize: "12.5px",
-                  lineHeight: 1.5,
-                }}
-              >
-                {hasRtw ? (
-                  <>
-                    <strong>Combined Shipment:</strong> Your cart includes both Ready to Wear and Made to Order pieces. By default, your order will ship together once Made to Order production is complete ({maxLead || 14} days from verified payment).
-                  </>
+              <div className={`${styles.formRow} ${isGhana ? "" : styles.internationalAddressRow}`}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="city">City or town</label>
+                  <input id="city" name="city" autoComplete="shipping address-level2" className="form-input"
+                    value={formData.city} onChange={handleChange} required />
+                </div>
+                {isGhana ? (
+                  <div className="form-group">
+                    <label className="form-label" id="region-label">Region</label>
+                    <CustomSelect id="region" name="region" value={formData.region} onChange={handleChange}
+                      options={regionOptions} placeholder="Select region" required />
+                  </div>
                 ) : (
-                  <>
-                    <strong>Made to Order Production:</strong> Production lead time ({maxLead || 14} days) begins once payment is verified, prior to shipping.
-                  </>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="stateOrProvince">State or province</label>
+                    <input id="stateOrProvince" name="stateOrProvince" autoComplete="shipping address-level1" className="form-input"
+                      placeholder="N/A if it doesn’t apply" value={formData.stateOrProvince} onChange={handleChange} required />
+                  </div>
+                )}
+                {!isGhana && (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="postalCode">Postal code <span className={styles.optional}>(optional)</span></label>
+                    <input id="postalCode" name="postalCode" autoComplete="shipping postal-code" className="form-input"
+                      value={formData.postalCode} onChange={handleChange} />
+                  </div>
                 )}
               </div>
-            );
-          })()}
 
-          <div className={styles.totals}>
-            <div className={styles.totalRow}>
-              <span>Subtotal</span>
-              <span>{formattedSubtotal}</span>
-            </div>
-            {discount > 0 && (
-              <div className={styles.totalRow} style={{ color: "#22aa22" }}>
-                <span>Discount ({appliedPromo?.code})</span>
-                <span>-GHC {discount.toLocaleString()}</span>
+              {(!isGhana || dhlEnabled) && (
+                <fieldset className={styles.fieldset}>
+                  <legend>Delivery method</legend>
+                  <div className={styles.choiceRow}>
+                    {dhlEnabled && (
+                      <label className={styles.choiceChip}>
+                        <input type="radio" name="shippingOption" value="dhl" checked={selectedShippingOption === "dhl"}
+                          disabled={calculatedDhlPrice == null} onChange={() => setSelectedDhlQuote(currentQuote)} />
+                        <span className={styles.choiceTitle}>{dhlLabel}</span>
+                        <span className={styles.choiceMeta} aria-live="polite">
+                          {isCalculatingShipping
+                            ? "Checking rate…"
+                            : calculatedDhlPrice != null
+                              ? formatOrderAmount(calculatedDhlPrice)
+                              : addressReady ? currentQuote?.error ?? "Rate unavailable" : "Enter your address for a rate"}
+                        </span>
+                      </label>
+                    )}
+                    <label className={styles.choiceChip}>
+                      <input type="radio" name="shippingOption" value="sales" checked={selectedShippingOption === "sales"} onChange={() => setSelectedDhlQuote(null)} />
+                      <span className={styles.choiceTitle}>{arrangedLabel}</span>
+                      <span className={styles.choiceMeta}>Fee confirmed after checkout</span>
+                    </label>
+                  </div>
+                </fieldset>
+              )}
+              <div className="form-group">
+                <label className="form-label" htmlFor="notes">Order note <span className={styles.optional}>(optional)</span></label>
+                <textarea id="notes" name="notes" className="form-input" rows={2} placeholder="Landmark or delivery instructions"
+                  value={formData.notes} onChange={handleChange} />
               </div>
-            )}
-            {selectedShippingOption === "sales" ? (
-              <div style={{ padding: "16px 0", borderBottom: "1px solid var(--color-border)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <span>{shippingDestination === "ghana" ? "Delivery" : "Shipping"}</span>
-                  <span>{formattedShipping}</span>
+            </section>
+
+            <section className={styles.formCard} aria-labelledby="payment-title">
+              <h2 id="payment-title" className={styles.sectionTitle}>Payment</h2>
+              <fieldset className={styles.fieldset}>
+                <legend className={styles.srOnly}>Payment method</legend>
+                <div className={styles.choiceRow}>
+                  <label className={styles.choiceChip}>
+                    <input type="radio" name="paymentMethod" value="card" checked={paymentMethod === "card"} onChange={() => setPaymentMethod("card")} />
+                    <span className={styles.choiceTitle}><CreditCard size={17} aria-hidden="true" /> Card</span>
+                    <span className={styles.choiceMeta}>Visa or Mastercard</span>
+                  </label>
+                  <label className={styles.choiceChip}>
+                    <input type="radio" name="paymentMethod" value="mobile_money" checked={paymentMethod === "mobile_money"} onChange={() => setPaymentMethod("mobile_money")} />
+                    <span className={styles.choiceTitle}><Smartphone size={17} aria-hidden="true" /> Mobile Money</span>
+                    <span className={styles.choiceMeta}>MTN, Telecel or AirtelTigo</span>
+                  </label>
                 </div>
-                <div style={{ fontSize: "13px", color: "var(--cinereous)", background: "var(--color-bg-secondary)", padding: "12px", borderRadius: "6px", display: "flex", gap: "8px", alignItems: "flex-start", lineHeight: 1.4 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: "2px" }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                  <span>Delivery is arranged after checkout. Our team will contact you to confirm the delivery fee and timing.</span>
-                </div>
-              </div>
-            ) : (
-              <div className={styles.totalRow}>
-                <span>Shipping</span>
-                <span>{formattedShipping}</span>
-              </div>
-            )}
-            <div className={`${styles.totalRow} ${styles.totalFinal}`}>
-              <span>{selectedShippingOption === "sales" ? "Due now" : "Total"}</span>
-              <span>{formattedTotal}</span>
-            </div>
-          </div>
+              </fieldset>
+            </section>
+          </form>
+
+          <CheckoutSummary items={items} subtotal={subtotalRaw} discount={discount} promoCode={appliedPromo?.code}
+            shippingCost={selectedShippingOption === "dhl" ? shippingCost : null} total={total} submitting={isSubmitting} />
         </div>
       </div>
 
       {partialStockConflict ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="partial-stock-modal-title"
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "12px",
-              maxWidth: "480px",
-              width: "100%",
-              padding: "28px",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
-            }}
-          >
-            <h3
-              id="partial-stock-modal-title"
-              style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "10px", color: "#111" }}
-            >
-              Choose Your Fulfilment Option
-            </h3>
-            <p style={{ fontSize: "0.92rem", color: "#444", lineHeight: 1.55, marginBottom: "20px" }}>
+        <div className={styles.conflictBackdrop} role="dialog" aria-modal="true" aria-labelledby="partial-stock-modal-title">
+          <div className={styles.conflictDialog}>
+            <h3 id="partial-stock-modal-title" className={styles.sectionTitle}>Choose a fulfilment option</h3>
+            <p>
               You requested <strong>{partialStockConflict.requestedQty}</strong> of{" "}
               <strong>{partialStockConflict.itemName}</strong>, but only{" "}
               <strong>{partialStockConflict.availableStock}</strong> unit(s) are currently in Ready to Wear stock. How would you like to proceed?
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className={styles.conflictActions}>
               <button
                 type="button"
-                className="btn btn-primary"
+                className={styles.primaryButton}
                 onClick={() => {
                   const target = items.find((i) => i.productId === partialStockConflict.productId);
                   if (target) {
@@ -831,7 +543,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
               {partialStockConflict.requestedQty <= partialStockConflict.mtoMaxQtyPerOrder ? (
                 <button
                   type="button"
-                  className="btn btn-outline"
+                  className={styles.secondaryButton}
                   onClick={() => {
                     const target = items.find((i) => i.productId === partialStockConflict.productId);
                     if (target) {
@@ -855,15 +567,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
               <button
                 type="button"
                 onClick={() => setPartialStockConflict(null)}
-                style={{
-                  marginTop: "6px",
-                  background: "none",
-                  border: "none",
-                  color: "#666",
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                }}
+                className={styles.cancelButton}
               >
                 Cancel
               </button>

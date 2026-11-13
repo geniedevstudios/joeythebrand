@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AdminDropdownChevron } from "./AdminDropdownChevron";
 import {
@@ -9,7 +9,7 @@ import {
   adminDropdownOptionButtonClass,
 } from "./adminFormClasses";
 
-type Option = { value: string; label: string };
+type Option = { value: string; label: string; alwaysVisible?: boolean };
 
 type AdminStyledSelectProps = {
   name?: string;
@@ -24,6 +24,7 @@ type AdminStyledSelectProps = {
   /** Called when the user picks a different option (not used with forms alone). */
   onValueChange?: (value: string) => void;
   disabled?: boolean;
+  searchPlaceholder?: string;
 };
 
 export default function AdminStyledSelect({
@@ -36,12 +37,15 @@ export default function AdminStyledSelect({
   labelledBy,
   onValueChange,
   disabled = false,
+  searchPlaceholder,
 }: AdminStyledSelectProps) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? "");
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
 
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const listId = useId();
   /** Panel opens downward (default) or upward when there is more room above. */
   const [placement, setPlacement] = useState<"below" | "above">("below");
   const [menuTop, setMenuTop] = useState(0);
@@ -51,7 +55,9 @@ export default function AdminStyledSelect({
   const [menuMaxH, setMenuMaxH] = useState(320);
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLUListElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (defaultValue !== undefined && !isControlled) {
@@ -108,6 +114,7 @@ export default function AdminStyledSelect({
 
   useEffect(() => {
     if (!open) return;
+    searchRef.current?.focus();
     const onDoc = (e: MouseEvent) => {
       const t = e.target as Node;
       if (rootRef.current?.contains(t)) return;
@@ -115,7 +122,11 @@ export default function AdminStyledSelect({
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (menuRef.current?.contains(document.activeElement)) triggerRef.current?.focus();
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
@@ -126,14 +137,22 @@ export default function AdminStyledSelect({
   }, [open]);
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? value;
+  const query = search.trim().toLowerCase();
+  const visibleOptions = searchPlaceholder && query
+    ? options.filter((option) => option.alwaysVisible || `${option.value} ${option.label}`.toLowerCase().includes(query))
+    : options;
+
+  function openMenu() {
+    setSearch("");
+    setOpen(true);
+  }
 
   const panel =
     open &&
     typeof document !== "undefined" &&
     createPortal(
-      <ul
+      <div
         ref={menuRef}
-        role="listbox"
         className={`${adminDropdownPanelBaseClass} fixed z-[300]`}
         style={{
           left: menuLeft,
@@ -144,51 +163,84 @@ export default function AdminStyledSelect({
             ? { bottom: menuBottom, top: "auto" as const }
             : { top: menuTop, bottom: "auto" as const }),
         }}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+          const buttons = Array.from(menuRef.current?.querySelectorAll("button") ?? []);
+          const current = buttons.findIndex((button) => button === document.activeElement);
+          const next = event.key === "ArrowDown" ? buttons[current + 1] : buttons[current - 1];
+          event.preventDefault();
+          if (next) next.focus();
+          else if (event.key === "ArrowUp" && current === 0) searchRef.current?.focus();
+        }}
       >
-        {options.map((opt) => {
-          const isActive = opt.value === value;
-          return (
-            <li key={opt.value} role="option" aria-selected={isActive}>
-              <button
-                type="button"
-                className={adminDropdownOptionButtonClass(isActive)}
-                onClick={() => {
-                  if (opt.value === value) {
+        {searchPlaceholder && (
+          <div className="sticky top-0 bg-white px-2 pb-1 pt-1">
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              aria-label={searchPlaceholder}
+              placeholder={searchPlaceholder}
+              className="w-full rounded-xl border border-[#b6b7ba]/80 px-3 py-2 text-sm text-[#1c1e22] focus-visible:outline focus-visible:outline-[#b6b7ba]"
+            />
+          </div>
+        )}
+        <ul id={listId} role="listbox" aria-labelledby={labelledBy}>
+          {visibleOptions.map((opt) => {
+            const isActive = opt.value === value;
+            return (
+              <li key={opt.value} role="option" aria-selected={isActive}>
+                <button
+                  type="button"
+                  className={adminDropdownOptionButtonClass(isActive)}
+                  onClick={() => {
                     setOpen(false);
-                    return;
-                  }
-                  if (!isControlled) {
-                    setInternalValue(opt.value);
-                  }
-                  setOpen(false);
-                  onValueChange?.(opt.value);
-                }}
-              >
-                {opt.label}
-              </button>
-            </li>
-          );
-        })}
-      </ul>,
-      document.body,
+                    triggerRef.current?.focus();
+                    if (isActive) return;
+                    if (!isControlled) setInternalValue(opt.value);
+                    onValueChange?.(opt.value);
+                  }}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {visibleOptions.length === 0 && <p role="status" className="px-3.5 py-2.5 text-sm text-zinc-600">No matching options</p>}
+      </div>,
+      rootRef.current?.closest("dialog[open]") ?? document.body,
     );
 
   return (
     <div className={["relative", wrapperClassName].filter(Boolean).join(" ")} ref={rootRef}>
       <input type="hidden" name={name} value={value} required={required} />
       <button
+        ref={triggerRef}
         type="button"
         className={`${adminDropdownTriggerClass} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
         disabled={disabled}
         onClick={() => {
           if (disabled) return;
-          setOpen((o) => !o);
+          if (open) setOpen(false);
+          else openMenu();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowDown") return;
+          event.preventDefault();
+          if (!open) {
+            openMenu();
+            if (!searchPlaceholder) requestAnimationFrame(() => menuRef.current?.querySelector("button")?.focus());
+          } else {
+            (searchRef.current ?? menuRef.current?.querySelector("button"))?.focus();
+          }
         }}
         aria-haspopup="listbox"
+        aria-controls={open ? listId : undefined}
         aria-expanded={open}
-        {...(labelledBy ? { "aria-labelledby": labelledBy } : {})}
+        {...(labelledBy ? { "aria-labelledby": `${labelledBy} ${listId}-value` } : {})}
       >
-        <span className="min-w-0 truncate text-left">{selectedLabel}</span>
+        <span id={`${listId}-value`} className="min-w-0 truncate text-left">{selectedLabel}</span>
         <AdminDropdownChevron open={open} />
       </button>
       {panel}

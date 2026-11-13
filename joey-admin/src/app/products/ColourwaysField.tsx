@@ -7,7 +7,7 @@ import { AvailableSizesField } from "./AvailableSizesField";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
-export const STANDARD_SIZES = ["S", "M", "L", "XL", "XXL", "Custom"] as const;
+export const STANDARD_SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 export const UK_SIZES = [
   "UK 8",
   "UK 10",
@@ -17,7 +17,6 @@ export const UK_SIZES = [
   "UK 18",
   "UK 20",
   "UK 22",
-  "Custom",
 ] as const;
 
 type DraftColour = ProductVariant & {

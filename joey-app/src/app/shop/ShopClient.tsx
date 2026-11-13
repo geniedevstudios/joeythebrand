@@ -12,7 +12,6 @@ import CollectionsSection from "@/components/home/CollectionsSection";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore } from "@/lib/dataStore";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
-import { getStorefrontSizes } from "@/lib/wearSizes";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
 import { PAGE_HERO_SHELL_CLASS, usePageHeroShellRenderProps } from "@/hooks/usePageHero";
@@ -20,7 +19,7 @@ import ProductMedia from "@/components/shop/ProductMedia";
 import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
 import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
-import { getVariantStockStatus, getIsSoloUnavailable } from "@/lib/variantUtils";
+import { getVariantStockStatus, getIsSoloUnavailable, getVariantStorefrontSizes, getCardFulfillmentSummary } from "@/lib/variantUtils";
 
 const MAX_SEARCH_RESULTS = 6;
 
@@ -237,8 +236,6 @@ export default function ShopClient() {
     }, 400);
   };
 
-  const getAvailableSizes = (prod: any, fit?: string) => getStorefrontSizes(prod, fit);
-
   const filtered = useMemo(() => {
     let list = products;
     if (selectedCollectionSlug) {
@@ -270,7 +267,7 @@ export default function ShopClient() {
   }, [quickViewPiece]);
 
   const quickViewActiveVariant = useMemo(() => {
-    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId);
+    return quickViewColorVariants.find((v: any) => v.id === quickViewColorVariantId) ?? quickViewColorVariants[0];
   }, [quickViewColorVariants, quickViewColorVariantId]);
 
   const quickViewActiveCombo = useMemo(() => {
@@ -533,11 +530,8 @@ export default function ShopClient() {
 
                         <div className={styles.pickMeWrap}>
                           {(() => {
-                            const isBespoke = !!(
-                              p.fulfillmentMode === "made_to_order_only" ||
-                              (p.bespokeAvailable && p.quantity <= 0)
-                            );
-                            return isBespoke ? (
+                            const { isMadeToOrder, isSoldOut } = getCardFulfillmentSummary(p);
+                            return isMadeToOrder ? (
                               <Link
                                 href={`/shop/${p.slug || p.id}`}
                                 className={styles.pickMeBtn}
@@ -545,7 +539,7 @@ export default function ShopClient() {
                               >
                                 Made to Order
                               </Link>
-                            ) : p.isOutOfStock ? (
+                            ) : isSoldOut ? (
                               <span className={`${styles.pickMeBtn} ${styles.soldOutBtn}`}>
                                 Sold Out
                               </span>
@@ -598,7 +592,10 @@ export default function ShopClient() {
             </button>
             <div className={styles.modalGrid}>
               {(() => {
-                const quickViewStockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode);
+                const quickViewStockStatus = getVariantStockStatus(quickViewPiece, quickViewActiveVariant, quickViewActiveCombo, quickViewMode, undefined, selectedSize);
+                const quickViewMaxQty = quickViewStockStatus.isMadeToOrderProduct
+                  ? quickViewStockStatus.mtoMaxQtyPerOrder
+                  : quickViewStockStatus.availablePhysicalStock;
                 return (
                   <>
               <div className={styles.modalGallery}>
@@ -639,10 +636,12 @@ export default function ShopClient() {
                         {quickViewColorVariants.map((v: any) => (
                           <button
                             key={v.id}
-                            className={`${styles.colorSelectorBtn} ${quickViewColorVariantId === v.id ? styles.colorSelectorBtnActive : ""}`}
+                            className={`${styles.colorSelectorBtn} ${quickViewActiveVariant?.id === v.id ? styles.colorSelectorBtnActive : ""}`}
                             style={{ backgroundColor: v.colorHex || "#ccc", backgroundImage: (v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || null) ? `url(${v.thumbnailUrl || (v.images && v.images[0]) || (v.id === "main-color" ? quickViewPiece.image : null) || (v.combos && v.combos[0]?.thumbnailUrl) || (v.combos && v.combos[0]?.images?.[0]) || ""})` : "none", backgroundSize: "cover", backgroundPosition: "center" }}
                             onClick={() => {
                               setQuickViewColorVariantId(v.id);
+                              setSelectedSize("");
+                              setQty(1);
                               const isSoloUnavailable = getIsSoloUnavailable(v, quickViewPiece);
                               const hasCombos = v.combos && v.combos.length > 0;
                               if (isSoloUnavailable && hasCombos) {
@@ -785,7 +784,7 @@ export default function ShopClient() {
                         <button
                           key={fit}
                           className={`${styles.fitBtn} ${quickViewFit === fit ? styles.fitBtnActive : ""}`}
-                          onClick={() => { setQuickViewFit(fit); setSelectedSize(""); }}
+                          onClick={() => { setQuickViewFit(fit); setSelectedSize(""); setQty(1); }}
                         >
                           {fit}
                         </button>
@@ -797,11 +796,11 @@ export default function ShopClient() {
                 <div className={styles.modalSizeRow}>
                   <span className={styles.qtyLabel}>Size:</span>
                   <div className={styles.sizeGrid}>
-                    {getAvailableSizes(quickViewPiece, quickViewFit).map((sz: string) => (
+                    {getVariantStorefrontSizes(quickViewPiece, quickViewFit, quickViewActiveVariant).map((sz: string) => (
                       <button
                         key={sz}
                         className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
-                        onClick={() => setSelectedSize(prev => prev === sz ? "" : sz)}
+                        onClick={() => { setSelectedSize(prev => prev === sz ? "" : sz); setQty(1); }}
                       >
                         {formatSizeLabel(sz, quickViewFit, quickViewPiece.wearTag)}
                       </button>
@@ -815,15 +814,9 @@ export default function ShopClient() {
                     Size Guide
                   </button>
                 </div>
-                {selectedSize === "Custom" && (
-                  <p className={styles.customNotice}>
-                    Custom sizing selected. We will contact you for measurements after checkout.
-                  </p>
-                )}
 
                 {(() => {
-                  const isBespoke = quickViewStockStatus.isBespokeProduct;
-                  return !isBespoke && quickViewPiece.isOutOfStock ? (
+                  return quickViewStockStatus.isUnorderable ? (
                     <p className={styles.customNotice} style={{ color: "#c00", background: "#fee" }}>
                       This item is currently out of stock.
                     </p>
@@ -840,13 +833,13 @@ export default function ShopClient() {
                         className={styles.qtyBtn} 
                         onClick={() => {
                           const isBespoke = quickViewStockStatus.isBespokeProduct;
-                          if (isBespoke || qty < quickViewStockStatus.maxStock) {
+                          if (qty < quickViewMaxQty) {
                             setQty(qty + 1);
                           } else {
-                            toast.error(`Only ${quickViewStockStatus.maxStock} items available.`);
+                            toast.error(`Only ${quickViewMaxQty} items available.`);
                           }
                         }}
-                        disabled={!quickViewStockStatus.isBespokeProduct && qty >= quickViewStockStatus.maxStock}
+                        disabled={qty >= quickViewMaxQty}
                       >
                         +
                       </button>

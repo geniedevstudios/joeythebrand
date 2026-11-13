@@ -64,9 +64,21 @@ const loadAppliedPromo = (): AppliedPromotion | null => {
   return null;
 };
 
+const promotionDiscount = (items: CartItem[], percentage: number) => {
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  return Math.round((subtotal * percentage) / 100);
+};
+
 const saveCart = (c: CartItem[]) => {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
+  if (appliedPromo) {
+    const discount = promotionDiscount(c, appliedPromo.percentage);
+    if (discount !== appliedPromo.discount) {
+      appliedPromo = { ...appliedPromo, discount };
+      saveAppliedPromo(appliedPromo);
+    }
+  }
   
   const user = authStore.getUser();
   if (user) {
@@ -90,7 +102,8 @@ const saveAppliedPromo = (p: AppliedPromotion | null) => {
 };
 
 let cart: CartItem[] = typeof window !== "undefined" ? loadCart() : [];
-let appliedPromo: AppliedPromotion | null = typeof window !== "undefined" ? loadAppliedPromo() : null;
+let appliedPromo = loadAppliedPromo();
+if (appliedPromo) appliedPromo = { ...appliedPromo, discount: promotionDiscount(cart, appliedPromo.percentage) };
 let isOpen = false;
 let subscribers: (() => void)[] = [];
 
@@ -245,9 +258,7 @@ export const cartStore = {
   },
 
   applyPromotion: (code: string, percentage: number) => {
-    const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const discount = Math.round((subtotal * percentage) / 100);
-    appliedPromo = { code, percentage, discount };
+    appliedPromo = { code, percentage, discount: promotionDiscount(cart, percentage) };
     saveAppliedPromo(appliedPromo);
     cartStore.notify();
   },

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validateAddress } from "@/lib/dhl";
+import { DhlAddressRejected, validateAddress } from "@/lib/dhl";
 
 export async function GET(request: Request) {
   try {
@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     const data = await validateAddress({ city, postalCode, countryCode });
     return NextResponse.json(data);
   } catch (err) {
+    if (err instanceof DhlAddressRejected) return NextResponse.json({ error: err.message }, { status: 422 });
     console.error("Address validation error:", err);
     return NextResponse.json({ 
       error: "Failed to validate address", 

@@ -8,38 +8,21 @@ import {
 } from "react";
 import ProductMedia from "@/components/shop/ProductMedia";
 
-// ── Rotating flavour text ────────────────────────────────────────────────────
-const FORGOT_PHRASES = [
-  "mmm you're a clumsy one.",
-  "happens to the best of us.",
-  "we all forget sometimes.",
-  "no judgement here, seriously.",
-  "your secret's safe with us.",
-];
-const OTP_PHRASES = [
-  "check your inbox — it's in there.",
-  "we just slid into your inbox.",
-  "quick, before it expires.",
-  "your email's got something for you.",
-  "one code, one chance, let's go.",
-];
-const NEW_PASS_PHRASES = [
-  "make it a good one this time.",
-  "something you'll actually remember.",
-  "no 'password123' please.",
-  "strong and memorable — you've got this.",
-  "this one's on you now.",
-];
-const SUCCESS_PHRASES = [
-  "all set, don't forget this one too.",
-  "locked and loaded. we believe in you.",
-  "saved. now remember it this time.",
-  "you're back. don't make this a habit.",
-  "password updated. legendary.",
-];
-function randomPhrase(phrases: string[]) {
-  return phrases[Math.floor(Math.random() * phrases.length)];
-}
+import Link from "next/link";
+import { CalendarDays, History, LogOut, MessageSquare, Package, X } from "lucide-react";
+import { formatOrderAmount } from "@/lib/formatOrderAmount";
+import { toast } from "sonner";
+import { authStore } from "@/store/authStore";
+import { dataStore } from "@/lib/dataStore";
+import { supabase } from "@/lib/supabase";
+import type { Order, OrderItem, ConsultationBooking } from "@/lib/types";
+import { formatOrderNumber } from "@/lib/formatOrderNumber";
+import { openConsultationPrintWindow } from "@/lib/printConsultation";
+import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
+import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import { formatSizeLabel } from "@/lib/formatSizeLabel";
+import styles from "./account.module.css";
+import { SignupOTPDialog } from "./SignupOTPDialog";
 
 // ── OTP digit input ──────────────────────────────────────────────────────────
 const RESET_DIGITS = 6;
@@ -118,21 +101,15 @@ function ResetOTPInput({
     </div>
   );
 }
-import Link from "next/link";
-import { toast } from "sonner";
-import { authStore } from "@/store/authStore";
-import { dataStore } from "@/lib/dataStore";
-import { supabase } from "@/lib/supabase";
-import type { Order, OrderItem, ConsultationBooking } from "@/lib/types";
-import { formatOrderNumber } from "@/lib/formatOrderNumber";
-import { openConsultationPrintWindow } from "@/lib/printConsultation";
-import { formatConsultationAppointmentLocal } from "@/lib/formatConsultationAppointment";
-import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
-import { formatSizeLabel } from "@/lib/formatSizeLabel";
-import styles from "./account.module.css";
-import { SignupOTPDialog } from "./SignupOTPDialog";
-
 type Mode = "signin" | "signup" | "forgot" | "otp" | "newpass" | "success";
+
+function AccountHeading({ title }: { title: string }) {
+  return (
+    <header className={`${styles.shell} ${styles.pageHeader}`}>
+      <h1 className={styles.pageTitle}>{title}</h1>
+    </header>
+  );
+}
 
 function statusLabel(status: Order["status"]) {
   const map: Record<Order["status"], string> = {
@@ -251,7 +228,7 @@ function OrderLineRow({ line }: { line: OrderItem }) {
             <span aria-hidden> · </span>
             Qty <strong>{qty}</strong>
             <span aria-hidden> · </span>
-            GHC {line.price.toLocaleString()} each
+            {formatOrderAmount(line.price)} each
           </span>
           {(line.fulfillmentType === "made_to_order" || line.isMadeToOrder || line.isBespoke) && (
             <span
@@ -291,7 +268,7 @@ function OrderLineRow({ line }: { line: OrderItem }) {
         </span>
       </Link>
       <span className={styles.orderLinePrice}>
-        GHC {lineTotal.toLocaleString()}
+        {formatOrderAmount(lineTotal)}
       </span>
     </li>
   );
@@ -348,103 +325,82 @@ function formatEventDateTime(dateStr: string, timeStr?: string) {
   return `${month} ${date}${suffix}, ${year}`;
 }
 
+const DHL_CHECKPOINT_LABELS: Record<string, string> = {
+  AD: "Delivery agreed", AF: "Arrived at DHL facility", AR: "Arrived at delivery facility",
+  BA: "Delivery address needs correction", BN: "Customs broker notified", BR: "Released by broker",
+  CA: "Closed on arrival", CC: "Awaiting recipient collection", CD: "Clearance delayed",
+  CM: "Recipient moved", CR: "Cleared customs", CS: "Shipment closed",
+  DD: "Delivered damaged", DF: "Departed DHL facility", DS: "Disposed of by DHL",
+  FD: "Forwarded to destination", HP: "Held for payment", IC: "Customs clearance in progress",
+  MC: "Shipment code needs correction", MD: "Missed delivery cycle", MS: "Shipment mis-sorted",
+  ND: "Delivery unsuccessful", NH: "Recipient unavailable", OH: "Shipment on hold",
+  OK: "Delivered", PD: "Partially delivered", PL: "Processed at DHL facility",
+  PU: "Picked up by DHL", RD: "Delivery refused", RR: "Response received",
+  RT: "Returned to sender", SA: "Accepted by DHL", SC: "Service changed",
+  SS: "Shipment stopped", TP: "Forwarded to third party", TR: "Transferred",
+  UD: "Clearance delayed", WC: "Out for delivery",
+};
+
+type DhlTrackingEvent = {
+  typeCode?: string;
+  date: string;
+  time?: string;
+  description: string;
+  serviceArea?: { description?: string }[];
+};
+
 function OrderTracking({
   trackingNumber,
   dhlStatus,
   createdAt,
-  updatedAt,
 }: {
   trackingNumber: string;
   dhlStatus?: string;
   createdAt: string;
-  updatedAt: string;
 }) {
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<any[]>([]);
-  const [error, setError] = useState("");
+  const [events, setEvents] = useState<DhlTrackingEvent[]>([]);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchTracking = async () => {
+    const controller = new AbortController();
+    async function fetchTracking() {
       setLoading(true);
-      setError("");
+      setEvents([]);
+      setError(false);
       try {
         const res = await fetch(
-          `/api/shipping/track?trackingNumber=${trackingNumber}`,
+          `/api/shipping/track?trackingNumber=${encodeURIComponent(trackingNumber)}`,
+          { signal: controller.signal, cache: "no-store" },
         );
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to fetch tracking");
-
-        if (isMounted) {
-          const shipment = data.shipments?.[0];
-          if (shipment?.events && shipment.events.length > 0) {
-            setEvents(shipment.events);
-          }
-        }
-      } catch (err: any) {
-        if (isMounted) setError(err.message);
+        if (!res.ok) throw new Error("Failed to fetch tracking");
+        const data: { shipments?: { events?: DhlTrackingEvent[] }[] } = await res.json();
+        const shipmentEvents = data.shipments?.[0]?.events;
+        if (!controller.signal.aborted && Array.isArray(shipmentEvents)) setEvents(shipmentEvents);
+      } catch {
+        if (!controller.signal.aborted) setError(true);
       } finally {
-        if (isMounted) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
-    };
+    }
 
-    fetchTracking();
-    return () => {
-      isMounted = false;
-    };
+    void fetchTracking();
+    return () => controller.abort();
   }, [trackingNumber]);
 
-  const localEvents: any[] = [];
-  try {
-    const createdDate = new Date(createdAt);
-    const updatedDate = new Date(updatedAt || createdAt);
-
-    localEvents.push({
-      date: createdDate.toISOString().split("T")[0],
-      time: createdDate.toISOString().split("T")[1].substring(0, 5),
-      description: "Order received",
-    });
-
-    if (
-      dhlStatus === "Manifested" ||
-      dhlStatus?.startsWith("Pickup Scheduled")
-    ) {
-      const eventDate = dhlStatus === "Manifested" ? updatedDate : createdDate;
-      localEvents.push({
-        date: eventDate.toISOString().split("T")[0],
-        time: eventDate.toISOString().split("T")[1].substring(0, 5),
-        description: "Ready to be packed",
-      });
-    }
-
-    if (dhlStatus?.startsWith("Pickup Scheduled")) {
-      localEvents.push({
-        date: updatedDate.toISOString().split("T")[0],
-        time: updatedDate.toISOString().split("T")[1].substring(0, 5),
-        description: "Order packed and awaiting courier",
-      });
-    }
-  } catch (e) {}
-
-  const allEvents = [...localEvents, ...events];
+  const allEvents: DhlTrackingEvent[] = [
+    { date: createdAt, description: "Order received" },
+    ...[...events].sort((a, b) =>
+      `${a.date}T${a.time ?? ""}`.localeCompare(`${b.date}T${b.time ?? ""}`),
+    ),
+  ];
+  const awaitingScan = dhlStatus?.startsWith("Pickup Scheduled")
+    ? "Pickup scheduled. Tracking updates appear after DHL scans the parcel."
+    : "Label created. Tracking updates appear after DHL scans the parcel.";
 
   return (
-    <div
-      style={{
-        marginTop: 12,
-        padding: 12,
-        backgroundColor: "var(--light-bg)",
-        borderRadius: 6,
-        width: "100%",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+    <div className={styles.trackingPanel}>
+      <div className={styles.trackingHeader}>
         <div>
           <span style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>
             DHL Express Tracking
@@ -459,40 +415,31 @@ function OrderTracking({
             {trackingNumber}
           </div>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <a
-            href={`https://www.dhl.com/gh-en/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingNumber}`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-outline"
-            style={{
-              padding: "4px 8px",
-              fontSize: "0.8rem",
-              height: "auto",
-              minHeight: 0,
-            }}
-          >
-            Track on DHL
-          </a>
-        </div>
+        <a
+          href={`https://www.dhl.com/gh-en/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingNumber}`}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.outlineButton}
+        >
+          Track on DHL
+        </a>
       </div>
 
-      <div
-        style={{
-          marginTop: 16,
-          borderTop: "1px solid var(--border)",
-          paddingTop: 16,
-        }}
-      >
+      <div className={styles.trackingBody}>
         {loading && (
           <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>
             Loading tracking events...
           </p>
         )}
         {error && (
-          <p style={{ fontSize: "0.85rem", color: "var(--error)" }}>{error}</p>
+          <p style={{ fontSize: "0.85rem", color: "var(--error)" }}>
+            DHL tracking is temporarily unavailable. You can also use Track on DHL.
+          </p>
         )}
-        {!loading && !error && allEvents.length > 0 && (
+        {!loading && !error && events.length === 0 && (
+          <p style={{ fontSize: "0.85rem", color: "var(--cinereous)" }}>{awaitingScan}</p>
+        )}
+        {!loading && (
           <ul
             style={{
               listStyle: "none",
@@ -526,7 +473,7 @@ function OrderTracking({
                   {formatEventDateTime(ev.date, ev.time)}
                 </div>
                 <div>
-                  <strong>{ev.description}</strong>
+                  <strong>{ev.description || DHL_CHECKPOINT_LABELS[ev.typeCode ?? ""] || "DHL tracking update"}</strong>
                   {ev.serviceArea?.[0]?.description && (
                     <span
                       style={{
@@ -548,7 +495,7 @@ function OrderTracking({
   );
 }
 
-function DomesticOrderTracking({
+function ManualOrderTracking({
   history,
   createdAt,
 }: {
@@ -567,7 +514,7 @@ function DomesticOrderTracking({
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
 
-  const DOMESTIC_SEQUENCE = [
+  const MANUAL_SEQUENCE = [
     "pending",
     "processing",
     "order packaged",
@@ -721,10 +668,10 @@ function DomesticOrderTracking({
   const handledStatuses = new Set<string>();
 
   events.forEach((e) => {
-    const seqIdx = DOMESTIC_SEQUENCE.indexOf(e.status);
+    const seqIdx = MANUAL_SEQUENCE.indexOf(e.status);
     if (seqIdx >= 0) {
       for (let i = 0; i < seqIdx; i++) {
-        const skippedStatus = DOMESTIC_SEQUENCE[i];
+        const skippedStatus = MANUAL_SEQUENCE[i];
         if (!handledStatuses.has(skippedStatus)) {
           timelineData.push({
             status: skippedStatus,
@@ -749,41 +696,25 @@ function DomesticOrderTracking({
   });
 
   if (!isCancelled && lastStatus !== "package delivered") {
-    const lastIdx = DOMESTIC_SEQUENCE.indexOf(lastStatus);
+    const lastIdx = MANUAL_SEQUENCE.indexOf(lastStatus);
     if (lastIdx >= 0) {
-      for (let i = lastIdx + 1; i < DOMESTIC_SEQUENCE.length; i++) {
-        if (!handledStatuses.has(DOMESTIC_SEQUENCE[i])) {
+      for (let i = lastIdx + 1; i < MANUAL_SEQUENCE.length; i++) {
+        if (!handledStatuses.has(MANUAL_SEQUENCE[i])) {
           timelineData.push({
-            status: DOMESTIC_SEQUENCE[i],
+            status: MANUAL_SEQUENCE[i],
             timestamp: null,
             isCompleted: false,
             isCurrent: false,
           });
-          handledStatuses.add(DOMESTIC_SEQUENCE[i]);
+          handledStatuses.add(MANUAL_SEQUENCE[i]);
         }
       }
     }
   }
 
   return (
-    <div
-      style={{
-        marginTop: 24,
-        padding: "24px",
-        backgroundColor: "#fff",
-        border: "1px solid var(--border)",
-        borderRadius: "16px",
-        width: "100%",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 32,
-        }}
-      >
+    <div className={styles.trackingPanel}>
+      <div className={styles.trackingHeader}>
         <div>
           <span
             style={{
@@ -970,33 +901,9 @@ function DomesticOrderTracking({
   );
 }
 
-function OrderTrackingButton({
-  isOpen,
-  setIsOpen,
-}: {
-  isOpen: boolean;
-  setIsOpen: (o: boolean) => void;
-}) {
-  return (
-    <button
-      onClick={() => setIsOpen(!isOpen)}
-      className="btn btn-primary"
-      style={{
-        padding: "4px 12px",
-        fontSize: "0.8rem",
-        height: "auto",
-        minHeight: 0,
-      }}
-    >
-      {isOpen ? "Hide timeline" : "Show timeline"}
-    </button>
-  );
-}
-
 function OrderCard({ o }: { o: Order }) {
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
-  const awaitsCarrierTracking = o.shippingAddress.includes("(international)") ||
-    /\s+\| DHL\[[^\]]+\]$/.test(o.shippingAddress);
+  const awaitsCarrierTracking = /\|\s*DHL\[[^\]]+\](?:\s*\(international\))?\s*$/i.test(o.shippingAddress);
 
   return (
     <li className={styles.orderCard}>
@@ -1015,37 +922,10 @@ function OrderCard({ o }: { o: Order }) {
           </span>
         </div>
         <div className={styles.orderStats}>
-          <span className={styles.orderTotal}>
-            GHC {o.total.toLocaleString()}
-          </span>
-          {o.dhlTrackingNumber ? (
-            <OrderTrackingButton
-              isOpen={isTimelineOpen}
-              setIsOpen={setIsTimelineOpen}
-            />
-          ) : awaitsCarrierTracking ? (
-            <span
-              className={styles.orderStatus}
-              style={{ background: "#f0f0f0", color: "#666" }}
-            >
-              Awaiting Tracking
-            </span>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <button
-                onClick={() => setIsTimelineOpen(!isTimelineOpen)}
-                className="btn btn-outline"
-                style={{
-                  padding: "4px 12px",
-                  fontSize: "0.8rem",
-                  height: "auto",
-                  minHeight: 0,
-                }}
-              >
-                {isTimelineOpen ? "Hide order status" : "Order status"}
-              </button>
-            </div>
+          {!o.dhlTrackingNumber && (
+            <span className={styles.orderStatus}>{statusLabel(o.status)}</span>
           )}
+          <span className={styles.orderTotal}>{formatOrderAmount(o.total)}</span>
         </div>
       </div>
       {o.items && o.items.length > 0 ? (
@@ -1062,12 +942,30 @@ function OrderCard({ o }: { o: Order }) {
           No products listed for this order.
         </p>
       )}
-      {o.notes?.trim() ? (
-        <p className={styles.orderNotes}>
-          <span className={styles.orderNotesLabel}>Your note</span>
-          {o.notes.trim()}
-        </p>
-      ) : null}
+      {(o.notes?.trim() || o.dhlTrackingNumber || !awaitsCarrierTracking) && (
+        <div className={styles.orderFooter}>
+          {o.notes?.trim() && (
+            <p className={styles.orderNotes}>
+              <span className={styles.orderNotesLabel}>Your note</span>
+              {o.notes.trim()}
+            </p>
+          )}
+          {(o.dhlTrackingNumber || !awaitsCarrierTracking) && (
+            <button
+              type="button"
+              className={styles.outlineButton}
+              aria-expanded={isTimelineOpen}
+              onClick={() => setIsTimelineOpen((open) => !open)}
+            >
+              {isTimelineOpen
+                ? "Hide progress"
+                : o.dhlTrackingNumber
+                  ? "Track shipment"
+                  : "Order progress"}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* If timeline is open, render tracking block */}
       {o.dhlTrackingNumber && isTimelineOpen && (
@@ -1075,11 +973,10 @@ function OrderCard({ o }: { o: Order }) {
           trackingNumber={o.dhlTrackingNumber}
           dhlStatus={o.dhlStatus}
           createdAt={o.createdAt}
-          updatedAt={o.updatedAt}
         />
       )}
       {!o.dhlTrackingNumber && !awaitsCarrierTracking && isTimelineOpen && (
-        <DomesticOrderTracking
+        <ManualOrderTracking
           history={o.statusHistory || []}
           createdAt={o.createdAt}
         />
@@ -1100,12 +997,11 @@ function AccountDashboard({ userId }: { userId: string }) {
   const [consultations, setConsultations] = useState<ConsultationBooking[]>([]);
   const [consultationsLoading, setConsultationsLoading] = useState(true);
   const [consultationsError, setConsultationsError] = useState("");
-  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"orders" | "appointments">(
     "orders",
   );
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const historyDialogRef = useRef<HTMLDialogElement>(null);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -1114,9 +1010,7 @@ function AccountDashboard({ userId }: { userId: string }) {
       setOrdersError("");
     } catch {
       setOrders([]);
-      setOrdersError(
-        "Could not load orders. If this persists, confirm Supabase order policies are applied.",
-      );
+      setOrdersError("We couldn’t load your orders.");
     } finally {
       setOrdersLoading(false);
     }
@@ -1129,9 +1023,7 @@ function AccountDashboard({ userId }: { userId: string }) {
       setConsultationsError("");
     } catch {
       setConsultations([]);
-      setConsultationsError(
-        "Could not load bespoke appointments. Run the consultation_bookings SQL in Supabase and check RLS.",
-      );
+      setConsultationsError("We couldn’t load your appointments.");
     } finally {
       setConsultationsLoading(false);
     }
@@ -1181,294 +1073,134 @@ function AccountDashboard({ userId }: { userId: string }) {
   }, [userId, loadOrders, loadConsultations]);
 
   useEffect(() => {
-    if (!avatarMenuOpen) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (
-        avatarMenuRef.current &&
-        !avatarMenuRef.current.contains(e.target as Node)
-      ) {
-        setAvatarMenuOpen(false);
-      }
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setAvatarMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [avatarMenuOpen]);
+    if (historyModalOpen) historyDialogRef.current?.showModal();
+  }, [historyModalOpen]);
 
-  const initials = authStore.getInitials();
+  const isPastOrder = (order: Order) =>
+    ["delivered", "package delivered", "cancelled"].includes(order.status);
+  const pastOrders = orders.filter(isPastOrder);
+  const activeOrders = orders.filter((order) => !isPastOrder(order));
+
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <div className="container">
-          <span className="section-label">Welcome back</span>
-          <h1 className={styles.pageTitle}>{user?.name}</h1>
-          <p className={styles.email}>{user?.email}</p>
-        </div>
-      </div>
+      <AccountHeading title="My account" />
 
-      <div className="container">
-        <div
-          className={styles.profileHeader}
-          style={{ position: "relative", justifyContent: "center" }}
-        >
-          <div className={styles.segmentedToggle}>
-            <button
-              onClick={() => setActiveTab("orders")}
-              className={`${styles.segmentedBtn} ${activeTab === "orders" ? styles.segmentedBtnActive : ""}`}
-            >
-              Orders
-            </button>
-            <button
-              onClick={() => setActiveTab("appointments")}
-              className={`${styles.segmentedBtn} ${activeTab === "appointments" ? styles.segmentedBtnActive : ""}`}
-            >
-              Appointments
-            </button>
+      <div className={`${styles.shell} ${styles.dashboard}`}>
+        <aside className={styles.profile}>
+          <div className={styles.profileIdentity}>
+            <span className={styles.profileAvatar} aria-hidden="true">
+              {authStore.getInitials()}
+            </span>
+            <div>
+              {user?.name && <p className={styles.profileName}>{user.name}</p>}
+              <p className={styles.profileEmail}>{user?.email}</p>
+            </div>
           </div>
-
-          <div
-            className={styles.avatarContainer}
-            ref={avatarMenuRef}
-            style={{ position: "absolute", right: 0, margin: 0 }}
-          >
+          <nav className={styles.accountNav} aria-label="Account sections">
             <button
               type="button"
-              className={styles.profileAvatar}
-              onClick={() => setAvatarMenuOpen((o) => !o)}
-              aria-expanded={avatarMenuOpen}
-              aria-haspopup="menu"
-              aria-label="Open account menu"
+              aria-current={activeTab === "orders" ? "true" : undefined}
+              onClick={() => setActiveTab("orders")}
             >
-              {initials}
+              <Package size={18} aria-hidden="true" /> Orders
             </button>
-            {avatarMenuOpen && (
-              <div className={styles.avatarDropdown} role="menu">
-                <Link
-                  href="/report-issue"
-                  className={styles.dropdownItem}
-                  role="menuitem"
-                  onClick={() => setAvatarMenuOpen(false)}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  <span>Report issue</span>
-                </Link>
-                <button
-                  type="button"
-                  className={styles.dropdownItem}
-                  role="menuitem"
-                  onClick={async () => {
-                    setAvatarMenuOpen(false);
-                    await authStore.signOut();
-                  }}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                  <span>Sign out</span>
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              aria-current={activeTab === "appointments" ? "true" : undefined}
+              onClick={() => setActiveTab("appointments")}
+            >
+              <CalendarDays size={18} aria-hidden="true" /> Appointments
+            </button>
+          </nav>
+          <div className={styles.profileActions}>
+            <Link href="/report-issue">
+              <MessageSquare size={17} aria-hidden="true" /> Report an issue
+            </Link>
+            <button type="button" onClick={() => void authStore.signOut()}>
+              <LogOut size={17} aria-hidden="true" /> Sign out
+            </button>
           </div>
-        </div>
+        </aside>
 
-        <div>
+        <div className={styles.dashboardContent}>
           {activeTab === "orders" && (
-            <div style={{ marginTop: "16px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "24px",
-                }}
-              >
-                <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: 0 }}>
-                  Recent Orders
-                </h2>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "16px" }}
-                >
+            <section aria-labelledby="account-orders">
+              <div className={styles.sectionHeader}>
+                <h2 id="account-orders" className={styles.sectionTitle}>Orders</h2>
+                <div className={styles.sectionActions}>
                   <button
+                    type="button"
+                    className={styles.outlineButton}
+                    aria-haspopup="dialog"
                     onClick={() => setHistoryModalOpen(true)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "var(--cinereous)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                    aria-label="Order History"
                   >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                      History
-                    </span>
+                    <History size={17} aria-hidden="true" /> Order history
                   </button>
-                  <Link
-                    href="/shop"
-                    className="btn btn-outline"
-                    style={{ padding: "6px 16px", fontSize: "0.85rem" }}
-                  >
-                    New Order
-                  </Link>
+                  <Link href="/shop" className={styles.solidButton}>Shop</Link>
                 </div>
               </div>
-              <div>
-                {ordersLoading ? (
-                  <div className={styles.emptyState}>
-                    <p>Loading orders…</p>
-                  </div>
-                ) : ordersError ? (
-                  <div className={styles.emptyState}>
-                    <p>{ordersError}</p>
-                  </div>
-                ) : orders.length === 0 ? (
-                  <div className={styles.emptyState}>
-                    <p>
-                      You haven&apos;t placed any orders while signed in yet.
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "0.85rem",
-                        color: "var(--cinereous)",
-                        marginTop: 8,
-                      }}
-                    >
-                      Sign in before checkout to link orders to this account.
-                    </p>
-                    <Link
-                      href="/shop"
-                      className="btn btn-outline"
-                      style={{ marginTop: "16px" }}
-                    >
-                      Explore Shop
-                    </Link>
-                  </div>
-                ) : (
-                  <div>
-                    <ul
-                      className={styles.ordersList}
-                      style={{ margin: 0, padding: 0 }}
-                    >
-                      {orders
-                        .filter(
-                          (o) =>
-                            o.status !== "package delivered" &&
-                            o.status !== "cancelled",
-                        )
-                        .map((o) => <OrderCard key={o.id} o={o} />)}
-
-                      {orders.filter(
-                        (o) =>
-                          o.status !== "package delivered" &&
-                          o.status !== "cancelled",
-                      ).length === 0 && (
-                        <div
-                          className={styles.emptyState}
-                          style={{ marginTop: "32px", padding: "0 24px" }}
-                        >
-                          <p>No active orders found.</p>
-                        </div>
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
+              {ordersLoading ? (
+                <div className={styles.emptyState} role="status">Loading orders…</div>
+              ) : ordersError ? (
+                <div className={styles.emptyState}>
+                  <p role="alert">{ordersError}</p>
+                  <button
+                    type="button"
+                    className={styles.outlineButton}
+                    onClick={() => {
+                      setOrdersError("");
+                      setOrdersLoading(true);
+                      void loadOrders();
+                    }}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : activeOrders.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <Package size={26} strokeWidth={1.5} aria-hidden="true" />
+                  <h3>{orders.length ? "No active orders" : "No orders yet"}</h3>
+                  <p>{orders.length
+                    ? "See completed and cancelled orders in your order history."
+                    : "Orders placed while signed in will appear here."}</p>
+                </div>
+              ) : (
+                <ul className={styles.ordersList}>
+                  {activeOrders.map((order) => <OrderCard key={order.id} o={order} />)}
+                </ul>
+              )}
+            </section>
           )}
 
           {activeTab === "appointments" && (
-            <div style={{ marginTop: "16px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "24px",
-                }}
-              >
-                <h2 style={{ fontSize: "1.2rem", fontWeight: 600, margin: 0 }}>
-                  Bespoke Appointments
-                </h2>
-                <Link
-                  href="/bespoke"
-                  className="btn btn-outline"
-                  style={{ padding: "6px 16px", fontSize: "0.85rem" }}
-                >
-                  Book Slot
-                </Link>
+            <section aria-labelledby="account-appointments">
+              <div className={styles.sectionHeader}>
+                <h2 id="account-appointments" className={styles.sectionTitle}>Bespoke appointments</h2>
+                <Link href="/bespoke" className={styles.solidButton}>Book a consultation</Link>
               </div>
               <div>
                 {consultationsLoading ? (
-                  <div className={styles.emptyState}>
-                    <p>Loading appointments…</p>
-                  </div>
+                  <div className={styles.emptyState} role="status">Loading appointments…</div>
                 ) : consultationsError ? (
                   <div className={styles.emptyState}>
-                    <p>{consultationsError}</p>
+                    <p role="alert">{consultationsError}</p>
+                    <button
+                      type="button"
+                      className={styles.outlineButton}
+                      onClick={() => {
+                        setConsultationsError("");
+                        setConsultationsLoading(true);
+                        void loadConsultations();
+                      }}
+                    >
+                      Try again
+                    </button>
                   </div>
                 ) : consultations.length === 0 ? (
                   <div className={styles.emptyState}>
-                    <p>No bespoke requests yet.</p>
-                    <p
-                      style={{
-                        fontSize: "0.85rem",
-                        color: "var(--cinereous)",
-                        marginTop: 8,
-                      }}
-                    >
-                      Book a slot while signed in — we&apos;ll show status and
-                      your booking code here after approval.
-                    </p>
-                    <Link
-                      href="/bespoke"
-                      className="btn btn-primary"
-                      style={{ marginTop: "16px" }}
-                    >
-                      Book Consultation
-                    </Link>
+                    <CalendarDays size={26} strokeWidth={1.5} aria-hidden="true" />
+                    <h3>No appointments yet</h3>
+                    <p>Book a consultation while signed in to see its status here.</p>
                   </div>
                 ) : (
                   <div>
@@ -1645,101 +1377,42 @@ function AccountDashboard({ userId }: { userId: string }) {
                   </div>
                 )}
               </div>
-            </div>
+            </section>
           )}
         </div>
       </div>
 
-      {historyModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "12px",
-              width: "100%",
-              maxWidth: "600px",
-              maxHeight: "80vh",
-              display: "flex",
-              flexDirection: "column",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-            }}
-          >
-            <div
-              style={{
-                padding: "20px 24px",
-                borderBottom: "1px solid var(--color-border)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <h2 className={styles.panelTitle} style={{ margin: 0 }}>
-                Order History
-              </h2>
-              <button
-                onClick={() => setHistoryModalOpen(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--cinereous)",
-                }}
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            <div className={styles.panelScroll} style={{ padding: "0" }}>
-              <ul className={styles.ordersList} style={{ margin: 0 }}>
-                {orders
-                  .filter(
-                    (o) =>
-                      o.status === "package delivered" ||
-                      o.status === "cancelled",
-                  )
-                  .map((o) => <OrderCard key={o.id} o={o} />)}
-                {orders.filter(
-                  (o) =>
-                    o.status === "package delivered" ||
-                    o.status === "cancelled",
-                ).length === 0 && (
-                  <div
-                    className={styles.emptyState}
-                    style={{ padding: "40px 24px" }}
-                  >
-                    <p>No past orders found.</p>
-                  </div>
-                )}
-              </ul>
-            </div>
-          </div>
+      <dialog
+        className={styles.historyDialog}
+        ref={historyDialogRef}
+        aria-labelledby="order-history-title"
+        onClose={() => setHistoryModalOpen(false)}
+      >
+        <div className={styles.dialogHeader}>
+          <h2 id="order-history-title" className={styles.sectionTitle}>Order history</h2>
+          <form method="dialog">
+            <button type="submit" className={styles.closeButton} aria-label="Close order history">
+              <X size={22} aria-hidden="true" />
+            </button>
+          </form>
         </div>
-      )}
+        {ordersLoading ? (
+          <div className={styles.emptyState} role="status">Loading orders…</div>
+        ) : ordersError ? (
+          <div className={styles.emptyState} role="alert">{ordersError}</div>
+        ) : pastOrders.length ? (
+          historyModalOpen && (
+            <ul className={styles.ordersList}>
+              {pastOrders.map((order) => <OrderCard key={order.id} o={order} />)}
+            </ul>
+          )
+        ) : (
+          <div className={styles.emptyState}>
+            <History size={25} strokeWidth={1.5} aria-hidden="true" />
+            <h3>No past orders yet</h3>
+          </div>
+        )}
+      </dialog>
     </div>
   );
 }
@@ -1776,12 +1449,6 @@ export default function AccountClient() {
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [savingPass, setSavingPass] = useState(false);
   const [resetError, setResetError] = useState("");
-
-  // Phrases — picked once when the component mounts (i.e. each time user enters the step)
-  const forgotPhrase = useState(() => randomPhrase(FORGOT_PHRASES))[0];
-  const otpPhrase = useState(() => randomPhrase(OTP_PHRASES))[0];
-  const newPassPhrase = useState(() => randomPhrase(NEW_PASS_PHRASES))[0];
-  const successPhrase = useState(() => randomPhrase(SUCCESS_PHRASES))[0];
 
   // Resend cooldown ticker
   useEffect(() => {
@@ -1912,30 +1579,23 @@ export default function AccountClient() {
   ) {
     return (
       <div className={styles.page}>
-        <div className={styles.pageHeader}>
-          <div className="container">
-            <span className="section-label">Your Account</span>
-            <h1 className={styles.pageTitle}>
-              {mode === "forgot"
-                ? "Password Reset"
-                : mode === "otp"
-                  ? "Enter Code"
-                  : mode === "newpass"
-                    ? "New Password"
-                    : "All Set"}
-            </h1>
-          </div>
-        </div>
-
-        <div className="container">
+        <AccountHeading title="Account" />
+        <div className={styles.shell}>
           <div className={styles.authWrap}>
+            <h2 className={styles.sectionTitle}>
+              {mode === "forgot"
+                ? "Reset your password"
+                : mode === "otp"
+                  ? "Enter your code"
+                  : mode === "newpass"
+                    ? "Choose a new password"
+                    : "Password updated"}
+            </h2>
             {/* FORGOT — send OTP */}
             {mode === "forgot" && (
               <div className={styles.resetStep}>
-                <p className={styles.resetPhrase}>{forgotPhrase}</p>
                 <p className={styles.resetSub}>
-                  Tap the button below to receive a one-time code to reset your
-                  password.
+                  Enter your email address to receive a password reset code.
                 </p>
                 <form onSubmit={handleSendOTP} className={styles.authForm}>
                   <div className="form-group">
@@ -1953,16 +1613,11 @@ export default function AccountClient() {
                     />
                   </div>
                   {resetError && (
-                    <p className={styles.resetError}>{resetError}</p>
+                    <p className={styles.resetError} role="alert">{resetError}</p>
                   )}
                   <button
                     type="submit"
-                    className="btn btn-primary btn-lg"
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      marginTop: "var(--space-md)",
-                    }}
+                    className={styles.solidButton}
                     disabled={sendingOTP || !resetEmail}
                   >
                     {sendingOTP ? "Sending…" : "Send Reset Code"}
@@ -1981,7 +1636,6 @@ export default function AccountClient() {
             {/* OTP — enter code */}
             {mode === "otp" && (
               <div className={styles.resetStep}>
-                <p className={styles.resetPhrase}>{otpPhrase}</p>
                 <p className={styles.otpLead}>
                   We sent a <strong>{RESET_DIGITS}-digit code</strong> to{" "}
                   <span className={styles.otpEmail}>{resetEmail}</span>.
@@ -1989,16 +1643,11 @@ export default function AccountClient() {
                 <form onSubmit={handleVerifyOTP} className={styles.otpForm}>
                   <ResetOTPInput value={otpDigits} onChange={setOtpDigits} />
                   {resetError && (
-                    <p className={styles.resetError}>{resetError}</p>
+                    <p className={styles.resetError} role="alert">{resetError}</p>
                   )}
                   <button
                     type="submit"
-                    className="btn btn-primary btn-lg"
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      marginTop: "var(--space-md)",
-                    }}
+                    className={styles.solidButton}
                     disabled={
                       verifyingOTP || otpDigits.join("").length !== RESET_DIGITS
                     }
@@ -2032,7 +1681,6 @@ export default function AccountClient() {
             {/* NEW PASSWORD */}
             {mode === "newpass" && (
               <div className={styles.resetStep}>
-                <p className={styles.resetPhrase}>{newPassPhrase}</p>
                 <form
                   onSubmit={handleUpdatePassword}
                   className={styles.authForm}
@@ -2152,16 +1800,11 @@ export default function AccountClient() {
                     </div>
                   </div>
                   {resetError && (
-                    <p className={styles.resetError}>{resetError}</p>
+                    <p className={styles.resetError} role="alert">{resetError}</p>
                   )}
                   <button
                     type="submit"
-                    className="btn btn-primary btn-lg"
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      marginTop: "var(--space-md)",
-                    }}
+                    className={styles.solidButton}
                     disabled={savingPass || !newPass || !confirmPass}
                   >
                     {savingPass ? "Saving…" : "Save Password"}
@@ -2172,17 +1815,11 @@ export default function AccountClient() {
 
             {/* SUCCESS */}
             {mode === "success" && (
-              <div className={styles.resetStep} style={{ textAlign: "center" }}>
-                <div className={styles.successIcon}>✓</div>
-                <p className={styles.resetPhrase}>{successPhrase}</p>
+              <div className={styles.resetStep}>
+                <p className={styles.resetSub}>You can now sign in with your new password.</p>
                 <button
                   type="button"
-                  className="btn btn-primary btn-lg"
-                  style={{
-                    width: "100%",
-                    justifyContent: "center",
-                    marginTop: "var(--space-lg)",
-                  }}
+                  className={styles.solidButton}
                   onClick={goToSignIn}
                 >
                   Sign in
@@ -2240,27 +1877,19 @@ export default function AccountClient() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <div className="container">
-          <span className="section-label">Your Account</span>
-          <h1 className={styles.pageTitle}>
-            {pendingSignupEmail
-              ? "Verify email"
-              : mode === "signin"
-                ? "Sign In"
-                : "Sign Up"}
-          </h1>
-        </div>
-      </div>
-
-      <div className="container" style={{ position: "relative" }}>
+      <AccountHeading title="Account" />
+      <div className={styles.shell}>
         <div className={styles.authWrap}>
+          <h2 className={styles.sectionTitle}>
+            {pendingSignupEmail ? "Verify your email" : mode === "signin" ? "Sign in" : "Create an account"}
+          </h2>
           {!pendingSignupEmail ? (
             <>
               <div className={styles.authTabs}>
                 <button
                   type="button"
-                  className={`${styles.authTab} ${mode === "signin" ? styles.authTabActive : ""}`}
+                  className={styles.authTab}
+                  aria-pressed={mode === "signin"}
                   onClick={() => {
                     setMode("signin");
                     setError("");
@@ -2268,11 +1897,12 @@ export default function AccountClient() {
                     setShowPassword(false);
                   }}
                 >
-                  Sign In
+                  Sign in
                 </button>
                 <button
                   type="button"
-                  className={`${styles.authTab} ${mode === "signup" ? styles.authTabActive : ""}`}
+                  className={styles.authTab}
+                  aria-pressed={mode === "signup"}
                   onClick={() => {
                     setMode("signup");
                     setError("");
@@ -2280,7 +1910,7 @@ export default function AccountClient() {
                     setShowPassword(false);
                   }}
                 >
-                  Sign Up
+                  Sign up
                 </button>
               </div>
 
@@ -2378,25 +2008,14 @@ export default function AccountClient() {
                 </div>
 
                 {error && (
-                  <p
-                    style={{
-                      color: "var(--error, #c00)",
-                      fontSize: "0.85rem",
-                      marginTop: "-8px",
-                    }}
-                  >
+                  <p className={styles.resetError} role="alert">
                     {error}
                   </p>
                 )}
 
                 <button
                   type="submit"
-                  className="btn btn-primary btn-lg"
-                  style={{
-                    width: "100%",
-                    justifyContent: "center",
-                    marginTop: "var(--space-md)",
-                  }}
+                  className={styles.solidButton}
                   disabled={isLoading}
                 >
                   {isLoading

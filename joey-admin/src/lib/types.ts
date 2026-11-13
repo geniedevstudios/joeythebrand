@@ -1,3 +1,5 @@
+import type { CustomsProfile } from "./customsProfile";
+import type { DhlParcel } from "./dhlParcel";
 /** Shop category slug; must match a row in `collections` (see admin Products → Collections). */
 export type Category = string;
 
@@ -124,6 +126,7 @@ export interface Product {
   bespokeLeadDays?: number;
   weightKg?: number;
   hsCode?: string;
+  customsProfile?: CustomsProfile;
   variants?: ProductVariant[];
 }
 
@@ -164,6 +167,10 @@ export interface Order {
   dhlTrackingNumber?: string;
   dhlLabelUrl?: string;
   dhlStatus?: string;
+  dhlParcel?: DhlParcel;
+  dhlShipmentClaimedAt?: string;
+  dhlPickupClaimedAt?: string;
+  dhlPickupConfirmation?: string;
   statusHistory?: { status: string; timestamp: string }[];
   createdAt: string;
   updatedAt: string;
