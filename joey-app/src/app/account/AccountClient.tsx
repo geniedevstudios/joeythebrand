@@ -1113,7 +1113,7 @@ function AccountDashboard({ userId }: { userId: string }) {
             </button>
           </nav>
           <div className={styles.profileActions}>
-            <Link href="/report-issue">
+            <Link href="/report-issue?from=account">
               <MessageSquare size={17} aria-hidden="true" /> Report an issue
             </Link>
             <button type="button" onClick={() => void authStore.signOut()}>
