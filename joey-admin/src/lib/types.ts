@@ -1,3 +1,5 @@
+import type { DhlWireCustomsLine } from "./dhl";
+
 import type { CustomsProfile } from "./customsProfile";
 import type { DhlParcel } from "./dhlParcel";
 /** Shop category slug; must match a row in `collections` (see admin Products → Collections). */
@@ -165,6 +167,9 @@ export interface Order {
   isMixedFulfillment?: boolean;
   maxLeadDays?: number;
   dhlTrackingNumber?: string;
+  dhlEnvironment?: "test" | "live";
+  dhlCustomsLines?: DhlWireCustomsLine[];
+  dhlShipmentDescription?: string;
   dhlLabelUrl?: string;
   dhlStatus?: string;
   dhlParcel?: DhlParcel;

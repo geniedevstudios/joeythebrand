@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CheckoutClient from "./CheckoutClient";
+import { getDhlEnvironment } from "@/lib/dhl";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -10,8 +11,17 @@ export const metadata: Metadata = {
   },
 };
 
+function validDhlEnvironment() {
+  try {
+    getDhlEnvironment();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function CheckoutPage() {
-  const dhlEnabled = !!(
+  const dhlEnabled = validDhlEnvironment() && !!(
     process.env.DHL_API_KEY?.trim() &&
     process.env.DHL_API_SECRET?.trim() &&
     process.env.DHL_ACCOUNT_NUMBER?.trim()

@@ -1,10 +1,10 @@
+import { CUSTOMER_ORDER_COLUMNS, mapOrder } from "./customerOrder";
 import {
   type Product,
   type PromotionCode,
   type Order,
   type SiteContent,
   type ProductSize,
-  type OrderStatus,
   type PublicCollection,
   type WearTag,
   type ConsultationBooking,
@@ -341,40 +341,7 @@ const mapConsultationBooking = (row: Record<string, unknown>): ConsultationBooki
   updatedAt: row.updated_at as string,
 });
 
-export const mapOrder = (row: Record<string, unknown>): Order => ({
-  id: row.id as string,
-  orderNumber: String(row.order_number ?? "").trim() || undefined,
-  customerName: row.customer_name as string,
-  customerEmail: row.customer_email as string,
-  customerPhone: row.customer_phone as string,
-  shippingAddress: row.shipping_address as string,
-  items: row.items as Order["items"],
-  subtotal: row.subtotal != null ? Number(row.subtotal) : undefined,
-  shippingCost: row.shipping_cost != null ? Number(row.shipping_cost) : undefined,
-  total: Number(row.total),
-  discount: Number(row.discount),
-  promotionCode: row.promotion_code as string | undefined,
-  paymentStatus: (row.payment_status as "unpaid" | "paid") || "unpaid",
-  paymentRef: (row.payment_ref as string) || undefined,
-  status: row.status as OrderStatus,
-  userId: row.user_id as string | undefined,
-  notes: row.notes as string | undefined,
-  reservationExpiresAt: (row.reservation_expires_at as string) || undefined,
-  paidAt: (row.paid_at as string) || undefined,
-  stockConflictFlagged: Boolean(row.stock_conflict_flagged),
-  stockConflictDetails: row.stock_conflict_details ?? undefined,
-  hasMadeToOrderItems: Boolean(row.has_made_to_order_items),
-  isMixedFulfillment: Boolean(row.is_mixed_fulfillment),
-  maxLeadDays: row.max_lead_days != null ? Number(row.max_lead_days) : undefined,
-  dhlTrackingNumber: row.dhl_tracking_number as string | undefined,
-  dhlLabelUrl: row.dhl_label_url as string | undefined,
-  dhlStatus: row.dhl_status as string | undefined,
-  statusHistory: (typeof row.dhl_status === "string" && row.dhl_status.startsWith("[")) 
-    ? JSON.parse(row.dhl_status) 
-    : [],
-  createdAt: row.created_at as string,
-  updatedAt: row.updated_at as string,
-});
+export { mapOrder };
 
 // ─── Local cache + subscriber pattern (for useSyncExternalStore consumers) ───
 
@@ -569,6 +536,7 @@ export const dataStore = {
     customerName: string;
     customerEmail: string;
     customerPhone: string;
+    phoneCountry?: string;
     shippingDestination: "ghana" | "international";
     shippingOption?: "dhl" | "sales" | null;
     shippingAddress: string;
@@ -636,9 +604,10 @@ export const dataStore = {
   getOrdersForUser: async (userId: string): Promise<Order[]> => {
     const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select(CUSTOMER_ORDER_COLUMNS)
       .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .overrideTypes<Record<string, unknown>[], { merge: false }>();
 
     if (error) throw new Error(error.message);
     return (data || []).map((row) => mapOrder(row as Record<string, unknown>));

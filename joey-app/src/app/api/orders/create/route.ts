@@ -51,6 +51,7 @@ export async function POST(req: Request) {
       customerName?: string;
       customerEmail?: string;
       customerPhone?: string;
+      phoneCountry?: string;
       shippingDestination?: "ghana" | "international";
       shippingOption?: "dhl" | "sales" | null;
       shippingAddress?: string;
@@ -74,6 +75,7 @@ export async function POST(req: Request) {
         customerName: String(body.customerName || "").trim(),
         customerEmail: String(body.customerEmail || who.user.email || "").trim(),
         customerPhone: String(body.customerPhone || "").trim(),
+        phoneCountry: typeof body.phoneCountry === "string" ? body.phoneCountry : undefined,
         shippingDestination:
           body.shippingDestination === "international" ? "international" : "ghana",
         shippingOption: body.shippingOption ?? null,

@@ -160,7 +160,7 @@ export interface Order {
   isMixedFulfillment?: boolean;
   maxLeadDays?: number;
   dhlTrackingNumber?: string;
-  dhlLabelUrl?: string;
+  hasLabel?: boolean;
   dhlStatus?: string;
   statusHistory?: { status: string; timestamp: string }[];
   createdAt: string;

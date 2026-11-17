@@ -1,15 +1,24 @@
 import { PDFDocument } from "pdf-lib";
 import type { DhlParcel } from "./dhlParcel";
+import { validateDhlStreet, wrapDhlStreet } from "./dhlStreet";
+import { validDhlHsCode } from "./customsProfile";
+import { mapDhlLineWeights } from "./dhlWeights";
+import { DHL_ADDRESS_LINE_MAX, DHL_INVOICE_NUMBER_PREFIX, DHL_PICKUP_CLOSE_TIME, DHL_PICKUP_INSTRUCTION_TYPE_CODE, DHL_PICKUP_SEND_WAYBILL, DHL_RECEIVER_PARTY_TYPE, DHL_REFERENCE_MAX, DHL_REQUIRE_INBOUND_HS, DHL_SEND_DOMESTIC_REFERENCE, DHL_SHIPMENT_DESCRIPTION_MAX, DHL_TEST_API_BASE, resolveDhlEnvironment } from "./dhlRules";
 
 function envTrim(name: string): string {
   return (process.env[name] || "").trim().replace(/^["']|["']$/g, "");
 }
 
 export const DHL_API_BASE = (
-  envTrim("DHL_API_BASE_URL") || "https://express.api.dhl.com/mydhlapi/test"
+  envTrim("DHL_API_BASE_URL") || DHL_TEST_API_BASE
 ).replace(/\/+$/, "");
 
+export function getDhlEnvironment() {
+  return resolveDhlEnvironment(DHL_API_BASE, process.env);
+}
+
 function getAuthHeader() {
+  getDhlEnvironment();
   const key = envTrim("DHL_API_KEY");
   const secret = envTrim("DHL_API_SECRET");
   if (!key || !secret) {
@@ -110,7 +119,7 @@ export const SHIPPER_DETAILS = {
   },
   contactInformation: {
     email: "joeythebrandonline@gmail.com",
-    phone: "+233 24 409 3419",
+    phone: "+233244093419",
     companyName: "JOEY THE BRAND",
     fullName: "JOSHUA OPPONG DARKO"
   }
@@ -128,7 +137,7 @@ function getNextBusinessDay() {
 }
 
 export interface DHLShipmentRequest {
-  orderId: string;
+  orderNumber: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -147,6 +156,8 @@ export interface DHLShipmentRequest {
 
 export type DhlCustomsLine = {
   description: string;
+  productName?: string;
+  intendedWearer?: import("./customsProfile").IntendedWearer;
   quantity: number;
   price: number;
   weightKg: number;
@@ -186,10 +197,10 @@ function receiverDetails(req: ShipmentRecipient) {
   const postalCode = postalForDhl(countryCode, req.destination.postalCode);
   return {
     postalAddress: {
-      cityName: req.destination.city.slice(0, 45),
+      cityName: req.destination.city.slice(0, DHL_ADDRESS_LINE_MAX),
       countryCode,
-      addressLine1: req.destination.addressLine1.slice(0, 45),
-      ...(req.destination.region && { countyName: req.destination.region.slice(0, 45) }),
+      ...wrapDhlStreet(req.destination),
+      ...(req.destination.region && { countyName: req.destination.region.slice(0, DHL_ADDRESS_LINE_MAX) }),
       ...(postalCode && { postalCode }),
     },
     contactInformation: {
@@ -202,9 +213,13 @@ function receiverDetails(req: ShipmentRecipient) {
 }
 
 function shipmentShipperDetails() {
-  const address = SHIPPER_DETAILS.postalAddress;
+  const { addressLine1, ...address } = SHIPPER_DETAILS.postalAddress;
   return {
-    postalAddress: { ...address, postalCode: postalForDhl(address.countryCode, address.postalCode) },
+    postalAddress: {
+      ...address,
+      ...wrapDhlStreet({ ...address, addressLine1 }),
+      postalCode: postalForDhl(address.countryCode, address.postalCode),
+    },
     contactInformation: SHIPPER_DETAILS.contactInformation,
   };
 }
@@ -248,15 +263,121 @@ export function parseDhlAddress(shippingAddress: string): DHLShipmentRequest["de
   return null;
 }
 
+export function dhlOrderReference(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) throw new DhlBookingRejected("The order is missing its order number.");
+  if (value.length > DHL_REFERENCE_MAX) throw new DhlBookingRejected(`Order number must not exceed ${DHL_REFERENCE_MAX} characters for DHL.`);
+  return value;
+}
+
+export function dhlWireCustomsLines(lines: DhlCustomsLine[]) {
+  return lines.map((line, index) => ({
+  number: index + 1,
+  description: line.description,
+  price: line.price,
+  quantity: { value: line.quantity, unitOfMeasurement: "PCS" },
+  commodityCodes: [
+    ...(line.inboundHsCode ? [{ typeCode: "inbound", value: line.inboundHsCode }] : []),
+    { typeCode: "outbound", value: line.hsCode },
+  ],
+  exportReasonType: "permanent",
+  manufacturerCountry: "GH",
+  weight: mapDhlLineWeights(line),
+  }));
+}
+
+export type DhlWireCustomsLine = ReturnType<typeof dhlWireCustomsLines>[number];
+
+export async function quoteMeasuredParcel(destination: DHLShipmentRequest["destination"], parcel: DhlParcel) {
+  const account = envTrim("DHL_ACCOUNT_NUMBER");
+  if (!account) throw new Error("DHL Account Number not configured");
+
+  const countryCode = normalizeCountry(destination.countryCode);
+  const origin = SHIPPER_DETAILS.postalAddress;
+  const isDomestic = countryCode === origin.countryCode;
+  const productCode = isDomestic ? "N" : "P";
+  const postalCode = postalForDhl(countryCode, destination.postalCode);
+
+  const params = new URLSearchParams({
+    type: "delivery",
+    countryCode,
+    cityName: destination.city,
+    strictValidation: "true",
+  });
+  if (postalCode) params.append("postalCode", postalCode);
+
+  const validation = await fetchWithRetry(`${DHL_API_BASE}/address-validate?${params}`, {
+    method: "GET",
+    headers: dhlHeaders(false),
+  });
+  if (!validation.ok) throw new Error("DHL could not validate the delivery address.");
+  const { address } = await validation.json();
+  if (!Array.isArray(address) || !address.length) {
+    throw new Error("DHL could not verify the city and postal code.");
+  }
+
+  const response = await fetchWithRetry(`${DHL_API_BASE}/rates`, {
+    method: "POST",
+    headers: dhlHeaders(),
+    body: JSON.stringify({
+      customerDetails: {
+        shipperDetails: {
+          ...origin,
+          postalCode: postalForDhl(origin.countryCode, origin.postalCode),
+        },
+        receiverDetails: {
+          cityName: destination.city.slice(0, DHL_ADDRESS_LINE_MAX),
+          countryCode,
+          addressLine1: (destination.addressLine1 || destination.city).trim().slice(0, DHL_ADDRESS_LINE_MAX),
+          ...(destination.region && { countyName: destination.region.slice(0, DHL_ADDRESS_LINE_MAX) }),
+          ...(postalCode && { postalCode }),
+        },
+      },
+      accounts: [{ typeCode: "shipper", number: account }],
+      plannedShippingDateAndTime: dhlTimestamp(),
+      unitOfMeasurement: "metric",
+      isCustomsDeclarable: !isDomestic,
+      nextBusinessDay: true,
+      productCode,
+      packages: [parcel],
+    }),
+  });
+  if (!response.ok) throw new Error(parseDhlError(await response.text(), response.statusText));
+
+  const { products } = await response.json() as {
+    products?: {
+      productCode?: string;
+      totalPrice?: { priceCurrency?: string; price?: number }[];
+    }[];
+  };
+  const price = products?.find((product) => product.productCode === productCode)?.totalPrice?.find(
+    (entry) => entry.priceCurrency === "GHS" && typeof entry.price === "number"
+      && Number.isFinite(entry.price) && entry.price > 0,
+  )?.price;
+  if (price === undefined) throw new Error("DHL did not return a valid GHS price for the selected service.");
+  return Math.round(price * 100) / 100;
+}
+
 export async function createShipment(req: DHLShipmentRequest) {
+  const orderReference = dhlOrderReference(req.orderNumber);
+  const addressError = validateDhlStreet(req.destination);
+  if (addressError) throw new DhlBookingRejected(addressError);
   const account = envTrim("DHL_ACCOUNT_NUMBER");
   if (!account || !envTrim("DHL_API_KEY") || !envTrim("DHL_API_SECRET")) throw new DhlBookingRejected("DHL credentials are missing.");
 
   const declaredValue = Math.round(req.customsLines.reduce((sum, line) => sum + line.price * line.quantity, 0) * 100) / 100;
   const countryCode = normalizeCountry(req.destination.countryCode);
   const isDomestic = countryCode === SHIPPER_DETAILS.postalAddress.countryCode;
+  if (!isDomestic && req.customsLines.some((line) => !validDhlHsCode(line.hsCode))) {
+    throw new DhlBookingRejected("Add a valid export HS code for each customs product.");
+  }
+  if (!isDomestic && DHL_REQUIRE_INBOUND_HS && req.customsLines.some((line) => !validDhlHsCode(line.inboundHsCode))) {
+    throw new DhlBookingRejected(`Add the ${countryCode} import HS code for this product.`);
+  }
   const documentTypes = isDomestic ? ["label", "waybillDoc"] : ["label", "waybillDoc", "invoice"];
-  const description = Array.from(req.itemDescription).slice(0, 70).join("").trimEnd();
+  const description = req.itemDescription.trim();
+  if (!description || description.length > DHL_SHIPMENT_DESCRIPTION_MAX) {
+    throw new DhlBookingRejected(`Shipment description must contain 1–${DHL_SHIPMENT_DESCRIPTION_MAX} characters.`);
+  }
 
   const payload = {
     plannedShippingDateAndTime: dhlTimestamp(12),
@@ -269,7 +390,7 @@ export async function createShipment(req: DHLShipmentRequest) {
       allDocumentsInOneImage: true,
       encodingFormat: "pdf",
       imageOptions: [
-        { typeCode: "label", templateName: "ECOM26_84_A4_001", isRequested: true },
+        { typeCode: "label", templateName: "ECOM26_84_A4_001" },
         { typeCode: "waybillDoc", templateName: "ARCH_8X4_A4_002", isRequested: true, hideAccountNumber: true },
         ...(!isDomestic ? [
           { typeCode: "invoice", templateName: "COMMERCIAL_INVOICE_P_10", isRequested: true, invoiceType: "commercial", languageCode: "eng" },
@@ -277,19 +398,15 @@ export async function createShipment(req: DHLShipmentRequest) {
       ]
     },
     customerDetails: {
-      shipperDetails: shipmentShipperDetails(),
-      receiverDetails: receiverDetails(req),
+      shipperDetails: { ...shipmentShipperDetails(), typeCode: "business" },
+      receiverDetails: { ...receiverDetails(req), typeCode: DHL_RECEIVER_PARTY_TYPE },
     },
-    customerReferences: [{ value: req.orderId.slice(0, 35), typeCode: "CU" }],
+    ...((!isDomestic || DHL_SEND_DOMESTIC_REFERENCE) && {
+      customerReferences: [{ value: orderReference, typeCode: "CU" }],
+    }),
     content: {
       unitOfMeasurement: "metric",
-      packages: [
-        {
-          ...req.parcel,
-          customerReferences: [{ value: req.orderId.substring(0, 35), typeCode: "CU" }],
-          description,
-        }
-      ],
+      packages: [req.parcel],
       isCustomsDeclarable: !isDomestic,
       incoterm: "DAP",
       ...(!isDomestic && {
@@ -301,21 +418,9 @@ export async function createShipment(req: DHLShipmentRequest) {
           shipmentType: "commercial",
           placeOfIncoterm: req.destination.city.slice(0, 45),
           ...(req.freight > 0 && { additionalCharges: [{ typeCode: "freight", value: req.freight }] }),
-          lineItems: req.customsLines.map((line, index) => ({
-            number: index + 1,
-            description: line.description,
-            price: line.price,
-            quantity: { value: line.quantity, unitOfMeasurement: "PCS" },
-            commodityCodes: [
-              { typeCode: "outbound", value: line.hsCode },
-              ...(line.inboundHsCode ? [{ typeCode: "inbound", value: line.inboundHsCode }] : []),
-            ],
-            exportReasonType: "permanent",
-            manufacturerCountry: "GH",
-            weight: { netValue: line.weightKg, grossValue: line.grossWeightKg ?? line.weightKg },
-          })),
+          lineItems: dhlWireCustomsLines(req.customsLines),
           invoice: {
-            number: `INV-${req.orderId.substring(0, 20)}`,
+            number: `${DHL_INVOICE_NUMBER_PREFIX}${orderReference}`,
             date: new Date().toISOString().split("T")[0]
           }
         },
@@ -352,15 +457,20 @@ export async function createShipment(req: DHLShipmentRequest) {
   }
 }
 
-export async function schedulePickup(trackingNumber: string, parcel: DhlParcel, recipient: ShipmentRecipient, declaredValue?: number) {
+export async function schedulePickup(trackingNumber: string, parcel: DhlParcel, recipient: ShipmentRecipient, declaredValue?: number, instructions?: string) {
   const account = envTrim("DHL_ACCOUNT_NUMBER");
   if (!account || !envTrim("DHL_API_KEY") || !envTrim("DHL_API_SECRET")) throw new DhlBookingRejected("DHL credentials are missing.");
+  const addressError = validateDhlStreet(recipient.destination);
+  if (addressError) throw new DhlBookingRejected(addressError);
   const isCustomsDeclarable = declaredValue !== undefined;
 
   const payload = {
     plannedPickupDateAndTime: dhlTimestamp(10),
-    closeTime: "16:00",
-    location: "Reception",
+    closeTime: DHL_PICKUP_CLOSE_TIME,
+    location: "reception",
+    ...(instructions?.trim() && {
+      specialInstructions: [{ value: instructions.trim(), typeCode: DHL_PICKUP_INSTRUCTION_TYPE_CODE }],
+    }),
     locationType: "business",
     accounts: [{ typeCode: "shipper" as const, number: account }],
     customerDetails: {
@@ -368,7 +478,7 @@ export async function schedulePickup(trackingNumber: string, parcel: DhlParcel, 
       receiverDetails: receiverDetails(recipient),
     },
     shipmentDetails: [{
-      shipmentTrackingNumber: trackingNumber,
+      ...(DHL_PICKUP_SEND_WAYBILL && { shipmentTrackingNumber: trackingNumber }),
       productCode: isCustomsDeclarable ? "P" : "N",
       unitOfMeasurement: "metric",
       isCustomsDeclarable,

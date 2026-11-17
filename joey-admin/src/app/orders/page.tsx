@@ -6,6 +6,8 @@ import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import type { ItemProductionStatus, Order, OrderStatus } from "@/lib/types";
 import type { DhlCustomsLine } from "@/lib/dhl";
+import { DHL_CUSTOMS_DESCRIPTION_MAX, DHL_CUSTOMS_DESCRIPTION_MIN, DHL_REQUIRE_INBOUND_HS, DHL_SHIPMENT_DESCRIPTION_MAX } from "@/lib/dhlRules";
+import { allocateCartonWeight, hasUnconfirmedQuantityWeights, shipmentWeightTotals } from "@/lib/dhlWeights";
 import { isDhlParcel, type DhlParcel } from "@/lib/dhlParcel";
 import { formatOrderNumber } from "@/lib/formatOrderNumber";
 import { formatOrderPlacedAt } from "@/lib/formatOrderPlacedAt";
@@ -20,7 +22,11 @@ const field = "mt-1 w-full rounded-lg border border-zinc-300 bg-white px-2.5 py-
 type ParcelForm = {
   orderId: string;
   trackingNumber?: string;
-  customsLines: DhlCustomsLine[];
+  customsLines: (DhlCustomsLine & { confirmed?: boolean })[];
+  itemDescription: string;
+  countryCode?: string;
+  paidFreight?: number;
+  freightReviewEnabled?: boolean;
 };
 
 type Notice = { orderId: string; text: string; error?: boolean };
@@ -34,6 +40,7 @@ export default function OrdersPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [parcelForm, setParcelForm] = useState<ParcelForm | null>(null);
   const [parcel, setParcel] = useState(blankParcel);
+  const [freightReview, setFreightReview] = useState<{ parcel: DhlParcel; paid: number; current: number | null; confirmed: boolean } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -94,22 +101,57 @@ export default function OrdersPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not load shipment details.");
       setParcel(blankParcel());
-      setParcelForm({ orderId, customsLines: data.customsLines });
+      setFreightReview(null);
+      if (data.frozen) throw new Error("This shipment is already frozen. Check its recorded DHL result before trying again.");
+      setParcelForm({ orderId, customsLines: data.customsLines, itemDescription: data.itemDescription, countryCode: data.countryCode, paidFreight: data.paidFreight, freightReviewEnabled: data.freightReviewEnabled });
     });
   }
 
-  async function submitDhl(orderId: string, trackingNumber?: string, customsLines?: DhlCustomsLine[], measurements?: DhlParcel) {
+  async function submitDhl(orderId: string, trackingNumber?: string, customsLines?: DhlCustomsLine[], measurements?: DhlParcel, itemDescription?: string, confirmedFreight?: number) {
     await updateOrder(orderId, async () => {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       const response = await fetch(trackingNumber ? "/api/dhl/schedule-pickup" : "/api/dhl/create-shipment", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` },
-        body: JSON.stringify({ orderId, trackingNumber, customsLines, parcel: measurements }),
+        body: JSON.stringify({ orderId, trackingNumber, customsLines, parcel: measurements, itemDescription, confirmedFreight }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "DHL request failed.");
+      if (!response.ok) {
+        if (measurements && typeof data.current === "number" && typeof data.paid === "number") {
+          setFreightReview({ parcel: measurements, current: data.current, paid: data.paid, confirmed: false });
+        }
+        throw new Error(data.error || "DHL request failed.");
+      }
       setParcelForm(null);
-      return trackingNumber ? "Pickup scheduled." : "DHL label ready to download.";
+      return trackingNumber ? "Pickup scheduled." : ["DHL label ready to download.", data.freightWarning].filter(Boolean).join(" ");
+    });
+  }
+
+  function reviewFreight(orderId: string) {
+    void updateOrder(orderId, async () => {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch("/api/dhl/create-shipment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` },
+        body: JSON.stringify({ orderId, parcel, action: "quote" }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not check the packed parcel rate.");
+      setFreightReview({ parcel, paid: data.paid, current: data.current, confirmed: false });
+    });
+  }
+
+  function correctPhone(orderId: string, phone: string) {
+    void updateOrder(orderId, async () => {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch("/api/dhl/create-shipment", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` },
+        body: JSON.stringify({ orderId, phone }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not correct the phone number.");
+      return "DHL recipient phone saved.";
     });
   }
 
@@ -120,7 +162,7 @@ export default function OrdersPage() {
       void submitDhl(order.id, trackingNumber);
     } else {
       setParcel(blankParcel());
-      setParcelForm({ orderId: order.id, trackingNumber, customsLines: [] });
+      setParcelForm({ orderId: order.id, trackingNumber, customsLines: [], itemDescription: "" });
     }
   }
 
@@ -145,12 +187,29 @@ export default function OrdersPage() {
     });
   }
 
+  const allocation = allocateCartonWeight(parcel.weight, activeParcelForm?.customsLines ?? []);
+  const effectiveLines = activeParcelForm?.customsLines.map((line, index) => ({
+    ...line, grossWeightKg: line.grossWeightKg ?? allocation[index],
+  })) ?? [];
+  const weightTotals = shipmentWeightTotals(effectiveLines);
+
+  const currentReview = freightReview?.parcel === parcel ? freightReview : null;
+  const difference = currentReview?.current != null && currentReview.current !== currentReview.paid;
+
   const packedParcelForm = activeParcelForm && (
     <form className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3" onSubmit={(event) => {
       event.preventDefault();
-      void submitDhl(activeParcelForm.orderId, activeParcelForm.trackingNumber, activeParcelForm.customsLines, parcel);
+      void submitDhl(activeParcelForm.orderId, activeParcelForm.trackingNumber, effectiveLines, parcel, activeParcelForm.itemDescription, currentReview?.confirmed ? currentReview.current ?? undefined : undefined);
     }}>
       <h4 className="text-sm font-semibold">Packed parcel</h4>
+      {!activeParcelForm.trackingNumber && (
+        <label className="block text-xs font-medium">
+          Shipment description
+          <input required maxLength={DHL_SHIPMENT_DESCRIPTION_MAX} value={activeParcelForm.itemDescription}
+            onChange={(event) => setParcelForm({ ...activeParcelForm, itemDescription: event.target.value })} className={field} />
+          <span>{activeParcelForm.itemDescription.trim().length} / {DHL_SHIPMENT_DESCRIPTION_MAX}</span>
+        </label>
+      )}
       <label className="block text-xs font-medium">
         Sealed weight (kg)
         <input type="number" required min="0.001" step="0.001" value={parcel.weight || ""} onChange={(event) => setParcel({ ...parcel, weight: Number(event.target.value) })} className={field} />
@@ -166,10 +225,28 @@ export default function OrdersPage() {
       {activeParcelForm.customsLines.length > 0 && (
         <fieldset className="space-y-2 border-t border-zinc-200 pt-2">
           <legend className="text-xs font-semibold">Export customs lines</legend>
-          <p className="text-xs text-zinc-700">Use the measured garment weight. Leave unit gross blank if there is no individual wrapping. Include the outer carton in the packed weight above.</p>
+          <p className="text-xs text-zinc-700">Enter measured net weight. Joey allocates the remaining carton weight across the lines. You can edit the allocated gross weights.</p>
+          <p className="text-xs">Net {weightTotals.netKg.toFixed(3)} kg · Gross {weightTotals.grossKg.toFixed(3)} kg · Packed {parcel.weight.toFixed(3)} kg · Difference {(parcel.weight - weightTotals.grossKg).toFixed(3)} kg</p>
+          {hasUnconfirmedQuantityWeights(effectiveLines) && <p role="status" className="text-amber-800">Weight semantics for quantity &gt; 1 pending DHL confirmation.</p>}
           {activeParcelForm.customsLines.map((line, index) => (
             <div key={index} className="block rounded-lg border border-zinc-200 bg-white p-2.5 text-xs">
-              <span className="block font-semibold">{line.description}</span>
+              <label className="block font-semibold">
+                Customs description
+                <textarea required minLength={DHL_CUSTOMS_DESCRIPTION_MIN} maxLength={DHL_CUSTOMS_DESCRIPTION_MAX}
+                  value={line.description} onChange={(event) => setParcelForm({
+                    ...activeParcelForm,
+                    customsLines: activeParcelForm.customsLines.map((item, i) => i === index ? { ...item, description: event.target.value, confirmed: false } : item),
+                  })} className={field} />
+              </label>
+              <p>{line.description.trim().length} / {DHL_CUSTOMS_DESCRIPTION_MAX} characters (minimum {DHL_CUSTOMS_DESCRIPTION_MIN}). Include item type, material or fibre, intended wearer, and made in Ghana.</p>
+              {DHL_REQUIRE_INBOUND_HS && !line.inboundHsCode && <p className="text-red-700">Add the {activeParcelForm.countryCode} import HS code for this product.</p>}
+              {!line.intendedWearer && <p className="text-red-700">Set the intended wearer in Products before booking.</p>}
+              <label className="my-2 flex items-center gap-2">
+                <input type="checkbox" required checked={line.confirmed ?? false} onChange={(event) => setParcelForm({
+                  ...activeParcelForm,
+                  customsLines: activeParcelForm.customsLines.map((item, i) => i === index ? { ...item, confirmed: event.target.checked } : item),
+                })} /> I confirm this describes the actual goods.
+              </label>
               <span className="mb-1 block text-zinc-700">{line.hsCode}{line.inboundHsCode && ` / ${line.inboundHsCode}`} · {line.quantity} × {money(line.price)}</span>
               <label className="block">
                 Net weight per unit (kg)
@@ -179,8 +256,8 @@ export default function OrdersPage() {
                 }} className={field} />
               </label>
               <label className="mt-2 block">
-                Gross weight per unit with individual wrapping (kg)
-                <input type="number" min={line.weightKg} step="0.001" placeholder={String(line.weightKg)} value={line.grossWeightKg ?? ""} onChange={(event) => {
+                Gross weight per unit including carton allocation (kg)
+                <input type="number" min={line.weightKg} step="0.001" placeholder={String(effectiveLines[index]?.grossWeightKg ?? line.weightKg)} value={line.grossWeightKg ?? ""} onChange={(event) => {
                   const grossWeightKg = event.target.value ? Number(event.target.value) : undefined;
                   setParcelForm({ ...activeParcelForm, customsLines: activeParcelForm.customsLines.map((item, i) => i === index ? { ...item, grossWeightKg } : item) });
                 }} className={field} />
@@ -188,6 +265,20 @@ export default function OrdersPage() {
             </div>
           ))}
         </fieldset>
+      )}
+      {activeParcelForm.freightReviewEnabled && (
+        <div className="space-y-2 border-t border-zinc-200 pt-2 text-xs">
+          <p>Paid shipping: {money(activeParcelForm.paidFreight ?? 0)} · Current DHL freight: {currentReview?.current != null ? money(currentReview.current) : "—"}</p>
+          {currentReview?.current === null && <p role="status" className="text-amber-800">Rate unavailable. Booking can use the stored checkout freight.</p>}
+          {difference && currentReview?.current != null && (
+            <label className="flex items-center gap-2">
+              <input type="checkbox" required checked={currentReview.confirmed} onChange={(event) => setFreightReview({ ...currentReview, confirmed: event.target.checked })} />
+              Confirm DHL freight difference of {money(Math.round((currentReview.current - currentReview.paid) * 100) / 100)}. This does not change the amount paid.
+            </label>
+          )}
+          <button type="button" disabled={!isDhlParcel(parcel) || workingId === activeParcelForm.orderId}
+            onClick={() => reviewFreight(activeParcelForm.orderId)} className="font-semibold underline disabled:opacity-50">Check packed parcel rate</button>
+        </div>
       )}
       <div className="flex flex-wrap justify-end gap-2">
         <button type="button" onClick={() => setParcelForm(null)} disabled={workingId === activeParcelForm.orderId} className="rounded-lg px-2 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Cancel</button>
@@ -279,6 +370,7 @@ export default function OrdersPage() {
           onResolve={(reason, agreement, days) => resolveHold(selectedOrder.id, reason, agreement, days)}
           onCreateShipment={() => void openShipment(selectedOrder.id)}
           onSchedulePickup={() => schedulePickup(selectedOrder)}
+          onCorrectPhone={(phone) => correctPhone(selectedOrder.id, phone)}
           parcelForm={packedParcelForm}
         />
       )}

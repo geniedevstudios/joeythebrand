@@ -1,8 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { validCustomsComponents, type CustomsProfile } from "@/lib/customsProfile";
-import { createShipment, DhlBookingRejected, DhlDocumentsIncomplete, parseDhlAddress, SHIPPER_DETAILS, type DhlCustomsLine } from "@/lib/dhl";
+import { createShipment, dhlWireCustomsLines, getDhlEnvironment, dhlOrderReference, DhlBookingRejected, DhlDocumentsIncomplete, parseDhlAddress, SHIPPER_DETAILS, type DhlCustomsLine } from "@/lib/dhl";
+import { prefillCustomsDescription, validateCustomsDescription, validateShipmentDescription } from "@/lib/dhlDescriptions";
+import { DHL_INVOICE_FREIGHT_SOURCE, DHL_REQUIRE_INBOUND_HS, shouldReviewDhlFreight } from "@/lib/dhlRules";
+import { validateDhlStreet } from "@/lib/dhlStreet";
+import { validatePackedWeights } from "@/lib/dhlWeights";
 import { readDhlParcel } from "@/lib/dhlParcel";
+import { measuredParcelFreight, shippingCostForDhl } from "@/lib/dhlFreight";
+import { normalizePhone } from "@/lib/normalizePhone";
+import { isDhlShippingAddress } from "@/lib/formatShippingAddress";
 import { isDhlOperator } from "@/lib/dhlRequestAuth";
 
 const supabaseAdmin = createClient(
@@ -22,25 +29,38 @@ type StoredItem = {
   price: number;
 };
 
-async function prepareShipment(orderId: string) {
+async function prepareShipment(orderId: string, review = false) {
   const { data: order, error } = await supabaseAdmin.from("orders").select("*").eq("id", orderId).maybeSingle();
   if (error) throw error;
   if (!order) return problem("Order not found.", 404);
+  if (review && Array.isArray(order.dhl_customs_lines)) {
+    return { customsLines: order.dhl_customs_lines as ReturnType<typeof dhlWireCustomsLines>, itemDescription: String(order.dhl_shipment_description ?? ""), frozen: true as const };
+  }
   if (order.dhl_tracking_number) return problem("Shipment already created. Download the existing label.", 409);
   if (order.dhl_shipment_claimed_at) return problem("A shipment request is in progress or needs reconciliation with DHL.", 409);
   if (order.stock_conflict_flagged || order.payment_status !== "paid" || order.status !== "order packaged") {
     return problem("The order must be paid, packaged, and free of stock conflicts.", 409);
   }
 
+  let orderNumber: string;
+  try {
+    orderNumber = dhlOrderReference(order.order_number);
+  } catch (error) {
+    if (error instanceof DhlBookingRejected) return problem(error.message, 409);
+    throw error;
+  }
   const destination = parseDhlAddress(order.shipping_address);
   if (!destination) return problem("This order does not have a valid DHL delivery address.", 409);
+  const addressError = validateDhlStreet(destination);
+  if (addressError) return problem(addressError, 409);
   const customerName = String(order.customer_name ?? "").trim();
   const customerEmail = String(order.customer_email ?? "").trim();
-  const customerPhone = String(order.customer_phone ?? "").trim();
-  if (!customerName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail) ||
-    !/^\+?[\d ().-]+$/.test(customerPhone) || !/^\d{7,15}$/.test(customerPhone.replace(/\D/g, ""))) {
-    return problem("The order needs a valid recipient name, email, and phone number before generating a label.", 409);
+  const originalPhone = String(order.customer_phone ?? "");
+  const customerPhone = normalizePhone(originalPhone);
+  if (!customerName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+    return problem("The order needs a valid recipient name and email before generating a label.", 409);
   }
+  if (!customerPhone) return problem("Correct the recipient phone to a valid international number before booking.", 409);
 
   const items = order.items as StoredItem[];
   if (!Array.isArray(items) || !items.length) return problem("The order has no items to declare.", 409);
@@ -52,7 +72,7 @@ async function prepareShipment(orderId: string) {
 
   const ids = [...new Set(itemProductIds.filter((id): id is string => !!id))];
   const { data: products, error: productError } = ids.length
-    ? await supabaseAdmin.from("products").select("id, description, customs_profile").in("id", ids)
+    ? await supabaseAdmin.from("products").select("id, name, description, customs_profile").in("id", ids)
     : { data: [], error: null };
   if (productError) throw productError;
   const productsById = new Map((products ?? []).map((product) => [product.id, product]));
@@ -65,7 +85,8 @@ async function prepareShipment(orderId: string) {
       return problem("The order needs a positive merchandise value. Confirm the customs valuation before shipping.", 409);
     }
     for (const item of items) {
-      const profile = productsById.get(item.productId || item.product_id)?.customs_profile as CustomsProfile | null | undefined;
+      const product = productsById.get(item.productId || item.product_id);
+      const profile = product?.customs_profile as CustomsProfile | null | undefined;
       if (profile?.verified !== true || !validCustomsComponents(profile.components)) {
         return problem(`Verify export customs details for ${item.name || "the order item"} in Products, then reopen this shipment.`, 409);
       }
@@ -82,7 +103,9 @@ async function prepareShipment(orderId: string) {
         if (price <= 0) return problem(`A customs line for ${item.name || "an order item"} has no positive unit value.`, 409);
         previousCents = cents;
         customsLines.push({
-          description: component.description.trim(),
+          description: prefillCustomsDescription(component),
+          productName: typeof product?.name === "string" ? product.name : item.name,
+          intendedWearer: component.intendedWearer,
           quantity: item.quantity,
           price,
           weightKg: component.weightKg,
@@ -100,10 +123,11 @@ async function prepareShipment(orderId: string) {
     return product?.description?.trim() || customsDescription || item?.name?.trim();
   }).filter(Boolean);
   const itemDescription = [...new Set(descriptions)].join(", ").replace(/\s+/g, " ").trim();
-  if (!itemDescription) return problem("The order needs an item description.", 409);
-  const freight = Number(order.shipping_cost ?? 0);
-  if (!Number.isFinite(freight) || freight < 0) return problem("The order has an invalid DHL freight amount.", 409);
-  return { orderId, customerName, customerEmail, customerPhone, destination, customsLines, itemDescription, freight };
+  const freight = shippingCostForDhl(order.shipping_cost, isExport);
+  if (freight === null) return problem(isExport
+    ? "No freight amount on this order; re-quote before booking"
+    : "The order has an invalid DHL freight amount.", 409);
+  return { orderId, orderNumber, customerName, customerEmail, customerPhone, originalPhone, destination, customsLines, itemDescription, freight, frozen: false as const };
 }
 
 export async function GET(request: Request) {
@@ -111,12 +135,48 @@ export async function GET(request: Request) {
     if (!(await isDhlOperator(request))) return problem("Forbidden", 403);
     const orderId = new URL(request.url).searchParams.get("orderId");
     if (!orderId) return problem("Missing order ID.", 400);
-    const shipment = await prepareShipment(orderId);
+    const shipment = await prepareShipment(orderId, true);
     if (shipment instanceof Response) return shipment;
-    return NextResponse.json({ customsLines: shipment.customsLines });
+    const freightReviewEnabled = shipment.customsLines.length > 0 && !shipment.frozen
+      && shouldReviewDhlFreight(getDhlEnvironment().environment);
+    return NextResponse.json({
+      customsLines: shipment.customsLines,
+      itemDescription: shipment.itemDescription,
+      frozen: shipment.frozen,
+      freightReviewEnabled,
+      paidFreight: freightReviewEnabled && "freight" in shipment ? shipment.freight : undefined,
+      countryCode: "destination" in shipment ? shipment.destination?.countryCode : undefined,
+    });
   } catch (error) {
     console.error("DHL shipment preparation failed:", error);
     return problem("Could not load shipment details.", 500);
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    if (!(await isDhlOperator(request))) return problem("Forbidden", 403);
+    const { orderId, phone } = await request.json();
+    const normalized = normalizePhone(phone);
+    if (typeof orderId !== "string" || !orderId || !normalized) return problem("Enter a valid full international phone number.", 400);
+    const { data: order, error } = await supabaseAdmin.from("orders")
+      .select("customer_phone,shipping_address,dhl_tracking_number,dhl_shipment_claimed_at,dhl_pickup_claimed_at")
+      .eq("id", orderId).maybeSingle();
+    if (error) throw error;
+    if (!order || !(isDhlShippingAddress(order.shipping_address) || parseDhlAddress(order.shipping_address) || order.dhl_tracking_number)) return problem("No DHL order found.", 404);
+    if (order.dhl_shipment_claimed_at || order.dhl_pickup_claimed_at) return problem("Resolve the in-progress DHL operation before changing the phone.", 409);
+    if (order.customer_phone === normalized) return NextResponse.json({ customerPhone: normalized });
+    const { data: updated, error: updateError } = await supabaseAdmin.from("orders")
+      .update({ customer_phone: normalized, customer_phone_previous: order.customer_phone })
+      .eq("id", orderId).eq("customer_phone", order.customer_phone)
+      .is("dhl_shipment_claimed_at", null).is("dhl_pickup_claimed_at", null)
+      .select("id").maybeSingle();
+    if (updateError) throw updateError;
+    if (!updated) return problem("The order changed. Refresh before saving the phone.", 409);
+    return NextResponse.json({ customerPhone: normalized });
+  } catch (error) {
+    console.error("DHL phone correction failed:", error);
+    return problem("Could not save the recipient phone.", 500);
   }
 }
 
@@ -124,25 +184,52 @@ export async function POST(request: Request) {
   let claim: { orderId: string; timestamp: string } | undefined;
   try {
     if (!(await isDhlOperator(request))) return problem("Forbidden", 403);
-    const { orderId, parcel: measurements, customsLines } = await request.json();
+    const { orderId, parcel: measurements, customsLines, itemDescription, action, confirmedFreight } = await request.json();
     const parcel = readDhlParcel(measurements);
     if (typeof orderId !== "string" || !orderId || !parcel) {
       return problem("Enter a positive packed weight in kg and all three measured dimensions in cm.", 400);
     }
     const shipment = await prepareShipment(orderId);
     if (shipment instanceof Response) return shipment;
+    if (shipment.frozen !== false || !("destination" in shipment)) return problem("This shipment is already frozen.", 409);
+    let environment;
+    try {
+      ({ environment } = getDhlEnvironment());
+    } catch (error) {
+      return problem(error instanceof Error ? error.message : "DHL environment is not configured.", 503);
+    }
+    const isExport = shipment.destination.countryCode !== "GH";
+    const freightReviewEnabled = isExport && shouldReviewDhlFreight(environment);
+    if (action === "quote") {
+      if (!isExport) return problem("Freight review is only required for exports.", 400);
+      if (!freightReviewEnabled) return problem("Freight review is disabled for this sandbox demo.", 409);
+      return NextResponse.json({
+        paid: shipment.freight,
+        current: await measuredParcelFreight(shipment.destination, parcel),
+      });
+    }
+    const descriptionError = validateShipmentDescription(itemDescription, shipment.destination.countryCode === "GH");
+    if (descriptionError) return problem(descriptionError, 400);
+    shipment.itemDescription = itemDescription.trim();
     if (shipment.customsLines.length) {
       // Recheck the reviewed customs data against the catalogue before accepting measured weights.
       if (!Array.isArray(customsLines) || customsLines.length !== shipment.customsLines.length) {
         return problem("Reopen the shipment and review the customs lines.", 409);
       }
       for (const [index, line] of shipment.customsLines.entries()) {
+        if (DHL_REQUIRE_INBOUND_HS && !line.inboundHsCode) {
+          return problem(`Add the ${shipment.destination.countryCode} import HS code for this product.`, 409);
+        }
         const measured = customsLines[index];
-        if (!measured || line.hsCode !== measured.hsCode || line.description !== measured.description ||
+        if (!measured || line.hsCode !== measured.hsCode || line.inboundHsCode !== measured.inboundHsCode ||
           line.quantity !== measured.quantity || line.price !== measured.price ||
           typeof measured.weightKg !== "number" || !Number.isFinite(measured.weightKg) || measured.weightKg <= 0) {
           return problem("The customs lines changed or contain an invalid net weight. Reopen the shipment and review them.", 409);
         }
+        const descriptionError = validateCustomsDescription(measured.description, line.productName, line.intendedWearer);
+        if (descriptionError) return problem(`Customs line ${index + 1}: ${descriptionError}`, 400);
+        if (measured.confirmed !== true) return problem(`Confirm the actual goods for customs line ${index + 1}.`, 400);
+        line.description = measured.description.trim();
         const grossWeight = measured.grossWeightKg ?? measured.weightKg;
         if (typeof grossWeight !== "number" || !Number.isFinite(grossWeight) || grossWeight < measured.weightKg) {
           return problem("Gross weight per unit must be at least the garment net weight.", 400);
@@ -150,20 +237,38 @@ export async function POST(request: Request) {
         line.weightKg = measured.weightKg;
         line.grossWeightKg = grossWeight;
       }
-      const grossWeight = shipment.customsLines.reduce((sum, line) => sum + (line.grossWeightKg ?? line.weightKg) * line.quantity, 0);
-      if (parcel.weight + 0.000001 < grossWeight) return problem("Packed weight is below the total gross weight of the customs lines.", 400);
+      const weightError = validatePackedWeights(parcel.weight, shipment.customsLines);
+      if (weightError) return problem(weightError, 400);
     }
+
+    const currentFreight = freightReviewEnabled ? await measuredParcelFreight(shipment.destination, parcel) : null;
+    const freightWarning = freightReviewEnabled && currentFreight === null
+      ? "Current DHL freight is unavailable. The label uses the stored checkout amount."
+      : undefined;
+    if (currentFreight !== null && currentFreight !== shipment.freight && confirmedFreight !== currentFreight) {
+      return NextResponse.json({ error: "Review and confirm the current DHL freight before booking.",
+        paid: shipment.freight, current: currentFreight }, { status: 409 });
+    }
+    const freightSent = isExport && DHL_INVOICE_FREIGHT_SOURCE === "fresh" && currentFreight !== null
+      ? currentFreight : shipment.freight;
 
     const timestamp = new Date().toISOString();
     const { data: claimed, error: claimError } = await supabaseAdmin.from("orders")
-      .update({ dhl_shipment_claimed_at: timestamp, dhl_parcel: parcel })
-      .eq("id", orderId).eq("payment_status", "paid").eq("status", "order packaged").eq("stock_conflict_flagged", false)
+      .update({
+        dhl_shipment_claimed_at: timestamp,
+        dhl_environment: environment,
+        dhl_parcel: parcel,
+        dhl_customs_lines: dhlWireCustomsLines(shipment.customsLines),
+        dhl_shipment_description: shipment.itemDescription,
+        dhl_freight_amount: isExport ? freightSent : null,
+      })
+      .eq("id", orderId).eq("customer_phone", shipment.originalPhone).eq("payment_status", "paid").eq("status", "order packaged").eq("stock_conflict_flagged", false)
       .is("dhl_tracking_number", null).is("dhl_shipment_claimed_at", null).select("id").maybeSingle();
     if (claimError) throw claimError;
     if (!claimed) return problem("This order changed or a shipment is already being processed.", 409);
     claim = { orderId, timestamp };
 
-    const result = await createShipment({ ...shipment, parcel });
+    const result = await createShipment({ ...shipment, parcel, freight: freightSent });
     const labelUrl = `data:application/pdf;base64,${result.labelData}`;
     const { data: saved, error: saveError } = await supabaseAdmin.from("orders")
       .update({
@@ -180,10 +285,10 @@ export async function POST(request: Request) {
       return problem(`DHL issued tracking ${result.trackingNumber}. Reconcile it with DHL before trying again.`, 502);
     }
 
-    return NextResponse.json({ trackingNumber: result.trackingNumber, labelUrl });
+    return NextResponse.json({ trackingNumber: result.trackingNumber, labelUrl, freightWarning });
   } catch (error) {
     if (claim && error instanceof DhlBookingRejected) {
-      const { error: releaseError } = await supabaseAdmin.from("orders").update({ dhl_shipment_claimed_at: null })
+      const { error: releaseError } = await supabaseAdmin.from("orders").update({ dhl_shipment_claimed_at: null, dhl_customs_lines: null, dhl_shipment_description: null, dhl_freight_amount: null, dhl_environment: null })
         .eq("id", claim.orderId).eq("dhl_shipment_claimed_at", claim.timestamp);
       if (!releaseError) return problem(error.message, 422);
       console.error("Could not release DHL shipment claim:", releaseError);

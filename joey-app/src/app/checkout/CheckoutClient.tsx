@@ -7,7 +7,9 @@ import { cartStore } from "@/store/cartStore";
 import { dataStore } from "@/lib/dataStore";
 import { supabase } from "@/lib/supabase";
 import CustomSelect from "@/components/CustomSelect";
-import { INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS, countryNameFromIso2 } from "@/lib/countrySelectOptions";
+import { qualifiesDhlStreet } from "@/lib/dhlAddressQuality";
+import { normalizePhone } from "@/lib/normalizePhone";
+import { COUNTRY_SELECT_OPTIONS, INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS, countryNameFromIso2 } from "@/lib/countrySelectOptions";
 import type { CartItem } from "@/store/cartStore";
 import { ArrowLeft, CreditCard, Smartphone } from "lucide-react";
 import CheckoutSummary from "./CheckoutSummary";
@@ -76,6 +78,8 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
   const appliedPromo = useSyncExternalStore(cartStore.subscribe, cartStore.getAppliedPromo, () => null);
 
   const [shippingDestination, setShippingDestination] = useState<ShippingDestination>("ghana");
+  const [phoneCountryOverride, setPhoneCountryOverride] = useState("");
+  const [confirmedPhoneCountry, setConfirmedPhoneCountry] = useState("");
   const [dhlQuote, setDhlQuote] = useState<{ request: object; price: number | null; error?: string } | null>(null);
   const [selectedDhlQuote, setSelectedDhlQuote] = useState<typeof dhlQuote>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("card");
@@ -130,6 +134,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
 
   const isGhana = shippingDestination === "ghana";
   const countryCode = isGhana ? "GH" : formData.country.trim().toUpperCase();
+  const phoneCountry = phoneCountryOverride || countryCode;
   const city = formData.city.trim();
   const addressLine1 = formData.address.trim();
   const postalCode = isGhana ? "" : formData.postalCode.trim();
@@ -231,6 +236,17 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
       }
     }
 
+    if (selectedShippingOption === "dhl" && !qualifiesDhlStreet(addressLine1, countryCode, postalCode)) {
+      toast.error("For DHL, enter a street, building or landmark with at least two words, or a valid GhanaPost GPS code.");
+      return;
+    }
+    const rawPhone = formData.phone.trim();
+    const confirmedCountry = confirmedPhoneCountry === phoneCountry ? phoneCountry : undefined;
+    const customerPhone = selectedShippingOption === "dhl" ? normalizePhone(rawPhone, confirmedCountry) : rawPhone;
+    if (!customerPhone) {
+      toast.error("Enter a valid international number or confirm the phone country for a local number.");
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -244,7 +260,8 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
         await dataStore.placeOrder({
           customerName: `${formData.firstName} ${formData.lastName}`.trim(),
           customerEmail: formData.email.trim(),
-          customerPhone: formData.phone.trim(),
+          customerPhone,
+          phoneCountry: confirmedCountry,
           shippingDestination,
           shippingOption: selectedShippingOption,
           shippingAddress,
@@ -392,6 +409,22 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                   <input id="phone" name="phone" type="tel" autoComplete="tel" className="form-input" placeholder={isGhana ? "+233 XX XXX XXXX" : "Include country code"} value={formData.phone} onChange={handleChange} required />
                 </div>
               </div>
+              {selectedShippingOption === "dhl" && (
+                <div className="form-group">
+                  <label className="form-label" id="phone-country-label">Phone country</label>
+                  <CustomSelect id="phone-country" name="phoneCountry" value={phoneCountry}
+                    options={COUNTRY_SELECT_OPTIONS} placeholder="Select phone country" searchPlaceholder="Search phone countries" onChange={(event) => {
+                      setPhoneCountryOverride(event.target.value);
+                      setConfirmedPhoneCountry("");
+                    }} />
+                  {!formData.phone.trim().startsWith("+") && (
+                    <label>
+                      <input type="checkbox" required checked={!!phoneCountry && confirmedPhoneCountry === phoneCountry}
+                        onChange={(event) => setConfirmedPhoneCountry(event.target.checked ? phoneCountry : "")} /> I confirm this is the country of my phone number.
+                    </label>
+                  )}
+                </div>
+              )}
             </section>
 
             <section className={styles.formCard} aria-labelledby="delivery-title">
@@ -414,7 +447,7 @@ export default function CheckoutClient({ dhlEnabled = false }: { dhlEnabled?: bo
                 <div className="form-group">
                   <label className="form-label" id="country-label">Country</label>
                   <CustomSelect id="country" name="country" value={formData.country} onChange={handleChange}
-                    options={INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS} placeholder="Select country" required listMaxHeight={320} />
+                    options={INTERNATIONAL_CHECKOUT_COUNTRY_OPTIONS} placeholder="Select country" searchPlaceholder="Search countries" required listMaxHeight={320} />
                 </div>
               )}
               <div className="form-group">

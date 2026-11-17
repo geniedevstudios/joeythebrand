@@ -1,9 +1,11 @@
 import { useId, useState } from "react";
 import AdminStyledSelect from "@/components/AdminStyledSelect";
 import {
-  blankCustomsComponent, GARMENT_TYPES, HS_SUGGESTIONS, validCustomsComponents,
+  blankCustomsComponent, GARMENT_TYPES, HS_SUGGESTIONS, INTENDED_WEARERS, validCustomsComponents, validDhlHsCode,
   type CustomsComponent, type CustomsProfile,
 } from "@/lib/customsProfile";
+
+import { DHL_CUSTOMS_DESCRIPTION_MAX, DHL_REQUIRE_INBOUND_HS } from "@/lib/dhlRules";
 
 const field = "mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm";
 
@@ -101,16 +103,17 @@ export default function CustomsFields({
             <legend>Customs line {index + 1}</legend>
             <label className="sm:col-span-2">
               Customs description
-              <input className={field} maxLength={512} value={line.description} onChange={(e) => replace(index, { description: e.target.value })} placeholder="e.g. Men’s woven 100% cotton long-sleeve shirt" />
+              <input className={field} maxLength={DHL_CUSTOMS_DESCRIPTION_MAX} value={line.description} onChange={(e) => replace(index, { description: e.target.value })} placeholder="e.g. Men’s woven 100% cotton long-sleeve shirt" />
               <span className="mt-1 block text-xs text-zinc-600">Describe the actual piece, including garment type, fabric construction and fibre content. Add details such as sleeve length or intended wearer where relevant.</span>
             </label>
             <label className="block text-xs font-medium">
-              Verified import HS code destination (optional)
+              Verified import HS code destination
               <input className={field} maxLength={2} value={line.inboundCountry ?? ""} onChange={(e) => replace(index, { inboundCountry: e.target.value.toUpperCase() })} placeholder="e.g. CA" />
             </label>
             <label className="block text-xs font-medium">
-              Verified import HS code (optional)
+              Verified import HS code
               <input className={field} inputMode="numeric" maxLength={12} value={line.inboundHsCode ?? ""} onChange={(e) => replace(index, { inboundHsCode: e.target.value.replace(/\D/g, "") })} />
+              {DHL_REQUIRE_INBOUND_HS && !validDhlHsCode(line.inboundHsCode) && <span className="mt-1 block text-amber-800">Missing inbound code for {line.inboundCountry || "the export destination"}.</span>}
             </label>
             <div className="min-w-0">
               <span id={garmentId}>Garment type</span>
@@ -136,6 +139,15 @@ export default function CustomsFields({
               Fibre composition (%)
               <input className={field} value={line.fibres} onChange={(e) => replace(index, { fibres: e.target.value })} placeholder="e.g. 98% cotton, 2% elastane" />
             </label>
+            <div>
+              <span id={garmentId + "-wearer"}>Intended wearer (required for export)</span>
+              <AdminStyledSelect
+                labelledBy={garmentId + "-wearer"}
+                value={line.intendedWearer ?? ""}
+                options={[{ value: "", label: "Select wearer" }, ...INTENDED_WEARERS.map((value) => ({ value, label: value }))]}
+                onValueChange={(value) => replace(index, { intendedWearer: (value || undefined) as CustomsComponent["intendedWearer"] })}
+              />
+            </div>
             <CustomsCodePicker
               key={`${line.garmentType}-${line.construction}`}
               line={line}

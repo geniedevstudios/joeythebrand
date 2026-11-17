@@ -1,18 +1,24 @@
 import { estimateShippingParcel } from "./shippingWeight";
+import { DHL_TEST_API_BASE, resolveDhlEnvironment } from "./dhlRules";
 
 function envTrim(name: string): string {
   return (process.env[name] || "").trim().replace(/^["']|["']$/g, "");
 }
 
 export const DHL_API_BASE = (
-  envTrim("DHL_API_BASE_URL") || "https://express.api.dhl.com/mydhlapi/test"
+  envTrim("DHL_API_BASE_URL") || DHL_TEST_API_BASE
 ).replace(/\/+$/, "");
 
 function dhlEnvironmentLabel(base: string) {
   return /\/test$/i.test(base) ? "TEST" : "PRODUCTION";
 }
 
+export function getDhlEnvironment() {
+  return resolveDhlEnvironment(DHL_API_BASE, process.env);
+}
+
 function getAuthHeader() {
+  getDhlEnvironment();
   const key = envTrim("DHL_API_KEY");
   const secret = envTrim("DHL_API_SECRET");
   if (!key || !secret) {
@@ -103,7 +109,7 @@ export const SHIPPER_DETAILS = {
   },
   contactInformation: {
     email: "joeythebrandonline@gmail.com",
-    phone: "+233 24 409 3419",
+    phone: "+233244093419",
     companyName: "JOEY THE BRAND",
     fullName: "JOSHUA OPPONG DARKO"
   }

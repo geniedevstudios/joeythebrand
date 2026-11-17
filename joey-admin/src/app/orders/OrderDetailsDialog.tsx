@@ -40,13 +40,15 @@ type Props = {
   notice: { text: string; error?: boolean } | null;
   onCreateShipment: () => void;
   onSchedulePickup: () => void;
+  onCorrectPhone: (phone: string) => void;
   parcelForm: ReactNode;
 };
 
 export default function OrderDetailsDialog({
-  order, working, onClose, onStatus, onProduction, onResolve, onCreateShipment, onSchedulePickup, parcelForm, notice,
+  order, working, onClose, onStatus, onProduction, onResolve, onCreateShipment, onSchedulePickup, onCorrectPhone, parcelForm, notice,
 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const [correctedPhone, setCorrectedPhone] = useState("");
   const [showResolution, setShowResolution] = useState(false);
   useEffect(() => {
     const dialog = ref.current;
@@ -222,7 +224,19 @@ export default function OrderDetailsDialog({
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <Truck size={16} aria-hidden="true" />
                       <span className="min-w-0 break-all">DHL{order.dhlTrackingNumber ? ` · ${order.dhlTrackingNumber}` : ""}</span>
+                      {(order.dhlTrackingNumber || order.dhlShipmentClaimedAt) && <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs">{order.dhlEnvironment?.toUpperCase() ?? "UNKNOWN"}</span>}
                     </div>
+                    <details className="text-xs">
+                      <summary className="cursor-pointer font-semibold">Correct recipient phone</summary>
+                      <form className="mt-2 space-y-2" onSubmit={(event) => { event.preventDefault(); onCorrectPhone(correctedPhone); }}>
+                        <label className="block">Full international phone number
+                          <input type="tel" required placeholder="+233…" value={correctedPhone}
+                            onChange={(event) => setCorrectedPhone(event.target.value)} className="mt-1 block w-full rounded border border-zinc-300 p-2" />
+                        </label>
+                        {order.dhlTrackingNumber && <p>This does not update an already issued DHL record.</p>}
+                        <button type="submit" disabled={working || Boolean(order.dhlShipmentClaimedAt || order.dhlPickupClaimedAt)} className="font-semibold underline disabled:opacity-50">Save phone</button>
+                      </form>
+                    </details>
                     {order.dhlStatus && !order.dhlStatus.startsWith("[") &&
                       !(order.dhlPickupConfirmation && order.dhlStatus.startsWith("Pickup Scheduled")) && (
                       <p className="text-xs text-zinc-700">
@@ -233,6 +247,15 @@ export default function OrderDetailsDialog({
                       <a href={labelHref} download={`DHL_Label_${order.dhlTrackingNumber || number}.pdf`} className={primaryButton}>
                         <Download size={16} aria-hidden="true" /> Download label
                       </a>
+                    )}
+                    {order.dhlShipmentDescription && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer font-semibold">Submitted DHL details</summary>
+                        <p className="mt-2">{order.dhlShipmentDescription}</p>
+                        {order.dhlCustomsLines?.map((line) => (
+                          <p key={line.number} className="mt-1 break-words">{line.quantity.value} × {line.description} · {line.weight.netValue} kg net / {line.weight.grossValue} kg gross</p>
+                        ))}
+                      </details>
                     )}
                     {order.dhlParcel && <p className="text-xs text-zinc-700">Packed weight · {order.dhlParcel.weight} kg</p>}
                     {order.dhlPickupConfirmation && <p className="text-xs text-zinc-700">Pickup scheduled · {order.dhlPickupConfirmation}</p>}

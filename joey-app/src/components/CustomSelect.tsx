@@ -22,9 +22,14 @@ type CustomSelectProps = {
   options: CustomSelectOption[];
   placeholder?: string;
   required?: boolean;
-  /** Max height of the dropdown panel in pixels (default 240) */
+  searchPlaceholder?: string;
+  /** Max height of the options list in pixels (default 240) */
   listMaxHeight?: number;
 };
+
+function normalizeSearch(value: string) {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
 
 function optionDisplayText(opt: CustomSelectOption): string {
   return opt.prefix ? `${opt.prefix} ${opt.label}` : opt.label;
@@ -68,13 +73,23 @@ export default function CustomSelect({
   options,
   placeholder = "Select an option",
   required = false,
+  searchPlaceholder,
   listMaxHeight = 240,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const selectedOption = options.find(opt => opt.value === value);
+  const search = normalizeSearch(query.trim());
+  const visibleOptions = search
+    ? options.filter((option) => normalizeSearch(option.label).includes(search) || option.value.toLowerCase() === search)
+    : options;
+  const activeOption = visibleOptions[highlightedIndex];
+  const listId = `${id}-listbox`;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -87,51 +102,62 @@ export default function CustomSelect({
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setHighlightedIndex(0);
-    });
-  }, [isOpen]);
+    if (isOpen && searchPlaceholder) searchRef.current?.focus();
+  }, [isOpen, searchPlaceholder]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      if (isOpen && options[highlightedIndex]) {
-        const fakeEvent = {
-          target: { name, value: options[highlightedIndex].value }
-        } as React.ChangeEvent<HTMLSelectElement>;
-        onChange(fakeEvent);
-        setIsOpen(false);
-      } else {
-        setIsOpen(true);
-      }
-    } else if (e.key === "Escape") {
-      setIsOpen(false);
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
-    }
-  };
+  function openSelect() {
+    setQuery("");
+    setHighlightedIndex(0);
+    setIsOpen(true);
+  }
 
-  const handleSelect = (optionValue: string) => {
-    const fakeEvent = {
-      target: { name, value: optionValue }
-    } as React.ChangeEvent<HTMLSelectElement>;
-    onChange(fakeEvent);
+  function closeAndFocusTrigger() {
     setIsOpen(false);
-  };
+    if (searchPlaceholder) triggerRef.current?.focus();
+  }
+
+  function handleSelect(optionValue: string) {
+    onChange({ target: { name, value: optionValue } } as React.ChangeEvent<HTMLSelectElement>);
+    closeAndFocusTrigger();
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent, searching = false) {
+    if (event.nativeEvent.isComposing) return;
+    if (event.key === "Enter" || (!searching && event.key === " ")) {
+      event.preventDefault();
+      if (!isOpen) openSelect();
+      else if (activeOption) handleSelect(activeOption.value);
+    } else if (event.key === "Escape" && isOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeAndFocusTrigger();
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!isOpen) {
+        openSelect();
+        return;
+      }
+      const next = Math.max(0, Math.min(highlightedIndex + (event.key === "ArrowDown" ? 1 : -1), visibleOptions.length - 1));
+      setHighlightedIndex(next);
+      document.getElementById(`${listId}-option-${next}`)?.scrollIntoView({ block: "nearest" });
+    }
+  }
 
   return (
-    <div ref={containerRef} className="custom-select-container" style={{ position: "relative" }}>
+    <div ref={containerRef} className="custom-select-container" style={{ position: "relative" }}
+      onBlur={searchPlaceholder ? (event) => {
+        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+      } : undefined}
+    >
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-labelledby={`${id}-label`}
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
+        aria-controls={isOpen ? listId : undefined}
+        onClick={() => isOpen ? setIsOpen(false) : openSelect()}
+        onKeyDown={(event) => handleKeyDown(event)}
         className="custom-select-trigger"
         style={{
           width: "100%",
@@ -186,8 +212,6 @@ export default function CustomSelect({
 
       {isOpen && (
         <div
-          role="listbox"
-          id={`${id}-listbox`}
           style={{
             position: "absolute",
             top: "100%",
@@ -200,48 +224,84 @@ export default function CustomSelect({
             borderRadius: "var(--radius-md)",
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
             zIndex: 100,
-            maxHeight: `${listMaxHeight}px`,
-            overflowY: "auto",
-            padding: "4px 0",
           }}
         >
-          {options.map((option, index) => (
-            <div
-              key={option.value}
-              role="option"
-              aria-selected={value === option.value}
-              onClick={() => handleSelect(option.value)}
-              onMouseEnter={() => setHighlightedIndex(index)}
-              style={{
-                padding: "0.75rem 1rem",
-                cursor: "pointer",
-                background: index === highlightedIndex ? "rgba(39, 43, 54, 0.06)" : "transparent",
-                color: value === option.value ? "var(--blue-athracite)" : "var(--color-text-primary)",
-                fontSize: "0.95rem",
-                fontFamily: "var(--font-body)",
-                transition: "background 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-              }}
-            >
-              {(option.flagIso2 || option.prefix) ? (
-                <span style={{ flexShrink: 0, width: "2rem", display: "flex", justifyContent: "center" }}>
-                  <OptionLeadingVisual opt={option} />
-                </span>
-              ) : null}
-              <span style={{ flex: 1, minWidth: 0 }}>{option.label}</span>
+          {searchPlaceholder && (
+            <div style={{ padding: "0.5rem" }}>
+              <input
+                ref={searchRef}
+                type="text"
+                role="combobox"
+                aria-label={searchPlaceholder}
+                aria-autocomplete="list"
+                aria-expanded
+                aria-controls={listId}
+                aria-activedescendant={activeOption ? `${listId}-option-${highlightedIndex}` : undefined}
+                autoComplete="off"
+                className="form-input"
+                placeholder={searchPlaceholder}
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setHighlightedIndex(0);
+                  document.getElementById(listId)?.scrollTo(0, 0);
+                }}
+                onKeyDown={(event) => handleKeyDown(event, true)}
+              />
             </div>
-          ))}
+          )}
+          <div role="listbox" id={listId} aria-labelledby={`${id}-label`}
+            style={{ maxHeight: `${listMaxHeight}px`, overflowY: "auto", padding: "4px 0" }}
+          >
+            {visibleOptions.map((option, index) => (
+              <div
+                key={option.value}
+                id={`${listId}-option-${index}`}
+                role="option"
+                aria-selected={value === option.value}
+                onMouseDown={searchPlaceholder ? (event) => event.preventDefault() : undefined}
+                onClick={() => handleSelect(option.value)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                style={{
+                  padding: "0.75rem 1rem",
+                  cursor: "pointer",
+                  background: index === highlightedIndex ? "rgba(39, 43, 54, 0.06)" : "transparent",
+                  color: value === option.value ? "var(--blue-athracite)" : "var(--color-text-primary)",
+                  fontSize: "0.95rem",
+                  fontFamily: "var(--font-body)",
+                  transition: "background 0.15s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                {(option.flagIso2 || option.prefix) ? (
+                  <span style={{ flexShrink: 0, width: "2rem", display: "flex", justifyContent: "center" }}>
+                    <OptionLeadingVisual opt={option} />
+                  </span>
+                ) : null}
+                <span style={{ flex: 1, minWidth: 0 }}>{option.label}</span>
+              </div>
+            ))}
+          </div>
+          {visibleOptions.length === 0 && searchPlaceholder && (
+            <p role="status" style={{ padding: "0 1rem 0.75rem" }}>No countries found.</p>
+          )}
         </div>
       )}
-      
+
       <select
         id={id}
         name={name}
         value={value}
         onChange={onChange}
         required={required}
+        tabIndex={searchPlaceholder ? -1 : undefined}
+        onInvalid={searchPlaceholder ? (event) => {
+          event.preventDefault();
+          if (isOpen) searchRef.current?.focus();
+          else openSelect();
+        } : undefined}
         style={{
           position: "absolute",
           opacity: 0,

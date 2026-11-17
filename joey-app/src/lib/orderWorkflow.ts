@@ -7,6 +7,8 @@ import {
   resolveProductFulfillmentMode,
 } from "./variantUtils";
 import { findSizeStockEntry, isSizeAllowedForProduct, normalizeSizeName } from "./wearSizes";
+import { qualifiesDhlStreet } from "./dhlAddressQuality";
+import { normalizePhone } from "./normalizePhone";
 import { garmentWeightKg } from "./shippingWeight";
 import type {
   ItemFulfillmentType,
@@ -106,6 +108,7 @@ export interface CreateOrderInput {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  phoneCountry?: string;
   shippingDestination: "ghana" | "international";
   shippingOption?: "dhl" | "sales" | null;
   shippingAddress: string;
@@ -585,11 +588,16 @@ export async function createServerAuthoritativeOrder(params: {
     validatedPromoCode = promoRow.code;
   }
 
+  let customerPhone = input.customerPhone.trim();
+
   // 5. Requote DHL and store the destination used for the label.
   let shippingCost = 0;
   let shippingAddress = input.shippingAddress.trim();
   const dhlSuffix = /\s*\| DHL\[[^\]]*\](?: \(international\))?$/;
   if (input.shippingOption === "dhl") {
+    const normalized = normalizePhone(customerPhone, input.phoneCountry);
+    if (!normalized) return { ok: false, status: 400, code: "SHIPPING_ERROR", error: "Enter a valid DHL recipient phone and confirm its phone country, or use the full international number." };
+    customerPhone = normalized;
     const city = input.destinationDetails?.city?.trim();
     const postalCode = input.destinationDetails?.postalCode?.trim() || "";
     const countryCode = input.destinationDetails?.countryCode?.trim().toUpperCase();
@@ -609,6 +617,9 @@ export async function createServerAuthoritativeOrder(params: {
       };
     }
 
+    if (!qualifiesDhlStreet(addressLine1, countryCode, postalCode)) {
+      return { ok: false, status: 400, code: "SHIPPING_ERROR", error: "For DHL, enter a street, building or landmark with at least two words, or a valid GhanaPost GPS code." };
+    }
     try {
       const calculateRate = params.calculateShippingRate || (await import("./dhl")).getShippingRates;
       const rate = await calculateRate({
@@ -665,7 +676,7 @@ export async function createServerAuthoritativeOrder(params: {
       p_user_id: input.userId,
       p_customer_name: input.customerName.trim(),
       p_customer_email: input.customerEmail.trim(),
-      p_customer_phone: input.customerPhone.trim(),
+      p_customer_phone: customerPhone,
       p_shipping_address: shippingAddress,
       p_items: resolvedOrderItems,
       p_subtotal: subtotal,

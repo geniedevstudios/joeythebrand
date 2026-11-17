@@ -1,3 +1,10 @@
+import { DHL_CUSTOMS_DESCRIPTION_MAX, DHL_HS_MIN_DIGITS } from "./dhlRules";
+
+export const INTENDED_WEARERS = ["men", "women", "boys", "girls", "unisex"] as const;
+export type IntendedWearer = typeof INTENDED_WEARERS[number];
+
+export const GENERIC_CUSTOMS_DESCRIPTION = /^(?:(?:men|women|children)(?:['’]s)?[\s-]*)?(?:wear|clothing|apparel|garments?|fashion|textiles)(?:[\s&-]+(?:wear|clothing|apparel|garments?|fashion|textiles))*[.!]?$/i;
+
 export const GARMENT_TYPES = {
   shirt: "Shirt or blouse",
   dress: "Dress",
@@ -13,6 +20,7 @@ export type CustomsComponent = {
   garmentType: keyof typeof GARMENT_TYPES | "";
   construction: "" | "woven" | "knit" | "other";
   fibres: string;
+  intendedWearer?: IntendedWearer;
   hsCode: string;
   inboundCountry?: string;
   inboundHsCode?: string;
@@ -35,17 +43,23 @@ export const blankCustomsComponent = (): CustomsComponent => ({
   valueShare: 100,
 });
 
+export function validDhlHsCode(code: unknown): code is string {
+  return typeof code === "string" && /^\d+$/.test(code) && code.length >= DHL_HS_MIN_DIGITS
+    && [6, 8, 10, 12].includes(code.length);
+}
+
 export function validCustomsComponents(components: CustomsComponent[]) {
   return Array.isArray(components) && components.length > 0 &&
     components.every((line) =>
-      line && typeof line.description === "string" && line.description.trim().length > 0 && line.description.trim().length <= 512 &&
-      !/^(?:(?:men|women|children)(?:['’]s)?[\s-]*)?(?:wear|clothing|apparel|garments?|fashion|textiles)(?:[\s&-]+(?:wear|clothing|apparel|garments?|fashion|textiles))*[.!]?$/i.test(line.description.trim()) &&
+      line && typeof line.description === "string" && line.description.trim().length > 0 && line.description.trim().length <= DHL_CUSTOMS_DESCRIPTION_MAX &&
+      !GENERIC_CUSTOMS_DESCRIPTION.test(line.description.trim()) &&
+      (line.intendedWearer == null || INTENDED_WEARERS.includes(line.intendedWearer)) &&
       ((!line.inboundCountry && !line.inboundHsCode) ||
-        (/^[A-Z]{2}$/.test(line.inboundCountry ?? "") && line.inboundCountry !== "GH" && /^\d{6,12}$/.test(line.inboundHsCode ?? ""))) &&
+        (/^[A-Z]{2}$/.test(line.inboundCountry ?? "") && line.inboundCountry !== "GH" && validDhlHsCode(line.inboundHsCode))) &&
       Object.hasOwn(GARMENT_TYPES, line.garmentType) &&
       ["woven", "knit", "other"].includes(line.construction) &&
       typeof line.fibres === "string" && line.fibres.trim().length > 0 &&
-      typeof line.hsCode === "string" && /^(61|62)\d{4}(?:\d{2}){0,3}$/.test(line.hsCode) &&
+      validDhlHsCode(line.hsCode) && /^(61|62)/.test(line.hsCode) &&
       (line.construction !== "woven" || line.hsCode.startsWith("62")) &&
       (line.construction !== "knit" || line.hsCode.startsWith("61")) &&
       Number.isFinite(line.weightKg) && line.weightKg > 0 &&
