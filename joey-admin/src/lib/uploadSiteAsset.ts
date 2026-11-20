@@ -41,25 +41,5 @@ export async function uploadSiteAsset(file: File, folder: string): Promise<strin
     if (!uploaded.ok) throw new Error("R2 could not store that file. Try uploading it again.");
     return sign.publicUrl;
   }
-  if (sign.provider !== "cloudinary" || !sign.signature || !sign.cloudName) {
-    throw new Error("Upload could not start.");
-  }
-
-  const form = new FormData();
-  form.append("file", file);
-  form.append("api_key", sign.apiKey);
-  form.append("timestamp", String(sign.timestamp));
-  form.append("folder", sign.folder);
-  form.append("public_id", sign.publicId);
-  form.append("signature", sign.signature);
-
-  const uploaded = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloudName}/${sign.resourceType}/upload`, {
-    method: "POST",
-    body: form,
-  });
-  const body = await uploaded.json().catch(() => ({}));
-  if (!uploaded.ok || typeof body.secure_url !== "string") {
-    throw new Error("Cloudinary could not store that file.");
-  }
-  return body.secure_url;
+  throw new Error("Upload could not start.");
 }

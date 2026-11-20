@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
-import { Clock } from "lucide-react";
+import { Clock, Ruler } from "lucide-react";
 import { useEffect, useMemo, useSyncExternalStore, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
@@ -16,6 +16,8 @@ import ProductMedia from "@/components/shop/ProductMedia";
 import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
 import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal";
+import QuickViewIconButtons from "@/components/shop/QuickViewIconButtons";
+import SizePicker from "@/components/shop/SizePicker";
 import styles from "./FeaturedSection.module.css";
 import { getVariantStockStatus, getIsSoloUnavailable, getVariantStorefrontSizes, getCardFulfillmentSummary } from "@/lib/variantUtils";
 
@@ -378,7 +380,6 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                   {quickViewColorVariants.length > 0 && (
                     <>
                       <div className={styles.colorSelectorSection}>
-                        <span className={styles.colorSelectorLabel}>Color:</span>
                         <div className={styles.colorSelectorSwatches}>
                         {quickViewColorVariants.map((v: any) => (
                           <button
@@ -487,25 +488,19 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                   )}
 
                   <div className={styles.modalSizeRow}>
-                    <span className={styles.qtyLabel}>Size:</span>
-                    <div className={styles.sizeGrid}>
-                      {getVariantStorefrontSizes(quickViewPiece, selectedFit, quickViewActiveVariant).map((sz: string) => (
-                        <button
-                          key={sz}
-                          type="button"
-                          className={`${styles.sizeBtn} ${selectedSize === sz ? styles.sizeActive : ""}`}
-                          onClick={() => setSelectedSize((prev) => (prev === sz ? "" : sz))}
-                        >
-                          {formatSizeLabel(sz, selectedFit, quickViewPiece.wearTag)}
-                        </button>
-                      ))}
-                    </div>
+                    <span className={styles.qtyLabel}>Select size{selectedSize ? ` — ${selectedSize}` : ""}</span>
+                    <SizePicker
+                      sizes={getVariantStorefrontSizes(quickViewPiece, selectedFit, quickViewActiveVariant)}
+                      selected={selectedSize}
+                      onChange={(next) => { setSelectedSize(next); }}
+                      formatLabel={(sz) => formatSizeLabel(sz, selectedFit, quickViewPiece.wearTag)}
+                    />
                     <button
                       type="button"
                       className={styles.sizeGuideBtn}
                       onClick={() => setSizeGuideOpen(true)}
                     >
-                      Size Guide
+                      <Ruler size={13} strokeWidth={1.5} aria-hidden /> Size Guide
                     </button>
                   </div>
 
@@ -520,19 +515,18 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
 
                   <div className={styles.modalQtyRow}>
                     <div className={styles.qtyLeft}>
-                      <span className={styles.qtyLabel}>Quantity:</span>
                       <div className={styles.qtyControl}>
                         <button
                           type="button"
-                          className={styles.qtyBtn}
+                          className={styles.qtyBtn} aria-label="Decrease quantity"
                           onClick={() => setQty(Math.max(1, qty - 1))}
                         >
-                          -
+                          −
                         </button>
                         <span className={styles.qtyVal}>{qty}</span>
                         <button
                           type="button"
-                          className={styles.qtyBtn}
+                          className={styles.qtyBtn} aria-label="Increase quantity"
                           onClick={() => {
                             const isBespoke = quickViewStockStatus.isBespokeProduct;
                             if (qty < quickViewMaxQty) {
@@ -577,16 +571,11 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
                       );
                     })()}
 
-                    <button
-                      type="button"
-                      className={styles.modalWishlistBtn}
-                      onClick={() => toggleWishlist(quickViewPiece)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill={isInWishlist(quickViewPiece.id) ? "var(--alaska-gray)" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" suppressHydrationWarning>
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                      </svg>
-                      {isInWishlist(quickViewPiece.id) ? "Saved To Wishlist" : "Add To Wishlist"}
-                    </button>
+                    <QuickViewIconButtons
+                      item={quickViewPiece}
+                      saved={isInWishlist(quickViewPiece.id)}
+                      onToggleWishlist={() => toggleWishlist(quickViewPiece)}
+                    />
                   </div>
 
                   {(() => {
@@ -690,28 +679,6 @@ export default function FeaturedSection({ splitMode = 'none', hideHeader = false
 
                     <div className={styles.overlay}>
                       <div className={styles.actionButtons}>
-                    <button
-                      type="button"
-                      className={styles.iconBtn}
-                      aria-label={isInWishlist(item.id) ? "Remove from wishlist" : "Add to wishlist"}
-                      title={isInWishlist(item.id) ? "Saved" : "Add to wishlist"}
-                      onClick={() => toggleWishlist(item)}
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill={isInWishlist(item.id) ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        suppressHydrationWarning
-                      >
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                      </svg>
-                    </button>
-
                     <button
                       type="button"
                       className={styles.iconBtn}

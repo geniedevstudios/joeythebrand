@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { AwsClient } from "aws4fetch";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -7,14 +7,6 @@ import { getUserFromBearer } from "@/lib/adminRequestAuth";
 import { IMAGE_UPLOAD_LIMIT, MEDIA_TYPES, VIDEO_UPLOAD_LIMIT } from "@/lib/mediaUpload";
 
 export const runtime = "nodejs";
-
-function signature(params: Record<string, string>, apiSecret: string) {
-  const signed = Object.keys(params)
-    .sort()
-    .map((key) => `${key}=${params[key]}`)
-    .join("&");
-  return createHash("sha1").update(signed + apiSecret).digest("hex");
-}
 
 function safeFolder(input: unknown) {
   const clean = String(input || "uploads")
@@ -53,67 +45,43 @@ export async function POST(request: Request) {
   const publicBase = process.env.R2_PUBLIC_BASE_URL?.trim();
   const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
-  if (endpoint || bucket || publicBase || accessKeyId || secretAccessKey) {
-    if (!endpoint || !bucket || !publicBase || !accessKeyId || !secretAccessKey) {
-      return NextResponse.json({ error: "R2 upload settings are incomplete." }, { status: 503 });
-    }
-
-    const contentType = typeof body.contentType === "string" ? body.contentType : "";
-    const extension = Object.hasOwn(MEDIA_TYPES, contentType) ? MEDIA_TYPES[contentType] : undefined;
-    if (!extension) {
-      return NextResponse.json({
-        error: "Upload a JPEG, PNG, WebP, GIF, AVIF, MP4, or WebM file. Export other video formats as MP4.",
-      }, { status: 415 });
-    }
-    const maxBytes = contentType.startsWith("video/") ? VIDEO_UPLOAD_LIMIT : IMAGE_UPLOAD_LIMIT;
-    if (!Number.isSafeInteger(body.size) || body.size <= 0 || body.size > maxBytes) {
-      return NextResponse.json({ error: "Choose a non-empty file within the upload size limit." }, { status: 400 });
-    }
-
-    try {
-      const objectKey = `joey/${safeFolder(body.folder)}/${randomUUID()}.${extension}`;
-      const uploadUrl = new URL(`/${bucket}/${objectKey}`, endpoint);
-      const publicUrl = new URL(objectKey, publicBase.replace(/\/+$/, "") + "/");
-      if (!uploadUrl.hostname.endsWith(".r2.cloudflarestorage.com") ||
-          uploadUrl.protocol !== "https:" || publicUrl.protocol !== "https:" ||
-          uploadUrl.username || uploadUrl.password || publicUrl.username || publicUrl.password ||
-          !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket)) {
-        return NextResponse.json({ error: "Check the R2 endpoint, bucket name, and public URL." }, { status: 503 });
-      }
-      uploadUrl.searchParams.set("X-Amz-Expires", "300");
-      const client = new AwsClient({ accessKeyId, secretAccessKey, service: "s3", region: "auto" });
-      const signed = await client.sign(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-        aws: { signQuery: true, allHeaders: true },
-      });
-      return NextResponse.json({ provider: "r2", uploadUrl: signed.url, publicUrl: publicUrl.href }, {
-        headers: { "Cache-Control": "no-store" },
-      });
-    } catch {
-      return NextResponse.json({ error: "Could not prepare the R2 upload. Check the storage settings." }, { status: 503 });
-    }
+  if (!endpoint || !bucket || !publicBase || !accessKeyId || !secretAccessKey) {
+    return NextResponse.json({ error: "R2 upload settings are incomplete." }, { status: 503 });
   }
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-  if (!cloudName || !apiKey || !apiSecret) {
-    return NextResponse.json({ error: "Cloud storage is not configured." }, { status: 500 });
+  const contentType = typeof body.contentType === "string" ? body.contentType : "";
+  const extension = Object.hasOwn(MEDIA_TYPES, contentType) ? MEDIA_TYPES[contentType] : undefined;
+  if (!extension) {
+    return NextResponse.json({
+      error: "Upload a JPEG, PNG, WebP, GIF, AVIF, MP4, or WebM file. Export other video formats as MP4.",
+    }, { status: 415 });
+  }
+  const maxBytes = contentType.startsWith("video/") ? VIDEO_UPLOAD_LIMIT : IMAGE_UPLOAD_LIMIT;
+  if (!Number.isSafeInteger(body.size) || body.size <= 0 || body.size > maxBytes) {
+    return NextResponse.json({ error: "Choose a non-empty file within the upload size limit." }, { status: 400 });
   }
 
-  const resourceType = body?.resourceType === "video" ? "video" : "image";
-  const folder = "joey";
-  const publicId = `${safeFolder(body?.folder)}/${randomUUID()}`;
-  const timestamp = String(Math.round(Date.now() / 1000));
-  return NextResponse.json({
-    provider: "cloudinary",
-    cloudName,
-    apiKey,
-    timestamp,
-    folder,
-    publicId,
-    resourceType,
-    signature: signature({ folder, public_id: publicId, timestamp }, apiSecret),
-  });
+  try {
+    const objectKey = `joey/${safeFolder(body.folder)}/${randomUUID()}.${extension}`;
+    const uploadUrl = new URL(`/${bucket}/${objectKey}`, endpoint);
+    const publicUrl = new URL(objectKey, publicBase.replace(/\/+$/, "") + "/");
+    if (!uploadUrl.hostname.endsWith(".r2.cloudflarestorage.com") ||
+        uploadUrl.protocol !== "https:" || publicUrl.protocol !== "https:" ||
+        uploadUrl.username || uploadUrl.password || publicUrl.username || publicUrl.password ||
+        !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket)) {
+      return NextResponse.json({ error: "Check the R2 endpoint, bucket name, and public URL." }, { status: 503 });
+    }
+    uploadUrl.searchParams.set("X-Amz-Expires", "300");
+    const client = new AwsClient({ accessKeyId, secretAccessKey, service: "s3", region: "auto" });
+    const signed = await client.sign(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      aws: { signQuery: true, allHeaders: true },
+    });
+    return NextResponse.json({ provider: "r2", uploadUrl: signed.url, publicUrl: publicUrl.href }, {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch {
+    return NextResponse.json({ error: "Could not prepare the R2 upload. Check the storage settings." }, { status: 503 });
+  }
 }

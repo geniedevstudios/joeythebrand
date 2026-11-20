@@ -2,7 +2,8 @@
 import { useState, useEffect, useSyncExternalStore, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Clock } from "lucide-react";
+import { Clock, Ruler } from "lucide-react";
+import QuickViewIconButtons from "@/components/shop/QuickViewIconButtons";
 import styles from "./BespokeClient.module.css";
 import shopStyles from "../shop/ShopClient.module.css";
 import PageHeroShellImageLoader from "@/components/page-hero/PageHeroShellImageLoader";
@@ -115,7 +116,6 @@ function MtoShowcaseRow({
   }, [p.id, gallery.length, imageRotatePaused]);
 
   const leadDays = p.madeToOrderLeadDays ?? p.bespokeLeadDays ?? 14;
-  const inWishlist = wishlistItems.some((w) => w.id === p.id);
   const displayTitle =
     (activeShowcaseColor &&
       activeShowcaseColor.id !== "main-color" &&
@@ -209,42 +209,6 @@ function MtoShowcaseRow({
             </div>
 
             <div className={styles.mtoSideActions}>
-              <button
-                type="button"
-                className={`${styles.mtoCircleIconBtn} ${
-                  inWishlist ? styles.mtoCircleIconBtnActive : ""
-                }`}
-                aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                onClick={() => {
-                  const wasIn = wishlistStore.has(p.id);
-                  wishlistStore.toggleItem({
-                    id: p.id,
-                    name: p.name,
-                    price: `GHC ${p.price.toLocaleString()}`,
-                    image: p.image,
-                    hoverImage: p.hoverImage,
-                    category: p.categoryName || "",
-                  });
-                  toast.success(
-                    wasIn ? `${p.name} removed from wishlist` : `${p.name} added to wishlist`,
-                  );
-                }}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill={inWishlist ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
-
               <button
                 type="button"
                 className={styles.mtoCircleIconBtn}
@@ -899,7 +863,6 @@ export default function BespokeClient({
           {/* Phones: stacked lookbook — tap the photo for product details */}
           <div className={styles.mtoLookbook}>
             {curatedMtoProducts.map((p) => {
-              const inWishlist = wishlistItems.some((w) => w.id === p.id);
               const colorVariants = (p.variants || []).filter((v) => v.type === "color");
               const selectedColorId = mobileColorById[p.id] || "main-color";
               const activeColor =
@@ -949,44 +912,6 @@ export default function BespokeClient({
                   </Link>
 
                   <div className={styles.mtoLookActions}>
-                    <button
-                      type="button"
-                      className={`${styles.mtoCircleIconBtn} ${styles.mtoLookIconBtn} ${
-                        inWishlist ? styles.mtoCircleIconBtnActive : ""
-                      }`}
-                      aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                      title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                      onClick={() => {
-                        const wasIn = wishlistStore.has(p.id);
-                        wishlistStore.toggleItem({
-                          id: p.id,
-                          name: p.name,
-                          price: `GHC ${p.price.toLocaleString()}`,
-                          image: p.image,
-                          hoverImage: p.hoverImage,
-                          category: p.categoryName || "",
-                        });
-                        toast.success(
-                          wasIn
-                            ? `${p.name} removed from wishlist`
-                            : `${p.name} added to wishlist`,
-                        );
-                      }}
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill={inWishlist ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                      </svg>
-                    </button>
-
                     <button
                       type="button"
                       className={`${styles.mtoCircleIconBtn} ${styles.mtoLookIconBtn}`}
@@ -1232,7 +1157,6 @@ export default function BespokeClient({
                       <p className={shopStyles.modalDesc}>{quickViewPiece.description}</p>
                       {qvColorVariants.length > 0 ? (
                         <div className={shopStyles.colorSelectorSection}>
-                          <span className={shopStyles.colorSelectorLabel}>Color:</span>
                           <div className={shopStyles.colorSelectorSwatches}>
                             {qvColorVariants.map((v: any) => {
                               const swatchUrl =
@@ -1306,45 +1230,36 @@ export default function BespokeClient({
                       )}
 
                       <div className={shopStyles.modalSizeRow}>
-                        <span className={shopStyles.qtyLabel}>Size:</span>
-                        <div className={shopStyles.sizeGrid}>
-                          {qvAvailableSizes.map((sz: string) => (
-                            <button
-                              key={sz}
-                              type="button"
-                              className={`${shopStyles.sizeBtn} ${
-                                selectedSize === sz ? shopStyles.sizeActive : ""
-                              }`}
-                              onClick={() => setSelectedSize((prev) => (prev === sz ? "" : sz))}
-                            >
-                              {formatSizeLabel(sz, quickViewFit, quickViewPiece.wearTag)}
-                            </button>
-                          ))}
-                        </div>
+                        <span className={shopStyles.qtyLabel}>Select size{selectedSize ? ` — ${selectedSize}` : ""}</span>
+                        <SizePicker
+                          sizes={qvAvailableSizes}
+                          selected={selectedSize}
+                          onChange={(next) => { setSelectedSize(next); }}
+                          formatLabel={(sz) => formatSizeLabel(sz, quickViewFit, quickViewPiece.wearTag)}
+                        />
                         <button
                           type="button"
                           className={shopStyles.sizeGuideBtn}
                           onClick={() => setSizeGuideOpen(true)}
                         >
-                          Size Guide
+                          <Ruler size={13} strokeWidth={1.5} aria-hidden /> Size Guide
                         </button>
                       </div>
 
                       <div className={shopStyles.modalQtyRow}>
                         <div className={shopStyles.qtyLeft}>
-                          <span className={shopStyles.qtyLabel}>Quantity:</span>
                           <div className={shopStyles.qtyControl}>
                             <button
                               type="button"
-                              className={shopStyles.qtyBtn}
+                              className={shopStyles.qtyBtn} aria-label="Decrease quantity"
                               onClick={() => setQty(Math.max(1, qty - 1))}
                             >
-                              -
+                              −
                             </button>
                             <span className={shopStyles.qtyVal}>{qty}</span>
                             <button
                               type="button"
-                              className={shopStyles.qtyBtn}
+                              className={shopStyles.qtyBtn} aria-label="Increase quantity"
                               onClick={() => {
                                 if (qty < quickViewStockStatus.maxStock) {
                                   setQty(qty + 1);
@@ -1375,10 +1290,10 @@ export default function BespokeClient({
                               ? "Adding..."
                               : "Added ✓"}
                         </button>
-                        <button
-                          type="button"
-                          className={shopStyles.modalWishlistBtn}
-                          onClick={() => {
+                        <QuickViewIconButtons
+                          item={quickViewPiece}
+                          saved={isInQvWishlist}
+                          onToggleWishlist={() => {
                             const wasIn = wishlistStore.has(quickViewPiece.id);
                             wishlistStore.toggleItem({
                               id: quickViewPiece.id,
@@ -1394,21 +1309,7 @@ export default function BespokeClient({
                                 : `${quickViewPiece.name} added to wishlist`,
                             );
                           }}
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill={isInQvWishlist ? "var(--alaska-gray)" : "none"}
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                          {isInQvWishlist ? "Saved To Wishlist" : "Add To Wishlist"}
-                        </button>
+                        />
                       </div>
 
                       <div

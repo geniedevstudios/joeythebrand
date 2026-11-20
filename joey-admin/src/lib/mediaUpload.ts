@@ -11,15 +11,4 @@ export const MEDIA_TYPES: Readonly<Partial<Record<string, string>>> = {
 export const IMAGE_UPLOAD_LIMIT = 15 * 1024 * 1024;
 export const VIDEO_UPLOAD_LIMIT = 50 * 1024 * 1024;
 
-export type MediaUpload =
-  | { provider: "r2"; uploadUrl: string; publicUrl: string }
-  | {
-      provider: "cloudinary";
-      cloudName: string;
-      apiKey: string;
-      timestamp: string;
-      folder: string;
-      publicId: string;
-      resourceType: "image" | "video";
-      signature: string;
-    };
+export type MediaUpload = { provider: "r2"; uploadUrl: string; publicUrl: string };

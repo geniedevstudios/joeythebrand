@@ -2,8 +2,6 @@
 import Link from "next/link";
 import { getCardFulfillmentSummary } from "@/lib/variantUtils";
 import { Clock } from "lucide-react";
-import { toast } from "sonner";
-import { wishlistStore } from "@/store/wishlistStore";
 import ProductMedia from "@/components/shop/ProductMedia";
 import shopStyles from "@/app/shop/ShopClient.module.css";
 import productStyles from "@/app/shop/[slug]/ProductClient.module.css";
@@ -72,30 +70,6 @@ export default function ProductSuggestions({
 
                   <div className={productStyles.suggestOverlay}>
                     <div className={productStyles.suggestActions}>
-                      <button
-                        className={productStyles.suggestIconBtn}
-                        aria-label="Add to Wishlist"
-                        onClick={() => {
-                          if (wishlistStore.has(item.id)) {
-                            wishlistStore.removeItem(item.id);
-                            toast.success(`${item.name} removed from wishlist`);
-                          } else {
-                            wishlistStore.addItem({
-                              id: item.id,
-                              name: item.name,
-                              price: formatPrice(item.price),
-                              image: item.image,
-                              hoverImage: item.hoverImage,
-                              category: item.categoryName || ""
-                            });
-                            toast.success(`${item.name} added to wishlist`);
-                          }
-                        }}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill={wishlistStore.has(item.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" suppressHydrationWarning>
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                        </svg>
-                      </button>
                       <button
                         className={productStyles.suggestIconBtn}
                         aria-label="Quick View"

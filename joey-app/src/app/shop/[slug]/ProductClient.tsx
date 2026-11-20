@@ -4,7 +4,7 @@ import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clock } from "lucide-react";
+import { Clock, Ruler } from "lucide-react";
 import { wishlistStore } from "@/store/wishlistStore";
 import { dataStore } from "@/lib/dataStore";
 import { useStoreLoading } from "@/hooks/useStoreLoading";
@@ -15,6 +15,8 @@ import SizeGuideModal, { type SizeGuideKind } from "@/components/SizeGuideModal"
 import ProductSuggestions from "@/components/shop/ProductSuggestions";
 import { formatSizeLabel } from "@/lib/formatSizeLabel";
 import { getVariantStockStatus, getIsSoloUnavailable, getVariantStorefrontSizes } from "@/lib/variantUtils";
+import QuickViewIconButtons from "@/components/shop/QuickViewIconButtons";
+import SizePicker from "@/components/shop/SizePicker";
 import styles from "./ProductClient.module.css";
 import shopStyles from "../ShopClient.module.css";
 const EMPTY_ARRAY: any[] = [];
@@ -439,7 +441,6 @@ export default function ProductClient({ slug }: { slug: string }) {
 
             {colorVariants.length > 0 && (
               <div className={styles.colorSelectorSection}>
-                <span className={styles.colorSelectorLabel}>Color:</span>
                 <div className={styles.colorSelectorSwatches}>
                   {colorVariants.map((v: any) => (
                     <button
@@ -629,51 +630,24 @@ export default function ProductClient({ slug }: { slug: string }) {
 
               <div className={styles.sizeSection}>
                 <div className={styles.sizeHeader}>
-                  <span className={styles.sizeLabel}>Size</span>
+                  <span className={styles.sizeLabel}>Select size{selectedSize ? ` — ${selectedSize}` : ""}</span>
                   <button
                     type="button"
                     className={styles.sizeGuideBtn}
                     onClick={() => setSizeGuideOpen(true)}
                   >
-                    Size Guide
+                    <Ruler size={13} strokeWidth={1.5} aria-hidden /> Size Guide
                   </button>
                 </div>
-                <div className={styles.sizeGrid}>
-                  {getVariantStorefrontSizes(product, selectedFit, currentColor).map((size: string) => {
-                    const sizeStatus = getVariantStockStatus(
-                      product,
-                      currentColor,
-                      currentCombo,
-                      activeMode,
-                      undefined,
-                      size,
-                    );
-                    const sizeSoldOut =
-                      sizeStatus.isUnorderable;
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => {
-                          if (sizeSoldOut) return;
-                          setSelectedSize((prev) => (prev === size ? "" : size));
-                          setQty(1);
-                        }}
-                        disabled={sizeSoldOut}
-                        className={`${styles.sizeBtn} ${selectedSize === size ? styles.sizeBtnActive : ""}`}
-                        aria-pressed={selectedSize === size}
-                        style={
-                          sizeSoldOut
-                            ? { opacity: 0.4, textDecoration: "line-through" }
-                            : undefined
-                        }
-                        title={sizeSoldOut ? "Out of stock" : undefined}
-                      >
-                        {formatSizeLabel(size, selectedFit, product.wearTag)}
-                      </button>
-                    );
-                  })}
-                </div>
+                <SizePicker
+                  sizes={getVariantStorefrontSizes(product, selectedFit, currentColor)}
+                  selected={selectedSize}
+                  onChange={(next) => { setSelectedSize(next); setQty(1); }}
+                  formatLabel={(size) => formatSizeLabel(size, selectedFit, product.wearTag)}
+                  isSoldOut={(size) =>
+                    getVariantStockStatus(product, currentColor, currentCombo, activeMode, undefined, size).isUnorderable
+                  }
+                />
               </div>
 
               {!isBespokeProduct && isSelectedOutOfStock ? (
@@ -683,14 +657,11 @@ export default function ProductClient({ slug }: { slug: string }) {
               ) : null}
 
               <div className={styles.qtySection}>
-                <div className={styles.qtyHeader}>
-                  <span className={styles.qtyLabel}>Quantity</span>
-                </div>
                 <div className={styles.qtyControl}>
-                  <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
+                  <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))} aria-label="Decrease quantity">−</button>
                   <span className={styles.qtyVal}>{qty}</span>
                   <button 
-                    className={styles.qtyBtn} 
+                    className={styles.qtyBtn} aria-label="Increase quantity" 
                     onClick={() => {
                       if (qty < currentMaxStock) {
                         setQty(qty + 1);
@@ -763,15 +734,11 @@ export default function ProductClient({ slug }: { slug: string }) {
                         ? (addStatus === "idle" ? "Order Made to Order" : addStatus === "adding" ? "Adding..." : "Added ✓")
                         : (addStatus === "idle" ? "Add To Cart" : addStatus === "adding" ? "Adding..." : "Added ✓")}
                   </button>
-                  <button 
-                    className={`btn btn-outline ${styles.wishlistBtn}`}
-                    onClick={() => toggleWishlist(product)}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                    </svg>
-                    {isInWishlist(product.id) ? "Saved" : "Wishlist"}
-                  </button>
+                  <QuickViewIconButtons
+                    item={product}
+                    saved={isInWishlist(product.id)}
+                    onToggleWishlist={() => toggleWishlist(product)}
+                  />
                 </div>
 
                 {isBespokeProduct ? (
@@ -882,7 +849,6 @@ export default function ProductClient({ slug }: { slug: string }) {
               {quickViewColorVariants.length > 0 && (
                 <>
                   <div className={shopStyles.colorSelectorSection}>
-                    <span className={shopStyles.colorSelectorLabel}>Color:</span>
                     <div className={shopStyles.colorSelectorSwatches}>
                       {quickViewColorVariants.map((v: any) => (
                         <button
@@ -995,24 +961,19 @@ export default function ProductClient({ slug }: { slug: string }) {
               )}
               
               <div className={styles.modalSizeRow}>
-                <span className={styles.qtyLabel}>Size:</span>
-                <div className={styles.sizeGrid}>
-                  {getVariantStorefrontSizes(quickViewItem, quickViewFit, quickViewActiveColorVariant).map((sz: string) => (
-                    <button 
-                      key={sz} 
-                      className={`${styles.sizeBtn} ${quickViewSize === sz ? styles.sizeBtnActive : ""}`}
-                      onClick={() => { setQuickViewSize(prev => prev === sz ? "" : sz); setQty(1); }}
-                    >
-                      {formatSizeLabel(sz, quickViewFit, quickViewItem.wearTag)}
-                    </button>
-                  ))}
-                </div>
+                <span className={styles.qtyLabel}>Select size{quickViewSize ? ` — ${quickViewSize}` : ""}</span>
+                <SizePicker
+                  sizes={getVariantStorefrontSizes(quickViewItem, quickViewFit, quickViewActiveColorVariant)}
+                  selected={quickViewSize}
+                  onChange={(next) => { setQuickViewSize(next); setQty(1); }}
+                  formatLabel={(sz) => formatSizeLabel(sz, quickViewFit, quickViewItem.wearTag)}
+                />
                 <button
                   type="button"
                   className={styles.sizeGuideBtn}
                   onClick={() => setSizeGuideOpen(true)}
                 >
-                  Size Guide
+                  <Ruler size={13} strokeWidth={1.5} aria-hidden /> Size Guide
                 </button>
               </div>
 
@@ -1027,12 +988,11 @@ export default function ProductClient({ slug }: { slug: string }) {
 
               <div className={styles.modalQtyRow}>
                 <div className={styles.qtyLeft}>
-                  <span className={styles.qtyLabel}>Quantity:</span>
                   <div className={styles.qtyControl}>
-                    <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
+                    <button className={styles.qtyBtn} onClick={() => setQty(Math.max(1, qty - 1))} aria-label="Decrease quantity">−</button>
                     <span className={styles.qtyVal}>{qty}</span>
                     <button 
-                      className={styles.qtyBtn} 
+                      className={styles.qtyBtn} aria-label="Increase quantity" 
                       onClick={() => {
                         if (qty < quickViewMaxQty) {
                           setQty(qty + 1);
@@ -1139,15 +1099,11 @@ export default function ProductClient({ slug }: { slug: string }) {
                     </button>
                   );
                 })()}
-                <button 
-                  className={styles.modalWishlistBtn}
-                  onClick={() => toggleWishlist(quickViewItem)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill={isInWishlist(quickViewItem.id) ? "var(--alaska-gray)" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                  </svg>
-                  {isInWishlist(quickViewItem.id) ? "Saved To Wishlist" : "Add To Wishlist"}
-                </button>
+                <QuickViewIconButtons
+                  item={quickViewItem}
+                  saved={isInWishlist(quickViewItem.id)}
+                  onToggleWishlist={() => toggleWishlist(quickViewItem)}
+                />
               </div>
 
               {(() => {

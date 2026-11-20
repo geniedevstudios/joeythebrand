@@ -531,8 +531,8 @@
 
 .actionBtns {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 10px;
   align-items: stretch;
 }
 
@@ -548,8 +548,9 @@
 
 .cartBtn,
 .actionBtns :global(.btn-primary) {
-  flex: 1 1 11rem;
+  flex: 1 1 auto;
   min-width: 0;
+  min-height: 46px;
 }
 
 .wishlistBtn {
@@ -1166,16 +1167,18 @@
 
 .modalActions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: stretch;
-  gap: var(--space-md);
+  gap: 10px;
   margin-bottom: var(--space-2xl);
   padding-bottom: var(--space-xl);
   border-bottom: 1px solid var(--color-border);
 }
 
 .modalAddBtn {
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 46px;
   justify-content: center;
   border-radius: 999px;
   padding: 8px 20px;
@@ -1277,12 +1280,7 @@
     width: clamp(52px, 20vw, 72px);
   }
 
-  .actionBtns {
-    flex-direction: column;
-  }
-
   .cartBtn,
-  .wishlistBtn,
   .actionBtns :global(.btn) {
     width: 100%;
     flex: 1 1 auto;
@@ -1361,13 +1359,11 @@
   }
 
   .modalActions {
-    flex-direction: column;
-    gap: var(--space-sm);
-    align-items: stretch;
+    gap: 8px;
   }
 
-  .modalAddBtn, .modalWishlistBtn {
-    width: 100%;
+  .modalAddBtn {
+    width: auto;
     justify-content: center;
   }
 
@@ -1422,4 +1418,123 @@
     font-size: 0.78rem;
     min-width: 40px;
   }
+}
+
+
+/* Size selector: even grid of tall tap targets, with the size guide as a quiet link. */
+.sizeHeader {
+  align-items: center;
+}
+
+.sizeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sizeBtn {
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.04em;
+}
+
+.sizeBtn:disabled {
+  cursor: not-allowed;
+}
+
+.fitBtn {
+  min-height: 44px;
+}
+
+.sizeGuideBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  background: none;
+  color: var(--alaska-gray);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.sizeGuideBtn:hover {
+  color: var(--blue-athracite);
+}
+
+/* Same treatment inside the quick view. */
+.modalSizeRow {
+  align-items: center;
+  gap: 10px var(--space-sm);
+}
+
+.modalSizeRow .qtyLabel {
+  order: 1;
+  margin-bottom: 0;
+  padding-top: 0;
+}
+
+.modalSizeRow .fitGrid {
+  order: 2;
+}
+
+.modalSizeRow .sizeGuideBtn {
+  order: 2;
+  margin-left: auto;
+}
+
+.modalSizeRow .sizeGrid {
+  order: 3;
+  flex: 1 0 100%;
+}
+
+.modalSizeRow .sizeBtn {
+  min-height: 42px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+}
+
+
+/* Quantity: compact stepper with no text label. */
+.qtyControl {
+  background: var(--color-surface);
+  border-radius: 999px;
+}
+
+.qtyBtn {
+  width: 44px;
+  height: 44px;
+  font-size: 1.2rem;
+}
+
+.qtyBtn:hover:not(:disabled) {
+  color: var(--blue-athracite);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.qtyBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.qtyVal {
+  width: 40px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.modalQtyRow .qtyBtn {
+  width: 44px;
+  height: 44px;
+}
+
+.modalQtyRow .qtyVal {
+  width: 40px;
 }

@@ -31,11 +31,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   let productDesc = "";
   let productImage = "";
   let categoryName = "";
+  let priceText = "";
   try {
     const db = getServerSupabase();
     const { data } = await db
       .from("products")
-      .select("name, description, image, category_name, is_published, fulfillment_mode, show_on_bespoke_page")
+      .select("name, description, image, images, price, category_name, is_published, fulfillment_mode, show_on_bespoke_page")
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .maybeSingle();
 
@@ -46,19 +47,27 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     if (isVisible) {
       if (data?.name) productName = data.name;
       if (data?.description) productDesc = String(data.description || "");
-      if (data?.image) productImage = String(data.image || "");
+      const firstImage = Array.isArray(data?.images) ? String(data.images[0] || "") : "";
+      if (data?.image || firstImage) productImage = String(data?.image || firstImage);
       if (data?.category_name) categoryName = String(data.category_name || "");
+      const amount = Number(data?.price);
+      if (data?.price != null && Number.isFinite(amount) && amount > 0) {
+        priceText = `GHC ${amount.toLocaleString("en-US")}`;
+      }
     }
   } catch {
     // fallback to slug
   }
 
   const title = `${productName} | Shop`;
-  const description =
+  const baseDescription =
     productDesc.trim() ||
     (categoryName ? `Shop ${categoryName} by JOEY THE BRAND.` : "Shop custom and ready-to-wear pieces from JOEY THE BRAND.");
+  // Link previews (WhatsApp, Instagram, iMessage) show the price when it leads the description.
+  const combined = [priceText, baseDescription.replace(/\s+/g, " ").trim()].filter(Boolean).join(" · ");
+  const description = combined.length > 200 ? `${combined.slice(0, 199).trimEnd()}…` : combined;
   const canonical = `/shop/${encodeURIComponent(slug)}`;
-  const image = productImage.trim() || undefined;
+  const image = toAbsoluteUrl(productImage.trim()) || undefined;
 
   return {
     title,
@@ -69,7 +78,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description,
       type: "website",
       url: canonical,
-      images: image ? [{ url: image }] : undefined,
+      images: image ? [{ url: image, alt: productName }] : undefined,
     },
     twitter: {
       card: image ? "summary_large_image" : "summary",

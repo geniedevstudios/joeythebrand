@@ -69,6 +69,5 @@ to match the URLs from which staff actually use the admin app.
 Restart or redeploy Joey Admin after setting the variables. In the product and
 homepage editors, upload a test photo and a web-ready MP4, then open the resulting
 public URLs before switching existing records. The uploader issues five-minute
-PUT URLs to signed-in, allowlisted admins. If all R2 settings are unset, the
-existing Cloudinary upload configuration is used. Previously saved URLs keep
-pointing to their original provider until migrated.
+PUT URLs to signed-in, allowlisted admins. All five R2 settings are required;
+without them, uploads stop with "R2 upload settings are incomplete."
