@@ -12,6 +12,7 @@ import type { Product, ProductVariant, SiteContent } from "@/lib/types";
 import CustomSelect from "@/components/CustomSelect";
 import { WheelDatePicker, accraToday, formatWheelValue } from "@/components/wheel-picker";
 import ProductMedia from "@/components/shop/ProductMedia";
+import SizePicker from "@/components/shop/SizePicker";
 import GalleryNav, { stepGalleryImage } from "@/components/shop/GalleryNav";
 import ProductNameRow from "@/components/shop/ProductNameLabels";
 import SizeGuideModal from "@/components/SizeGuideModal";
